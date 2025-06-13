@@ -1,0 +1,8 @@
+#+title: Notes
+
+- Have per-port allowed commands
+- Have a handler / processor that knows what allowed commands are
+- Perhaps have per-version commands?
+
+
+- use timeouts for commands to Seestar?
