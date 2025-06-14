@@ -5,7 +5,9 @@ export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {
-    const response = await fetch('http://localhost:8000/status/stream', {
+    const statusStreamUrl = process.env.STATUS_STREAM_URL || 'http://localhost:8000/status/stream';
+
+    const response = await fetch(statusStreamUrl, {
       method: 'GET',
       headers: {
         'Accept': 'text/event-stream',
