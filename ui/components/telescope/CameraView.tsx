@@ -538,7 +538,7 @@ export function CameraView() {
   const targetName = selectedTarget?.name || streamStatus?.status?.target_name;
 
   return (
-    <div className={`transition-all duration-300 ${isControlsCollapsed ? "col-span-1" : "lg:col-span-3"}`}>
+    <div className={`transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`}>
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
