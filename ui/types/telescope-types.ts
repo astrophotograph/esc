@@ -1,16 +1,19 @@
 // Define telescope info interface
 export interface TelescopeInfo {
-  id: string
   name: string
+  host: string
+  port: number
+  connected: boolean
+  serial_number: string
+  product_model: string
+  ssid: string
+  // Computed properties for UI compatibility
+  id: string
+  status: "online" | "offline" | "maintenance" | "error"
   type?: string
   location?: string
   description?: string
-  status: "online" | "offline" | "maintenance" | "error"
   isConnected?: boolean
-  lastSeen?: Date
-  capabilities?: string[]
-  ipAddress?: string
-  serialNumber?: string
 }
 
 // Define celestial object types

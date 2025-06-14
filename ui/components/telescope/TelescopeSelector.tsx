@@ -60,6 +60,16 @@ const getStatusText = (status: TelescopeInfo["status"]) => {
   }
 }
 
+const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
+  if (telescope.product_model) {
+    return telescope.name ? `${telescope.product_model} - ${telescope.name}` : telescope.product_model
+  }
+  if (telescope.name) {
+    return telescope.name
+  }
+  return telescope.host
+}
+
 export function TelescopeSelector() {
   const {
     telescopes,
@@ -135,7 +145,7 @@ export function TelescopeSelector() {
             <div className="flex items-center gap-2 flex-1">
               <TelescopeIcon className="w-4 h-4" />
               <span className="truncate">
-                {currentTelescope ? currentTelescope.name : "Select Telescope"}
+                {currentTelescope ? getTelescopeDisplayName(currentTelescope) : "Select Telescope"}
               </span>
               {currentTelescope && (
                 <div className="flex items-center gap-1 ml-auto">
@@ -170,7 +180,7 @@ export function TelescopeSelector() {
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-white">{telescope.name}</span>
+                    <span className="font-medium text-white">{getTelescopeDisplayName(telescope)}</span>
                     {getStatusIcon(telescope.status)}
                     {currentTelescope?.id === telescope.id && (
                       <Badge variant="secondary" className="text-xs bg-blue-600 text-white">

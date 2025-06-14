@@ -97,7 +97,7 @@ interface TelescopeContextType {
   telescopeError: string | null
   fetchTelescopes: () => Promise<void>
   selectTelescope: (telescope: TelescopeInfo) => void
-  
+
   // State
   showOverlay: boolean
   setShowOverlay: (show: boolean) => void
@@ -697,18 +697,31 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const fetchTelescopes = async () => {
     setIsLoadingTelescopes(true)
     setTelescopeError(null)
-    
+
     try {
-      const response = await fetch('http://localhost:8000/api/telescopes')
+      const response = await fetch('/api/v2/telescopes')
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      const data = await response.json()
-      setTelescopes(data)
+      const rawData = await response.json()
       
+      // Transform API data to match UI interface
+      const transformedTelescopes: TelescopeInfo[] = rawData.map((telescope: any) => ({
+        ...telescope,
+        // Add computed properties for UI compatibility
+        id: telescope.serial_number || telescope.name,
+        status: telescope.connected ? 'online' : 'offline',
+        type: telescope.product_model,
+        isConnected: telescope.connected,
+        description: `${telescope.product_model} at ${telescope.host}:${telescope.port}`,
+        location: `Network: ${telescope.ssid}`
+      }))
+      
+      setTelescopes(transformedTelescopes)
+
       // Auto-select first telescope if none selected
-      if (!currentTelescope && data.length > 0) {
-        setCurrentTelescope(data[0])
+      if (!currentTelescope && transformedTelescopes.length > 0) {
+        setCurrentTelescope(transformedTelescopes[0])
       }
     } catch (error) {
       console.error('Failed to fetch telescopes:', error)
@@ -716,15 +729,19 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       // Use sample data as fallback
       const sampleTelescopes: TelescopeInfo[] = [
         {
-          id: 'seestar-1',
-          name: 'Seestar S50',
-          type: 'Smart Telescope',
-          location: 'Backyard Observatory',
-          description: 'Primary imaging telescope',
+          name: 'cfcf05c4',
+          host: '192.168.42.41',
+          port: 4700,
+          connected: true,
+          serial_number: 'cfcf05c4',
+          product_model: 'Seestar S30',
+          ssid: 'S30_cfcf05c4',
+          id: 'cfcf05c4',
           status: 'online',
+          type: 'Seestar S30',
           isConnected: true,
-          capabilities: ['imaging', 'goto', 'autoguiding'],
-          ipAddress: '192.168.1.100'
+          description: 'Seestar S30 at 192.168.42.41:4700',
+          location: 'Network: S30_cfcf05c4'
         }
       ]
       setTelescopes(sampleTelescopes)
@@ -1307,7 +1324,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     telescopeError,
     fetchTelescopes,
     selectTelescope,
-    
+
     // State
     showOverlay,
     setShowOverlay,

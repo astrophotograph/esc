@@ -53,6 +53,7 @@ export function CameraView() {
     annotationSettings,
     handleTargetSelect,
     celestialObjects,
+    currentTelescope,
   } = useTelescopeContext()
 
   // Sample annotations for demonstration
@@ -170,6 +171,8 @@ export function CameraView() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -228,6 +231,8 @@ export function CameraView() {
       const { naturalWidth, naturalHeight } = imageRef.current;
       setIsPortrait(naturalHeight > naturalWidth);
       setImageDimensions({ width: naturalWidth, height: naturalHeight });
+      setImageError(false);
+      setImageLoading(false);
 
       // After determining image dimensions, also store container dimensions
       if (imageContainerRef.current) {
@@ -237,6 +242,12 @@ export function CameraView() {
         });
       }
     }
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
   };
 
   // Update container dimensions on resize
@@ -444,7 +455,16 @@ export function CameraView() {
 
   // Setup event source for streaming status
   useEffect(() => {
-    const eventSource = new EventSource('/api/status/stream');
+    if (!currentTelescope) {
+      setStreamStatus(null);
+      return;
+    }
+
+    const cameraName = currentTelescope.name || currentTelescope.serial_number;
+    const streamUrl = `/api/v2/telescopes/${encodeURIComponent(cameraName)}/status/stream`;
+
+    console.log(`Connecting to stream: ${streamUrl}`);
+    const eventSource = new EventSource(streamUrl);
 
     eventSource.onmessage = (event) => {
       try {
@@ -470,7 +490,7 @@ export function CameraView() {
     return () => {
       eventSource.close();
     };
-  }, [reconnectCounter]);
+  }, [reconnectCounter, currentTelescope]);
 
   // Reset zoom and pan
   // const resetZoomAndPan = () => {
@@ -641,11 +661,32 @@ export function CameraView() {
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
             >
+              {/* Show placeholder when image is loading, has error, or isn't available */}
+              {(imageLoading || imageError) && (
+                <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                  <div className="text-center text-gray-400">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+                      <Crosshair className="w-12 h-12 text-gray-500" />
+                    </div>
+                    <p className="text-lg font-medium mb-2">
+                      {imageLoading ? 'Connecting to telescope...' : 'No telescope feed available'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {imageLoading
+                        ? 'Waiting for video stream'
+                        : 'Check telescope connection and try again'
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Only show image when it's loaded successfully */}
               <img
                 ref={imageRef}
                 src="http://localhost:5556/1/vid"
                 alt="Telescope view"
-                className="w-full h-full transition-transform duration-200 select-none"
+                className={`w-full h-full transition-transform duration-200 select-none ${imageError ? 'hidden' : ''}`}
                 style={{
                   filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%)`,
                   transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
@@ -659,6 +700,7 @@ export function CameraView() {
                   objectPosition: 'center',
                 }}
                 onLoad={handleImageLoad}
+                onError={handleImageError}
                 draggable="false"
                 onDragStart={(e) => e.preventDefault()}
               />
