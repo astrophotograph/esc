@@ -6,3 +6,9 @@
 
 
 - use timeouts for commands to Seestar?
+
+- automatically autodetect all telescopes
+- telescope endpoints are under /api/telescopes/<key>
+- find all telescopes getting /api/telescopes
+- can add telescope by putting /api/telescope
+

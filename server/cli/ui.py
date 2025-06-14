@@ -119,7 +119,7 @@ class CombinedSeestarUI(App):
         """Initialize the Seestar client with given host and port."""
         self.host = host
         self.port = port
-        self.client = SeestarClient(self.host, self.port, debug=True)
+        self.client = SeestarClient(self.host, self.port)
         self.update_title()
     
     async def runner(self):

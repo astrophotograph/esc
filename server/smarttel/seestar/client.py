@@ -1,7 +1,9 @@
 import asyncio
 import collections
 import json
-import logging
+
+import pydash
+from loguru import logger as logging
 from typing import TypeVar, Literal
 
 from pydantic import BaseModel
@@ -48,15 +50,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     connection: SeestarConnection | None = None
     id: int = 1
     is_connected: bool = False
-    debug: bool = False
     status: SeestarStatus = SeestarStatus()
     background_task: asyncio.Task | None = None
     recent_events: collections.deque = collections.deque(maxlen=5)
 
-    def __init__(self, host: str, port: int, debug=False):
+    def __init__(self, host: str, port: int):
         super().__init__(host=host, port=port)
 
-        self.debug = debug
         self.connection = SeestarConnection(host=host, port=port)
 
     async def _heartbeat(self):
@@ -64,22 +64,22 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         await asyncio.sleep(5)
         while True:
             if self.is_connected:
-                print(f"Pinging {self}")
+                logging.trace(f"Pinging {self}")
                 _ = await self.send_and_recv(GetTime())
             # todo : decrease sleep time to 1 second and, instead, check next heartbeat time
             await asyncio.sleep(5)
 
     def process_view_state(self, response: CommandResponse[dict]):
         """Process view state."""
-        print(f"Processing view state from {self}: {response}")
+        logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
-            self.status.target_name = response.result['View']['target_name']
+            self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
         else:
-            print(f"Error while processing view state from {self}: {response}")
+            logging.error(f"Error while processing view state from {self}: {response}")
 
     def process_device_state(self, response: CommandResponse[dict]):
         """Process device state."""
-        print(f"Processing device state from {self}: {response}")
+        logging.trace(f"Processing device state from {self}: {response}")
         if response.result is not None:
             pi_status = PiStatusEvent(**response.result['pi_status'], Timestamp=response.Timestamp)
             self.status.temp = pi_status.temp
@@ -87,7 +87,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             self.status.charge_online = pi_status.charge_online
             self.status.battery_capacity = pi_status.battery_capacity
         else:
-            print(f"Error while processing device state from {self}: {response}")
+            logging.error(f"Error while processing device state from {self}: {response}")
 
     async def connect(self):
         await self.connection.open()
@@ -103,19 +103,17 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.process_device_state(response)
 
         response = await self.send_and_recv(GetViewState())
-        print(f"Received GetViewState: {response}")
+        logging.debug(f"Received GetViewState: {response}")
 
         self.process_view_state(response)
 
-        if self.debug:
-            print(f"Connected to {self}")
+        logging.debug(f"Connected to {self}")
 
     async def disconnect(self):
         """Disconnect from Seestar."""
         await self.connection.close()
         self.is_connected = False
-        if self.debug:
-            print(f"Disconnected from {self}")
+        logging.debug(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
         # todo : do connected check...
@@ -129,13 +127,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     def _handle_event(self, event_str: str):
         """Parse an event."""
-        if self.debug:
-            print(f"Handling event from {self}: {event_str}")
+        logging.trace(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
             # print(f"Received event from {self}: {type(parser.event)} {parser}")
-            print(f'Received event from {self}: {parser.event.Event} {type(parser.event)}')
+            logging.trace(f'Received event from {self}: {parser.event.Event} {type(parser.event)}')
             self.recent_events.append(parser.event)
             match parser.event.Event:
                 case 'PiStatus':
@@ -149,7 +146,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if pi_status.battery_capacity is not None:
                         self.status.battery_capacity = pi_status.battery_capacity
                 case 'Stack':
-                    print("Updating stacked frame and dropped frame")
+                    logging.trace("Updating stacked frame and dropped frame")
                     if self.status.stacked_frame is not None:
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
@@ -157,7 +154,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
         except Exception as e:
-            print(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
+            logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 
     async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
         await self.send(data)
@@ -186,7 +183,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     return None
             return CommandResponse[U](**json.loads(response))
         except Exception as e:
-            print(f"Error while receiving data from {self}: {response} {e}")
+            logging.error(f"Error while receiving data from {self}: {response} {e}")
             raise e
 
     def __str__(self):

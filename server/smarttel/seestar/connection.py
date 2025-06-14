@@ -2,6 +2,7 @@
 import asyncio
 from asyncio import StreamReader, StreamWriter, IncompleteReadError
 from pydantic import BaseModel
+from loguru import logger as logging
 
 class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
     """Connection with Seestar."""
@@ -15,7 +16,10 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
     async def open(self):
         """Open connection with Seestar."""
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+        try:
+            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+        except Exception as e:
+            logging.error(f"Failed to connect to Seestar: {e}")
         self.written_messages = 0
         self.read_messages = 0
 

@@ -8,6 +8,7 @@ import click
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Header, Footer, Static, Button, DataTable
+from loguru import logger as logging
 
 from cli.ui import CombinedSeestarUI
 from smarttel.seestar.client import SeestarClient
@@ -61,7 +62,7 @@ async def discover_seestars(timeout=10):
                 self.transport = transport
 
             def datagram_received(self, data, addr):
-                print(f"Received response from {addr}")
+                logging.trace(f"Received response from {addr}: {data.decode('utf-8')}")
                 try:
                     response = json.loads(data.decode('utf-8'))
                     discovered_devices.append({
@@ -69,7 +70,7 @@ async def discover_seestars(timeout=10):
                         'data': response
                     })
                 except json.JSONDecodeError:
-                    print(f"Received non-JSON response from {addr}: {data}")
+                    logging.error(f"Received non-JSON response from {addr}: {data}")
 
         # Create the protocol and get the transport
         transport, protocol = await loop.create_datagram_endpoint(
@@ -79,7 +80,7 @@ async def discover_seestars(timeout=10):
 
         port = 4720
         transport.sendto(message, (broadcast_ip, port))
-        print(f"Sent discovery message to broadcast:{port}")
+        logging.trace(f"Sent discovery message to broadcast:{port}")
 
         # Wait for responses
         await asyncio.sleep(timeout)  # Listen for specified seconds
@@ -88,10 +89,10 @@ async def discover_seestars(timeout=10):
         transport.close()
 
     except Exception as e:
-        print(f"Error during discovery: {e}")
+        logging.error(f"Error during discovery: {e}")
         sock.close()
 
-    print(f"Discovery complete. Found {len(discovered_devices)} devices.")
+    logging.trace(f"Discovery complete. Found {len(discovered_devices)} devices.")
     return discovered_devices
 
 
@@ -101,11 +102,11 @@ async def select_device_and_connect(host=None, port=None):
     
     if not host or not port:
         # Discover devices
-        print("Discovering Seestar devices...")
+        logging.trace("Discovering Seestar devices...")
         devices = await discover_seestars(timeout=3)
         
         if not devices:
-            print("No Seestar devices found. Exiting.")
+            logging.error("No Seestar devices found. Exiting.")
             return
         
         # Set up the device picker in the app
