@@ -628,7 +628,7 @@ export function CameraView() {
           </div>
         </CardHeader>
         <CardContent className="p-0 relative">
-          <div className="aspect-[4/3] bg-black rounded-lg overflow-hidden relative" ref={imageContainerRef}>
+          <div className="w-full h-[600px] bg-black rounded-lg overflow-hidden relative" ref={imageContainerRef}>
             {/* Image container with zoom and pan */}
             <div
               className="w-full h-full cursor-grab"
