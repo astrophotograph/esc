@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTelescope } from "@/components/telescope/TelescopeProvider"
 import {useTheme} from "next-themes"
+import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
@@ -23,6 +24,7 @@ export function Header() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4">
+        <TelescopeSelector />
         <div className="ml-auto flex items-center space-x-4">
           {/*<Button*/}
           {/*  variant="outline"*/}

@@ -19,6 +19,7 @@ import type {
   Equipment,
   MaintenanceRecord,
   EquipmentSet,
+  TelescopeInfo,
 } from "../types/telescope-types"
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
@@ -89,6 +90,14 @@ interface AnnotationSettings {
 }
 
 interface TelescopeContextType {
+  // Telescope Management
+  telescopes: TelescopeInfo[]
+  currentTelescope: TelescopeInfo | null
+  isLoadingTelescopes: boolean
+  telescopeError: string | null
+  fetchTelescopes: () => Promise<void>
+  selectTelescope: (telescope: TelescopeInfo) => void
+  
   // State
   showOverlay: boolean
   setShowOverlay: (show: boolean) => void
@@ -268,6 +277,12 @@ interface TabActivityState {
 const TelescopeContext = createContext<TelescopeContextType | undefined>(undefined)
 
 export function TelescopeProvider({ children }: { children: ReactNode }) {
+  // Telescope Management State
+  const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
+  const [currentTelescope, setCurrentTelescope] = useState<TelescopeInfo | null>(null)
+  const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
+  const [telescopeError, setTelescopeError] = useState<string | null>(null)
+
   // State variables
   const [showOverlay, setShowOverlay] = useState(true)
   const [exposure, setExposure] = useState([1.0])
@@ -677,6 +692,58 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     },
     // More sample data...
   ])
+
+  // Telescope Management Functions
+  const fetchTelescopes = async () => {
+    setIsLoadingTelescopes(true)
+    setTelescopeError(null)
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/telescopes')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      setTelescopes(data)
+      
+      // Auto-select first telescope if none selected
+      if (!currentTelescope && data.length > 0) {
+        setCurrentTelescope(data[0])
+      }
+    } catch (error) {
+      console.error('Failed to fetch telescopes:', error)
+      setTelescopeError(error instanceof Error ? error.message : 'Failed to fetch telescopes')
+      // Use sample data as fallback
+      const sampleTelescopes: TelescopeInfo[] = [
+        {
+          id: 'seestar-1',
+          name: 'Seestar S50',
+          type: 'Smart Telescope',
+          location: 'Backyard Observatory',
+          description: 'Primary imaging telescope',
+          status: 'online',
+          isConnected: true,
+          capabilities: ['imaging', 'goto', 'autoguiding'],
+          ipAddress: '192.168.1.100'
+        }
+      ]
+      setTelescopes(sampleTelescopes)
+      if (!currentTelescope) {
+        setCurrentTelescope(sampleTelescopes[0])
+      }
+    } finally {
+      setIsLoadingTelescopes(false)
+    }
+  }
+
+  const selectTelescope = (telescope: TelescopeInfo) => {
+    setCurrentTelescope(telescope)
+    addStatusAlert({
+      type: 'info',
+      title: 'Telescope Selected',
+      message: `Connected to ${telescope.name}`
+    })
+  }
 
   // Add a status alert
   const addStatusAlert = (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => {
@@ -1233,6 +1300,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   })
 
   const value = {
+    // Telescope Management
+    telescopes,
+    currentTelescope,
+    isLoadingTelescopes,
+    telescopeError,
+    fetchTelescopes,
+    selectTelescope,
+    
     // State
     showOverlay,
     setShowOverlay,
