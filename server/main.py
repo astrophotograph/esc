@@ -2,10 +2,12 @@ import asyncio
 import inspect
 import json
 import logging as orig_logging
+import socket
 from contextlib import suppress
 from typing import Optional, AsyncGenerator
 
 import click
+import httpx
 import pydash
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter
@@ -56,10 +58,63 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
     ssid: Optional[str] = None
     router: APIRouter | None = None
     client: SeestarClient | None = None
+    _location: Optional[str] = None
 
     @property
     def name(self):
         return self.serial_number or self.host
+
+    @property
+    async def location(self) -> Optional[str]:
+        """Get the telescope location. Returns _location if set, otherwise tries to determine from IP."""
+        if self._location:
+            return self._location
+        
+        try:
+            # Check if host is a local IP address
+            if self._is_local_ip(self.host):
+                return "Local Network"
+            
+            # Try to get location from IP geolocation service
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(f"http://ip-api.com/json/{self.host}")
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("status") == "success":
+                        city = data.get("city", "")
+                        region = data.get("regionName", "")
+                        country = data.get("country", "")
+                        
+                        # Build location string
+                        location_parts = [part for part in [city, region, country] if part]
+                        return ", ".join(location_parts) if location_parts else None
+        except Exception as e:
+            logging.debug(f"Failed to get location for {self.host}: {e}")
+        
+        return None
+    
+    def _is_local_ip(self, ip: str) -> bool:
+        """Check if an IP address is in a local/private range."""
+        try:
+            addr = socket.inet_aton(ip)
+            addr_int = int.from_bytes(addr, 'big')
+            
+            # Private IP ranges
+            # 10.0.0.0/8 (10.0.0.0 - 10.255.255.255)
+            # 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)  
+            # 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
+            # 127.0.0.0/8 (loopback)
+            private_ranges = [
+                (0x0A000000, 0x0AFFFFFF),  # 10.0.0.0/8
+                (0xAC100000, 0xAC1FFFFF),  # 172.16.0.0/12
+                (0xC0A80000, 0xC0A8FFFF),  # 192.168.0.0/16
+                (0x7F000000, 0x7FFFFFFF),  # 127.0.0.0/8
+            ]
+            
+            return any(start <= addr_int <= end for start, end in private_ranges)
+        except (socket.error, ValueError):
+            # If not a valid IP, assume it's a hostname and not local
+            return False
 
     def create_telescope_api(self):
         """Create a FastAPI app for a specific Seestar."""
@@ -169,16 +224,19 @@ class Controller:
                       serial_number: Optional[str] = None,
                       product_model: Optional[str] = None,
                       ssid: Optional[str] = None,
+                      location: Optional[str] = None,
                       discover: bool = False):
         """Add a telescope to the controller."""
         telescope = Telescope(host=host, port=port,
                               serial_number=serial_number,
                               product_model=product_model,
-                              ssid=ssid)
+                              ssid=ssid,
+                              _location=location)
         logging.info(f"Added telescope {telescope.name} at {host}:{port}")
         if serial_number: logging.info(f"Serial number: {serial_number}")
         if product_model: logging.info(f"Product model: {product_model}")
         if ssid: logging.info(f"SSID: {ssid}")
+        if location: logging.info(f"Location: {location}")
 
         self.telescopes[telescope.name] = telescope
 
