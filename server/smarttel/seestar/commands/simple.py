@@ -152,7 +152,7 @@ class DeviceInfo(BaseModel):
     user_product_model: str
     focal_len: int
     fnumber: int
-    can_star_mode_sel_cam: bool
+    can_star_mode_sel_cam: Optional[bool] # Newer field
 
 class ExpMs(BaseModel):
     """Exposure time settings."""
@@ -212,12 +212,12 @@ class DeviceSettings(BaseModel):
     stack_after_goto: bool
     guest_mode: bool
     user_stack_sim: bool
-    usb_en_eth: bool
-    dark_mode: bool
-    af_before_stack: bool
+    usb_en_eth: Optional[bool] # newer field
+    dark_mode: Optional[bool] # newer field
+    af_before_stack: Optional[bool] # newer field
     mosaic: MosaicSettings
     stack: StackSettings
-    rtsp_roi_index: int
+    rtsp_roi_index: Optional[int] # only S30?
     ae_bri_percent: int
     manual_exp: bool
     isp_exp_ms: int
@@ -225,7 +225,7 @@ class DeviceSettings(BaseModel):
     isp_range_gain: List[int]
     isp_range_exp_us: List[int]
     isp_range_exp_us_scenery: List[int]
-    second_camera: SecondCameraSettings
+    second_camera: Optional[SecondCameraSettings] # only S30
 
 class CameraInfo(BaseModel):
     """Camera information."""
@@ -249,13 +249,13 @@ class ApInfo(BaseModel):
 class StationInfo(BaseModel):
     """Station/WiFi information."""
     server: bool
-    freq: int
-    ip: str
-    ssid: str
-    gateway: str
-    netmask: str
-    sig_lev: int
-    key_mgmt: str
+    freq: Optional[int] # ??
+    ip: Optional[str] # ??
+    ssid: Optional[str] # ??
+    gateway: Optional[str] # ??
+    netmask: Optional[str] # ??
+    sig_lev: Optional[int] # ??
+    key_mgmt: Optional[str] # ??
 
 class StorageVolume(BaseModel):
     """Storage volume information."""
@@ -331,7 +331,7 @@ class GetDeviceStateResponse(BaseModel):
     setting: DeviceSettings
     location_lon_lat: List[float]
     camera: CameraInfo
-    second_camera: CameraInfo
+    second_camera: Optional[CameraInfo] # only S30
     focuser: FocuserInfo
     ap: ApInfo
     station: StationInfo
