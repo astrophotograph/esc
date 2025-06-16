@@ -69,7 +69,6 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         # Create a shared client instance
         self.client = SeestarClient(self.host, self.port)
 
-        @router.on_event("startup")
         async def startup():
             """Connect to the Seestar on startup."""
             try:
@@ -79,7 +78,6 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             except Exception as e:
                 logging.error(f"Failed to connect to Seestar: {e}")
 
-        @router.on_event("shutdown")
         async def shutdown():
             """Disconnect from the Seestar on shutdown."""
             await self.client.disconnect()
@@ -152,6 +150,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         self.router = router
 
+        asyncio.create_task(startup())
+
         return router
 
 
@@ -182,7 +182,8 @@ class Controller:
 
         self.telescopes[telescope.name] = telescope
 
-        self.app.include_router(telescope.create_telescope_api())
+        self.app.include_router(telescope.create_telescope_api(),
+                                prefix=f"/api/telescopes/{telescope.name}",)
 
     def remove_telescope(self, name: str):
         """Remove a telescope from the controller."""

@@ -41,5 +41,6 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             data = await self.reader.readuntil()
             return data.decode().strip()
         except IncompleteReadError as e:
+            # hm... might have conflict with another coroutine...
             print(f"Error while reading from {self}: {e}")
             await self.close()

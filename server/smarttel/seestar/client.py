@@ -103,7 +103,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.process_device_state(response)
 
         response = await self.send_and_recv(GetViewState())
-        logging.debug(f"Received GetViewState: {response}")
+        logging.trace(f"Received GetViewState: {response}")
 
         self.process_view_state(response)
 
