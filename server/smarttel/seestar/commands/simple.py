@@ -178,7 +178,7 @@ class DeviceInfo(BaseModel):
     user_product_model: str
     focal_len: int
     fnumber: int
-    can_star_mode_sel_cam: Optional[bool]  # Newer field
+    can_star_mode_sel_cam: Optional[bool] | None = None # Newer field
 
 
 class ExpMs(BaseModel):
