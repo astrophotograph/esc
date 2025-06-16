@@ -66,18 +66,19 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
     @property
     async def location(self) -> Optional[str]:
-        """Get the telescope location. Returns _location if set, otherwise tries to determine from IP."""
+        """Get the user's location. Returns _location if set, otherwise tries to determine from user's public IP."""
         if self._location:
             return self._location
         
         try:
-            # Check if host is a local IP address
-            if self._is_local_ip(self.host):
-                return "Local Network"
+            # Get user's public IP address
+            public_ip = await self._get_public_ip()
+            if not public_ip:
+                return "Unknown Location"
             
             # Try to get location from IP geolocation service
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(f"http://ip-api.com/json/{self.host}")
+                response = await client.get(f"http://ip-api.com/json/{public_ip}")
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("status") == "success":
@@ -89,7 +90,34 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         location_parts = [part for part in [city, region, country] if part]
                         return ", ".join(location_parts) if location_parts else None
         except Exception as e:
-            logging.debug(f"Failed to get location for {self.host}: {e}")
+            logging.debug(f"Failed to get location: {e}")
+        
+        return None
+    
+    async def _get_public_ip(self) -> Optional[str]:
+        """Get the user's public IP address."""
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                # Try multiple services in case one is down
+                services = [
+                    "https://api.ipify.org",
+                    "https://ifconfig.me/ip",
+                    "https://ipinfo.io/ip"
+                ]
+                
+                for service in services:
+                    try:
+                        response = await client.get(service)
+                        if response.status_code == 200:
+                            ip = response.text.strip()
+                            # Basic validation that it looks like an IP
+                            if ip and '.' in ip and len(ip.split('.')) == 4:
+                                return ip
+                    except Exception:
+                        continue
+                        
+        except Exception as e:
+            logging.debug(f"Failed to get public IP: {e}")
         
         return None
     
