@@ -7,6 +7,7 @@ export interface TelescopeInfo {
   serial_number: string
   product_model: string
   ssid: string
+  is_remote?: boolean
   // Computed properties for UI compatibility
   id: string
   status: "online" | "offline" | "maintenance" | "error"

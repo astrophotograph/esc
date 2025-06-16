@@ -714,7 +714,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         type: telescope.product_model,
         isConnected: telescope.connected,
         description: `${telescope.product_model} at ${telescope.host}:${telescope.port}`,
-        location: `Network: ${telescope.ssid}`
+        location: telescope.location || `Network: ${telescope.ssid}`,
+        ssid: telescope.ssid
       }))
       
       setTelescopes(transformedTelescopes)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { Telescope as TelescopeIcon, ChevronDown, Wifi, WifiOff, AlertTriangle, Settings, RefreshCw } from "lucide-react"
+import { Telescope as TelescopeIcon, ChevronDown, Wifi, WifiOff, AlertTriangle, Settings, RefreshCw, Cloud, MapPin, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -149,6 +149,9 @@ export function TelescopeSelector() {
               </span>
               {currentTelescope && (
                 <div className="flex items-center gap-1 ml-auto">
+                  {currentTelescope.is_remote && (
+                    <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope" />
+                  )}
                   {getStatusIcon(currentTelescope.status)}
                 </div>
               )}
@@ -156,7 +159,7 @@ export function TelescopeSelector() {
             <ChevronDown className="w-4 h-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[320px] bg-gray-800 border-gray-700">
+        <DropdownMenuContent align="start" className="w-[480px] bg-gray-800 border-gray-700">
           <DropdownMenuLabel className="text-gray-300 flex items-center justify-between">
             <span>Available Telescopes</span>
             <Button
@@ -181,6 +184,9 @@ export function TelescopeSelector() {
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white">{getTelescopeDisplayName(telescope)}</span>
+                    {telescope.is_remote && (
+                      <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope" />
+                    )}
                     {getStatusIcon(telescope.status)}
                     {currentTelescope?.id === telescope.id && (
                       <Badge variant="secondary" className="text-xs bg-blue-600 text-white">
@@ -193,12 +199,21 @@ export function TelescopeSelector() {
                     {telescope.location && (
                       <>
                         <span className="text-gray-500">•</span>
-                        <span className="text-gray-500 truncate max-w-[120px]">{telescope.location}</span>
+                        <MapPin className="w-3 h-3 text-gray-500" />
+                        <span className="text-gray-500 truncate max-w-[200px]">{telescope.location}</span>
                       </>
                     )}
+                    <span className="text-gray-500">•</span>
+                    <span className="text-gray-500">{telescope.host}:{telescope.port}</span>
                   </div>
+                  {telescope.ssid && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Radio className="w-3 h-3 text-gray-500" />
+                      <span className="text-gray-500 truncate max-w-[200px]">{telescope.ssid}</span>
+                    </div>
+                  )}
                   {telescope.description && (
-                    <span className="text-xs text-gray-500 truncate max-w-[250px]">
+                    <span className="text-xs text-gray-500 truncate max-w-[350px]">
                       {telescope.description}
                     </span>
                   )}
