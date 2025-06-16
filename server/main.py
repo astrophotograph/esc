@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
-from smarttel.seestar.commands.simple import GetViewState
+from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -73,7 +73,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             # Get user's public IP address
             public_ip = await self._get_public_ip()
             if not public_ip:
-                return "Unknown Location"
+                self._location = "Unknown Location"
+                return self._location
 
             # Try to get location from IP geolocation service
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -87,10 +88,16 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
                         # Build location string
                         location_parts = [part for part in [city, region, country] if part]
-                        return ", ".join(location_parts) if location_parts else None
+                        resolved_location = ", ".join(location_parts) if location_parts else None
+                        if resolved_location:
+                            # Cache the resolved location
+                            self._location = resolved_location
+                            return self._location
         except Exception as e:
             logging.debug(f"Failed to get location: {e}")
 
+        # Cache the failure result to avoid repeated API calls
+        self._location = None
         return None
 
     async def _get_public_ip(self) -> Optional[str]:
@@ -220,13 +227,33 @@ class Controller:
         self.service_port = service_port
         self.discover = discover
 
-    def add_telescope(self, host: str, port: int, *,
+    async def add_telescope(self, host: str, port: int, *,
                       serial_number: Optional[str] = None,
                       product_model: Optional[str] = None,
                       ssid: Optional[str] = None,
                       location: Optional[str] = None,
                       discover: bool = False):
         """Add a telescope to the controller."""
+        
+        # If serial_number is not provided, try to fetch device information
+        if not serial_number:
+            try:
+                client = SeestarClient(host, port)
+                await client.connect()
+                
+                # Get device state to retrieve serial number, product model, and ssid
+                response: CommandResponse[dict] = await client.send_and_recv(GetDeviceState())
+                if response.result:
+                    device_state = GetDeviceStateResponse(**response.result)
+                    serial_number = device_state.device.sn
+                    product_model = device_state.device.product_model
+                    ssid = device_state.ap.ssid
+                    logging.info(f"Fetched device info - SN: {serial_number}, Model: {product_model}, SSID: {ssid}")
+                
+                await client.disconnect()
+            except Exception as e:
+                logging.warning(f"Failed to fetch device information from {host}:{port}: {e}")
+        
         telescope = Telescope(host=host, port=port,
                               serial_number=serial_number,
                               product_model=product_model,
@@ -352,7 +379,7 @@ class Controller:
                 logging.trace(f"Auto discovery: {device}")
                 name = pydash.get(device, 'data.result.sn') or device['address']
                 if name not in self.telescopes:
-                    self.add_telescope(device['address'], 4700,
+                    await self.add_telescope(device['address'], 4700,
                                        serial_number=pydash.get(device, 'data.result.sn'),
                                        product_model=pydash.get(device, 'data.result.product_model'),
                                        ssid=pydash.get(device, 'data.result.ssid'))
@@ -367,7 +394,7 @@ class Controller:
 
         # Add our own endpoints
         @self.app.get("/api/telescopes")
-        def get_telescopes():
+        async def get_telescopes():
             """Get a list of all telescopes."""
             result = []
             
@@ -377,7 +404,7 @@ class Controller:
                     "name": telescope.name,
                     "host": telescope.host,
                     "port": telescope.port,
-                    "location": telescope.location,
+                    "location": await telescope.location,
                     "connected": telescope.client.is_connected,
                     "serial_number": telescope.serial_number,
                     "product_model": telescope.product_model,
@@ -454,12 +481,12 @@ def server(server_port, seestar_host, seestar_port, remote_controller):
 
     controller = Controller(app, service_port=server_port)
 
-    if seestar_host and seestar_port:
-        click.echo(f"Connecting to Seestar at {seestar_host}:{seestar_port}")
-        controller.discover = False
-        controller.add_telescope(seestar_host, seestar_port)
-
     async def run_server():
+        if seestar_host and seestar_port:
+            click.echo(f"Connecting to Seestar at {seestar_host}:{seestar_port}")
+            controller.discover = False
+            await controller.add_telescope(seestar_host, seestar_port)
+
         # Add remote controller if specified
         if remote_controller:
             try:

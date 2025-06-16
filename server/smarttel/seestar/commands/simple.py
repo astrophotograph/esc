@@ -1,5 +1,5 @@
 """Simple commands without parameters."""
-from typing import Literal, NamedTuple
+from typing import Literal, NamedTuple, List, Optional
 
 from pydantic import BaseModel
 
@@ -139,3 +139,204 @@ class GetDiskVolumeResponse(BaseModel):
     """Response from GetDiskVolume."""
     totalMB: int
     freeMB: int
+
+class DeviceInfo(BaseModel):
+    """Device information section."""
+    name: str
+    firmware_ver_int: int
+    firmware_ver_string: str
+    is_verified: bool
+    sn: str
+    cpuId: str
+    product_model: str
+    user_product_model: str
+    focal_len: int
+    fnumber: int
+    can_star_mode_sel_cam: bool
+
+class ExpMs(BaseModel):
+    """Exposure time settings."""
+    stack_l: int
+    continuous: int
+
+class StackDither(BaseModel):
+    """Stack dither settings."""
+    pix: int
+    interval: int
+    enable: bool
+
+class MosaicSettings(BaseModel):
+    """Mosaic settings."""
+    scale: int
+    angle: int
+    estimated_hours: float
+    star_map_angle: int
+    star_map_ratio: int
+
+class StackSettings(BaseModel):
+    """Stack settings."""
+    dbe: bool
+    star_correction: bool
+    cont_capt: bool
+
+class SecondCameraSettings(BaseModel):
+    """Second camera settings."""
+    wide_cross_offset: List[int]
+    ae_bri_percent: int
+    manual_exp: bool
+    isp_exp_ms: int
+    isp_gain: int
+    isp_range_gain: List[int]
+    isp_range_exp_us: List[int]
+    isp_range_exp_us_scenery: List[int]
+
+class DeviceSettings(BaseModel):
+    """Device settings section."""
+    temp_unit: str
+    beep_volume: str
+    lang: str
+    center_xy: List[int]
+    stack_lenhance: bool
+    heater_enable: bool
+    expt_heater_enable: bool
+    focal_pos: int
+    factory_focal_pos: int
+    exp_ms: ExpMs
+    auto_power_off: bool
+    stack_dither: StackDither
+    auto_3ppa_calib: bool
+    auto_af: bool
+    frame_calib: bool
+    calib_location: int
+    wide_cam: bool
+    stack_after_goto: bool
+    guest_mode: bool
+    user_stack_sim: bool
+    usb_en_eth: bool
+    dark_mode: bool
+    af_before_stack: bool
+    mosaic: MosaicSettings
+    stack: StackSettings
+    rtsp_roi_index: int
+    ae_bri_percent: int
+    manual_exp: bool
+    isp_exp_ms: int
+    isp_gain: int
+    isp_range_gain: List[int]
+    isp_range_exp_us: List[int]
+    isp_range_exp_us_scenery: List[int]
+    second_camera: SecondCameraSettings
+
+class CameraInfo(BaseModel):
+    """Camera information."""
+    chip_size: List[int]
+    pixel_size_um: float
+    debayer_pattern: str
+    hpc_num: int
+
+class FocuserInfo(BaseModel):
+    """Focuser information."""
+    state: str
+    max_step: int
+    step: int
+
+class ApInfo(BaseModel):
+    """Access Point information."""
+    ssid: str
+    passwd: str
+    is_5g: bool
+
+class StationInfo(BaseModel):
+    """Station/WiFi information."""
+    server: bool
+    freq: int
+    ip: str
+    ssid: str
+    gateway: str
+    netmask: str
+    sig_lev: int
+    key_mgmt: str
+
+class StorageVolume(BaseModel):
+    """Storage volume information."""
+    name: str
+    state: str
+    total_mb: int
+    totalMB: int
+    free_mb: int
+    freeMB: int
+    disk_mb: int
+    diskSizeMB: int
+    used_percent: int
+
+class StorageInfo(BaseModel):
+    """Storage information."""
+    is_typec_connected: bool
+    connected_storage: List[str]
+    storage_volume: List[StorageVolume]
+    cur_storage: str
+
+class SensorData(BaseModel):
+    """Sensor data."""
+    x: float
+    y: float
+    z: float
+
+class BalanceSensorData(SensorData):
+    """Balance sensor data."""
+    angle: float
+
+class CompassSensorData(SensorData):
+    """Compass sensor data."""
+    direction: float
+    cali: int
+
+class SensorInfo(BaseModel):
+    """Sensor information base."""
+    code: int
+    data: SensorData
+
+class BalanceSensorInfo(BaseModel):
+    """Balance sensor information."""
+    code: int
+    data: BalanceSensorData
+
+class CompassSensorInfo(BaseModel):
+    """Compass sensor information."""
+    code: int
+    data: CompassSensorData
+
+class MountInfo(BaseModel):
+    """Mount information."""
+    move_type: str
+    close: bool
+    tracking: bool
+    equ_mode: bool
+
+class PiStatusInfo(BaseModel):
+    """Pi status information."""
+    is_overtemp: bool
+    temp: float
+    charger_status: str
+    battery_capacity: int
+    charge_online: bool
+    is_typec_connected: bool
+    battery_overtemp: bool
+    battery_temp: int
+    battery_temp_type: str
+
+class GetDeviceStateResponse(BaseModel):
+    """Response from GetDeviceState."""
+    device: DeviceInfo
+    setting: DeviceSettings
+    location_lon_lat: List[float]
+    camera: CameraInfo
+    second_camera: CameraInfo
+    focuser: FocuserInfo
+    ap: ApInfo
+    station: StationInfo
+    storage: StorageInfo
+    balance_sensor: BalanceSensorInfo
+    compass_sensor: CompassSensorInfo
+    mount: MountInfo
+    pi_status: PiStatusInfo
