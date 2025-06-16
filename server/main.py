@@ -2,7 +2,6 @@ import asyncio
 import inspect
 import json
 import logging as orig_logging
-import socket
 from contextlib import suppress
 from typing import Optional, AsyncGenerator
 
@@ -10,8 +9,8 @@ import click
 import httpx
 import pydash
 import uvicorn
-from fastapi import FastAPI, HTTPException, APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, APIRouter, Request
+from fastapi.responses import StreamingResponse, Response
 from loguru import logger as logging
 from pydantic import BaseModel
 
@@ -69,13 +68,13 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         """Get the user's location. Returns _location if set, otherwise tries to determine from user's public IP."""
         if self._location:
             return self._location
-        
+
         try:
             # Get user's public IP address
             public_ip = await self._get_public_ip()
             if not public_ip:
                 return "Unknown Location"
-            
+
             # Try to get location from IP geolocation service
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(f"http://ip-api.com/json/{public_ip}")
@@ -85,15 +84,15 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         city = data.get("city", "")
                         region = data.get("regionName", "")
                         country = data.get("country", "")
-                        
+
                         # Build location string
                         location_parts = [part for part in [city, region, country] if part]
                         return ", ".join(location_parts) if location_parts else None
         except Exception as e:
             logging.debug(f"Failed to get location: {e}")
-        
+
         return None
-    
+
     async def _get_public_ip(self) -> Optional[str]:
         """Get the user's public IP address."""
         try:
@@ -104,7 +103,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     "https://ifconfig.me/ip",
                     "https://ipinfo.io/ip"
                 ]
-                
+
                 for service in services:
                     try:
                         response = await client.get(service)
@@ -115,34 +114,11 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                                 return ip
                     except Exception:
                         continue
-                        
+
         except Exception as e:
             logging.debug(f"Failed to get public IP: {e}")
-        
+
         return None
-    
-    def _is_local_ip(self, ip: str) -> bool:
-        """Check if an IP address is in a local/private range."""
-        try:
-            addr = socket.inet_aton(ip)
-            addr_int = int.from_bytes(addr, 'big')
-            
-            # Private IP ranges
-            # 10.0.0.0/8 (10.0.0.0 - 10.255.255.255)
-            # 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)  
-            # 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
-            # 127.0.0.0/8 (loopback)
-            private_ranges = [
-                (0x0A000000, 0x0AFFFFFF),  # 10.0.0.0/8
-                (0xAC100000, 0xAC1FFFFF),  # 172.16.0.0/12
-                (0xC0A80000, 0xC0A8FFFF),  # 192.168.0.0/16
-                (0x7F000000, 0x7FFFFFFF),  # 127.0.0.0/8
-            ]
-            
-            return any(start <= addr_int <= end for start, end in private_ranges)
-        except (socket.error, ValueError):
-            # If not a valid IP, assume it's a hostname and not local
-            return False
 
     def create_telescope_api(self):
         """Create a FastAPI app for a specific Seestar."""
@@ -160,11 +136,6 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 logging.info(f"Connected to Seestar at {self.host}:{self.port}")
             except Exception as e:
                 logging.error(f"Failed to connect to Seestar: {e}")
-
-        async def shutdown():
-            """Disconnect from the Seestar on shutdown."""
-            await self.client.disconnect()
-            logging.info("Disconnected from Seestar")
 
         @router.get("/")
         async def root():
@@ -245,6 +216,7 @@ class Controller:
         """Initialize the controller."""
         self.app = app
         self.telescopes: dict[str, Telescope] = {}
+        self.remote_telescopes: dict[str, dict] = {}  # Track remote telescope metadata
         self.service_port = service_port
         self.discover = discover
 
@@ -269,16 +241,108 @@ class Controller:
         self.telescopes[telescope.name] = telescope
 
         self.app.include_router(telescope.create_telescope_api(),
-                                prefix=f"/api/telescopes/{telescope.name}",)
+                                prefix=f"/api/telescopes/{telescope.name}", )
 
     def remove_telescope(self, name: str):
         """Remove a telescope from the controller."""
+        # Try to remove local telescope first
         telescope = self.telescopes.pop(name, None)
         if telescope:
-            logging.info(f"Removed telescope {telescope.name}")
+            logging.info(f"Removed local telescope {telescope.name}")
             # todo : need to remove from router and shut down connection...
-        else:
-            logging.info(f"Telescope {name} not found")
+            return
+        
+        # Try to remove remote telescope
+        remote_telescope = self.remote_telescopes.pop(name, None)
+        if remote_telescope:
+            logging.info(f"Removed remote telescope {name}")
+            # todo : need to remove proxy router
+            return
+        
+        logging.info(f"Telescope {name} not found")
+
+    async def add_remote_controller(self, host: str, port: int):
+        """Add proxy routes for telescopes from a remote controller by calling its /api/telescopes endpoint."""
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(f"http://{host}:{port}/api/telescopes")
+                if response.status_code == 200:
+                    telescopes = response.json()
+                    for telescope_data in telescopes:
+                        telescope_name = telescope_data.get("name")
+                        if telescope_name not in self.telescopes and telescope_name not in self.remote_telescopes:
+                            # Create proxy router for this remote telescope
+                            self._create_proxy_router(telescope_name, host, port)
+                            # Store remote telescope metadata
+                            self.remote_telescopes[telescope_name] = {
+                                "name": telescope_name,
+                                "host": telescope_data.get("host"),
+                                "port": telescope_data.get("port"),
+                                "location": telescope_data.get("location"),
+                                "connected": telescope_data.get("connected", False),
+                                "serial_number": telescope_data.get("serial_number"),
+                                "product_model": telescope_data.get("product_model"),
+                                "ssid": telescope_data.get("ssid"),
+                                "remote_controller": f"{host}:{port}",
+                                "is_remote": True
+                            }
+                            logging.info(f"Created proxy route for remote telescope {telescope_name} from {host}:{port}")
+                        else:
+                            logging.debug(f"Telescope {telescope_name} already exists, skipping")
+                    logging.info(f"Successfully created proxy routes for {len(telescopes)} telescopes from remote controller {host}:{port}")
+                else:
+                    logging.error(f"Failed to fetch telescopes from {host}:{port}, status code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Failed to connect to remote controller at {host}:{port}: {e}")
+
+    def _create_proxy_router(self, telescope_name: str, remote_host: str, remote_port: int):
+        """Create a proxy router that forwards requests to the remote controller."""
+        router = APIRouter()
+        
+        @router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+        async def proxy_request(request: Request, path: str):
+            """Proxy all requests to the remote controller."""
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    # Build the target URL
+                    target_url = f"http://{remote_host}:{remote_port}/api/telescopes/{telescope_name}/{path}"
+                    
+                    # Forward query parameters
+                    query_params = str(request.url.query) if request.url.query else ""
+                    if query_params:
+                        target_url += f"?{query_params}"
+                    
+                    # Forward headers (exclude host-specific headers)
+                    headers = dict(request.headers)
+                    headers.pop("host", None)
+                    headers.pop("content-length", None)
+                    
+                    # Forward request body for POST/PUT/PATCH
+                    body = None
+                    if request.method in ["POST", "PUT", "PATCH"]:
+                        body = await request.body()
+                    
+                    # Make the proxied request
+                    response = await client.request(
+                        method=request.method,
+                        url=target_url,
+                        headers=headers,
+                        content=body
+                    )
+                    
+                    # Return the response
+                    return Response(
+                        content=response.content,
+                        status_code=response.status_code,
+                        headers=dict(response.headers)
+                    )
+                    
+            except Exception as e:
+                logging.error(f"Proxy request failed for {telescope_name}: {e}")
+                raise HTTPException(status_code=502, detail=f"Failed to proxy request to remote telescope: {e}")
+        
+        # Include the proxy router
+        self.app.include_router(router, prefix=f"/api/telescopes/{telescope_name}")
 
     async def auto_discover(self):
         """Automatically discover and add telescopes."""
@@ -305,15 +369,27 @@ class Controller:
         @self.app.get("/api/telescopes")
         def get_telescopes():
             """Get a list of all telescopes."""
-            return [{
-                "name": telescope.name,
-                "host": telescope.host,
-                "port": telescope.port,
-                "connected": telescope.client.is_connected,
-                "serial_number": telescope.serial_number,
-                "product_model": telescope.product_model,
-                "ssid": telescope.ssid,
-            } for telescope in self.telescopes.values()]
+            result = []
+            
+            # Add local telescopes
+            for telescope in self.telescopes.values():
+                result.append({
+                    "name": telescope.name,
+                    "host": telescope.host,
+                    "port": telescope.port,
+                    "location": telescope.location,
+                    "connected": telescope.client.is_connected,
+                    "serial_number": telescope.serial_number,
+                    "product_model": telescope.product_model,
+                    "ssid": telescope.ssid,
+                    "is_remote": False
+                })
+            
+            # Add remote telescopes
+            for remote_telescope in self.remote_telescopes.values():
+                result.append(remote_telescope)
+            
+            return result
 
         config = uvicorn.Config(self.app, host="0.0.0.0", port=self.service_port,
                                 log_level="trace", log_config=None)
@@ -368,7 +444,8 @@ def console(host, port):
 @click.option("--server-port", type=int, default=8000, help="Port for the API server (default: 8000)")
 @click.option("--seestar-host", help="Seestar device host address")
 @click.option("--seestar-port", type=int, default=4700, help="Seestar device port (default: 4700)")
-def server(server_port, seestar_host, seestar_port):
+@click.option("--remote-controller", help="Remote controller address (format: host:port)")
+def server(server_port, seestar_host, seestar_port, remote_controller):
     """Start a FastAPI server for controlling a Seestar device."""
 
     click.echo(f"Starting Seestar API server on port {server_port}")
@@ -382,7 +459,25 @@ def server(server_port, seestar_host, seestar_port):
         controller.discover = False
         controller.add_telescope(seestar_host, seestar_port)
 
-    asyncio.run(controller.runner())
+    async def run_server():
+        # Add remote controller if specified
+        if remote_controller:
+            try:
+                host, port = remote_controller.split(":", 1)
+                port = int(port)
+                click.echo(f"Adding remote controller at {host}:{port}")
+                await controller.add_remote_controller(host, port)
+            except ValueError:
+                click.echo(f"Error: Invalid remote controller format '{remote_controller}'. Use host:port format.")
+                return
+            except Exception as e:
+                click.echo(f"Error connecting to remote controller: {e}")
+                return
+        
+        # Run the controller
+        await controller.runner()
+
+    asyncio.run(run_server())
 
     # router = create_telescope_api(seestar_host, seestar_port)
     # app.include_router(router)
