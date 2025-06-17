@@ -704,7 +704,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const rawData = await response.json()
-      
+
       // Transform API data to match UI interface
       const transformedTelescopes: TelescopeInfo[] = rawData.map((telescope: any) => ({
         ...telescope,
@@ -713,11 +713,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         status: telescope.connected ? 'online' : 'offline',
         type: telescope.product_model,
         isConnected: telescope.connected,
-        description: `${telescope.product_model} at ${telescope.host}:${telescope.port}`,
+        description: `${telescope.host}:${telescope.port} on ${telescope.ssid}`,
+        host: `${telescope.host}:${telescope.port}`,
         location: telescope.location || `Network: ${telescope.ssid}`,
         ssid: telescope.ssid
       }))
-      
+
       setTelescopes(transformedTelescopes)
 
       // Auto-select first telescope if none selected

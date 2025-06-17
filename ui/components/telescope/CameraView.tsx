@@ -461,7 +461,7 @@ export function CameraView() {
     }
 
     const cameraName = currentTelescope.name || currentTelescope.serial_number;
-    const streamUrl = `/api/v2/telescopes/${encodeURIComponent(cameraName)}/status/stream`;
+    const streamUrl = `/api/${encodeURIComponent(cameraName)}/status/stream`;
 
     console.log(`Connecting to stream: ${streamUrl}`);
     const eventSource = new EventSource(streamUrl);

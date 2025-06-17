@@ -1,8 +1,19 @@
 "use client"
 
-import { useEffect } from "react"
-import { Telescope as TelescopeIcon, ChevronDown, Wifi, WifiOff, AlertTriangle, Settings, RefreshCw, Cloud, MapPin, Radio } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import {useEffect} from "react"
+import {
+  Telescope as TelescopeIcon,
+  ChevronDown,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+  Settings,
+  RefreshCw,
+  Cloud,
+  MapPin,
+  Radio,
+} from "lucide-react"
+import {Button} from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,22 +22,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { useTelescopeContext } from "@/context/TelescopeContext"
-import type { TelescopeInfo } from "@/types/telescope-types"
+import {Badge} from "@/components/ui/badge"
+import {useTelescopeContext} from "@/context/TelescopeContext"
+import type {TelescopeInfo} from "@/types/telescope-types"
 
 const getStatusIcon = (status: TelescopeInfo["status"]) => {
   switch (status) {
     case "online":
-      return <Wifi className="w-4 h-4 text-green-500" />
+      return <Wifi className="w-4 h-4 text-green-500"/>
     case "offline":
-      return <WifiOff className="w-4 h-4 text-red-500" />
+      return <WifiOff className="w-4 h-4 text-red-500"/>
     case "maintenance":
-      return <Settings className="w-4 h-4 text-blue-500" />
+      return <Settings className="w-4 h-4 text-blue-500"/>
     case "error":
-      return <AlertTriangle className="w-4 h-4 text-yellow-500" />
+      return <AlertTriangle className="w-4 h-4 text-yellow-500"/>
     default:
-      return <WifiOff className="w-4 h-4 text-gray-500" />
+      return <WifiOff className="w-4 h-4 text-gray-500"/>
   }
 }
 
@@ -90,7 +101,7 @@ export function TelescopeSelector() {
   if (isLoadingTelescopes && (telescopes?.length || 0) === 0) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400">
-        <RefreshCw className="w-4 h-4 animate-spin" />
+        <RefreshCw className="w-4 h-4 animate-spin"/>
         <span>Loading telescopes...</span>
       </div>
     )
@@ -100,7 +111,7 @@ export function TelescopeSelector() {
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 px-3 py-2 text-sm text-red-400">
-          <AlertTriangle className="w-4 h-4" />
+          <AlertTriangle className="w-4 h-4"/>
           <span>Error loading telescopes</span>
         </div>
         <Button
@@ -109,7 +120,7 @@ export function TelescopeSelector() {
           onClick={fetchTelescopes}
           className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
         >
-          <RefreshCw className="w-3 h-3" />
+          <RefreshCw className="w-3 h-3"/>
         </Button>
       </div>
     )
@@ -119,7 +130,7 @@ export function TelescopeSelector() {
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400">
-          <TelescopeIcon className="w-4 h-4" />
+          <TelescopeIcon className="w-4 h-4"/>
           <span>No telescopes available</span>
         </div>
         <Button
@@ -128,7 +139,7 @@ export function TelescopeSelector() {
           onClick={fetchTelescopes}
           className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
         >
-          <RefreshCw className="w-3 h-3" />
+          <RefreshCw className="w-3 h-3"/>
         </Button>
       </div>
     )
@@ -143,20 +154,20 @@ export function TelescopeSelector() {
             className="flex items-center gap-2 min-w-[220px] justify-between border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
           >
             <div className="flex items-center gap-2 flex-1">
-              <TelescopeIcon className="w-4 h-4" />
+              <TelescopeIcon className="w-4 h-4"/>
               <span className="truncate">
                 {currentTelescope ? getTelescopeDisplayName(currentTelescope) : "Select Telescope"}
               </span>
               {currentTelescope && (
                 <div className="flex items-center gap-1 ml-auto">
                   {currentTelescope.is_remote && (
-                    <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope" />
+                    <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope"/>
                   )}
                   {getStatusIcon(currentTelescope.status)}
                 </div>
               )}
             </div>
-            <ChevronDown className="w-4 h-4 ml-1" />
+            <ChevronDown className="w-4 h-4 ml-1"/>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-[480px] bg-gray-800 border-gray-700">
@@ -169,10 +180,10 @@ export function TelescopeSelector() {
               className="h-6 w-6 p-0 hover:bg-gray-700"
               disabled={isLoadingTelescopes}
             >
-              <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoadingTelescopes ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoadingTelescopes ? 'animate-spin' : ''}`}/>
             </Button>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuSeparator className="bg-gray-700"/>
 
           {telescopes.map((telescope) => (
             <DropdownMenuItem
@@ -185,7 +196,7 @@ export function TelescopeSelector() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white">{getTelescopeDisplayName(telescope)}</span>
                     {telescope.is_remote && (
-                      <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope" />
+                      <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope"/>
                     )}
                     {getStatusIcon(telescope.status)}
                     {currentTelescope?.id === telescope.id && (
@@ -199,24 +210,28 @@ export function TelescopeSelector() {
                     {telescope.location && (
                       <>
                         <span className="text-gray-500">•</span>
-                        <MapPin className="w-3 h-3 text-gray-500" />
-                        <span className="text-gray-500 truncate max-w-[200px]">{telescope.location}</span>
+                        <MapPin className="w-3 h-3 text-gray-500"/>
+                        <span className="text-gray-500">{telescope.location}</span>
                       </>
                     )}
-                    <span className="text-gray-500">•</span>
-                    <span className="text-gray-500">{telescope.host}:{telescope.port}</span>
+                    {/*<span className="text-gray-500">•</span>*/}
+                    {/*<span className="text-gray-500">{telescope.host}:{telescope.port}</span>*/}
                   </div>
-                  {telescope.ssid && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Radio className="w-3 h-3 text-gray-500" />
-                      <span className="text-gray-500 truncate max-w-[200px]">{telescope.ssid}</span>
-                    </div>
-                  )}
-                  {telescope.description && (
-                    <span className="text-xs text-gray-500 truncate max-w-[350px]">
-                      {telescope.description}
+                  <div className="flex items-center gap-2 text-xs">
+                    {telescope.host && (
+                      <span className="text-xs text-gray-500">
+                      {telescope.host}
                     </span>
-                  )}
+                    )}
+                    {telescope.ssid && (
+                      <>
+                        <Radio className="w-3 h-3 text-gray-500"/>
+                        <span className="text-xs text-gray-500">
+                         {telescope.ssid}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1 ml-2">
@@ -246,7 +261,7 @@ export function TelescopeSelector() {
       {/* Status indicator */}
       {currentTelescope && (
         <div className="flex items-center gap-1 text-xs">
-          <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`} />
+          <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
           <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
         </div>
       )}

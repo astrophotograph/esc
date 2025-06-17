@@ -3,9 +3,12 @@ import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest,
+                          { params }: { params: Promise<{ scope: string }> }
+                          ) {
   try {
-    const statusStreamUrl = process.env.STATUS_STREAM_URL || 'http://localhost:8000/status/stream';
+    const { scope } = await params;
+    const statusStreamUrl = process.env.STATUS_STREAM_URL || `http://localhost:8000/api/telescopes/${scope}/status/stream`;
 
     const response = await fetch(statusStreamUrl, {
       method: 'GET',
