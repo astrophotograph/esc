@@ -71,8 +71,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     text_protocol: TextProtocol = TextProtocol()
     
     # Pattern monitoring configuration
-    pattern_file_path: str = "/tmp/pattern_monitor.log"
-    pattern_regex: str = r"PATTERN_FOUND"
+    pattern_file_path: str = "/mnt/sfro/roof/building-6/RoofStatusFile.txt"
+    pattern_regex: str = r"OPEN"
     pattern_check_interval: float = 5.0
 
     def __init__(self, host: str, port: int):
