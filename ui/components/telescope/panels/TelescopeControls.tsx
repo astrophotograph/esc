@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square } from "lucide-react"
 import { useTelescopeContext } from "../../../context/TelescopeContext"
+import { formatRaDec } from "../../../utils/telescope-utils"
 
 export function TelescopeControls() {
   const {
@@ -24,7 +25,20 @@ export function TelescopeControls() {
     setBrightness,
     contrast,
     setContrast,
+  streamStatus,
+  isImaging,
+  setIsImaging,
+  addStatusAlert,
   } = useTelescopeContext()
+
+  const handleImagingToggle = () => {
+    setIsImaging(!isImaging)
+    addStatusAlert({
+      type: isImaging ? "info" : "success",
+      title: isImaging ? "Imaging Stopped" : "Imaging Started",
+      message: isImaging ? "Telescope imaging session ended" : "Telescope imaging session started",
+    })
+  }
 
   return (
     <Card className="bg-gray-800 border-gray-700">
@@ -35,6 +49,23 @@ export function TelescopeControls() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Coordinates */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-gray-300">Current Position</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">RA:</span>
+              <span className="ml-2 text-white">{formatRaDec(streamStatus?.status?.ra, "ra") || "N/A"}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Dec:</span>
+              <span className="ml-2 text-white">{formatRaDec(streamStatus?.status?.dec, "dec") || "N/A"}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator className="bg-gray-700" />
+
         {/* Movement Controls */}
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">Movement & Tracking</h4>
@@ -164,6 +195,30 @@ export function TelescopeControls() {
               </div>
               <Slider value={contrast} onValueChange={setContrast} min={50} max={200} step={5} className="w-full" />
             </div>
+          </div>
+
+          {/* Imaging Control */}
+          <div className="mt-4">
+            <Button
+              onClick={handleImagingToggle}
+              className={`w-full ${
+                isImaging 
+                  ? "bg-red-600 hover:bg-red-700 text-white" 
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+            >
+              {isImaging ? (
+                <>
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Imaging
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Start Imaging
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </CardContent>

@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,7 +12,7 @@ import { X, Crosshair, Grid3X3, Ruler, Compass, Settings, RotateCcw, Zap } from 
 import { useTelescopeContext } from "../../context/TelescopeContext"
 
 export function PipOverlayControls() {
-  const { showPipOverlayControls, setShowPipOverlayControls, pipOverlaySettings, setPipOverlaySettings } =
+  const { showPipOverlayControls, setShowPipOverlayControls, pipOverlaySettings, setPipOverlaySettings, currentTelescope, allskyUrls, setAllskyUrls } =
     useTelescopeContext()
 
   const [activeTab, setActiveTab] = useState("crosshairs")
@@ -96,7 +97,6 @@ export function PipOverlayControls() {
                 id="animations-enabled"
                 checked={animationsEnabled}
                 onCheckedChange={setAnimationsEnabled}
-                size="sm"
               />
             </div>
             <Button variant="ghost" size="sm" onClick={resetToDefaults} className="text-gray-400 hover:text-white">
@@ -125,7 +125,11 @@ export function PipOverlayControls() {
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-700">
+            <TabsList className="grid w-full grid-cols-5 bg-gray-700">
+              <TabsTrigger value="general" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                General
+              </TabsTrigger>
               <TabsTrigger value="crosshairs" className="flex items-center gap-2">
                 <Crosshair className="w-4 h-4" />
                 Crosshairs
@@ -143,6 +147,26 @@ export function PipOverlayControls() {
                 Compass
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="general" className="space-y-4 mt-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="allsky-url" className="text-white">
+                    All-Sky Camera URL for {currentTelescope?.name || 'Current Telescope'}
+                  </Label>
+                  <Input
+                    id="allsky-url"
+                    value={allskyUrls[currentTelescope?.id || ''] || ''}
+                    onChange={(e) => {
+                      const newUrls = { ...allskyUrls, [currentTelescope?.id || '']: e.target.value }
+                      setAllskyUrls(newUrls)
+                    }}
+                    placeholder="http://allsky/current/tmp/image.jpg"
+                    className="bg-gray-700 border-gray-600 text-white mt-2"
+                  />
+                </div>
+              </div>
+            </TabsContent>
 
             <TabsContent value="crosshairs" className="space-y-4 mt-4">
               <div className="flex items-center justify-between">
