@@ -6,6 +6,10 @@ from pydantic import BaseModel
 from smarttel.seestar.commands.common import BaseCommand
 
 
+class TestConnection(BaseCommand):
+    """Test the connection to the Seestar."""
+    method: Literal["test_connection"] = "test_connection"
+
 class GetAnnotatedResult(BaseCommand):  # xxx is there an issue?
     """Get the annotated result from the Seestar."""
     method: Literal["get_annotated_result"] = "get_annotated_result"

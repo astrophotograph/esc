@@ -1,6 +1,5 @@
 import asyncio
 import collections
-import itertools
 import json
 
 import pydash
@@ -11,14 +10,15 @@ from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState
+from smarttel.seestar.commands.imaging import BeginStreaming, StopStreaming
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
 
 U = TypeVar("U")
 
 
-class SeestarStatus(BaseModel):
-    """Seestar status."""
+class SeestarImagingStatus(BaseModel):
+    """Seestar imaging status."""
     temp: float | None = None
     charger_status: Literal['Discharging', 'Charging', 'Full'] | None = None
     charge_online: bool | None = None
@@ -27,6 +27,7 @@ class SeestarStatus(BaseModel):
     dropped_frame: int = 0
     target_name: str = ""
     annotate: AnnotateResult | None = None
+    is_streaming: bool = False
 
     def reset(self):
         self.temp = None
@@ -37,6 +38,7 @@ class SeestarStatus(BaseModel):
         self.dropped_frame = 0
         self.target_name = ""
         self.annotate = None
+        self.is_streaming = False
 
 
 class ParsedEvent(BaseModel):
@@ -44,16 +46,15 @@ class ParsedEvent(BaseModel):
     event: EventTypes
 
 
-class SeestarClient(BaseModel, arbitrary_types_allowed=True):
-    """Seestar client."""
+class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+    """Seestar imaging client."""
     host: str
     port: int
     connection: SeestarConnection | None = None
-    counter: itertools.count = itertools.count()
+    id: int = 1
     is_connected: bool = False
-    status: SeestarStatus = SeestarStatus()
+    status: SeestarImagingStatus = SeestarImagingStatus()
     background_task: asyncio.Task | None = None
-    responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
 
     def __init__(self, host: str, port: int):
@@ -62,15 +63,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.connection = SeestarConnection(host=host, port=port)
 
     async def _heartbeat(self):
-        # todo : properly check if is_connected!!
         await asyncio.sleep(5)
         while True:
             if self.is_connected:
                 logging.trace(f"Pinging {self}")
                 _ = await self.send_and_recv(GetTime())
-            # todo : add reschedulable heartbeat
-            # todo : decrease sleep time to 1 second and, instead, check next heartbeat time
-            # todo : add different protocol handler.  specifies heartbeat message and read message.
             await asyncio.sleep(5)
 
     def _process_view_state(self, response: CommandResponse[dict]):
@@ -100,31 +97,28 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         self.background_task = asyncio.create_task(self._heartbeat())
 
-        # Upon connect, grab current status
-
         response: CommandResponse[dict] = await self.send_and_recv(GetDeviceState())
-
         self._process_device_state(response)
 
         response = await self.send_and_recv(GetViewState())
         logging.trace(f"Received GetViewState: {response}")
-
         self._process_view_state(response)
 
         logging.debug(f"Connected to {self}")
 
     async def disconnect(self):
         """Disconnect from Seestar."""
+        if self.status.is_streaming:
+            await self.stop_streaming()
         await self.connection.close()
         self.is_connected = False
         logging.debug(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
-        # todo : do connected check...
-        # todo : set "next heartbeat" time, and then in the heartbeat task, check the value
         if isinstance(data, BaseModel):
             if data.id is None:
-                data.id = next(self.counter)
+                data.id = self.id
+                self.id += 1
             data = data.model_dump_json()
         await self.connection.write(data)
 
@@ -134,7 +128,6 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
-            # print(f"Received event from {self}: {type(parser.event)} {parser}")
             logging.trace(f'Received event from {self}: {parser.event.Event} {type(parser.event)}')
             self.recent_events.append(parser.event)
             match parser.event.Event:
@@ -161,9 +154,6 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
         await self.send(data)
-        # below is naive...  should change it to wait for the specific command...
-        # xxx ugh!
-        # xxx have only one reading task.   then have recv return with correct response...
         while self.is_connected:
             response = await self.recv()
             if response is not None:
@@ -176,19 +166,42 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         try:
             while 'jsonrpc' not in response:
                 response = await self.connection.read()
-                # if self.debug:
-                #    print(f"Received data from {self}: {response}")
                 if response is None:
                     await self.disconnect()
                     return None
                 if 'Event' in response:
-                    # it's an event, so parse it and stash!
                     self._handle_event(response)
                     return None
             return CommandResponse[U](**json.loads(response))
         except Exception as e:
             logging.error(f"Error while receiving data from {self}: {response} {e}")
             raise e
+
+    async def start_streaming(self):
+        """Start streaming from the Seestar."""
+        if self.status.is_streaming:
+            logging.warning(f"Already streaming from {self}")
+            return
+        
+        response = await self.send_and_recv(BeginStreaming())
+        if response and response.result is not None:
+            self.status.is_streaming = True
+            logging.info(f"Started streaming from {self}")
+        else:
+            logging.error(f"Failed to start streaming from {self}: {response}")
+
+    async def stop_streaming(self):
+        """Stop streaming from the Seestar."""
+        if not self.status.is_streaming:
+            logging.warning(f"Not streaming from {self}")
+            return
+            
+        response = await self.send_and_recv(StopStreaming())
+        if response and response.result is not None:
+            self.status.is_streaming = False
+            logging.info(f"Stopped streaming from {self}")
+        else:
+            logging.error(f"Failed to stop streaming from {self}: {response}")
 
     def __str__(self):
         return f"{self.host}:{self.port}"

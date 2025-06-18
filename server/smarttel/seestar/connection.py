@@ -44,3 +44,13 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             # hm... might have conflict with another coroutine...
             print(f"Error while reading from {self}: {e}")
             await self.close()
+
+    async def read_exactly(self, n: int) -> bytes | None:
+        """Read exactly N bytes from Seestar as bytes."""
+        try:
+            return await self.reader.readexactly(n)
+        except IncompleteReadError as e:
+            # hm... might have conflict with another coroutine...
+            print(f"Error while reading from {self}: {e}")
+            await self.close()
+            return None
