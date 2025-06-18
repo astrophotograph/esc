@@ -178,8 +178,12 @@ export function CameraView() {
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastErrorTime, setLastErrorTime] = useState<number>(0);
   const imageRef = useRef<HTMLImageElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate boundaries for panning
   const calculateBoundaries = () => {
@@ -230,6 +234,72 @@ export function CameraView() {
     };
   };
 
+  // Validate if URL format is correct
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  // Generate video URL based on current telescope
+  const generateVideoUrl = (telescope: any): string => {
+    if (!telescope) {
+      return 'http://localhost:5556/1/vid'; // Fallback to default
+    }
+
+    // Extract base host, handling both "host:port" and "host" formats
+    let baseHost = 'localhost';
+    if (telescope.host) {
+      if (telescope.host.includes(':')) {
+        baseHost = telescope.host.split(':')[0];
+      } else {
+        baseHost = telescope.host;
+      }
+    }
+
+    // Validate host format (basic check for IP or hostname)
+    const hostPattern = /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$/;
+    if (!hostPattern.test(baseHost)) {
+      console.warn(`Invalid host format: ${baseHost}, falling back to localhost`);
+      baseHost = 'localhost';
+    }
+
+    // For now, use a standard port offset pattern
+    // In production, this should come from telescope configuration
+    const videoPort = 5556; // Standard video port for Seestar
+    const url = `http://${baseHost}:${videoPort}/1/vid`;
+    
+    // Final URL validation
+    if (!isValidUrl(url)) {
+      console.error(`Generated invalid URL: ${url}, falling back to default`);
+      return 'http://localhost:5556/1/vid';
+    }
+    
+    return url;
+  };
+
+  // Update video URL when telescope changes
+  useEffect(() => {
+    const newUrl = generateVideoUrl(currentTelescope);
+    setVideoUrl(newUrl);
+    
+    // Reset all state when URL changes
+    setImageError(false);
+    setImageLoading(true);
+    setRetryCount(0);
+    
+    // Clear any pending retry timeout
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    
+    console.log(`Updated video URL for telescope: ${currentTelescope?.name || 'default'} -> ${newUrl}`);
+  }, [currentTelescope]);
+
   // Update dimensions when image loads
   const handleImageLoad = () => {
     if (imageRef.current) {
@@ -238,6 +308,13 @@ export function CameraView() {
       setImageDimensions({ width: naturalWidth, height: naturalHeight });
       setImageError(false);
       setImageLoading(false);
+      setRetryCount(0); // Reset retry count on successful load
+      
+      // Clear any pending retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
 
       // After determining image dimensions, also store container dimensions
       if (imageContainerRef.current) {
@@ -249,10 +326,44 @@ export function CameraView() {
     }
   };
 
-  // Handle image load error
+  // Handle image load error with retry logic
   const handleImageError = () => {
-    setImageError(true);
-    setImageLoading(false);
+    const now = Date.now();
+    const timeSinceLastError = now - lastErrorTime;
+    const maxRetries = 5;
+    const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 30000); // Exponential backoff, max 30s
+    
+    console.warn(`Image load error for URL: ${videoUrl}, retry ${retryCount}/${maxRetries}`);
+    
+    setLastErrorTime(now);
+    
+    // If we haven't exceeded max retries and enough time has passed, try again
+    if (retryCount < maxRetries && timeSinceLastError > 1000) {
+      setRetryCount(prev => prev + 1);
+      setImageLoading(true);
+      
+      // Clear any existing retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      
+      // Retry after delay
+      retryTimeoutRef.current = setTimeout(() => {
+        console.log(`Retrying image load after ${retryDelay}ms delay`);
+        if (imageRef.current) {
+          // Force reload by adding timestamp to URL
+          const urlWithTimestamp = videoUrl.includes('?') 
+            ? `${videoUrl}&_retry=${now}`
+            : `${videoUrl}?_retry=${now}`;
+          imageRef.current.src = urlWithTimestamp;
+        }
+      }, retryDelay);
+    } else {
+      // Max retries exceeded or too frequent errors
+      setImageError(true);
+      setImageLoading(false);
+      console.error(`Failed to load image after ${maxRetries} retries`);
+    }
   };
 
   // Update container dimensions on resize
@@ -268,6 +379,15 @@ export function CameraView() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Modified panning implementation - handle mouse move
@@ -652,7 +772,7 @@ export function CameraView() {
               {/* Only show image when it's loaded successfully */}
               <img
                 ref={imageRef}
-                src="http://localhost:5556/1/vid"
+                src={videoUrl}
                 alt="Telescope view"
                 className={`w-full h-full transition-transform duration-200 select-none ${imageError ? 'hidden' : ''}`}
                 style={{
