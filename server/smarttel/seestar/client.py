@@ -2,6 +2,10 @@ import asyncio
 import collections
 import itertools
 import json
+import os
+import re
+from datetime import datetime
+from pathlib import Path
 
 import pydash
 from loguru import logger as logging
@@ -28,6 +32,9 @@ class SeestarStatus(BaseModel):
     dropped_frame: int = 0
     target_name: str = ""
     annotate: AnnotateResult | None = None
+    pattern_match_found: bool = False
+    pattern_match_file: str | None = None
+    pattern_match_last_check: str | None = None
 
     def reset(self):
         self.temp = None
@@ -38,6 +45,9 @@ class SeestarStatus(BaseModel):
         self.dropped_frame = 0
         self.target_name = ""
         self.annotate = None
+        self.pattern_match_found = False
+        self.pattern_match_file = None
+        self.pattern_match_last_check = None
 
 
 class ParsedEvent(BaseModel):
@@ -55,9 +65,15 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     status: SeestarStatus = SeestarStatus()
     background_task: asyncio.Task | None = None
     reader_task: asyncio.Task | None = None
+    pattern_monitor_task: asyncio.Task | None = None
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
+    
+    # Pattern monitoring configuration
+    pattern_file_path: str = "/tmp/pattern_monitor.log"
+    pattern_regex: str = r"PATTERN_FOUND"
+    pattern_check_interval: float = 5.0
 
     def __init__(self, host: str, port: int):
         super().__init__(host=host, port=port)
@@ -82,6 +98,70 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 else:
                     break
         logging.debug(f"Reader task stopped for {self}")
+
+    async def _pattern_monitor(self):
+        """Background task that monitors a file for specific patterns."""
+        logging.debug(f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}")
+        last_modified_time = None
+        last_file_size = 0
+        
+        while self.is_connected:
+            try:
+                file_path = Path(self.pattern_file_path)
+                current_time = datetime.now().isoformat()
+                
+                # Check if file exists
+                if not file_path.exists():
+                    self.status.pattern_match_last_check = current_time
+                    await asyncio.sleep(self.pattern_check_interval)
+                    continue
+                
+                # Get file stats
+                stat = file_path.stat()
+                current_modified_time = stat.st_mtime
+                current_size = stat.st_size
+                
+                # Check if file has been modified or grown
+                if (last_modified_time is None or 
+                    current_modified_time > last_modified_time or 
+                    current_size > last_file_size):
+                    
+                    # Read the file content
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                        
+                        # Search for pattern
+                        pattern_found = bool(re.search(self.pattern_regex, content, re.IGNORECASE))
+                        
+                        # Update status
+                        self.status.pattern_match_found = pattern_found
+                        self.status.pattern_match_file = str(file_path)
+                        self.status.pattern_match_last_check = current_time
+                        
+                        if pattern_found:
+                            logging.info(f"Pattern '{self.pattern_regex}' found in {file_path}")
+                        else:
+                            logging.trace(f"Pattern '{self.pattern_regex}' not found in {file_path}")
+                        
+                        # Update tracking variables
+                        last_modified_time = current_modified_time
+                        last_file_size = current_size
+                        
+                    except Exception as e:
+                        logging.error(f"Error reading pattern file {file_path}: {e}")
+                        self.status.pattern_match_last_check = current_time
+                else:
+                    # File hasn't changed, just update the check time
+                    self.status.pattern_match_last_check = current_time
+                
+            except Exception as e:
+                logging.error(f"Error in pattern monitor task for {self}: {e}")
+                self.status.pattern_match_last_check = datetime.now().isoformat()
+            
+            await asyncio.sleep(self.pattern_check_interval)
+        
+        logging.debug(f"Pattern monitor task stopped for {self}")
 
     async def _heartbeat(self):
         # todo : properly check if is_connected!!
@@ -123,6 +203,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # Start background tasks
         self.background_task = asyncio.create_task(self._heartbeat())
         self.reader_task = asyncio.create_task(self._reader())
+        self.pattern_monitor_task = asyncio.create_task(self._pattern_monitor())
 
         # Upon connect, grab current status
 
@@ -157,6 +238,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             except asyncio.CancelledError:
                 pass
             self.reader_task = None
+        
+        if self.pattern_monitor_task:
+            self.pattern_monitor_task.cancel()
+            try:
+                await self.pattern_monitor_task
+            except asyncio.CancelledError:
+                pass
+            self.pattern_monitor_task = None
         
         await self.connection.close()
         logging.debug(f"Disconnected from {self}")

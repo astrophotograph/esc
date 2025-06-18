@@ -152,7 +152,12 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 "seestar": {
                     "host": self.host,
                     "port": self.port,
-                    "connected": self.client.is_connected
+                    "connected": self.client.is_connected,
+                    "pattern_match_status": {
+                        "found": self.client.status.pattern_match_found,
+                        "file": self.client.status.pattern_match_file,
+                        "last_check": self.client.status.pattern_match_last_check
+                    }
                 }
             }
 
