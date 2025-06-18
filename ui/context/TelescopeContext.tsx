@@ -489,21 +489,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Imaging state
   const [isImaging, setIsImaging] = useState(false)
 
-  // All-sky camera URLs per telescope
-  const [allskyUrls, setAllskyUrls] = useState<Record<string, string>>({})
-
-  // Show status in PiP
-  const [showPipStatus, setShowPipStatus] = useState(true)
-
-  // Show stream status in main view
-  const [showStreamStatus, setShowStreamStatus] = useState(true)
-
-  // Stream status
-  const [streamStatus, setStreamStatus] = useState<any>(null)
-
-  // Imaging state
-  const [isImaging, setIsImaging] = useState(false)
-
   // Picture-in-Picture state
   const [showPiP, setShowPiP] = useState(false)
   const [pipPosition, setPipPosition] = useState({ x: 20, y: 20 })

@@ -11,9 +11,10 @@ import { EquipmentSelector } from "./panels/EquipmentSelector"
 import { TabIndicator } from "./TabIndicator"
 import { ScrollableTabs } from "./ScrollableTabs"
 import { useTelescopeContext } from "../../context/TelescopeContext"
-import { Camera, Target, BookOpen, Settings, Cloud, Wrench, TestTube, MapPin } from "lucide-react"
+import { Camera, Target, BookOpen, Settings, Cloud, Wrench, TestTube, MapPin, BarChart3 } from "lucide-react"
 import { PipTestPanel } from "./PipTestPanel"
 import { AnnotationControls } from "./AnnotationControls"
+import { ImagingMetrics } from "./panels/ImagingMetrics"
 
 export function ControlPanel() {
   const {
@@ -26,6 +27,7 @@ export function ControlPanel() {
     maintenanceRecords,
     showPiP,
     showAnnotations,
+    isImaging,
   } = useTelescopeContext()
 
   // Calculate dynamic indicators based on current state
@@ -103,7 +105,7 @@ export function ControlPanel() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="telescope" className="w-full">
+      <Tabs defaultValue={isImaging ? "imaging" : "telescope"} className="w-full">
         <ScrollableTabs className="bg-gray-800 border-gray-700 rounded-md">
           <TabsList className="flex bg-transparent border-0 p-1">
             {/*<TabsTrigger*/}
@@ -130,22 +132,35 @@ export function ControlPanel() {
             {/*  Observation*/}
             {/*  {getObservationIndicators()}*/}
             {/*</TabsTrigger>*/}
-            <TabsTrigger
-              value="telescope"
-              className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
-            >
-              <Settings className="w-4 h-4" />
-              Telescope
-              {getTelescopeIndicators()}
-            </TabsTrigger>
-            <TabsTrigger
-              value="environment"
-              className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
-            >
-              <Cloud className="w-4 h-4" />
-              Environment
-              {getEnvironmentIndicators()}
-            </TabsTrigger>
+            {!isImaging && (
+              <>
+                <TabsTrigger
+                  value="telescope"
+                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                >
+                  <Settings className="w-4 h-4" />
+                  Telescope
+                  {getTelescopeIndicators()}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="environment"
+                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                >
+                  <Cloud className="w-4 h-4" />
+                  Environment
+                  {getEnvironmentIndicators()}
+                </TabsTrigger>
+              </>
+            )}
+            {isImaging && (
+              <TabsTrigger
+                value="imaging"
+                className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Quality Metrics
+              </TabsTrigger>
+            )}
             {/*<TabsTrigger*/}
             {/*  value="equipment"*/}
             {/*  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"*/}
@@ -186,13 +201,23 @@ export function ControlPanel() {
         {/*  <ObservationLogger />*/}
         {/*</TabsContent>*/}
 
-        <TabsContent value="telescope" className="space-y-4 mt-4">
-          <TelescopeControls />
-        </TabsContent>
+        {!isImaging && (
+          <>
+            <TabsContent value="telescope" className="space-y-4 mt-4">
+              <TelescopeControls />
+            </TabsContent>
 
-        <TabsContent value="environment" className="space-y-4 mt-4">
-          <EnvironmentPanel />
-        </TabsContent>
+            <TabsContent value="environment" className="space-y-4 mt-4">
+              <EnvironmentPanel />
+            </TabsContent>
+          </>
+        )}
+
+        {isImaging && (
+          <TabsContent value="imaging" className="space-y-4 mt-4">
+            <ImagingMetrics />
+          </TabsContent>
+        )}
 
         {/*<TabsContent value="equipment" className="space-y-4 mt-4">*/}
         {/*  <EquipmentSelector selectedEquipmentIds={[]} onSelectionChange={() => {}} showCompatibilityCheck={true} />*/}
