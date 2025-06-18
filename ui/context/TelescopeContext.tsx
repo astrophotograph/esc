@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useRef, type ReactNode } from "react"
+import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
+import { useToast } from "../hooks/use-toast"
 import type {
   CelestialObject,
   Session,
@@ -133,8 +134,6 @@ interface TelescopeContextType {
   setShowPlanningPanel: (show: boolean) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
-  statusAlerts: StatusAlert[]
-  setStatusAlerts: (alerts: StatusAlert[]) => void
   activeSession: Session | null
   setActiveSession: (session: Session | null) => void
   sessionNotes: string
@@ -221,16 +220,25 @@ interface TelescopeContextType {
   setPipMinimized: (minimized: boolean) => void
   pipOverlaySettings: PipOverlaySettings
   setPipOverlaySettings: (settings: PipOverlaySettings) => void
-  showPipOverlayControls: boolean
-  setShowPipOverlayControls: (show: boolean) => void
-  annotationSettings: AnnotationSettings
-  setAnnotationSettings: (settings: AnnotationSettings) => void
-  showAnnotations: boolean
-  setShowAnnotations: (show: boolean) => void
+    showPipOverlayControls: boolean
+    setShowPipOverlayControls: (show: boolean) => void
+    allskyUrls: Record<string, string>
+    setAllskyUrls: (urls: Record<string, string>) => void
+    showPipStatus: boolean
+    setShowPipStatus: (show: boolean) => void
+    showStreamStatus: boolean
+    setShowStreamStatus: (show: boolean) => void
+    streamStatus: any
+    setStreamStatus: (status: any) => void
+    isImaging: boolean
+    setIsImaging: (imaging: boolean) => void
+    annotationSettings: AnnotationSettings
+    setAnnotationSettings: (settings: AnnotationSettings) => void
+    showAnnotations: boolean
+    setShowAnnotations: (show: boolean) => void
 
   // Functions
   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
-  dismissAlert: (id: string) => void
   handleTelescopeMove: (direction: string) => void
   handleFocusAdjust: (direction: "in" | "out") => void
   handleTargetSelect: (target: CelestialObject) => void
@@ -307,7 +315,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [showPlanningPanel, setShowPlanningPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusAlerts, setStatusAlerts] = useState<StatusAlert[]>([])
   const [activeSession, setActiveSession] = useState<Session | null>(null)
   const [sessionNotes, setSessionNotes] = useState("")
   const [sessionLocation, setSessionLocation] = useState("")
@@ -323,6 +330,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [newSessionPriority, setNewSessionPriority] = useState<"high" | "medium" | "low">("medium")
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([])
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const { toast } = useToast()
   const [systemStats, setSystemStats] = useState<SystemStats>({
     battery: 85,
     temperature: 23.5,
@@ -466,6 +474,21 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     equipment: { hasIssues: false, needsMaintenance: true, count: 2 },
   })
 
+  // All-sky camera URLs per telescope
+  const [allskyUrls, setAllskyUrls] = useState<Record<string, string>>({})
+
+  // Show status in PiP
+  const [showPipStatus, setShowPipStatus] = useState(true)
+
+  // Show stream status in main view
+  const [showStreamStatus, setShowStreamStatus] = useState(true)
+
+  // Stream status
+  const [streamStatus, setStreamStatus] = useState<any>(null)
+
+  // Imaging state
+  const [isImaging, setIsImaging] = useState(false)
+
   // Picture-in-Picture state
   const [showPiP, setShowPiP] = useState(false)
   const [pipPosition, setPipPosition] = useState({ x: 20, y: 20 })
@@ -474,7 +497,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [pipMinimized, setPipMinimized] = useState(false)
   const [pipOverlaySettings, setPipOverlaySettings] = useState<PipOverlaySettings>({
     crosshairs: {
-      enabled: true,
+      enabled: false,
       color: "#ff0000",
       thickness: 2,
       style: "simple",
@@ -764,27 +787,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  // Add a status alert
+  // Add a status alert using toast system
   const addStatusAlert = (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => {
-    const newAlert: StatusAlert = {
-      ...alert,
-      id: `alert-${Date.now()}`,
-      timestamp: new Date(),
-      dismissed: false,
-    }
-
-    setStatusAlerts((prev) => [newAlert, ...prev])
-
-    // Auto-dismiss after 10 seconds
-    setTimeout(() => {
-      dismissAlert(newAlert.id)
-    }, 10000)
+    const variant = alert.type === "error" ? "destructive" : alert.type
+    
+    toast({
+      title: alert.title,
+      description: alert.message,
+      variant: variant as "default" | "destructive" | "success" | "warning" | "info"
+    })
   }
 
-  // Dismiss an alert
-  const dismissAlert = (id: string) => {
-    setStatusAlerts((prev) => prev.map((alert) => (alert.id === id ? { ...alert, dismissed: true } : alert)))
-  }
 
   const handleTelescopeMove = (direction: string) => {
     console.log(`Moving telescope ${direction}`)
@@ -1075,6 +1088,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  // Battery level monitoring
+  useEffect(() => {
+    if (systemStats.battery < 20) {
+      toast({
+        title: "Low Battery",
+        description: `Telescope battery is at ${systemStats.battery}%. Please charge soon.`,
+        variant: "destructive",
+      })
+    }
+  }, [systemStats.battery, toast])
+
   // Keyboard event handler
   const handleKeyDown = (event: KeyboardEvent) => {
     // Prevent shortcuts when typing in input fields
@@ -1362,8 +1386,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setShowPlanningPanel,
     searchQuery,
     setSearchQuery,
-    statusAlerts,
-    setStatusAlerts,
     activeSession,
     setActiveSession,
     sessionNotes,
@@ -1451,6 +1473,16 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setPipOverlaySettings,
     showPipOverlayControls,
     setShowPipOverlayControls,
+    allskyUrls,
+    setAllskyUrls,
+    showPipStatus,
+    setShowPipStatus,
+    showStreamStatus,
+    setShowStreamStatus,
+    streamStatus,
+    setStreamStatus,
+    isImaging,
+    setIsImaging,
     annotationSettings,
     setAnnotationSettings,
     showAnnotations,
@@ -1458,7 +1490,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
     // Functions
     addStatusAlert,
-    dismissAlert,
     handleTelescopeMove,
     handleFocusAdjust,
     handleTargetSelect,

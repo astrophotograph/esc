@@ -22,7 +22,6 @@ export function ControlPanel() {
     selectedTarget,
     observationNotes,
     observationRating,
-    statusAlerts,
     equipment,
     maintenanceRecords,
     showPiP,
@@ -56,21 +55,11 @@ export function ControlPanel() {
 
   const getTelescopeIndicators = () => {
     const indicators = []
-    const telescopeAlerts = statusAlerts.filter((alert) => alert.type === "error" && !alert.dismissed)
-    if (telescopeAlerts.length > 0) {
-      indicators.push(<TabIndicator key="issues" type="warning" />)
-    }
     return indicators
   }
 
   const getEnvironmentIndicators = () => {
     const indicators = []
-    const weatherAlerts = statusAlerts.filter(
-      (alert) => alert.title.toLowerCase().includes("weather") && !alert.dismissed,
-    )
-    if (weatherAlerts.length > 0) {
-      indicators.push(<TabIndicator key="weather" type="info" />)
-    }
     return indicators
   }
 

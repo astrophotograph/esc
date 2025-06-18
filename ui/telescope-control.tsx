@@ -5,7 +5,6 @@ import { NotificationPanels } from "./notification-panels"
 import { LocationManagement } from "./location-management"
 import { TelescopeProvider } from "./context/TelescopeContext"
 import { Header } from "./components/telescope/Header"
-import { StatusAlerts } from "./components/telescope/StatusAlerts"
 import { CameraView } from "./components/telescope/CameraView"
 import { ControlPanel } from "./components/telescope/ControlPanel"
 import { PlanningPanel } from "./components/telescope/modals/PlanningPanel"
@@ -25,11 +24,15 @@ function TelescopeControlContent() {
     showNotificationSettings,
     showNotificationHistory,
     showKeyboardHelp,
+    setShowKeyboardHelp,
     showLocationManager,
+    setShowLocationManager,
     isControlsCollapsed,
     handleKeyDown,
     showDataManagementSettings,
+    setShowDataManagementSettings,
     showEquipmentManager,
+    setShowEquipmentManager,
   } = useTelescopeContext()
 
   // Set up keyboard event listeners
@@ -41,10 +44,9 @@ function TelescopeControlContent() {
   }, [handleKeyDown])
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-gray-900 text-white p-2">
       <div className="max-w-7xl mx-auto">
         <Header />
-        <StatusAlerts />
 
         <div className={`grid gap-6 ${isControlsCollapsed ? "grid-cols-1" : "lg:grid-cols-4"}`}>
           <div className={`${isControlsCollapsed ? "col-span-1" : "lg:col-span-3"}`}>
@@ -61,10 +63,10 @@ function TelescopeControlContent() {
         {showPlanningPanel && <PlanningPanel />}
         {showNotificationSettings && <NotificationSettingsModal />}
         {showNotificationHistory && <NotificationHistoryModal />}
-        {showKeyboardHelp && <KeyboardHelpModal />}
-        {showLocationManager && <LocationManagement onClose={() => {}} />}
-        {showDataManagementSettings && <DataManagementSettings />}
-        {showEquipmentManager && <EquipmentManager />}
+        {showKeyboardHelp && <KeyboardHelpModal onClose={() => setShowKeyboardHelp(false)} />}
+        {showLocationManager && <LocationManagement onClose={() => setShowLocationManager(false)} />}
+        {showDataManagementSettings && <DataManagementSettings onClose={() => setShowDataManagementSettings(false)} />}
+        {showEquipmentManager && <EquipmentManager onClose={() => setShowEquipmentManager(false)} />}
 
         {/* Picture-in-Picture Overlay */}
         <PictureInPictureOverlay />
