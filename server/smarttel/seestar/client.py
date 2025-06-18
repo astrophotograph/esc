@@ -13,6 +13,7 @@ from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
+from smarttel.seestar.protocol_handlers import TextProtocol
 
 U = TypeVar("U")
 
@@ -53,13 +54,34 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     is_connected: bool = False
     status: SeestarStatus = SeestarStatus()
     background_task: asyncio.Task | None = None
+    reader_task: asyncio.Task | None = None
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
+    text_protocol: TextProtocol = TextProtocol()
 
     def __init__(self, host: str, port: int):
         super().__init__(host=host, port=port)
 
         self.connection = SeestarConnection(host=host, port=port)
+
+    async def _reader(self):
+        """Background task that continuously reads messages and handles them."""
+        logging.debug(f"Starting reader task for {self}")
+        while self.is_connected:
+            try:
+                response = await self.recv()
+                if response is not None:
+                    # The recv() method already calls handle_incoming_message for responses
+                    # with pending futures, so we only get here for responses without futures
+                    logging.trace(f"Reader received unhandled response: {response}")
+            except Exception as e:
+                logging.error(f"Error in reader task for {self}: {e}")
+                if self.is_connected:
+                    await asyncio.sleep(0.1)  # Brief pause before retrying
+                    continue
+                else:
+                    break
+        logging.debug(f"Reader task stopped for {self}")
 
     async def _heartbeat(self):
         # todo : properly check if is_connected!!
@@ -98,7 +120,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.is_connected = True
         self.status.reset()
 
+        # Start background tasks
         self.background_task = asyncio.create_task(self._heartbeat())
+        self.reader_task = asyncio.create_task(self._reader())
 
         # Upon connect, grab current status
 
@@ -115,8 +139,26 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def disconnect(self):
         """Disconnect from Seestar."""
-        await self.connection.close()
         self.is_connected = False
+        
+        # Cancel background tasks
+        if self.background_task:
+            self.background_task.cancel()
+            try:
+                await self.background_task
+            except asyncio.CancelledError:
+                pass
+            self.background_task = None
+        
+        if self.reader_task:
+            self.reader_task.cancel()
+            try:
+                await self.reader_task
+            except asyncio.CancelledError:
+                pass
+            self.reader_task = None
+        
+        await self.connection.close()
         logging.debug(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
@@ -160,15 +202,21 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 
     async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
+        # Get or assign message ID
+        if isinstance(data, BaseModel):
+            if data.id is None:
+                data.id = next(self.counter)
+            message_id = data.id
+        else:
+            # For string data, we can't easily assign an ID, so fall back to simple send
+            await self.send(data)
+            return None
+        
         await self.send(data)
-        # below is naive...  should change it to wait for the specific command...
-        # xxx ugh!
-        # xxx have only one reading task.   then have recv return with correct response...
-        while self.is_connected:
-            response = await self.recv()
-            if response is not None:
-                return response
-        return None
+        
+        # The reader task handles all incoming messages and resolves futures
+        # We just need to wait for our specific message ID
+        return await self.text_protocol.recv_message(self, message_id)
 
     async def recv(self) -> CommandResponse[U] | None:
         """Receive data from Seestar."""
@@ -185,7 +233,16 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     # it's an event, so parse it and stash!
                     self._handle_event(response)
                     return None
-            return CommandResponse[U](**json.loads(response))
+            
+            parsed_response = CommandResponse[U](**json.loads(response))
+            
+            # Try to resolve any pending futures for this message
+            if self.text_protocol.handle_incoming_message(parsed_response):
+                # Message was handled by a pending future, don't return it here
+                return None
+            
+            # No pending future for this message, return it normally
+            return parsed_response
         except Exception as e:
             logging.error(f"Error while receiving data from {self}: {response} {e}")
             raise e

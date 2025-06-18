@@ -25,33 +25,46 @@ class ProtocolHandler(ABC, Generic[U]):
 class TextProtocol(ProtocolHandler[CommandResponse[U]]):
     """Text protocol handler for JSON-RPC messages."""
     
+    def __init__(self):
+        self._pending_futures: dict[int, asyncio.Future[CommandResponse[U]]] = {}
+    
     async def recv_message(self, client, message_id: int) -> CommandResponse[U] | None:
         """Receive a JSON-RPC message with the given ID."""
         try:
-            # Wait for responses until we get the one with matching ID
-            max_attempts = 100  # Prevent infinite loops
-            attempts = 0
+            # Create a future for this message ID
+            future = asyncio.Future[CommandResponse[U]]()
+            self._pending_futures[message_id] = future
             
-            while attempts < max_attempts and client.is_connected:
-                response = await client.recv()
-                if response is not None:
-                    if hasattr(response, 'id') and response.id == message_id:
-                        logging.trace(f"Received text message with ID {message_id}: {response}")
-                        return response
-                    else:
-                        # Not the message we're looking for, continue waiting
-                        logging.trace(f"Received message with ID {getattr(response, 'id', 'unknown')}, waiting for {message_id}")
-                        continue
-                
-                attempts += 1
-                await asyncio.sleep(0.01)  # Small delay to prevent busy waiting
-            
-            logging.warning(f"Failed to receive text message with ID {message_id} after {attempts} attempts")
-            return None
+            try:
+                # Wait for the future to be resolved with a timeout
+                response = await asyncio.wait_for(future, timeout=10.0)
+                logging.trace(f"Received text message with ID {message_id}: {response}")
+                return response
+            except asyncio.TimeoutError:
+                logging.warning(f"Timeout waiting for message with ID {message_id}")
+                return None
+            finally:
+                # Clean up the future
+                self._pending_futures.pop(message_id, None)
             
         except Exception as e:
             logging.error(f"Error receiving text message with ID {message_id}: {e}")
+            # Clean up on error
+            self._pending_futures.pop(message_id, None)
             return None
+    
+    def handle_incoming_message(self, response: CommandResponse[U]) -> bool:
+        """Handle an incoming message and resolve any pending futures.
+        
+        Returns True if the message was handled by a pending future, False otherwise.
+        """
+        if hasattr(response, 'id') and response.id is not None:
+            future = self._pending_futures.get(response.id)
+            if future and not future.done():
+                future.set_result(response)
+                logging.trace(f"Resolved future for message ID {response.id}")
+                return True
+        return False
 
 
 class BinaryProtocol(ProtocolHandler[np.ndarray]):
