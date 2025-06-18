@@ -1,0 +1,152 @@
+@@ -9,6 +9,7 @@
+   NotificationSettings,
+   NotificationHistory,
+   PlannedSession,
++  PipOverlaySettings,
+ } from "../../types/telescope-types"
+ import type { ObservingLocation } from "../../location-management"
+ 
+@@ -22,6 +23,16 @@
+   contrast: number[]
+   focusPosition: number[]
+   isTracking: boolean
++  showPiP: boolean
++  pipPosition: { x: number; y: number }
++  pipSize: "small" | "medium" | "large"
++  pipCamera: "allsky" | "guide" | "finder"
++  pipMinimized: boolean
++  pipOverlaySettings: PipOverlaySettings
++  allskyUrls: Record<string, string>
++  showPipStatus: boolean
++  showStreamStatus: boolean
++  isImaging: boolean
+ }
+ 
+ export function DataPersistenceManager() {
+@@ -44,6 +55,16 @@
+     contrast,
+     focusPosition,
+     isTracking,
++    showPiP,
++    pipPosition,
++    pipSize,
++    pipCamera,
++    pipMinimized,
++    pipOverlaySettings,
++    allskyUrls,
++    showPipStatus,
++    showStreamStatus,
++    isImaging,
+ 
+     // Setters
+     setObservationLog,
+@@ -63,6 +84,15 @@
+     setContrast,
+     setFocusPosition,
+     setIsTracking,
++    setShowPiP,
++    setPipPosition,
++    setPipSize,
++    setPipCamera,
++    setPipMinimized,
++    setPipOverlaySettings,
++    setAllskyUrls,
++    setShowPipStatus,
++    setShowStreamStatus,
+ 
+     // Add status alert for notifications
+     addStatusAlert,
+@@ -180,6 +210,43 @@
+       contrast,
+       focusPosition,
+       isTracking,
++      showPiP: false,
++      pipPosition: { x: 20, y: 20 },
++      pipSize: "medium",
++      pipCamera: "allsky",
++      pipMinimized: false,
++      pipOverlaySettings: {
++        crosshairs: {
++          enabled: false,
++          color: "#ff0000",
++          thickness: 2,
++          style: "simple",
++        },
++        grid: {
++          enabled: false,
++          color: "#00ff00",
++          spacing: 50,
++          opacity: 0.5,
++          style: "lines",
++        },
++        measurements: {
++          enabled: false,
++          color: "#ffff00",
++          showScale: true,
++          showCoordinates: false,
++          unit: "arcmin",
++        },
++        compass: {
++          enabled: false,
++          color: "#00ffff",
++          showCardinals: true,
++          showDegrees: false,
++        },
++      },
++      allskyUrls: {},
++      showPipStatus: true,
++      showStreamStatus: true,
++      isImaging: false,
+     })
+ 
+     setIsControlsCollapsed(storedUIState.isControlsCollapsed)
+@@ -190,6 +257,15 @@
+     setContrast(storedUIState.contrast)
+     setFocusPosition(storedUIState.focusPosition)
+     setIsTracking(storedUIState.isTracking)
++    if (storedUIState.showPiP !== undefined) setShowPiP(storedUIState.showPiP)
++    if (storedUIState.pipPosition) setPipPosition(storedUIState.pipPosition)
++    if (storedUIState.pipSize) setPipSize(storedUIState.pipSize)
++    if (storedUIState.pipCamera) setPipCamera(storedUIState.pipCamera)
++    if (storedUIState.pipMinimized !== undefined) setPipMinimized(storedUIState.pipMinimized)
++    if (storedUIState.pipOverlaySettings) setPipOverlaySettings(storedUIState.pipOverlaySettings)
++    if (storedUIState.allskyUrls) setAllskyUrls(storedUIState.allskyUrls)
++    if (storedUIState.showPipStatus !== undefined) setShowPipStatus(storedUIState.showPipStatus)
++    if (storedUIState.showStreamStatus !== undefined) setShowStreamStatus(storedUIState.showStreamStatus)
+   }, []) // Empty dependency array ensures this only runs once on mount
+ 
+   // Save observation log when it changes
+@@ -247,6 +323,16 @@
+       contrast,
+       focusPosition,
+       isTracking,
++      showPiP,
++      pipPosition,
++      pipSize,
++      pipCamera,
++      pipMinimized,
++      pipOverlaySettings,
++      allskyUrls,
++      showPipStatus,
++      showStreamStatus,
++      isImaging,
+     }
+ 
+     saveToStorage(STORAGE_KEYS.UI_STATE, uiState)
+@@ -259,6 +345,16 @@
+     contrast,
+     focusPosition,
+     isTracking,
++    showPiP,
++    pipPosition,
++    pipSize,
++    pipCamera,
++    pipMinimized,
++    pipOverlaySettings,
++    allskyUrls,
++    showPipStatus,
++    showStreamStatus,
++    isImaging,
+     storageAvailable,
+   ])
+ 

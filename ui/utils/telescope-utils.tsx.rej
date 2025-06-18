@@ -1,0 +1,26 @@
+@@ -106,7 +106,24 @@
+   }
+ }
+ 
+-// Render star rating
++export function formatRaDec(value: number | undefined, type: 'ra' | 'dec'): string {
++  if (value === undefined) return 'N/A';
++
++  if (type === 'ra') {
++    const hours = Math.floor(value / 15);
++    const minutes = Math.floor((value % 15) * 4);
++    const seconds = Math.round(((value % 15) * 4 - minutes) * 60);
++    return `${hours}h ${minutes}m ${seconds}s`;
++  } else {
++    const sign = value >= 0 ? '+' : '-';
++    const absValue = Math.abs(value);
++    const degrees = Math.floor(absValue);
++    const minutes = Math.floor((absValue - degrees) * 60);
++    const seconds = Math.round(((absValue - degrees) * 60 - minutes) * 60);
++    return `${sign}${degrees}° ${minutes}' ${seconds}"`;
++  }
++}
++
+ export const renderStarRating = (rating: number, interactive = false, onChange?: (rating: number) => void) => {
+   const { Star } = require("lucide-react")
+ 

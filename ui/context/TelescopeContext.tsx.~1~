@@ -489,21 +489,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Imaging state
   const [isImaging, setIsImaging] = useState(false)
 
-  // All-sky camera URLs per telescope
-  const [allskyUrls, setAllskyUrls] = useState<Record<string, string>>({})
-
-  // Show status in PiP
-  const [showPipStatus, setShowPipStatus] = useState(true)
-
-  // Show stream status in main view
-  const [showStreamStatus, setShowStreamStatus] = useState(true)
-
-  // Stream status
-  const [streamStatus, setStreamStatus] = useState<any>(null)
-
-  // Imaging state
-  const [isImaging, setIsImaging] = useState(false)
-
   // Picture-in-Picture state
   const [showPiP, setShowPiP] = useState(false)
   const [pipPosition, setPipPosition] = useState({ x: 20, y: 20 })
@@ -1102,17 +1087,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       message: `Observation session "${newSession.title}" scheduled for ${selectedDate.toLocaleDateString()}`,
     })
   }
-
-  // Battery level monitoring
-  useEffect(() => {
-    if (systemStats.battery < 20) {
-      toast({
-        title: "Low Battery",
-        description: `Telescope battery is at ${systemStats.battery}%. Please charge soon.`,
-        variant: "destructive",
-      })
-    }
-  }, [systemStats.battery, toast])
 
   // Battery level monitoring
   useEffect(() => {

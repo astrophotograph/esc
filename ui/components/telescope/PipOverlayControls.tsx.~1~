@@ -1,7 +1,6 @@
 "use client"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -148,26 +147,6 @@ export function PipOverlayControls() {
                 Compass
               </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="general" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="allsky-url" className="text-white">
-                    All-Sky Camera URL for {currentTelescope?.name || 'Current Telescope'}
-                  </Label>
-                  <Input
-                    id="allsky-url"
-                    value={allskyUrls[currentTelescope?.id || ''] || ''}
-                    onChange={(e) => {
-                      const newUrls = { ...allskyUrls, [currentTelescope?.id || '']: e.target.value }
-                      setAllskyUrls(newUrls)
-                    }}
-                    placeholder="http://allsky/current/tmp/image.jpg"
-                    className="bg-gray-700 border-gray-600 text-white mt-2"
-                  />
-                </div>
-              </div>
-            </TabsContent>
 
             <TabsContent value="general" className="space-y-4 mt-4">
               <div className="space-y-4">

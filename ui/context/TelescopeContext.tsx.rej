@@ -1,0 +1,73 @@
+@@ -2,7 +2,8 @@
+ 
+ import type React from "react"
+ 
+-import { createContext, useContext, useState, useRef, type ReactNode } from "react"
++import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
++import { useToast } from "../hooks/use-toast"
+ import type {
+   CelestialObject,
+   Session,
+@@ -221,12 +222,22 @@
+   setPipMinimized: (minimized: boolean) => void
+   pipOverlaySettings: PipOverlaySettings
+   setPipOverlaySettings: (settings: PipOverlaySettings) => void
+-  showPipOverlayControls: boolean
+-  setShowPipOverlayControls: (show: boolean) => void
+-  annotationSettings: AnnotationSettings
+-  setAnnotationSettings: (settings: AnnotationSettings) => void
+-  showAnnotations: boolean
+-  setShowAnnotations: (show: boolean) => void
++    showPipOverlayControls: boolean
++    setShowPipOverlayControls: (show: boolean) => void
++    allskyUrls: Record<string, string>
++    setAllskyUrls: (urls: Record<string, string>) => void
++    showPipStatus: boolean
++    setShowPipStatus: (show: boolean) => void
++    showStreamStatus: boolean
++    setShowStreamStatus: (show: boolean) => void
++    streamStatus: any
++    setStreamStatus: (status: any) => void
++    isImaging: boolean
++    setIsImaging: (imaging: boolean) => void
++    annotationSettings: AnnotationSettings
++    setAnnotationSettings: (settings: AnnotationSettings) => void
++    showAnnotations: boolean
++    setShowAnnotations: (show: boolean) => void
+ 
+   // Functions
+   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
+@@ -323,6 +334,7 @@
+   const [newSessionPriority, setNewSessionPriority] = useState<"high" | "medium" | "low">("medium")
+   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([])
+   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
++  const { toast } = useToast()
+   const [systemStats, setSystemStats] = useState<SystemStats>({
+     battery: 85,
+     temperature: 23.5,
+@@ -497,7 +524,7 @@
+   const [pipMinimized, setPipMinimized] = useState(false)
+   const [pipOverlaySettings, setPipOverlaySettings] = useState<PipOverlaySettings>({
+     crosshairs: {
+-      enabled: true,
++      enabled: false,
+       color: "#ff0000",
+       thickness: 2,
+       style: "simple",
+@@ -1452,6 +1490,16 @@
+     setPipOverlaySettings,
+     showPipOverlayControls,
+     setShowPipOverlayControls,
++    allskyUrls,
++    setAllskyUrls,
++    showPipStatus,
++    setShowPipStatus,
++    showStreamStatus,
++    setShowStreamStatus,
++    streamStatus,
++    setStreamStatus,
++    isImaging,
++    setIsImaging,
+     annotationSettings,
+     setAnnotationSettings,
+     showAnnotations,

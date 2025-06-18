@@ -194,17 +194,6 @@ export function PictureInPictureOverlay() {
                 {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
               </Button>
 
-              {/* Status Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPipStatus(!showPipStatus)}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                title={showPipStatus ? "Hide Status" : "Show Status"}
-              >
-                {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-              </Button>
-
               {/* Settings Button */}
               <Button
                 variant="ghost"

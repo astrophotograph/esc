@@ -1,0 +1,30 @@
+@@ -12,7 +13,7 @@
+ import { useTelescopeContext } from "../../context/TelescopeContext"
+ 
+ export function PipOverlayControls() {
+-  const { showPipOverlayControls, setShowPipOverlayControls, pipOverlaySettings, setPipOverlaySettings } =
++  const { showPipOverlayControls, setShowPipOverlayControls, pipOverlaySettings, setPipOverlaySettings, currentTelescope, allskyUrls, setAllskyUrls } =
+     useTelescopeContext()
+ 
+   const [activeTab, setActiveTab] = useState("crosshairs")
+@@ -97,7 +98,6 @@
+                 id="animations-enabled"
+                 checked={animationsEnabled}
+                 onCheckedChange={setAnimationsEnabled}
+-                size="sm"
+               />
+             </div>
+             <Button variant="ghost" size="sm" onClick={resetToDefaults} className="text-gray-400 hover:text-white">
+@@ -126,7 +126,11 @@
+           )}
+ 
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+-            <TabsList className="grid w-full grid-cols-4 bg-gray-700">
++            <TabsList className="grid w-full grid-cols-5 bg-gray-700">
++              <TabsTrigger value="general" className="flex items-center gap-2">
++                <Settings className="w-4 h-4" />
++                General
++              </TabsTrigger>
+               <TabsTrigger value="crosshairs" className="flex items-center gap-2">
+                 <Crosshair className="w-4 h-4" />
+                 Crosshairs

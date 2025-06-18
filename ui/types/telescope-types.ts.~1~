@@ -349,35 +349,6 @@ export interface PipOverlaySettings {
   }
 }
 
-export interface PipOverlaySettings {
-  crosshairs: {
-    enabled: boolean
-    color: string
-    thickness: number
-    style: "simple" | "circle" | "target"
-  }
-  grid: {
-    enabled: boolean
-    color: string
-    spacing: number
-    opacity: number
-    style: "lines" | "dots"
-  }
-  measurements: {
-    enabled: boolean
-    color: string
-    showScale: boolean
-    showCoordinates: boolean
-    unit: "arcmin" | "arcsec" | "pixels"
-  }
-  compass: {
-    enabled: boolean
-    color: string
-    showCardinals: boolean
-    showDegrees: boolean
-  }
-}
-
 // Annotation Types
 export type AnnotationType =
   | "star"

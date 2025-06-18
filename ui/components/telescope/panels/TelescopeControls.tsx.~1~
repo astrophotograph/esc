@@ -155,30 +155,6 @@ export function TelescopeControls() {
               Focus Out
             </Button>
           </div>
-
-          {/* Imaging Control */}
-          <div className="mt-4">
-            <Button
-              onClick={handleImagingToggle}
-              className={`w-full ${
-                isImaging 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-            >
-              {isImaging ? (
-                <>
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop Imaging
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Start Imaging
-                </>
-              )}
-            </Button>
-          </div>
         </div>
 
         <Separator className="bg-gray-700" />
