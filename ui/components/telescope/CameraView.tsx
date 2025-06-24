@@ -32,6 +32,7 @@ import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
 import { AnnotationLayer } from "./AnnotationLayer"
 import type { ScreenAnnotation } from "../../types/telescope-types"
+import { generateStreamingUrl } from "../../utils/streaming"
 
 export function CameraView() {
   const {
@@ -234,8 +235,14 @@ export function CameraView() {
     };
   };
 
-  // Validate if URL format is correct
+  // Validate if URL format is correct (handles both absolute and relative URLs)
   const isValidUrl = (url: string): boolean => {
+    // Allow relative URLs starting with /api/
+    if (url.startsWith('/api/')) {
+      return true;
+    }
+    
+    // Validate absolute URLs
     try {
       const urlObj = new URL(url);
       return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
@@ -244,40 +251,10 @@ export function CameraView() {
     }
   };
 
-  // Generate video URL based on current telescope
+  // Generate video URL based on current telescope using streaming API
   const generateVideoUrl = (telescope: any): string => {
-    if (!telescope) {
-      return 'http://localhost:5556/1/vid'; // Fallback to default
-    }
-
-    // Extract base host, handling both "host:port" and "host" formats
-    let baseHost = 'localhost';
-    if (telescope.host) {
-      if (telescope.host.includes(':')) {
-        baseHost = telescope.host.split(':')[0];
-      } else {
-        baseHost = telescope.host;
-      }
-    }
-
-    // Validate host format (basic check for IP or hostname)
-    const hostPattern = /^(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)$/;
-    if (!hostPattern.test(baseHost)) {
-      console.warn(`Invalid host format: ${baseHost}, falling back to localhost`);
-      baseHost = 'localhost';
-    }
-
-    // For now, use a standard port offset pattern
-    // In production, this should come from telescope configuration
-    const videoPort = 5556; // Standard video port for Seestar
-    const url = `http://${baseHost}:${videoPort}/1/vid`;
-    
-    // Final URL validation
-    if (!isValidUrl(url)) {
-      console.error(`Generated invalid URL: ${url}, falling back to default`);
-      return 'http://localhost:5556/1/vid';
-    }
-    
+    const url = generateStreamingUrl(telescope, 'video');
+    console.log(`Generated streaming URL for telescope ${telescope?.name || 'unknown'}: ${url}`);
     return url;
   };
 

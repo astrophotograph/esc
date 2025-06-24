@@ -4,6 +4,8 @@ import type React from "react"
 
 import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
 import { useToast } from "../hooks/use-toast"
+import { usePersistentState } from "../hooks/use-persistent-state"
+import { STORAGE_KEYS } from "../utils/storage-utils"
 import type {
   CelestialObject,
   Session,
@@ -97,7 +99,7 @@ interface TelescopeContextType {
   isLoadingTelescopes: boolean
   telescopeError: string | null
   fetchTelescopes: () => Promise<void>
-  selectTelescope: (telescope: TelescopeInfo) => void
+  selectTelescope: (telescope: TelescopeInfo, showNotification?: boolean) => void
 
   // State
   showOverlay: boolean
@@ -287,7 +289,10 @@ const TelescopeContext = createContext<TelescopeContextType | undefined>(undefin
 export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
-  const [currentTelescope, setCurrentTelescope] = useState<TelescopeInfo | null>(null)
+  const [currentTelescope, setCurrentTelescope] = usePersistentState<TelescopeInfo | null>(
+    STORAGE_KEYS.CURRENT_TELESCOPE, 
+    null
+  )
   const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
   const [telescopeError, setTelescopeError] = useState<string | null>(null)
 
@@ -744,9 +749,39 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
       setTelescopes(transformedTelescopes)
 
-      // Auto-select first telescope if none selected
-      if (!currentTelescope && transformedTelescopes.length > 0) {
-        setCurrentTelescope(transformedTelescopes[0])
+      // Restore previously selected telescope or auto-select first one
+      if (transformedTelescopes.length > 0) {
+        if (currentTelescope) {
+          // Try to find the previously selected telescope in the new list
+          const savedTelescope = transformedTelescopes.find(
+            t => t.id === currentTelescope.id || 
+                 t.serial_number === currentTelescope.serial_number ||
+                 (t.host === currentTelescope.host && t.name === currentTelescope.name)
+          )
+          
+          if (savedTelescope) {
+            // Update with fresh telescope data while maintaining the selection
+            setCurrentTelescope(savedTelescope)
+            console.log(`Restored telescope selection: ${savedTelescope.name}`)
+            
+            // Show a subtle notification about the restoration
+            setTimeout(() => {
+              addStatusAlert({
+                type: 'info',
+                title: 'Welcome Back',
+                message: `Reconnected to ${savedTelescope.name}`
+              })
+            }, 1000) // Delay to avoid showing immediately on load
+          } else {
+            // Previously selected telescope no longer available, select first available
+            setCurrentTelescope(transformedTelescopes[0])
+            console.log(`Previous telescope not found, selected: ${transformedTelescopes[0].name}`)
+          }
+        } else {
+          // No previous selection, auto-select first telescope
+          setCurrentTelescope(transformedTelescopes[0])
+          console.log(`Auto-selected first telescope: ${transformedTelescopes[0].name}`)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch telescopes:', error)
@@ -770,21 +805,50 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         }
       ]
       setTelescopes(sampleTelescopes)
-      if (!currentTelescope) {
+      
+      // Handle telescope selection for sample data (same logic as above)
+      if (currentTelescope) {
+        const savedTelescope = sampleTelescopes.find(
+          t => t.id === currentTelescope.id || 
+               t.serial_number === currentTelescope.serial_number ||
+               (t.host === currentTelescope.host && t.name === currentTelescope.name)
+        )
+        
+        if (savedTelescope) {
+          setCurrentTelescope(savedTelescope)
+          console.log(`Restored telescope selection (sample): ${savedTelescope.name}`)
+          
+          // Show a subtle notification about the restoration (sample data)
+          setTimeout(() => {
+            addStatusAlert({
+              type: 'info',
+              title: 'Welcome Back',
+              message: `Reconnected to ${savedTelescope.name} (demo mode)`
+            })
+          }, 1000)
+        } else {
+          setCurrentTelescope(sampleTelescopes[0])
+          console.log(`Previous telescope not found in samples, selected: ${sampleTelescopes[0].name}`)
+        }
+      } else {
         setCurrentTelescope(sampleTelescopes[0])
+        console.log(`Auto-selected sample telescope: ${sampleTelescopes[0].name}`)
       }
     } finally {
       setIsLoadingTelescopes(false)
     }
   }
 
-  const selectTelescope = (telescope: TelescopeInfo) => {
+  const selectTelescope = (telescope: TelescopeInfo, showNotification: boolean = true) => {
     setCurrentTelescope(telescope)
-    addStatusAlert({
-      type: 'info',
-      title: 'Telescope Selected',
-      message: `Connected to ${telescope.name}`
-    })
+    
+    if (showNotification) {
+      addStatusAlert({
+        type: 'info',
+        title: 'Telescope Selected',
+        message: `Connected to ${telescope.name}`
+      })
+    }
   }
 
   // Add a status alert using toast system

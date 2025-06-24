@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   NOTIFICATION_SETTINGS: "telescope-notification-settings",
   NOTIFICATION_HISTORY: "telescope-notification-history",
   CURRENT_LOCATION: "telescope-current-location",
+  CURRENT_TELESCOPE: "telescope-current-telescope",
   UI_STATE: "telescope-ui-state",
   VERSION: "telescope-data-version",
 }
