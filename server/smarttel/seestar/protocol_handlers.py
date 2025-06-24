@@ -1,10 +1,14 @@
 """Protocol handlers for Seestar communication."""
 import asyncio
 import json
+import zipfile
 from abc import ABC, abstractmethod
+from io import BytesIO
+from struct import calcsize, unpack
 from typing import TypeVar, Generic
 
 import numpy as np
+import cv2
 from loguru import logger as logging
 from pydantic import BaseModel
 
@@ -20,6 +24,13 @@ class ProtocolHandler(ABC, Generic[U]):
     async def recv_message(self, client, message_id: int) -> U | None:
         """Receive a message with the given ID."""
         pass
+
+class ScopeImage(BaseModel, arbitrary_types_allowed=True):
+    """Base image class."""
+    width: int | None = None
+    height: int | None = None
+    data: bytes | None = None
+    image: np.ndarray | None = None
 
 
 class TextProtocol(ProtocolHandler[CommandResponse[U]]):
@@ -45,12 +56,12 @@ class TextProtocol(ProtocolHandler[CommandResponse[U]]):
                 return None
             finally:
                 # Clean up the future
-                self._pending_futures.pop(message_id, None)
+                await self._pending_futures.pop(message_id, None)
             
         except Exception as e:
             logging.error(f"Error receiving text message with ID {message_id}: {e}")
             # Clean up on error
-            self._pending_futures.pop(message_id, None)
+            await self._pending_futures.pop(message_id, None)
             return None
     
     def handle_incoming_message(self, response: CommandResponse[U]) -> bool:
@@ -158,3 +169,90 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
         except Exception as e:
             logging.error(f"Error extracting image from response: {e}")
             return None
+
+
+    def parse_header(self, header: bytes):
+        if header is not None and len(header) > 20:
+            # print(type(header))
+            logging.trace("Header:" + ":".join("{:02x}".format(c) for c in header))
+            # We ignore all values at end of header...
+            header = header[:20]
+            fmt = ">HHHIHHBBHH"
+            logging.trace(f"size: {calcsize(fmt)}")
+            _s1, _s2, _s3, size, _s5, _s6, code, id, width, height = unpack(fmt, header)
+            if size > 100:
+                logging.trace(
+                    f"header: {size=} {width=} {height=} {_s1=} {_s2=} {_s3=} {code=} {id=}"
+                )  # xxx trace
+
+            return size, id, width, height
+        return 0, None, None, None
+
+    def _handle_preview_frame(self, width: int, height: int, data: bytes) -> ScopeImage:
+        return ScopeImage(width=width, height=height,
+                          data=data,
+                          image=self._convert_star_image(data, width, height))
+
+    def _convert_star_image(
+            self, raw_image: bytes, width: int, height: int
+    ) -> np.array:
+        # if self.exposure_mode == "stack" or len(self.raw_img) == 1920 * 1080 * 6:
+        w = width or 1080
+        h = height or 1920
+        raw_image_len = len(raw_image)
+        if raw_image_len == w * h * 6:
+            # print("raw buffer size:", len(self.raw_img))
+            img = np.frombuffer(raw_image, dtype=np.uint16).reshape(h, w, 3)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            return img
+
+        elif raw_image_len == w * h * 2:
+            img = np.frombuffer(raw_image, np.uint16).reshape(h, w)
+            img = cv2.cvtColor(img, cv2.COLOR_BAYER_GRBG2BGR)
+            return img
+        else:
+            logging.error(f"Unexpected raw image length: {raw_image_len} {raw_image}")
+            return None
+
+    def _handle_stack(self, width: int, height: int, data: bytes) -> ScopeImage:
+        # for stacking, we have to extract zipfile
+        try:
+            zip_file = BytesIO(data)
+            with zipfile.ZipFile(zip_file) as zip:
+                contents = {name: zip.read(name) for name in zip.namelist()}
+                raw_img = contents["raw_data"]
+                latest_image = self._convert_star_image(raw_img, width, height)
+                if latest_image is None:
+                    raw_img = None
+                    width = 0
+                    height = 0
+
+                return ScopeImage(width=width, height=height,
+                                  data=raw_img,
+                                  image=latest_image)
+
+            # xxx Temp hack: just disconnect for now...
+            # xxx Ideally we listen for an event that stack count has increased, or we track the stack
+            #     count ourselves...
+            # if self.is_gazing and self.exposure_mode == "stack":
+            #    self.disconnect()
+            #    self.reconnect()
+        except Exception as e:
+            logging.error(f"Exception handling zip stack: {e}")
+            return ScopeImage(width=width, height=height, data=None, image=None)
+
+    async def handle_incoming_message(self, width: int, height: int, data: bytes, id: int) -> ScopeImage:
+        """Handle an incoming message and do nothing.
+
+        Returns True to indicate that the message was handled.
+        """
+        if id == 21:  # Preview frame
+            # print("HANDLE preview frame")
+            return self._handle_preview_frame(width, height, data)
+        elif id == 23:
+            # print("HANDLE stack")
+            return self._handle_stack(width, height, data)
+        else:
+            logging.debug(f"Unknown message ID: {id}: {data}")
+
+        return ScopeImage(width=width, height=height, data=data, image=None)

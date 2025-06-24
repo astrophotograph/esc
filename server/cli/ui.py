@@ -136,18 +136,18 @@ class CombinedSeestarUI(App):
         i = 0
         while True:
             i += 1
-            if self.client.is_connected:
-                try:
-                    msg = await self.client.recv()
-                    if msg is not None:
-                        print(f'----> UI msg Received: {msg}')
-                        response_box.update(str(msg))
-                    with suppress(IndexError):
-                        ev = self.client.recent_events.popleft()
-                        print(f'----> UI event Received: {ev}')
-                        event_box.update(str(ev))
-                except Exception as e:
-                    pass
+            #if self.client.is_connected:
+            #    try:
+            #        msg = await self.client.recv()
+            #        if msg is not None:
+            #            print(f'----> UI msg Received: {msg}')
+            #            response_box.update(str(msg))
+            #        with suppress(IndexError):
+            #            ev = self.client.recent_events.popleft()
+            #            print(f'----> UI event Received: {ev}')
+            #            event_box.update(str(ev))
+            #    except Exception as e:
+            #        pass
             self.update_title(i)
             await asyncio.sleep(0.1)
 

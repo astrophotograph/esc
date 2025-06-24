@@ -9,10 +9,12 @@ from typing import TypeVar, Literal
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState
+from smarttel.seestar.commands.parameterized import IscopeStartView
+from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, TestConnection
 from smarttel.seestar.commands.imaging import BeginStreaming, StopStreaming
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
+from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
 
 U = TypeVar("U")
 
@@ -51,44 +53,50 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     host: str
     port: int
     connection: SeestarConnection | None = None
-    id: int = 1
+    id: int = 100
     is_connected: bool = False
     status: SeestarImagingStatus = SeestarImagingStatus()
     background_task: asyncio.Task | None = None
+    reader_task: asyncio.Task | None = None
     recent_events: collections.deque = collections.deque(maxlen=5)
+    binary_protocol: BinaryProtocol = BinaryProtocol()
+    image: ScopeImage | None = None
 
     def __init__(self, host: str, port: int):
         super().__init__(host=host, port=port)
 
         self.connection = SeestarConnection(host=host, port=port)
 
+    async def _reader(self):
+        """Background task that continuously reads messages and handles them."""
+        logging.debug(f"Starting reader task for {self}")
+        while self.is_connected:
+            try:
+                header = await self.connection.read_exactly(80)
+                size, id, width, height = self.binary_protocol.parse_header(header)
+                logging.debug(f"imaging receive header: {size=} {width=} {height=} {id=}")
+                data = None
+                if size is not None:
+                    data = await self.connection.read_exactly(size)
+                if data is not None:
+                    self.image = await self.binary_protocol.handle_incoming_message(width, height, data, id)
+
+            except Exception as e:
+                logging.error(f"Failed to read from {self}: {e}")
+                if self.is_connected:
+                    await asyncio.sleep(1)  # Brief pause before retrying
+                    continue
+                else:
+                    break
+        logging.debug(f"Reader task stopped for {self}")
+
     async def _heartbeat(self):
         await asyncio.sleep(5)
         while True:
             if self.is_connected:
                 logging.trace(f"Pinging {self}")
-                _ = await self.send_and_recv(GetTime())
+                await self.send(TestConnection())
             await asyncio.sleep(5)
-
-    def _process_view_state(self, response: CommandResponse[dict]):
-        """Process view state."""
-        logging.trace(f"Processing view state from {self}: {response}")
-        if response.result is not None:
-            self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
-        else:
-            logging.error(f"Error while processing view state from {self}: {response}")
-
-    def _process_device_state(self, response: CommandResponse[dict]):
-        """Process device state."""
-        logging.trace(f"Processing device state from {self}: {response}")
-        if response.result is not None:
-            pi_status = PiStatusEvent(**response.result['pi_status'], Timestamp=response.Timestamp)
-            self.status.temp = pi_status.temp
-            self.status.charger_status = pi_status.charger_status
-            self.status.charge_online = pi_status.charge_online
-            self.status.battery_capacity = pi_status.battery_capacity
-        else:
-            logging.error(f"Error while processing device state from {self}: {response}")
 
     async def connect(self):
         await self.connection.open()
@@ -96,13 +104,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         self.status.reset()
 
         self.background_task = asyncio.create_task(self._heartbeat())
-
-        response: CommandResponse[dict] = await self.send_and_recv(GetDeviceState())
-        self._process_device_state(response)
-
-        response = await self.send_and_recv(GetViewState())
-        logging.trace(f"Received GetViewState: {response}")
-        self._process_view_state(response)
+        self.reader_task = asyncio.create_task(self._reader())
 
         logging.debug(f"Connected to {self}")
 
@@ -122,73 +124,52 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             data = data.model_dump_json()
         await self.connection.write(data)
 
-    def _handle_event(self, event_str: str):
-        """Parse an event."""
-        logging.trace(f"Handling event from {self}: {event_str}")
-        try:
-            parsed = json.loads(event_str)
-            parser: ParsedEvent = ParsedEvent(event=parsed)
-            logging.trace(f'Received event from {self}: {parser.event.Event} {type(parser.event)}')
-            self.recent_events.append(parser.event)
-            match parser.event.Event:
-                case 'PiStatus':
-                    pi_status = parser.event
-                    if pi_status.temp is not None:
-                        self.status.temp = pi_status.temp
-                    if pi_status.charger_status is not None:
-                        self.status.charger_status = pi_status.charger_status
-                    if pi_status.charge_online is not None:
-                        self.status.charge_online = pi_status.charge_online
-                    if pi_status.battery_capacity is not None:
-                        self.status.battery_capacity = pi_status.battery_capacity
-                case 'Stack':
-                    logging.trace("Updating stacked frame and dropped frame")
-                    if self.status.stacked_frame is not None:
-                        self.status.stacked_frame = parser.event.stacked_frame
-                    if self.status.dropped_frame is not None:
-                        self.status.dropped_frame = parser.event.dropped_frame
-                case 'Annotate':
-                    self.status.annotate = AnnotateResult(**parser.event.result)
-        except Exception as e:
-            logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
-
-    async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
-        await self.send(data)
+    async def get_next_image(self):
+        last_image: ScopeImage | None = None
         while self.is_connected:
-            response = await self.recv()
-            if response is not None:
-                return response
-        return None
+            if self.image is not None and self.image != last_image:
+                last_image = self.image
+                yield self.image
+            await asyncio.sleep(0.01)
 
-    async def recv(self) -> CommandResponse[U] | None:
-        """Receive data from Seestar."""
-        response = ""
-        try:
-            while 'jsonrpc' not in response:
-                response = await self.connection.read()
-                if response is None:
-                    await self.disconnect()
-                    return None
-                if 'Event' in response:
-                    self._handle_event(response)
-                    return None
-            return CommandResponse[U](**json.loads(response))
-        except Exception as e:
-            logging.error(f"Error while receiving data from {self}: {response} {e}")
-            raise e
+    # async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
+    #     await self.send(data)
+    #     while self.is_connected:
+    #         response = await self.recv()
+    #         if response is not None:
+    #             return response
+    #     return None
+    #
+    # async def recv(self) -> CommandResponse[U] | None:
+    #     """Receive data from Seestar."""
+    #     response = ""
+    #     try:
+    #         while 'jsonrpc' not in response:
+    #             response = await self.connection.read()
+    #             if response is None:
+    #                 await self.disconnect()
+    #                 return None
+    #             if 'Event' in response:
+    #                 self._handle_event(response)
+    #                 return None
+    #         return CommandResponse[U](**json.loads(response))
+    #     except Exception as e:
+    #         logging.error(f"Error while receiving data from {self}: {response} {e}")
+    #         raise e
 
     async def start_streaming(self):
         """Start streaming from the Seestar."""
         if self.status.is_streaming:
             logging.warning(f"Already streaming from {self}")
             return
-        
-        response = await self.send_and_recv(BeginStreaming())
-        if response and response.result is not None:
-            self.status.is_streaming = True
-            logging.info(f"Started streaming from {self}")
-        else:
-            logging.error(f"Failed to start streaming from {self}: {response}")
+
+        _ = await self.send(BeginStreaming(id=21))
+        self.status.is_streaming = True
+        # if response and response.result is not None:
+        #     self.status.is_streaming = True
+        #     logging.info(f"Started streaming from {self}")
+        # else:
+        #     logging.error(f"Failed to start streaming from {self}: {response}")
 
     async def stop_streaming(self):
         """Stop streaming from the Seestar."""
@@ -196,12 +177,12 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             logging.warning(f"Not streaming from {self}")
             return
             
-        response = await self.send_and_recv(StopStreaming())
-        if response and response.result is not None:
-            self.status.is_streaming = False
-            logging.info(f"Stopped streaming from {self}")
-        else:
-            logging.error(f"Failed to stop streaming from {self}: {response}")
+        response = await self.send(StopStreaming())
+        # if response and response.result is not None:
+        self.status.is_streaming = False
+        #     logging.info(f"Stopped streaming from {self}")
+        # else:
+        #     logging.error(f"Failed to stop streaming from {self}: {response}")
 
     def __str__(self):
         return f"{self.host}:{self.port}"

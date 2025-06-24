@@ -15,6 +15,11 @@ class IscopeStartStack(BaseCommand):
     method: Literal["iscope_start_stack"] = "iscope_start_stack"
     params: dict[str, Any] | None = None # restart boolean
 
+class IscopeStartView(BaseCommand):
+    """Start the view from the Seestar."""
+    method: Literal["iscope_start_view"] = "iscope_start_view"
+    params: dict[str, Any] | None = None
+
 class IscopeStopView(BaseCommand):
     """Stop the view from the Seestar."""
     method: Literal["iscope_stop_view"] = "iscope_stop_view"

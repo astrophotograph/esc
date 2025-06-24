@@ -31,7 +31,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
     async def write(self, data: str):
         """Write data to Seestar."""
-        data += "\n"
+        data += "\r\n"
         self.writer.write(data.encode())
         await self.writer.drain()
 

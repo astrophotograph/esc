@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import inspect
 import json
 import logging as orig_logging
@@ -6,7 +7,9 @@ from contextlib import suppress
 from typing import Optional, AsyncGenerator
 
 import click
+import cv2
 import httpx
+import numpy as np
 import pydash
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Request
@@ -14,10 +17,13 @@ from fastapi.responses import StreamingResponse, Response
 from loguru import logger as logging
 from pydantic import BaseModel
 
+from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
+from smarttel.seestar.commands.parameterized import IscopeStartView
 from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse
+from smarttel.seestar.imaging_client import SeestarImagingClient
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -51,12 +57,14 @@ orig_logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 class Telescope(BaseModel, arbitrary_types_allowed=True):
     """Telescope."""
     host: str
-    port: int
+    port: int = 4700
+    imaging_port: int = 4800
     serial_number: Optional[str] = None
     product_model: Optional[str] = None
     ssid: Optional[str] = None
     router: APIRouter | None = None
     client: SeestarClient | None = None
+    imaging: SeestarImagingClient | None = None
     _location: Optional[str] = None
 
     @property
@@ -134,12 +142,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         # Create a shared client instance
         self.client = SeestarClient(self.host, self.port)
+        self.imaging = SeestarImagingClient(self.host, self.imaging_port)
 
         async def startup():
             """Connect to the Seestar on startup."""
             try:
                 logging.info(f"Connecting to Seestar at {self.host}:{self.port}")
                 await self.client.connect()
+                await self.imaging.connect()
                 logging.info(f"Connected to Seestar at {self.host}:{self.port}")
             except Exception as e:
                 logging.error(f"Failed to connect to Seestar: {e}")
@@ -153,6 +163,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     "host": self.host,
                     "port": self.port,
                     "connected": self.client.is_connected,
+                    "imaging_port": self.imaging_port,
+                    "imaging_connected": self.imaging.is_connected,
                     "pattern_match_status": {
                         "found": self.client.status.pattern_match_found,
                         "file": self.client.status.pattern_match_file,
@@ -206,12 +218,72 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 # Handle client disconnection gracefully
                 yield f"data: {json.dumps({'status': 'stream_closed'})}\n\n"
 
+        def build_frame_bytes(image: np.ndarray, width: int, height: int):
+            font = cv2.FONT_HERSHEY_COMPLEX
+            BOUNDARY = b"\r\n--frame\r\n"
+
+            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-5]
+
+            w = width or 1080
+            h = height or 1920
+            image = cv2.putText(
+                np.copy(image),
+                dt,  # f'{dt} {self.received_frame}',
+                (int(w / 2 - 240), h - 70),
+                font,
+                1,
+                (210, 210, 210),
+                4,
+                cv2.LINE_8,
+            )
+            imgencode = cv2.imencode(".jpeg", image)[1]
+            stringData = imgencode.tobytes()
+            frame = b"Content-Type: image/jpeg\r\n\r\n" + stringData + BOUNDARY
+
+            return frame
+
         @router.get("/status/stream")
         async def stream_status():
             """Stream client status updates every 5 seconds."""
             return StreamingResponse(
                 status_stream_generator(),
                 media_type="text/event-stream"
+            )
+
+        async def get_next_image():
+            """Get the next image from the Seestar imaging server."""
+            if not self.imaging.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+
+            star_processors = [GraxpertStretch()]
+            await self.client.send(IscopeStartView(params={"mode": "star"}))
+            await self.imaging.start_streaming()
+            yield b"\r\n--frame\r\n"
+            async for image in self.imaging.get_next_image():
+                if image is not None and image.image is not None:
+                    img = image.image
+                    for processor in star_processors:
+                        img = processor.process(img)
+                    frame = build_frame_bytes(img, image.width, image.height)
+                    yield frame
+                    yield frame
+                else:
+                    # yield b"\r\ndata: empty!\r\n"
+                    await asyncio.sleep(0.5)
+            # while True:
+            #     image = await self.imaging.get_next_image()
+            #     if image and image.image:
+            #         frame = build_frame_bytes(image.image, image.width, image.height)
+            #         yield frame
+            #         yield frame
+
+        @router.get("/imager")
+        async def stream_image():
+            """Stream images from the Seestar imaging server."""
+            return StreamingResponse(
+                get_next_image(),
+                # media_type="text/event-stream"
+            media_type = "multipart/x-mixed-replace; boundary=frame"
             )
 
         self.router = router
@@ -427,35 +499,6 @@ class Controller:
                                 log_level="trace", log_config=None)
         server = uvicorn.Server(config)
         await server.serve()
-
-
-async def runner(host: str, port: int):
-    client = SeestarClient(host, port)
-
-    await client.connect()
-
-    msg: CommandResponse[dict] = await client.send_and_recv(GetViewState())
-    logging.trace(f'Received GetViewState: {msg}')
-    # while True:
-    #    #msg: CommandResponse[GetTimeResponse] = await client.send_and_recv(GetTime())
-    #    #print(f'---> Received: {msg}')
-    #    print('')
-    #    #await asyncio.sleep(5)
-
-    while client.is_connected:
-        msg = await client.recv()
-        if msg is not None:
-            logging.trace(f'----> Received: {msg}')
-        with suppress(IndexError):
-            event = client.recent_events.popleft()
-            logging.trace(f'----> Event: {event}')
-        await asyncio.sleep(0.1)
-
-    # msg: CommandResponse[dict] = await client.send_and_recv(GetWheelPosition())
-    # print(f'Received: {msg}')
-
-    await client.disconnect()
-    await asyncio.sleep(1)
 
 
 @click.group()

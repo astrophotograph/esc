@@ -85,11 +85,19 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.debug(f"Starting reader task for {self}")
         while self.is_connected:
             try:
-                response = await self.recv()
-                if response is not None:
-                    # The recv() method already calls handle_incoming_message for responses
-                    # with pending futures, so we only get here for responses without futures
-                    logging.trace(f"Reader received unhandled response: {response}")
+                response_str = await self.connection.read()
+                if response_str is not None:
+                    # Parse and handle the response
+                    if 'Event' in response_str:
+                        # Handle events
+                        self._handle_event(response_str)
+                    elif 'jsonrpc' in response_str:
+                        # Parse as command response and let protocol handler process it
+                        try:
+                            parsed_response = CommandResponse[dict](**json.loads(response_str))
+                            self.text_protocol.handle_incoming_message(parsed_response)
+                        except Exception as parse_error:
+                            logging.error(f"Error parsing response from {self}: {response_str} {parse_error}")
             except Exception as e:
                 logging.error(f"Error in reader task for {self}: {e}")
                 if self.is_connected:
@@ -307,34 +315,34 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # We just need to wait for our specific message ID
         return await self.text_protocol.recv_message(self, message_id)
 
-    async def recv(self) -> CommandResponse[U] | None:
-        """Receive data from Seestar."""
-        response = ""
-        try:
-            while 'jsonrpc' not in response:
-                response = await self.connection.read()
-                # if self.debug:
-                #    print(f"Received data from {self}: {response}")
-                if response is None:
-                    await self.disconnect()
-                    return None
-                if 'Event' in response:
-                    # it's an event, so parse it and stash!
-                    self._handle_event(response)
-                    return None
-            
-            parsed_response = CommandResponse[U](**json.loads(response))
-            
-            # Try to resolve any pending futures for this message
-            if self.text_protocol.handle_incoming_message(parsed_response):
-                # Message was handled by a pending future, don't return it here
-                return None
-            
-            # No pending future for this message, return it normally
-            return parsed_response
-        except Exception as e:
-            logging.error(f"Error while receiving data from {self}: {response} {e}")
-            raise e
+    # async def recv(self) -> CommandResponse[U] | None:
+    #     """Receive data from Seestar."""
+    #     response = ""
+    #     try:
+    #         while 'jsonrpc' not in response:
+    #             response = await self.connection.read()
+    #             # if self.debug:
+    #             #    print(f"Received data from {self}: {response}")
+    #             if response is None:
+    #                 await self.disconnect()
+    #                 return None
+    #             if 'Event' in response:
+    #                 # it's an event, so parse it and stash!
+    #                 self._handle_event(response)
+    #                 return None
+    #
+    #         parsed_response = CommandResponse[U](**json.loads(response))
+    #
+    #         # Try to resolve any pending futures for this message
+    #         if self.text_protocol.handle_incoming_message(parsed_response):
+    #             # Message was handled by a pending future, don't return it here
+    #             return None
+    #
+    #         # No pending future for this message, return it normally
+    #         return parsed_response
+    #     except Exception as e:
+    #         logging.error(f"Error while receiving data from {self}: {response} {e}")
+    #         raise e
 
     def __str__(self):
         return f"{self.host}:{self.port}"
