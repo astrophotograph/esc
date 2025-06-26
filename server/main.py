@@ -515,6 +515,90 @@ def console(host, port):
     asyncio.run(select_device_and_connect(host, port))
 
 
+@main.command("panorama")
+@click.option("--input", "-i", required=True, help="Input video file or directory of images")
+@click.option("--output", "-o", help="Output panorama image path (default: panorama.jpg)")
+@click.option("--detector", default="SIFT", type=click.Choice(['SIFT', 'ORB', 'AKAZE']), help="Feature detector (default: SIFT)")
+@click.option("--max-features", default=1000, type=int, help="Maximum features to detect (default: 1000)")
+@click.option("--frame-skip", default=5, type=int, help="Skip frames for faster processing (default: 5)")
+@click.option("--max-frames", type=int, help="Maximum frames to process from video")
+@click.option("--match-percent", default=0.15, type=float, help="Percentage of good matches to keep (default: 0.15)")
+def panorama(input, output, detector, max_features, frame_skip, max_frames, match_percent):
+    """Create a panorama from video or images."""
+    from panorama_generator import VideoPanoramaGenerator
+    from pathlib import Path
+
+    input_path = Path(input)
+
+    if not input_path.exists():
+        click.echo(f"Error: Input path does not exist: {input}")
+        return
+
+    # Set default output path
+    if not output:
+        output = "panorama.jpg"
+
+    click.echo(f"Creating panorama with {detector} detector...")
+    click.echo(f"Max features: {max_features}")
+    click.echo(f"Good match percent: {match_percent}")
+
+    try:
+        generator = VideoPanoramaGenerator(
+            feature_detector=detector,
+            max_features=max_features,
+            good_match_percent=match_percent,
+            frame_skip=frame_skip
+        )
+
+        if input_path.is_file():
+            # Check if it's a video file
+            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+
+            if input_path.suffix.lower() in video_extensions:
+                click.echo(f"Processing video: {input}")
+                if frame_skip > 1:
+                    click.echo(f"Skipping {frame_skip-1} out of every {frame_skip} frames")
+                panorama = generator.create_panorama(str(input_path), output, max_frames)
+            elif input_path.suffix.lower() in image_extensions:
+                click.echo("Single image provided, need multiple images for panorama")
+                return
+            else:
+                click.echo(f"Unsupported file format: {input_path.suffix}")
+                return
+
+        elif input_path.is_dir():
+            # Process all images in directory
+            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
+            image_files = []
+
+            for ext in image_extensions:
+                image_files.extend(input_path.glob(f"*{ext}"))
+                image_files.extend(input_path.glob(f"*{ext.upper()}"))
+
+            if not image_files:
+                click.echo(f"No image files found in directory: {input}")
+                return
+
+            # Sort files by name
+            image_files.sort()
+            image_paths = [str(f) for f in image_files]
+
+            click.echo(f"Processing {len(image_paths)} images from directory")
+            panorama = generator.create_panorama_from_images(image_paths, output)
+        else:
+            click.echo(f"Error: Input must be a file or directory: {input}")
+            return
+
+        click.echo(f"Panorama created successfully!")
+        click.echo(f"Output: {output}")
+        click.echo(f"Dimensions: {panorama.shape[1]} x {panorama.shape[0]} pixels")
+
+    except Exception as e:
+        click.echo(f"Error creating panorama: {e}")
+        import traceback
+        traceback.print_exc()
+
 @main.command("server")
 @click.option("--server-port", type=int, default=8000, help="Port for the API server (default: 8000)")
 @click.option("--seestar-host", help="Seestar device host address")
