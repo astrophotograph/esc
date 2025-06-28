@@ -269,7 +269,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     yield frame
                 else:
                     # yield b"\r\ndata: empty!\r\n"
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.1)
             # while True:
             #     image = await self.imaging.get_next_image()
             #     if image and image.image:
@@ -277,7 +277,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             #         yield frame
             #         yield frame
 
-        @router.get("/imager")
+        @router.get("/stream")
         async def stream_image():
             """Stream images from the Seestar imaging server."""
             return StreamingResponse(
