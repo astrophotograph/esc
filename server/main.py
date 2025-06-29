@@ -3,7 +3,6 @@ import datetime
 import inspect
 import json
 import logging as orig_logging
-from contextlib import suppress
 from typing import Optional, AsyncGenerator
 
 import click
@@ -21,7 +20,8 @@ from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
-from smarttel.seestar.commands.parameterized import IscopeStartView
+from smarttel.seestar.commands.parameterized import IscopeStartView, GotoTargetParameters, GotoTarget, \
+    ScopeSpeedMoveParameters, ScopeSpeedMove
 from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse
 from smarttel.seestar.imaging_client import SeestarImagingClient
 
@@ -173,6 +173,28 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 }
             }
 
+        @router.post("/goto")
+        async def goto(goto_params: GotoTargetParameters):
+            """Goto a target."""
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            try:
+                response = await self.client.send_and_recv(GotoTarget(params=goto_params.model_dump()))
+                return {"goto_target": response}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+        @router.post("/move")
+        async def move(move_params: ScopeSpeedMoveParameters):
+            """Move the scope."""
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            try:
+                response = await self.client.send_and_recv(ScopeSpeedMove(params=move_params.model_dump()))
+                return {"move_scope": response}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
         @router.get("/viewstate")
         async def get_view_state():
             """Get the current view state."""
@@ -283,7 +305,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             return StreamingResponse(
                 get_next_image(),
                 # media_type="text/event-stream"
-            media_type = "multipart/x-mixed-replace; boundary=frame"
+                media_type="multipart/x-mixed-replace; boundary=frame"
             )
 
         self.router = router
@@ -305,19 +327,19 @@ class Controller:
         self.discover = discover
 
     async def add_telescope(self, host: str, port: int, *,
-                      serial_number: Optional[str] = None,
-                      product_model: Optional[str] = None,
-                      ssid: Optional[str] = None,
-                      location: Optional[str] = None,
-                      discover: bool = False):
+                            serial_number: Optional[str] = None,
+                            product_model: Optional[str] = None,
+                            ssid: Optional[str] = None,
+                            location: Optional[str] = None,
+                            discover: bool = False):
         """Add a telescope to the controller."""
-        
+
         # If serial_number is not provided, try to fetch device information
         if not serial_number:
             try:
                 client = SeestarClient(host, port)
                 await client.connect()
-                
+
                 # Get device state to retrieve serial number, product model, and ssid
                 response: CommandResponse[dict] = await client.send_and_recv(GetDeviceState())
                 if response.result:
@@ -326,11 +348,11 @@ class Controller:
                     product_model = device_state.device.product_model
                     ssid = device_state.ap.ssid
                     logging.info(f"Fetched device info - SN: {serial_number}, Model: {product_model}, SSID: {ssid}")
-                
+
                 await client.disconnect()
             except Exception as e:
                 logging.warning(f"Failed to fetch device information from {host}:{port}: {e}")
-        
+
         telescope = Telescope(host=host, port=port,
                               serial_number=serial_number,
                               product_model=product_model,
@@ -355,14 +377,14 @@ class Controller:
             logging.info(f"Removed local telescope {telescope.name}")
             # todo : need to remove from router and shut down connection...
             return
-        
+
         # Try to remove remote telescope
         remote_telescope = self.remote_telescopes.pop(name, None)
         if remote_telescope:
             logging.info(f"Removed remote telescope {name}")
             # todo : need to remove proxy router
             return
-        
+
         logging.info(f"Telescope {name} not found")
 
     async def add_remote_controller(self, host: str, port: int):
@@ -390,10 +412,12 @@ class Controller:
                                 "remote_controller": f"{host}:{port}",
                                 "is_remote": True
                             }
-                            logging.info(f"Created proxy route for remote telescope {telescope_name} from {host}:{port}")
+                            logging.info(
+                                f"Created proxy route for remote telescope {telescope_name} from {host}:{port}")
                         else:
                             logging.debug(f"Telescope {telescope_name} already exists, skipping")
-                    logging.info(f"Successfully created proxy routes for {len(telescopes)} telescopes from remote controller {host}:{port}")
+                    logging.info(
+                        f"Successfully created proxy routes for {len(telescopes)} telescopes from remote controller {host}:{port}")
                 else:
                     logging.error(f"Failed to fetch telescopes from {host}:{port}, status code: {response.status_code}")
         except Exception as e:
@@ -402,7 +426,7 @@ class Controller:
     def _create_proxy_router(self, telescope_name: str, remote_host: str, remote_port: int):
         """Create a proxy router that forwards requests to the remote controller."""
         router = APIRouter()
-        
+
         @router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy_request(request: Request, path: str):
             """Proxy all requests to the remote controller."""
@@ -410,22 +434,22 @@ class Controller:
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     # Build the target URL
                     target_url = f"http://{remote_host}:{remote_port}/api/telescopes/{telescope_name}/{path}"
-                    
+
                     # Forward query parameters
                     query_params = str(request.url.query) if request.url.query else ""
                     if query_params:
                         target_url += f"?{query_params}"
-                    
+
                     # Forward headers (exclude host-specific headers)
                     headers = dict(request.headers)
                     headers.pop("host", None)
                     headers.pop("content-length", None)
-                    
+
                     # Forward request body for POST/PUT/PATCH
                     body = None
                     if request.method in ["POST", "PUT", "PATCH"]:
                         body = await request.body()
-                    
+
                     # Make the proxied request
                     response = await client.request(
                         method=request.method,
@@ -433,18 +457,18 @@ class Controller:
                         headers=headers,
                         content=body
                     )
-                    
+
                     # Return the response
                     return Response(
                         content=response.content,
                         status_code=response.status_code,
                         headers=dict(response.headers)
                     )
-                    
+
             except Exception as e:
                 logging.error(f"Proxy request failed for {telescope_name}: {e}")
                 raise HTTPException(status_code=502, detail=f"Failed to proxy request to remote telescope: {e}")
-        
+
         # Include the proxy router
         self.app.include_router(router, prefix=f"/api/telescopes/{telescope_name}")
 
@@ -457,9 +481,9 @@ class Controller:
                 name = pydash.get(device, 'data.result.sn') or device['address']
                 if name not in self.telescopes:
                     await self.add_telescope(device['address'], 4700,
-                                       serial_number=pydash.get(device, 'data.result.sn'),
-                                       product_model=pydash.get(device, 'data.result.product_model'),
-                                       ssid=pydash.get(device, 'data.result.ssid'))
+                                             serial_number=pydash.get(device, 'data.result.sn'),
+                                             product_model=pydash.get(device, 'data.result.product_model'),
+                                             ssid=pydash.get(device, 'data.result.ssid'))
 
             await asyncio.sleep(60)
 
@@ -474,7 +498,7 @@ class Controller:
         async def get_telescopes():
             """Get a list of all telescopes."""
             result = []
-            
+
             # Add local telescopes
             for telescope in self.telescopes.values():
                 result.append({
@@ -488,11 +512,11 @@ class Controller:
                     "ssid": telescope.ssid,
                     "is_remote": False
                 })
-            
+
             # Add remote telescopes
             for remote_telescope in self.remote_telescopes.values():
                 result.append(remote_telescope)
-            
+
             return result
 
         config = uvicorn.Config(self.app, host="0.0.0.0", port=self.service_port,
@@ -518,7 +542,8 @@ def console(host, port):
 @main.command("panorama")
 @click.option("--input", "-i", required=True, help="Input video file or directory of images")
 @click.option("--output", "-o", help="Output panorama image path (default: panorama.jpg)")
-@click.option("--detector", default="SIFT", type=click.Choice(['SIFT', 'ORB', 'AKAZE']), help="Feature detector (default: SIFT)")
+@click.option("--detector", default="SIFT", type=click.Choice(['SIFT', 'ORB', 'AKAZE']),
+              help="Feature detector (default: SIFT)")
 @click.option("--max-features", default=1000, type=int, help="Maximum features to detect (default: 1000)")
 @click.option("--frame-skip", default=5, type=int, help="Skip frames for faster processing (default: 5)")
 @click.option("--max-frames", type=int, help="Maximum frames to process from video")
@@ -558,7 +583,7 @@ def panorama(input, output, detector, max_features, frame_skip, max_frames, matc
             if input_path.suffix.lower() in video_extensions:
                 click.echo(f"Processing video: {input}")
                 if frame_skip > 1:
-                    click.echo(f"Skipping {frame_skip-1} out of every {frame_skip} frames")
+                    click.echo(f"Skipping {frame_skip - 1} out of every {frame_skip} frames")
                 panorama = generator.create_panorama(str(input_path), output, max_frames)
             elif input_path.suffix.lower() in image_extensions:
                 click.echo("Single image provided, need multiple images for panorama")
@@ -599,6 +624,7 @@ def panorama(input, output, detector, max_features, frame_skip, max_frames, matc
         import traceback
         traceback.print_exc()
 
+
 @main.command("server")
 @click.option("--server-port", type=int, default=8000, help="Port for the API server (default: 8000)")
 @click.option("--seestar-host", help="Seestar device host address")
@@ -632,7 +658,7 @@ def server(server_port, seestar_host, seestar_port, remote_controller):
             except Exception as e:
                 click.echo(f"Error connecting to remote controller: {e}")
                 return
-        
+
         # Run the controller
         await controller.runner()
 

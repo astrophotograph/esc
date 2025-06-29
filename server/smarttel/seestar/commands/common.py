@@ -17,4 +17,4 @@ class CommandResponse(BaseModel, Generic[DataT]):
     Timestamp: str | None = None
     method: str # TODO : strongly type this based on request type
     code: int
-    result: DataT
+    result: DataT | int

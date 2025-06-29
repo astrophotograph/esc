@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Literal, Any
 
+from pydantic import BaseModel
+
 from smarttel.seestar.commands.common import BaseCommand
 
 
@@ -29,3 +31,26 @@ class ScopeSetTrackState(BaseCommand):
     """Set the track state from the Seestar."""
     method: Literal["scope_set_track_state"] = "scope_set_track_state"
     params: bool
+
+class ScopeSpeedMoveParameters(BaseModel):
+    """Parameters for the ScopeSpeedMove command."""
+    speed: int
+    angle: int
+    dur_sec: int
+
+class ScopeSpeedMove(BaseCommand):
+    """Speed move the scope from the Seestar."""
+    method: Literal["scope_speed_move"] = "scope_speed_move"
+    params: ScopeSpeedMoveParameters
+
+class GotoTargetParameters(BaseModel):
+    """Parameters for the GotoTarget command."""
+    target_name: str
+    is_j2000: bool
+    ra: float
+    dec: float
+
+class GotoTarget(BaseCommand):
+    """Go to a target from the Seestar."""
+    method: Literal["goto_target"] = "goto_target"
+    params: GotoTargetParameters
