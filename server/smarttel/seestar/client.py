@@ -105,7 +105,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     elif 'jsonrpc' in response_str:
                         # Parse as command response and let protocol handler process it
                         try:
-                            parsed_response = CommandResponse[dict](**json.loads(response_str))
+                            parsed_response = CommandResponse(**json.loads(response_str))
                             self.text_protocol.handle_incoming_message(parsed_response)
                         except Exception as parse_error:
                             logging.error(f"Error parsing response from {self}: {response_str} {parse_error}")
@@ -206,7 +206,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 self.status.totalMB = response.result.get('totalMB')
             await asyncio.sleep(30)
 
-    def _process_view_state(self, response: CommandResponse[dict]):
+    def _process_view_state(self, response: CommandResponse):
         """Process view state."""
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
@@ -215,9 +215,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
 
-    def _process_device_state(self, response: CommandResponse[dict]):
+    def _process_device_state(self, response: CommandResponse):
         """Process device state."""
-        logging.debug(f"Processing device state from {self}: {response}")
+        logging.trace(f"Processing device state from {self}: {response}")
         if response.result is not None:
             pi_status = PiStatusEvent(**response.result['pi_status'], Timestamp=response.Timestamp)
             self.status.temp = pi_status.temp
@@ -227,9 +227,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         else:
             logging.error(f"Error while processing device state from {self}: {response}")
 
-    def _process_focuser_position(self, response: CommandResponse[dict]):
+    def _process_focuser_position(self, response: CommandResponse):
         """Process focuser position."""
-        logging.debug(f"Processing focuser position from {self}: {response}")
+        logging.trace(f"Processing focuser position from {self}: {response}")
         if response.result is not None:
             self.status.focus_position = response.result
         else:
@@ -248,7 +248,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         # Upon connect, grab current status
 
-        response: CommandResponse[dict] = await self.send_and_recv(GetDeviceState())
+        response: CommandResponse = await self.send_and_recv(GetDeviceState())
 
         self._process_device_state(response)
 
@@ -350,7 +350,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         except Exception as e:
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 
-    async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
+    async def send_and_recv(self, data: str | BaseModel) -> CommandResponse | None:
         # Get or assign message ID
         if isinstance(data, BaseModel):
             if data.id is None:

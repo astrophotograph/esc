@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "async-timeout>=5.0.1",
+    "beartype>=0.21.0",
     "click>=8.2.0",
     "fastapi>=0.115.12",
     "fastapi-restful[all]>=0.6.0",

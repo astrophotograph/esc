@@ -407,7 +407,7 @@ class Controller:
                 await client.connect()
 
                 # Get device state to retrieve serial number, product model, and ssid
-                response: CommandResponse[dict] = await client.send_and_recv(GetDeviceState())
+                response: CommandResponse = await client.send_and_recv(GetDeviceState())
                 if response.result:
                     device_state = GetDeviceStateResponse(**response.result)
                     serial_number = device_state.device.sn

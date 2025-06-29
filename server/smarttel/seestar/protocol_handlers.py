@@ -5,9 +5,11 @@ import zipfile
 from abc import ABC, abstractmethod
 from io import BytesIO
 from struct import calcsize, unpack
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Optional, Any, Union
 
 import numpy as np
+import numpy.typing as npt
+
 import cv2
 from loguru import logger as logging
 from pydantic import BaseModel
@@ -30,20 +32,20 @@ class ScopeImage(BaseModel, arbitrary_types_allowed=True):
     width: int | None = None
     height: int | None = None
     data: bytes | None = None
-    image: np.ndarray | None = None
+    image: Optional[npt.NDArray] = None
 
 
-class TextProtocol(ProtocolHandler[CommandResponse[U]]):
+class TextProtocol(ProtocolHandler[CommandResponse]):
     """Text protocol handler for JSON-RPC messages."""
     
     def __init__(self):
-        self._pending_futures: dict[int, asyncio.Future[CommandResponse[U]]] = {}
+        self._pending_futures: dict[int, asyncio.Future[CommandResponse]] = {}
     
-    async def recv_message(self, client, message_id: int) -> CommandResponse[U] | None:
+    async def recv_message(self, client, message_id: int) -> CommandResponse | None:
         """Receive a JSON-RPC message with the given ID."""
         try:
             # Create a future for this message ID
-            future = asyncio.Future[CommandResponse[U]]()
+            future = asyncio.Future[CommandResponse]()
             self._pending_futures[message_id] = future
             
             try:
@@ -64,7 +66,7 @@ class TextProtocol(ProtocolHandler[CommandResponse[U]]):
             await self._pending_futures.pop(message_id, None)
             return None
     
-    def handle_incoming_message(self, response: CommandResponse[U]) -> bool:
+    def handle_incoming_message(self, response: CommandResponse) -> bool:
         """Handle an incoming message and resolve any pending futures.
         
         Returns True if the message was handled by a pending future, False otherwise.
@@ -78,10 +80,10 @@ class TextProtocol(ProtocolHandler[CommandResponse[U]]):
         return False
 
 
-class BinaryProtocol(ProtocolHandler[np.ndarray]):
+class BinaryProtocol(ProtocolHandler[npt.NDArray]):
     """Binary protocol handler for image data."""
     
-    async def recv_message(self, client, message_id: int) -> np.ndarray | None:
+    async def recv_message(self, client, message_id: int) -> Optional[npt.NDArray]:
         """Receive binary image data with the given ID."""
         try:
             # For binary protocol, we need to read raw binary data
@@ -128,7 +130,7 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
             logging.error(f"Error receiving binary message with ID {message_id}: {e}")
             return None
     
-    def _parse_binary_data(self, binary_data: bytes) -> tuple[int, np.ndarray | None]:
+    def _parse_binary_data(self, binary_data: bytes) -> tuple[int, Optional[npt.NDArray]]:
         """Parse binary data to extract message ID and image data."""
         # This is a placeholder implementation
         # Real implementation would parse the actual binary protocol format
@@ -153,7 +155,7 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
             logging.error(f"Error parsing binary data: {e}")
             return -1, None
     
-    def _extract_image_from_response(self, response: CommandResponse) -> np.ndarray | None:
+    def _extract_image_from_response(self, response: CommandResponse) -> Optional[npt.NDArray]:
         """Extract image data from a command response."""
         # This is a placeholder implementation
         # Real implementation would extract image data from the response
@@ -195,7 +197,7 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
 
     def _convert_star_image(
             self, raw_image: bytes, width: int, height: int
-    ) -> np.array:
+    ) -> Optional[npt.NDArray[tuple]]:
         # if self.exposure_mode == "stack" or len(self.raw_img) == 1920 * 1080 * 6:
         w = width or 1080
         h = height or 1920
@@ -247,12 +249,10 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
         Returns True to indicate that the message was handled.
         """
         if id == 21:  # Preview frame
-            print("HANDLE preview frame")
             return self._handle_preview_frame(width, height, data)
         elif id == 23:
-            print("HANDLE stack")
             return self._handle_stack(width, height, data)
         else:
-            logging.debug(f"Unknown message ID: {id}: {data}")
+            logging.trace(f"Unknown message ID: {id}: {data}")
 
         return ScopeImage(width=width, height=height, data=data, image=None)

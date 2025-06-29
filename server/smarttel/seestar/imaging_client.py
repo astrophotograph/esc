@@ -73,7 +73,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             try:
                 header = await self.connection.read_exactly(80)
                 size, id, width, height = self.binary_protocol.parse_header(header)
-                logging.debug(f"imaging receive header: {size=} {width=} {height=} {id=}")
+                logging.trace(f"imaging receive header: {size=} {width=} {height=} {id=}")
                 data = None
                 if size is not None:
                     data = await self.connection.read_exactly(size)
@@ -140,7 +140,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             print("Grabbing frame")
             await self.send(GetStackedImage(id=23))
 
-    # async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
+    # async def send_and_recv(self, data: str | BaseModel) -> CommandResponse | None:
     #     await self.send(data)
     #     while self.is_connected:
     #         response = await self.recv()
