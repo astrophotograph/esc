@@ -17,7 +17,7 @@ from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.imaging import GetStackedImage
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, StackEvent
+from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, StackEvent, AnnotateEvent
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
 
@@ -38,6 +38,8 @@ class SeestarStatus(BaseModel):
     pattern_match_file: str | None = None
     pattern_match_last_check: str | None = None
     focus_position: int | None = None
+    lp_filter: bool = False
+    gain: int | None = None
 
     def reset(self):
         self.temp = None
@@ -52,6 +54,8 @@ class SeestarStatus(BaseModel):
         self.pattern_match_file = None
         self.pattern_match_last_check = None
         self.focus_position = None
+        self.lp_filter = False
+        self.gain = None
 
 
 class ParsedEvent(BaseModel):
@@ -68,6 +72,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     counter: itertools.count = itertools.count()
     is_connected: bool = False
     status: SeestarStatus = SeestarStatus()
+    view_refresh_task: asyncio.Task | None = None
     background_task: asyncio.Task | None = None
     reader_task: asyncio.Task | None = None
     pattern_monitor_task: asyncio.Task | None = None
@@ -188,6 +193,15 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             # todo : add different protocol handler.  specifies heartbeat message and read message.
             await asyncio.sleep(5)
 
+    async def _view_refresher(self):
+        """Background task that refreshes the view state periodically."""
+        logging.debug(f"Starting view refresher task for {self}")
+        while True:
+            if self.is_connected:
+                response = await self.send_and_recv(GetViewState())
+                self._process_view_state(response)
+            await asyncio.sleep(30)
+
     def _process_view_state(self, response: CommandResponse[dict]):
         """Process view state."""
         logging.trace(f"Processing view state from {self}: {response}")
@@ -225,6 +239,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.background_task = asyncio.create_task(self._heartbeat())
         self.reader_task = asyncio.create_task(self._reader())
         self.pattern_monitor_task = asyncio.create_task(self._pattern_monitor())
+        self.view_refresh_task = asyncio.create_task(self._view_refresher())
 
         # Upon connect, grab current status
 
@@ -314,7 +329,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.dropped_frame = parser.event.dropped_frame
                     self.event_bus.emit('Stack', parser.event)
                 case 'Annotate':
-                    self.status.annotate = AnnotateResult(**parser.event.result)
+                    self.status.annotate = AnnotateEvent(**parser.event).result
                 case 'FocuserMove':
                     focuser_event = parser.event
                     if focuser_event.position is not None:
