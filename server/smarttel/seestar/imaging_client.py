@@ -1,20 +1,16 @@
 import asyncio
 import collections
-import json
-
-import pydash
-from loguru import logger as logging
 from typing import TypeVar, Literal
 
+from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.parameterized import IscopeStartView
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, TestConnection
-from smarttel.seestar.commands.imaging import BeginStreaming, StopStreaming
+from smarttel.seestar.commands.imaging import BeginStreaming, StopStreaming, GetStackedImage
+from smarttel.seestar.commands.simple import TestConnection
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
+from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent
 from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
+from smarttel.util.eventbus import EventBus
 
 U = TypeVar("U")
 
@@ -30,6 +26,7 @@ class SeestarImagingStatus(BaseModel):
     target_name: str = ""
     annotate: AnnotateResult | None = None
     is_streaming: bool = False
+    is_fetching_images: bool = False
 
     def reset(self):
         self.temp = None
@@ -59,12 +56,14 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     background_task: asyncio.Task | None = None
     reader_task: asyncio.Task | None = None
     recent_events: collections.deque = collections.deque(maxlen=5)
+    event_bus: EventBus | None = None
     binary_protocol: BinaryProtocol = BinaryProtocol()
     image: ScopeImage | None = None
 
-    def __init__(self, host: str, port: int):
-        super().__init__(host=host, port=port)
+    def __init__(self, host: str, port: int, event_bus: EventBus | None = None):
+        super().__init__(host=host, port=port, event_bus=event_bus)
 
+        self.event_bus.add_listener(StackEvent.Event, self._handle_stack_event)
         self.connection = SeestarConnection(host=host, port=port)
 
     async def _reader(self):
@@ -126,11 +125,20 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
     async def get_next_image(self):
         last_image: ScopeImage | None = None
+
+        self.status.is_fetching_images = True
         while self.is_connected:
             if self.image is not None and self.image != last_image:
                 last_image = self.image
                 yield self.image
             await asyncio.sleep(0.01)
+        self.status.is_fetching_images = False
+
+    async def _handle_stack_event(self, event: BaseEvent):
+        if event.state == 'frame_complete' and self.status.is_fetching_images:
+            # Only grab the frame if we're streaming in client!
+            print("Grabbing frame")
+            await self.send(GetStackedImage(id=23))
 
     # async def send_and_recv(self, data: str | BaseModel) -> CommandResponse[U] | None:
     #     await self.send(data)
@@ -176,7 +184,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         if not self.status.is_streaming:
             logging.warning(f"Not streaming from {self}")
             return
-            
+
         response = await self.send(StopStreaming())
         # if response and response.result is not None:
         self.status.is_streaming = False

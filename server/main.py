@@ -25,6 +25,7 @@ from smarttel.seestar.commands.parameterized import IscopeStartView, GotoTargetP
     ScopeSpeedMoveParameters, ScopeSpeedMove, MoveFocuserParameters, MoveFocuser
 from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse, ScopePark, GetFocuserPosition
 from smarttel.seestar.imaging_client import SeestarImagingClient
+from smarttel.util.eventbus import EventBus
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -68,6 +69,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
     product_model: Optional[str] = None
     ssid: Optional[str] = None
     router: APIRouter | None = None
+    event_bus: EventBus | None = None
     client: SeestarClient | None = None
     imaging: SeestarImagingClient | None = None
     _location: Optional[str] = None
@@ -146,8 +148,9 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         router = APIRouter()
 
         # Create a shared client instance
-        self.client = SeestarClient(self.host, self.port)
-        self.imaging = SeestarImagingClient(self.host, self.imaging_port)
+        self.event_bus = EventBus()
+        self.client = SeestarClient(self.host, self.port, self.event_bus)
+        self.imaging = SeestarImagingClient(self.host, self.imaging_port, self.event_bus)
 
         async def startup():
             """Connect to the Seestar on startup."""

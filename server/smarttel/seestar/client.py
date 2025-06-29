@@ -17,8 +17,9 @@ from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.imaging import GetStackedImage
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
+from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, StackEvent
 from smarttel.seestar.protocol_handlers import TextProtocol
+from smarttel.util.eventbus import EventBus
 
 U = TypeVar("U")
 
@@ -62,6 +63,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     """Seestar client."""
     host: str
     port: int
+    event_bus: EventBus | None = None
     connection: SeestarConnection | None = None
     counter: itertools.count = itertools.count()
     is_connected: bool = False
@@ -72,14 +74,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    
+
     # Pattern monitoring configuration
     pattern_file_path: str = "/mnt/sfro/roof/building-6/RoofStatusFile.txt"
     pattern_regex: str = r"OPEN"
     pattern_check_interval: float = 5.0
 
-    def __init__(self, host: str, port: int):
-        super().__init__(host=host, port=port)
+    def __init__(self, host: str, port: int, event_bus: EventBus):
+        super().__init__(host=host, port=port, event_bus=event_bus)
 
         self.connection = SeestarConnection(host=host, port=port)
 
@@ -310,10 +312,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
                         self.status.dropped_frame = parser.event.dropped_frame
-                    if parser.event.state == 'frame_complete':
-                        # todo: only grab the frame if we're streaming in client!
-                        print("Grabbing frame")
-                        await self.send(GetStackedImage(id=23))
+                    self.event_bus.emit(StackEvent.Event, parser.event)
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
                 case 'FocuserMove':
