@@ -214,12 +214,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
             self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
+            self.status.lp_filter = pydash.get(response.result, 'View.lp_filter', False)
+            self.status.gain = pydash.get(response.result, 'View.gain', 0)
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
 
     def _process_device_state(self, response: CommandResponse[dict]):
         """Process device state."""
-        logging.trace(f"Processing device state from {self}: {response}")
+        logging.debug(f"Processing device state from {self}: {response}")
         if response.result is not None:
             pi_status = PiStatusEvent(**response.result['pi_status'], Timestamp=response.Timestamp)
             self.status.temp = pi_status.temp
