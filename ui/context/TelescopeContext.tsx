@@ -761,18 +761,29 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           )
 
           if (savedTelescope) {
-            // Update with fresh telescope data while maintaining the selection
-            setCurrentTelescope(savedTelescope)
-            console.log(`Restored telescope selection: ${savedTelescope.name}`)
+            // Only update if the telescope data has meaningfully changed
+            const hasChanged = 
+              currentTelescope.status !== savedTelescope.status ||
+              currentTelescope.isConnected !== savedTelescope.isConnected ||
+              currentTelescope.host !== savedTelescope.host ||
+              currentTelescope.description !== savedTelescope.description
 
-            // Show a subtle notification about the restoration
-            setTimeout(() => {
-              addStatusAlert({
-                type: 'info',
-                title: 'Welcome Back',
-                message: `Reconnected to ${savedTelescope.name}`
-              })
-            }, 1000) // Delay to avoid showing immediately on load
+            if (hasChanged) {
+              // Update with fresh telescope data while maintaining the selection
+              setCurrentTelescope(savedTelescope)
+              console.log(`Updated telescope data: ${savedTelescope.name}`)
+
+              // Show a subtle notification about the restoration
+              setTimeout(() => {
+                addStatusAlert({
+                  type: 'info',
+                  title: 'Welcome Back',
+                  message: `Reconnected to ${savedTelescope.name}`
+                })
+              }, 1000) // Delay to avoid showing immediately on load
+            } else {
+              console.log(`Telescope data unchanged: ${savedTelescope.name}`)
+            }
           } else {
             // Previously selected telescope no longer available, select first available
             setCurrentTelescope(transformedTelescopes[0])
