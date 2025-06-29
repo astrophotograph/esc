@@ -11,3 +11,7 @@ class BeginStreaming(BaseCommand):
 class StopStreaming(BaseCommand):
     """Stop streaming from the Seestar."""
     method: Literal["stop_streaming"] = "stop_streaming"
+
+class GetStackedImage(BaseCommand):
+    """Get the stacked image from the Seestar."""
+    method: Literal["get_stacked_img"] = "get_stacked_img"

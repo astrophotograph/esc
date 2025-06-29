@@ -9,7 +9,6 @@ class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
     method: Literal["scope_park"] = "scope_park"
 
-
 class TestConnection(BaseCommand):
     """Test the connection to the Seestar."""
     method: Literal["test_connection"] = "test_connection"

@@ -341,7 +341,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
             star_processors = [GraxpertStretch()]
             # await self.client.send(IscopeStartView(params={"mode": "star"}))
-            await self.imaging.start_streaming()
+            # await self.imaging.start_streaming()
             yield b"\r\n--frame\r\n"
             async for image in self.imaging.get_next_image():
                 if image is not None and image.image is not None:
@@ -354,7 +354,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 else:
                     # yield b"\r\ndata: empty!\r\n"
                     await asyncio.sleep(0.1)
-            await self.imaging.stop_streaming()
+            # await self.imaging.stop_streaming()
             # while True:
             #     image = await self.imaging.get_next_image()
             #     if image and image.image:

@@ -255,8 +255,8 @@ class GoPixelEvent(BaseEvent):
     route: list[Any] = []
 
 
-class StackErrorEvent(BaseEvent):
-    """Stack error event."""
+class StackEvent(BaseEvent):
+    """Stack event."""
     Event: Literal["Stack"] = "Stack"
     state: Literal['frame_complete'] | EventState = None
     lapse_ms: int = 0
@@ -342,7 +342,7 @@ EventTypes = Annotated[AlertEvent
                        | SecondViewEvent
                        | SelectCameraEvent
                        | SettingEvent
-                       | StackErrorEvent
+                       | StackEvent
                        | ThreePPAEvent
                        | ViewEvent
                        | ViewPlanEvent

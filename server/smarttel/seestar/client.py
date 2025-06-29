@@ -14,6 +14,7 @@ from typing import TypeVar, Literal
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
+from smarttel.seestar.commands.imaging import GetStackedImage
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
@@ -309,6 +310,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
                         self.status.dropped_frame = parser.event.dropped_frame
+                    if parser.event.state == 'frame_complete':
+                        # todo: only grab the frame if we're streaming in client!
+                        self.send(GetStackedImage(id=23))
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
                 case 'FocuserMove':
