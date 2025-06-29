@@ -290,7 +290,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
   const [currentTelescope, setCurrentTelescope] = usePersistentState<TelescopeInfo | null>(
-    STORAGE_KEYS.CURRENT_TELESCOPE, 
+    STORAGE_KEYS.CURRENT_TELESCOPE,
     null
   )
   const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
@@ -754,16 +754,16 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         if (currentTelescope) {
           // Try to find the previously selected telescope in the new list
           const savedTelescope = transformedTelescopes.find(
-            t => t.id === currentTelescope.id || 
+            t => t.id === currentTelescope.id ||
                  t.serial_number === currentTelescope.serial_number ||
                  (t.host === currentTelescope.host && t.name === currentTelescope.name)
           )
-          
+
           if (savedTelescope) {
             // Update with fresh telescope data while maintaining the selection
             setCurrentTelescope(savedTelescope)
             console.log(`Restored telescope selection: ${savedTelescope.name}`)
-            
+
             // Show a subtle notification about the restoration
             setTimeout(() => {
               addStatusAlert({
@@ -805,19 +805,19 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         }
       ]
       setTelescopes(sampleTelescopes)
-      
+
       // Handle telescope selection for sample data (same logic as above)
       if (currentTelescope) {
         const savedTelescope = sampleTelescopes.find(
-          t => t.id === currentTelescope.id || 
+          t => t.id === currentTelescope.id ||
                t.serial_number === currentTelescope.serial_number ||
                (t.host === currentTelescope.host && t.name === currentTelescope.name)
         )
-        
+
         if (savedTelescope) {
           setCurrentTelescope(savedTelescope)
           console.log(`Restored telescope selection (sample): ${savedTelescope.name}`)
-          
+
           // Show a subtle notification about the restoration (sample data)
           setTimeout(() => {
             addStatusAlert({
@@ -841,7 +841,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
   const selectTelescope = (telescope: TelescopeInfo, showNotification: boolean = true) => {
     setCurrentTelescope(telescope)
-    
+
     if (showNotification) {
       addStatusAlert({
         type: 'info',
@@ -854,7 +854,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Add a status alert using toast system
   const addStatusAlert = (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => {
     const variant = alert.type === "error" ? "destructive" : alert.type
-    
+
     toast({
       title: alert.title,
       description: alert.message,
@@ -863,21 +863,54 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }
 
 
-  const handleTelescopeMove = (direction: string) => {
+  const handleTelescopeMove = async (direction: string) => {
     console.log(`Moving telescope ${direction}`)
 
-    // Add status alert for telescope movement
-    if (direction !== "stop") {
+    if (!currentTelescope) {
       addStatusAlert({
-        type: "info",
-        title: "Telescope Moving",
-        message: `Moving telescope ${direction}`,
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before moving",
       })
-    } else {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/v2/telescopes/move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          direction,
+          telescopeId: currentTelescope.serial_number,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+
+      // Add status alert for telescope movement
+      if (direction !== "stop") {
+        addStatusAlert({
+          type: "info",
+          title: "Telescope Moving",
+          message: `Moving telescope ${direction}`,
+        })
+      } else {
+        addStatusAlert({
+          type: "info",
+          title: "Telescope Stopped",
+          message: "Telescope movement stopped",
+        })
+      }
+    } catch (error) {
+      console.error('Error moving telescope:', error)
       addStatusAlert({
-        type: "info",
-        title: "Telescope Stopped",
-        message: "Telescope movement stopped",
+        type: "error",
+        title: "Movement Failed",
+        message: `Failed to move telescope: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     }
   }
