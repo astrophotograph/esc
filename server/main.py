@@ -403,7 +403,7 @@ class Controller:
         # If serial_number is not provided, try to fetch device information
         if not serial_number:
             try:
-                client = SeestarClient(host, port)
+                client = SeestarClient(host, port, EventBus())
                 await client.connect()
 
                 # Get device state to retrieve serial number, product model, and ssid

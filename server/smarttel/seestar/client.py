@@ -312,7 +312,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
                         self.status.dropped_frame = parser.event.dropped_frame
-                    self.event_bus.emit(StackEvent.Event, parser.event)
+                    self.event_bus.emit('Stack', parser.event)
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
                 case 'FocuserMove':

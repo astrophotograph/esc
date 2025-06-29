@@ -63,7 +63,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     def __init__(self, host: str, port: int, event_bus: EventBus | None = None):
         super().__init__(host=host, port=port, event_bus=event_bus)
 
-        self.event_bus.add_listener(StackEvent.Event, self._handle_stack_event)
+        self.event_bus.add_listener('Stack', self._handle_stack_event)
         self.connection = SeestarConnection(host=host, port=port)
 
     async def _reader(self):
