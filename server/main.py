@@ -228,6 +228,30 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+        @router.post("/focus_inc")
+        async def focus_inc(increment: int):
+            """Move the focuser by increment from current position."""
+            print(f"Focus increment: {increment}")
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            
+            # Get current focus position from status
+            current_position = self.client.status.focus_position
+            if current_position is None:
+                raise HTTPException(status_code=400, detail="Current focus position unknown")
+            
+            try:
+                new_position = current_position + increment
+                focus_params = MoveFocuserParameters(step=new_position)
+                response = await self.client.send_and_recv(MoveFocuser(params=focus_params.model_dump()))
+
+                if response is not None and response.result is not None:
+                    print(f"New focus position: {response.result.get('step')} {type(response.result)}")
+                    self.client.status.focus_position = response.result.get('step')
+                return {"move_focuser": response, "increment": increment, "new_position": new_position, "previous_position": current_position}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
         @router.get("/viewstate")
         async def get_view_state():
             """Get the current view state."""

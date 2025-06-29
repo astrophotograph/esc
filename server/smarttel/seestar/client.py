@@ -14,7 +14,7 @@ from typing import TypeVar, Literal
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState
+from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult
 from smarttel.seestar.protocol_handlers import TextProtocol
@@ -205,6 +205,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         else:
             logging.error(f"Error while processing device state from {self}: {response}")
 
+    def _process_focuser_position(self, response: CommandResponse[dict]):
+        """Process focuser position."""
+        logging.debug(f"Processing focuser position from {self}: {response}")
+        if response.result is not None:
+            self.status.focus_position = response.result
+        else:
+            logging.error(f"Error while processing focuser position from {self}: {response}")
+
     async def connect(self):
         await self.connection.open()
         self.is_connected = True
@@ -225,6 +233,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Received GetViewState: {response}")
 
         self._process_view_state(response)
+
+        # Get initial focus position
+        response = await self.send_and_recv(GetFocuserPosition())
+        logging.trace(f"Received GetFocuserPosition: {response}")
+        
+        self._process_focuser_position(response)
 
         logging.debug(f"Connected to {self}")
 
@@ -271,7 +285,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.trace(f"Handling event from {self}: {event_str}")
+        logging.debug(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -301,6 +315,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     focuser_event = parser.event
                     if focuser_event.position is not None:
                         self.status.focus_position = focuser_event.position
+                    print(f"Focuser event: {focuser_event}")
+                case _:
+                    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 
