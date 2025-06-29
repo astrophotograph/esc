@@ -305,13 +305,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if pi_status.battery_capacity is not None:
                         self.status.battery_capacity = pi_status.battery_capacity
                 case 'Stack':
-                    logging.trace("Updating stacked frame and dropped frame")
+                    logging.debug(f"Updating stacked frame and dropped frame: {parsed}")
                     if self.status.stacked_frame is not None:
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
                         self.status.dropped_frame = parser.event.dropped_frame
                     if parser.event.state == 'frame_complete':
                         # todo: only grab the frame if we're streaming in client!
+                        print("Grabbing frame")
                         self.send(GetStackedImage(id=23))
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
