@@ -285,7 +285,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.debug(f"Handling event from {self}: {event_str}")
+        logging.trace(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -316,8 +316,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if focuser_event.position is not None:
                         self.status.focus_position = focuser_event.position
                     print(f"Focuser event: {focuser_event}")
-                case _:
-                    logging.debug(f"Unhandled event: {parser}")
+                # Todo: include Exposure, Stacked
+                #case _:
+                #    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 

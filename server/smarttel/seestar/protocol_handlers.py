@@ -253,6 +253,6 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
             # print("HANDLE stack")
             return self._handle_stack(width, height, data)
         else:
-            logging.debug(f"Unknown message ID: {id}: {data}")
+            logging.trace(f"Unknown message ID: {id}: {data}")
 
         return ScopeImage(width=width, height=height, data=data, image=None)

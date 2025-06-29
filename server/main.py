@@ -48,6 +48,10 @@ class InterceptHandler(orig_logging.Handler):
             frame = frame.f_back
             depth += 1
 
+        if level == "DEBUG":
+            # Taking a big hammer to things, remap DEBUG to TRACE logging (outside of loguru)
+            level = "TRACE"
+
         logging.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
@@ -488,39 +492,56 @@ class Controller:
         async def proxy_request(request: Request, path: str):
             """Proxy all requests to the remote controller."""
             try:
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    # Build the target URL
-                    target_url = f"http://{remote_host}:{remote_port}/api/telescopes/{telescope_name}/{path}"
+                # Build the target URL
+                target_url = f"http://{remote_host}:{remote_port}/api/telescopes/{telescope_name}/{path}"
 
-                    # Forward query parameters
-                    query_params = str(request.url.query) if request.url.query else ""
-                    if query_params:
-                        target_url += f"?{query_params}"
+                # Forward query parameters
+                query_params = str(request.url.query) if request.url.query else ""
+                if query_params:
+                    target_url += f"?{query_params}"
 
-                    # Forward headers (exclude host-specific headers)
-                    headers = dict(request.headers)
-                    headers.pop("host", None)
-                    headers.pop("content-length", None)
+                # Forward headers (exclude host-specific headers)
+                headers = dict(request.headers)
+                headers.pop("host", None)
+                headers.pop("content-length", None)
 
-                    # Forward request body for POST/PUT/PATCH
-                    body = None
-                    if request.method in ["POST", "PUT", "PATCH"]:
-                        body = await request.body()
+                # Forward request body for POST/PUT/PATCH
+                body = None
+                if request.method in ["POST", "PUT", "PATCH"]:
+                    body = await request.body()
 
-                    # Make the proxied request
-                    response = await client.request(
-                        method=request.method,
+                # Stream all responses using a generator that manages its own client
+                async def stream_generator():
+                    client = httpx.AsyncClient(timeout=30.0)
+                    try:
+                        async with client.stream(
+                            method=request.method,
+                            url=target_url,
+                            headers=headers,
+                            content=body
+                        ) as response:
+                            # Yield status and headers info first if needed
+                            async for chunk in response.aiter_bytes():
+                                yield chunk
+                    finally:
+                        await client.aclose()
+                
+                # Get response info for headers
+                async with httpx.AsyncClient(timeout=5.0) as temp_client:
+                    temp_response = await temp_client.request(
+                        method="HEAD" if request.method == "GET" else request.method,
                         url=target_url,
                         headers=headers,
-                        content=body
+                        content=body if request.method != "GET" else None
                     )
-
-                    # Return the response
-                    return Response(
-                        content=response.content,
-                        status_code=response.status_code,
-                        headers=dict(response.headers)
-                    )
+                    response_headers = dict(temp_response.headers)
+                    content_type = response_headers.get("content-type", "application/octet-stream")
+                
+                return StreamingResponse(
+                    stream_generator(),
+                    headers=response_headers,
+                    media_type=content_type
+                )
 
             except Exception as e:
                 logging.error(f"Proxy request failed for {telescope_name}: {e}")

@@ -74,7 +74,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             try:
                 header = await self.connection.read_exactly(80)
                 size, id, width, height = self.binary_protocol.parse_header(header)
-                logging.debug(f"imaging receive header: {size=} {width=} {height=} {id=}")
+                logging.trace(f"imaging receive header: {size=} {width=} {height=} {id=}")
                 data = None
                 if size is not None:
                     data = await self.connection.read_exactly(size)
