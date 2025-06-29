@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square, Home } from "lucide-react"
 import { useTelescopeContext } from "../../../context/TelescopeContext"
 import { formatRaDec } from "../../../utils/telescope-utils"
 
@@ -14,6 +14,7 @@ export function TelescopeControls() {
     isTracking,
     setIsTracking,
     handleTelescopeMove,
+    handleTelescopePark,
     focusPosition,
     setFocusPosition,
     handleFocusAdjust,
@@ -120,6 +121,16 @@ export function TelescopeControls() {
             <span className="text-sm text-gray-300">Tracking</span>
             <Switch checked={isTracking} onCheckedChange={setIsTracking} />
           </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleTelescopePark()}
+            className="w-full border-gray-600 text-white hover:bg-gray-700"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Park Telescope
+          </Button>
         </div>
 
         <Separator className="bg-gray-700" />

@@ -242,6 +242,7 @@ interface TelescopeContextType {
   // Functions
   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
   handleTelescopeMove: (direction: string) => void
+  handleTelescopePark: () => void
   handleFocusAdjust: (direction: "in" | "out") => void
   handleTargetSelect: (target: CelestialObject) => void
   saveObservation: () => void
@@ -911,6 +912,48 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         type: "error",
         title: "Movement Failed",
         message: `Failed to move telescope: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
+  }
+
+  const handleTelescopePark = async () => {
+    console.log('Parking telescope')
+
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before parking",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch('/api/v2/telescopes/park', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telescopeId: currentTelescope.serial_number,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+
+      addStatusAlert({
+        type: "success",
+        title: "Telescope Parking",
+        message: "Telescope is moving to park position",
+      })
+    } catch (error) {
+      console.error('Error parking telescope:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Park Failed",
+        message: `Failed to park telescope: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     }
   }
@@ -1599,6 +1642,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     // Functions
     addStatusAlert,
     handleTelescopeMove,
+    handleTelescopePark,
     handleFocusAdjust,
     handleTargetSelect,
     saveObservation,
