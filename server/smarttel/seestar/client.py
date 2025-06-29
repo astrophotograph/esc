@@ -205,8 +205,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 response = await self.send_and_recv(GetViewState())
                 self._process_view_state(response)
                 response = await self.send_and_recv(GetDiskVolume())
-                self.status.freeMB = response.result.freeMB
-                self.status.totalMB = response.result.totalMB
+                self.status.freeMB = response.result.get('freeMB')
+                self.status.totalMB = response.result.get('totalMB')
             await asyncio.sleep(30)
 
     def _process_view_state(self, response: CommandResponse[dict]):
