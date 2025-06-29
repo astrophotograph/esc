@@ -219,7 +219,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         """Process view state."""
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
-            print(f"view state: {response.result}")
+            # print(f"view state: {response.result}")
             self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
             self.status.gain = pydash.get(response.result, 'View.gain', 0)
             self.status.stage = pydash.get(response.result, 'View.stage', 'unknown')
@@ -350,7 +350,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     focuser_event = parser.event
                     if focuser_event.position is not None:
                         self.status.focus_position = focuser_event.position
-                    print(f"Focuser event: {focuser_event}")
+                    logging.trace(f"Focuser event: {focuser_event}")
                 case 'WheelMove':
                     wheel_event = parser.event
                     if wheel_event.state == 'complete':

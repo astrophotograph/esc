@@ -206,7 +206,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         await asyncio.sleep(0.25)
                         await self.client.update_current_coords()
                     except Exception as e:
-                        print(f"Error fetching position: {e}")
+                        logging.error(f"Error fetching position: {e}")
 
                 asyncio.create_task(_fetch_position())
 
@@ -259,7 +259,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.post("/focus_inc")
         async def focus_inc(increment: int):
             """Move the focuser by increment from current position."""
-            print(f"Focus increment: {increment}")
+            logging.trace(f"Focus increment: {increment}")
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
             
@@ -274,7 +274,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 response = await self.client.send_and_recv(MoveFocuser(params=focus_params.model_dump()))
 
                 if response is not None and response.result is not None:
-                    print(f"New focus position: {response.result.get('step')} {type(response.result)}")
+                    logging.trace(f"New focus position: {response.result.get('step')} {type(response.result)}")
                     self.client.status.focus_position = response.result.get('step')
                 return {"move_focuser": response, "increment": increment, "new_position": new_position, "previous_position": current_position}
             except Exception as e:

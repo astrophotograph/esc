@@ -137,7 +137,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     async def _handle_stack_event(self, event: BaseEvent):
         if event.state == 'frame_complete' and self.status.is_fetching_images:
             # Only grab the frame if we're streaming in client!
-            print("Grabbing frame")
+            logging.trace("Grabbing frame")
             await self.send(GetStackedImage(id=23))
 
     async def start_streaming(self):
