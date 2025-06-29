@@ -2,22 +2,19 @@ import asyncio
 import collections
 import itertools
 import json
-import os
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TypeVar, Literal
 
 import pydash
 from loguru import logger as logging
-from typing import TypeVar, Literal
-
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.imaging import GetStackedImage
 from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition, GetDiskVolume
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, StackEvent, AnnotateEvent
+from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, AnnotateEvent
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
 
@@ -126,63 +123,63 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.debug(f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}")
         last_modified_time = None
         last_file_size = 0
-        
+
         while self.is_connected:
             try:
                 file_path = Path(self.pattern_file_path)
                 current_time = datetime.now().isoformat()
-                
+
                 # Check if file exists
                 if not file_path.exists():
                     self.status.pattern_match_last_check = current_time
                     await asyncio.sleep(self.pattern_check_interval)
                     continue
-                
+
                 # Get file stats
                 stat = file_path.stat()
                 current_modified_time = stat.st_mtime
                 current_size = stat.st_size
-                
+
                 # Check if file has been modified or grown
-                if (last_modified_time is None or 
-                    current_modified_time > last_modified_time or 
-                    current_size > last_file_size):
-                    
+                if (last_modified_time is None or
+                        current_modified_time > last_modified_time or
+                        current_size > last_file_size):
+
                     # Read the file content
                     try:
                         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                             content = f.read()
-                        
+
                         # Search for pattern
                         pattern_found = bool(re.search(self.pattern_regex, content, re.IGNORECASE))
-                        
+
                         # Update status
                         self.status.pattern_match_found = pattern_found
                         self.status.pattern_match_file = str(file_path)
                         self.status.pattern_match_last_check = current_time
-                        
+
                         if pattern_found:
                             logging.info(f"Pattern '{self.pattern_regex}' found in {file_path}")
                         else:
                             logging.trace(f"Pattern '{self.pattern_regex}' not found in {file_path}")
-                        
+
                         # Update tracking variables
                         last_modified_time = current_modified_time
                         last_file_size = current_size
-                        
+
                     except Exception as e:
                         logging.error(f"Error reading pattern file {file_path}: {e}")
                         self.status.pattern_match_last_check = current_time
                 else:
                     # File hasn't changed, just update the check time
                     self.status.pattern_match_last_check = current_time
-                
+
             except Exception as e:
                 logging.error(f"Error in pattern monitor task for {self}: {e}")
                 self.status.pattern_match_last_check = datetime.now().isoformat()
-            
+
             await asyncio.sleep(self.pattern_check_interval)
-        
+
         logging.debug(f"Pattern monitor task stopped for {self}")
 
     async def _heartbeat(self):
@@ -264,7 +261,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # Get initial focus position
         response = await self.send_and_recv(GetFocuserPosition())
         logging.trace(f"Received GetFocuserPosition: {response}")
-        
+
         self._process_focuser_position(response)
 
         logging.debug(f"Connected to {self}")
@@ -272,7 +269,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     async def disconnect(self):
         """Disconnect from Seestar."""
         self.is_connected = False
-        
+
         # Cancel background tasks
         if self.background_task:
             self.background_task.cancel()
@@ -281,7 +278,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             except asyncio.CancelledError:
                 pass
             self.background_task = None
-        
+
         if self.reader_task:
             self.reader_task.cancel()
             try:
@@ -289,7 +286,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             except asyncio.CancelledError:
                 pass
             self.reader_task = None
-        
+
         if self.pattern_monitor_task:
             self.pattern_monitor_task.cancel()
             try:
@@ -297,7 +294,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             except asyncio.CancelledError:
                 pass
             self.pattern_monitor_task = None
-        
+
         await self.connection.close()
         logging.debug(f"Disconnected from {self}")
 
@@ -344,8 +341,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if focuser_event.position is not None:
                         self.status.focus_position = focuser_event.position
                     print(f"Focuser event: {focuser_event}")
+                case 'WheelMove':
+                    wheel_event = parser.event
+                    if wheel_event.state == 'complete':
+                        self.status.lp_filter = wheel_event.position == 2
                 # Todo: include Exposure, Stacked
-                #case _:
+                # case _:
                 #    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
@@ -360,9 +361,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             # For string data, we can't easily assign an ID, so fall back to simple send
             await self.send(data)
             return None
-        
+
         await self.send(data)
-        
+
         # The reader task handles all incoming messages and resolves futures
         # We just need to wait for our specific message ID
         return await self.text_protocol.recv_message(self, message_id)
