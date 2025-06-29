@@ -958,10 +958,47 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const handleFocusAdjust = (direction: "in" | "out") => {
-    const newPosition =
-      direction === "in" ? Math.max(0, focusPosition[0] - 100) : Math.min(10000, focusPosition[0] + 100)
-    setFocusPosition([newPosition])
+  const handleFocusAdjust = async (direction: "in" | "out") => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before adjusting focus",
+      })
+      return
+    }
+
+    const increment = direction === "in" ? -10 : 10
+
+    try {
+      const response = await fetch('/api/v2/telescopes/focus-inc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telescopeId: currentTelescope.serial_number,
+          increment,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+
+      addStatusAlert({
+        type: "info",
+        title: "Focus Adjusting",
+        message: `Moving focus ${direction} by ${Math.abs(increment)} steps`,
+      })
+    } catch (error) {
+      console.error('Error adjusting focus:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Focus Adjustment Failed",
+        message: `Failed to adjust focus: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
   }
 
   const handleTargetSelect = (target: CelestialObject) => {

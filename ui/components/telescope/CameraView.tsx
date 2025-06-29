@@ -59,6 +59,7 @@ export function CameraView() {
     showStreamStatus,
     setShowStreamStatus,
     setStreamStatus,
+    setFocusPosition,
     isImaging,
   } = useTelescopeContext()
 
@@ -573,6 +574,13 @@ export function CameraView() {
         const data = JSON.parse(event.data);
         setLocalStreamStatus(data);
         setStreamStatus(data);
+        
+        // Update focus position from stream if available
+        if (data?.status?.focus_position !== undefined && data?.status?.focus_position !== null) {
+          setFocusPosition([data.status.focus_position]);
+          console.log("Updated focus position from stream:", data.status.focus_position);
+        }
+        
         console.log("Received status update:", data);
       } catch (error) {
         console.error("Error parsing stream data:", error);

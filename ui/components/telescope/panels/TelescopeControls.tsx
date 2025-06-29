@@ -30,6 +30,7 @@ export function TelescopeControls() {
   isImaging,
   setIsImaging,
   addStatusAlert,
+  currentTelescope,
   } = useTelescopeContext()
 
   const handleImagingToggle = () => {
@@ -39,6 +40,50 @@ export function TelescopeControls() {
       title: isImaging ? "Imaging Stopped" : "Imaging Started",
       message: isImaging ? "Telescope imaging session ended" : "Telescope imaging session started",
     })
+  }
+
+  const handleFocusSliderChange = async (value: number[]) => {
+    const newPosition = value[0]
+    const currentPosition = focusPosition[0]
+    const step = newPosition - currentPosition
+
+    if (step === 0) return
+
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before adjusting focus",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch('/api/v2/telescopes/focus', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telescopeId: currentTelescope.serial_number,
+          step,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+
+      // Optimistically update position - will be overridden by stream
+      setFocusPosition(value)
+    } catch (error) {
+      console.error('Error setting focus position:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Focus Set Failed",
+        message: `Failed to set focus position: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
   }
 
   return (
@@ -146,7 +191,7 @@ export function TelescopeControls() {
               <span className="text-gray-300">Position</span>
               <span className="text-white">{focusPosition[0]}</span>
             </div>
-            <Slider value={focusPosition} onValueChange={setFocusPosition} max={10000} step={10} className="w-full" />
+            <Slider value={focusPosition} onValueChange={handleFocusSliderChange} max={10000} step={10} className="w-full" />
           </div>
           <div className="flex gap-2">
             <Button
