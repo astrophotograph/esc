@@ -21,8 +21,8 @@ from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
 from smarttel.seestar.commands.parameterized import IscopeStartView, GotoTargetParameters, GotoTarget, \
-    ScopeSpeedMoveParameters, ScopeSpeedMove
-from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse
+    ScopeSpeedMoveParameters, ScopeSpeedMove, MoveFocuserParameters, MoveFocuser
+from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse, ScopePark, GetFocuserPosition
 from smarttel.seestar.imaging_client import SeestarImagingClient
 
 
@@ -192,6 +192,39 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             try:
                 response = await self.client.send_and_recv(ScopeSpeedMove(params=move_params.model_dump()))
                 return {"move_scope": response}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+        @router.post("/park")
+        async def park():
+            """Park the scope."""
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            try:
+                response = await self.client.send_and_recv(ScopePark())
+                return {"park_scope": response}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+        @router.get("/focus")
+        async def get_focus_position():
+            """Get the current focuser position."""
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            try:
+                response = await self.client.send_and_recv(GetFocuserPosition())
+                return {"focuser_position": response}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+        @router.post("/focus")
+        async def focus(focus_params: MoveFocuserParameters):
+            """Move the focuser."""
+            if not self.client.is_connected:
+                raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            try:
+                response = await self.client.send_and_recv(MoveFocuser(params=focus_params.model_dump()))
+                return {"move_focuser": response}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 

@@ -54,3 +54,13 @@ class GotoTarget(BaseCommand):
     """Go to a target from the Seestar."""
     method: Literal["goto_target"] = "goto_target"
     params: GotoTargetParameters
+
+class MoveFocuserParameters(BaseModel):
+    """Parameters for the MoveFocuser command."""
+    step: int
+    ret_step: bool = True
+
+class MoveFocuser(BaseCommand):
+    """Move the focuser from the Seestar."""
+    method: Literal["move_focuser"] = "move_focuser"
+    params: MoveFocuserParameters

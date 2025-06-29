@@ -35,6 +35,7 @@ class SeestarStatus(BaseModel):
     pattern_match_found: bool = False
     pattern_match_file: str | None = None
     pattern_match_last_check: str | None = None
+    focus_position: int | None = None
 
     def reset(self):
         self.temp = None
@@ -48,6 +49,7 @@ class SeestarStatus(BaseModel):
         self.pattern_match_found = False
         self.pattern_match_file = None
         self.pattern_match_last_check = None
+        self.focus_position = None
 
 
 class ParsedEvent(BaseModel):
@@ -295,6 +297,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.dropped_frame = parser.event.dropped_frame
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
+                case 'FocuserMove':
+                    focuser_event = parser.event
+                    if focuser_event.position is not None:
+                        self.status.focus_position = focuser_event.position
         except Exception as e:
             logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
 

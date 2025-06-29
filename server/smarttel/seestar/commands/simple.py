@@ -5,6 +5,10 @@ from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import BaseCommand
 
+class ScopePark(BaseCommand):
+    """Park the scope from the Seestar."""
+    method: Literal["scope_park"] = "scope_park"
+
 
 class TestConnection(BaseCommand):
     """Test the connection to the Seestar."""
