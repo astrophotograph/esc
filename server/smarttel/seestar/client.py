@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.imaging import GetStackedImage
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition
+from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition, GetDiskVolume
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, StackEvent, AnnotateEvent
 from smarttel.seestar.protocol_handlers import TextProtocol
@@ -40,6 +40,8 @@ class SeestarStatus(BaseModel):
     focus_position: int | None = None
     lp_filter: bool = False
     gain: int | None = None
+    freeMB: int | None = None
+    totalMB: int | None = None
 
     def reset(self):
         self.temp = None
@@ -56,6 +58,8 @@ class SeestarStatus(BaseModel):
         self.focus_position = None
         self.lp_filter = False
         self.gain = None
+        self.freeMB = None
+        self.totalMB = None
 
 
 class ParsedEvent(BaseModel):
@@ -200,6 +204,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             if self.is_connected:
                 response = await self.send_and_recv(GetViewState())
                 self._process_view_state(response)
+                response = await self.send_and_recv(GetDiskVolume())
+                self.status.freeMB = response.result.freeMB
+                self.status.totalMB = response.result.totalMB
             await asyncio.sleep(30)
 
     def _process_view_state(self, response: CommandResponse[dict]):

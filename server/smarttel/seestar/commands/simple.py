@@ -5,6 +5,10 @@ from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import BaseCommand
 
+class GetDiskVolume(BaseCommand):
+    """Get the disk volume from the Seestar."""
+    method: Literal["get_disk_volume"] = "get_disk_volume"
+
 class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
     method: Literal["scope_park"] = "scope_park"
