@@ -112,6 +112,11 @@ class ScopeGetRaDecCoord(BaseCommand):
     method: Literal["scope_get_ra_dec"] = "scope_get_ra_dec"
 
 
+class ScopeGetHorizCoord(BaseCommand):
+    """Get the right ascension and declination from the Seestar."""
+    method: Literal["scope_get_horiz_coord"] = "scope_get_horiz_coord"
+
+
 class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
     method: Literal["scope_park"] = "scope_park"

@@ -18,4 +18,7 @@ class CommandResponse(BaseModel):
     Timestamp: str | None = None
     method: str # TODO : strongly type this based on request type
     code: int
-    result: dict | int
+    # Some commands return a JSON object (dict)
+    # Others return a simple number (focus position)
+    # Others return a tuple (for example Dec / RA)
+    result: dict | tuple | int

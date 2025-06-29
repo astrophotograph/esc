@@ -4,6 +4,7 @@ import itertools
 import json
 import re
 from datetime import datetime
+from numbers import Number
 from pathlib import Path
 from typing import TypeVar, Literal
 
@@ -12,7 +13,8 @@ from loguru import logger as logging
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition, GetDiskVolume
+from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition, GetDiskVolume, \
+    ScopeGetEquCoord
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, AnnotateEvent
 from smarttel.seestar.protocol_handlers import TextProtocol
@@ -39,6 +41,8 @@ class SeestarStatus(BaseModel):
     gain: int | None = None
     freeMB: int | None = None
     totalMB: int | None = None
+    ra: float | None = None
+    dec: float | None = None
 
     def reset(self):
         self.temp = None
@@ -57,6 +61,8 @@ class SeestarStatus(BaseModel):
         self.gain = None
         self.freeMB = None
         self.totalMB = None
+        self.ra = None
+        self.dec = None
 
 
 class ParsedEvent(BaseModel):
@@ -70,7 +76,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     port: int
     event_bus: EventBus | None = None
     connection: SeestarConnection | None = None
-    counter: itertools.count = itertools.count()
+    # Start counter at 100 to not conflict with some lower, hardcoded IDs
+    counter: itertools.count = itertools.count(100)
     is_connected: bool = False
     status: SeestarStatus = SeestarStatus()
     view_refresh_task: asyncio.Task | None = None
@@ -308,7 +315,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.trace(f"Handling event from {self}: {event_str}")
+        logging.debug(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -366,6 +373,15 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # The reader task handles all incoming messages and resolves futures
         # We just need to wait for our specific message ID
         return await self.text_protocol.recv_message(self, message_id)
+
+    async def update_current_coords(self):
+        """Update telescope position."""
+        response = await self.send_and_recv(ScopeGetEquCoord())
+        logging.debug(f"Received ScopeGetEquCoord: {response}")
+        if response is not None:
+            # Normalize to degrees...
+            self.status.ra = response.result.get('ra') * 15.0
+            self.status.dec = response.result.get('dec')
 
     # async def recv(self) -> CommandResponse[U] | None:
     #     """Receive data from Seestar."""

@@ -30,13 +30,19 @@ class IscopeStopView(BaseCommand):
 class ScopeSetTrackState(BaseCommand):
     """Set the track state from the Seestar."""
     method: Literal["scope_set_track_state"] = "scope_set_track_state"
+    # { tracking: bool }
     params: bool
 
 class ScopeSpeedMoveParameters(BaseModel):
     """Parameters for the ScopeSpeedMove command."""
-    speed: int
+    # Old values: speed, angle, dur_sec
+    # New values: level, angle, dur_sec, percent
+    #   percent of 0 seems to mean stop...
+    # speed: int
     angle: int
+    level: int
     dur_sec: int
+    percent: int
 
 class ScopeSpeedMove(BaseCommand):
     """Speed move the scope from the Seestar."""

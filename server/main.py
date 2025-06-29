@@ -23,7 +23,8 @@ from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
 from smarttel.seestar.commands.parameterized import IscopeStartView, GotoTargetParameters, GotoTarget, \
     ScopeSpeedMoveParameters, ScopeSpeedMove, MoveFocuserParameters, MoveFocuser
-from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse, ScopePark, GetFocuserPosition
+from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse, ScopePark, \
+    GetFocuserPosition, ScopeGetHorizCoord, ScopeGetEquCoord, ScopeGetRaDecCoord
 from smarttel.seestar.imaging_client import SeestarImagingClient
 from smarttel.util.eventbus import EventBus
 
@@ -198,6 +199,17 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
             try:
+                async def _fetch_position():
+                    """Fetch the current position from the scope."""
+                    try:
+                        # Fetch the position after movement has stopped...
+                        await asyncio.sleep(move_params.dur_sec)
+                        await self.client.update_current_coords()
+                    except Exception as e:
+                        print(f"Error fetching position: {e}")
+
+                asyncio.create_task(_fetch_position())
+
                 response = await self.client.send_and_recv(ScopeSpeedMove(params=move_params.model_dump()))
                 return {"move_scope": response}
             except Exception as e:
