@@ -195,6 +195,8 @@ export interface SystemStats {
   battery: number
   temperature: number
   diskUsage: number
+  freeMB?: number
+  totalMB?: number
   weather: {
     condition: string
     humidity: number

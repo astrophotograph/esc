@@ -1298,6 +1298,22 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [systemStats.battery, toast])
 
+  // Update system stats from streaming status
+  useEffect(() => {
+    if (streamStatus?.status) {
+      setSystemStats(prev => ({
+        ...prev,
+        battery: streamStatus.status.battery_capacity ?? prev.battery,
+        temperature: streamStatus.status.temp ?? prev.temperature,
+        freeMB: streamStatus.status.freeMB ?? prev.freeMB,
+        totalMB: streamStatus.status.totalMB ?? prev.totalMB,
+        diskUsage: streamStatus.status.freeMB && streamStatus.status.totalMB 
+          ? Math.round(((streamStatus.status.totalMB - streamStatus.status.freeMB) / streamStatus.status.totalMB) * 100)
+          : prev.diskUsage
+      }))
+    }
+  }, [streamStatus])
+
   // Keyboard event handler
   const handleKeyDown = (event: KeyboardEvent) => {
     // Prevent shortcuts when typing in input fields

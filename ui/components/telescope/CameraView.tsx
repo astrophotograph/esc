@@ -23,7 +23,9 @@ import {
   XCircle,
   ZoomIn,
   ZoomOut,
-  Maximize
+  Maximize,
+  Settings,
+  Filter
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { useTelescopeContext } from "../../context/TelescopeContext"
@@ -683,7 +685,26 @@ export function CameraView() {
                   <HardDrive
                     className={`w-4 h-4 ${systemStats.diskUsage < 80 ? "text-green-400" : "text-yellow-400"}`}
                   />
-                  <span className="text-gray-300">{Math.round(systemStats.diskUsage)}%</span>
+                  <span className="text-gray-300" title={systemStats.freeMB && systemStats.totalMB ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` : undefined}>
+                    {Math.round(systemStats.diskUsage)}%
+                  </span>
+                </div>
+
+                {/* Gain */}
+                <div className="flex items-center gap-1">
+                  <Settings className="w-4 h-4 text-purple-400" />
+                  <span className="text-gray-300">{localStreamStatus?.status?.gain ?? 'N/A'}</span>
+                </div>
+
+                {/* LP Filter Status */}
+                <div className="flex items-center gap-1">
+                  <Filter 
+                    className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? "text-amber-400" : "text-gray-400"}`}
+                    title="Light Pollution Filter"
+                  />
+                  <span className="text-gray-300">
+                    {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}
+                  </span>
                 </div>
               </div>
 
