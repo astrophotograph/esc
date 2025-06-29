@@ -452,7 +452,7 @@ class Controller:
     async def add_remote_controller(self, host: str, port: int):
         """Add proxy routes for telescopes from a remote controller by calling its /api/telescopes endpoint."""
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=5.0, http2=True) as client:
                 response = await client.get(f"http://{host}:{port}/api/telescopes")
                 if response.status_code == 200:
                     telescopes = response.json()
@@ -488,7 +488,9 @@ class Controller:
     def _create_proxy_router(self, telescope_name: str, remote_host: str, remote_port: int):
         """Create a proxy router that forwards requests to the remote controller."""
         router = APIRouter()
-        client = httpx.AsyncClient(base_url=f"http://{remote_host}:{remote_port}/", timeout=None)
+        client = httpx.AsyncClient(base_url=f"http://{remote_host}:{remote_port}/",
+                                   timeout=None,
+                                   http2=True)
 
         @router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy_request(request: Request, path: str):
