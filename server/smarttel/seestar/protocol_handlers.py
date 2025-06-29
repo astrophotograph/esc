@@ -197,7 +197,7 @@ class BinaryProtocol(ProtocolHandler[npt.NDArray]):
 
     def _convert_star_image(
             self, raw_image: bytes, width: int, height: int
-    ) -> Optional[npt.NDArray[tuple]]:
+    ) -> Optional[npt.NDArray[Any]]:
         # if self.exposure_mode == "stack" or len(self.raw_img) == 1920 * 1080 * 6:
         w = width or 1080
         h = height or 1920

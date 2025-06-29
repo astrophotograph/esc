@@ -27,6 +27,7 @@ class SeestarStatus(BaseModel):
     """Seestar status."""
     temp: float | None = None
     charger_status: Literal['Discharging', 'Charging', 'Full'] | None = None
+    stage: str | None = None
     charge_online: bool | None = None
     battery_capacity: int | None = None
     stacked_frame: int = 0
@@ -63,6 +64,7 @@ class SeestarStatus(BaseModel):
         self.totalMB = None
         self.ra = None
         self.dec = None
+        self.stage = None
 
 
 class ParsedEvent(BaseModel):
@@ -217,8 +219,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         """Process view state."""
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
+            print(f"view state: {response.result}")
             self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
             self.status.gain = pydash.get(response.result, 'View.gain', 0)
+            self.status.stage = pydash.get(response.result, 'View.stage', 'unknown')
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
 
@@ -315,7 +319,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.debug(f"Handling event from {self}: {event_str}")
+        logging.trace(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -379,7 +383,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         Returns True if the position changed, False otherwise."""
         response = await self.send_and_recv(ScopeGetEquCoord())
-        logging.debug(f"Received ScopeGetEquCoord: {response}")
+        logging.trace(f"Received ScopeGetEquCoord: {response}")
         if response is not None:
             # Normalize to degrees...
             new_ra = response.result.get('ra') * 15.0
