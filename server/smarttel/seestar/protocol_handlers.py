@@ -247,12 +247,12 @@ class BinaryProtocol(ProtocolHandler[np.ndarray]):
         Returns True to indicate that the message was handled.
         """
         if id == 21:  # Preview frame
-            # print("HANDLE preview frame")
+            print("HANDLE preview frame")
             return self._handle_preview_frame(width, height, data)
         elif id == 23:
-            # print("HANDLE stack")
+            print("HANDLE stack")
             return self._handle_stack(width, height, data)
         else:
-            logging.trace(f"Unknown message ID: {id}: {data}")
+            logging.debug(f"Unknown message ID: {id}: {data}")
 
         return ScopeImage(width=width, height=height, data=data, image=None)
