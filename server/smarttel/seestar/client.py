@@ -211,7 +211,6 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
             self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
-            self.status.lp_filter = pydash.get(response.result, 'View.lp_filter', False)
             self.status.gain = pydash.get(response.result, 'View.gain', 0)
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
