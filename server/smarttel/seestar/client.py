@@ -374,14 +374,22 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # We just need to wait for our specific message ID
         return await self.text_protocol.recv_message(self, message_id)
 
-    async def update_current_coords(self):
-        """Update telescope position."""
+    async def update_current_coords(self) -> bool:
+        """Update telescope position.
+
+        Returns True if the position changed, False otherwise."""
         response = await self.send_and_recv(ScopeGetEquCoord())
         logging.debug(f"Received ScopeGetEquCoord: {response}")
         if response is not None:
             # Normalize to degrees...
-            self.status.ra = response.result.get('ra') * 15.0
-            self.status.dec = response.result.get('dec')
+            new_ra = response.result.get('ra') * 15.0
+            new_dec = response.result.get('dec')
+
+            if new_ra != self.status.ra or new_dec != self.status.dec:
+                self.status.ra = new_ra
+                self.status.dec = new_dec
+                return True
+        return False
 
     # async def recv(self) -> CommandResponse[U] | None:
     #     """Receive data from Seestar."""

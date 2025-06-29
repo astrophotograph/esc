@@ -203,7 +203,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     """Fetch the current position from the scope."""
                     try:
                         # Fetch the position after movement has stopped...
-                        await asyncio.sleep(move_params.dur_sec)
+                        await asyncio.sleep(0.25)
                         await self.client.update_current_coords()
                     except Exception as e:
                         print(f"Error fetching position: {e}")
@@ -221,6 +221,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
             try:
+                async def _position_updater():
+                    """Fetch the current position from the scope until it stops moving."""
+                    await asyncio.sleep(0.5)
+                    while await self.client.update_current_coords():
+                        await asyncio.sleep(0.5)
+
+                asyncio.create_task(_position_updater())
+
                 response = await self.client.send_and_recv(ScopePark())
                 return {"park_scope": response}
             except Exception as e:
@@ -311,8 +319,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     # Send the status as a Server-Sent Event
                     yield f"data: {json.dumps(status)}\n\n"
 
-                    # Wait for 5 seconds before sending next update
-                    await asyncio.sleep(5)
+                    # Wait for 1 seconds before sending next update
+                    await asyncio.sleep(1)
             except asyncio.CancelledError:
                 # Handle client disconnection gracefully
                 yield f"data: {json.dumps({'status': 'stream_closed'})}\n\n"
