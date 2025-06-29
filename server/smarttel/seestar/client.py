@@ -93,7 +93,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     # Parse and handle the response
                     if 'Event' in response_str:
                         # Handle events
-                        self._handle_event(response_str)
+                        await self._handle_event(response_str)
                     elif 'jsonrpc' in response_str:
                         # Parse as command response and let protocol handler process it
                         try:
@@ -284,7 +284,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             data = data.model_dump_json()
         await self.connection.write(data)
 
-    def _handle_event(self, event_str: str):
+    async def _handle_event(self, event_str: str):
         """Parse an event."""
         logging.trace(f"Handling event from {self}: {event_str}")
         try:
@@ -313,7 +313,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if parser.event.state == 'frame_complete':
                         # todo: only grab the frame if we're streaming in client!
                         print("Grabbing frame")
-                        self.send(GetStackedImage(id=23))
+                        await self.send(GetStackedImage(id=23))
                 case 'Annotate':
                     self.status.annotate = AnnotateResult(**parser.event.result)
                 case 'FocuserMove':
