@@ -93,7 +93,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _reader(self):
         """Background task that continuously reads messages and handles them."""
-        logging.debug(f"Starting reader task for {self}")
+        logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
                 response_str = await self.connection.read()
@@ -120,7 +120,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _pattern_monitor(self):
         """Background task that monitors a file for specific patterns."""
-        logging.debug(f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}")
+        logging.info(f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}")
         last_modified_time = None
         last_file_size = 0
 
@@ -196,7 +196,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _view_refresher(self):
         """Background task that refreshes the view state periodically."""
-        logging.debug(f"Starting view refresher task for {self}")
+        logging.info(f"Starting view refresher task for {self}")
         while True:
             if self.is_connected:
                 response = await self.send_and_recv(GetViewState())
@@ -263,7 +263,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         self._process_focuser_position(response)
 
-        logging.debug(f"Connected to {self}")
+        logging.info(f"Connected to {self}")
 
     async def disconnect(self):
         """Disconnect from Seestar."""
@@ -295,7 +295,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             self.pattern_monitor_task = None
 
         await self.connection.close()
-        logging.debug(f"Disconnected from {self}")
+        logging.info(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
         # todo : do connected check...

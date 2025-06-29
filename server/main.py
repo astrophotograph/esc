@@ -424,11 +424,7 @@ class Controller:
                               product_model=product_model,
                               ssid=ssid,
                               _location=location)
-        logging.info(f"Added telescope {telescope.name} at {host}:{port}")
-        if serial_number: logging.info(f"Serial number: {serial_number}")
-        if product_model: logging.info(f"Product model: {product_model}")
-        if ssid: logging.info(f"SSID: {ssid}")
-        if location: logging.info(f"Location: {location}")
+        logging.info(f"Added telescope {telescope.name} at {host}:{port} {serial_number=} {product_model=} {ssid=} {location=}")
 
         self.telescopes[telescope.name] = telescope
 

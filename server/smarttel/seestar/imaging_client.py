@@ -68,7 +68,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _reader(self):
         """Background task that continuously reads messages and handles them."""
-        logging.debug(f"Starting reader task for {self}")
+        logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
                 header = await self.connection.read_exactly(80)
@@ -87,7 +87,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     continue
                 else:
                     break
-        logging.debug(f"Reader task stopped for {self}")
+        logging.info(f"Reader task stopped for {self}")
 
     async def _heartbeat(self):
         await asyncio.sleep(5)
@@ -105,7 +105,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         self.background_task = asyncio.create_task(self._heartbeat())
         self.reader_task = asyncio.create_task(self._reader())
 
-        logging.debug(f"Connected to {self}")
+        logging.info(f"Connected to {self}")
 
     async def disconnect(self):
         """Disconnect from Seestar."""
@@ -113,7 +113,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             await self.stop_streaming()
         await self.connection.close()
         self.is_connected = False
-        logging.debug(f"Disconnected from {self}")
+        logging.info(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
         if isinstance(data, BaseModel):
@@ -140,31 +140,6 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             print("Grabbing frame")
             await self.send(GetStackedImage(id=23))
 
-    # async def send_and_recv(self, data: str | BaseModel) -> CommandResponse | None:
-    #     await self.send(data)
-    #     while self.is_connected:
-    #         response = await self.recv()
-    #         if response is not None:
-    #             return response
-    #     return None
-    #
-    # async def recv(self) -> CommandResponse[U] | None:
-    #     """Receive data from Seestar."""
-    #     response = ""
-    #     try:
-    #         while 'jsonrpc' not in response:
-    #             response = await self.connection.read()
-    #             if response is None:
-    #                 await self.disconnect()
-    #                 return None
-    #             if 'Event' in response:
-    #                 self._handle_event(response)
-    #                 return None
-    #         return CommandResponse[U](**json.loads(response))
-    #     except Exception as e:
-    #         logging.error(f"Error while receiving data from {self}: {response} {e}")
-    #         raise e
-
     async def start_streaming(self):
         """Start streaming from the Seestar."""
         if self.status.is_streaming:
@@ -186,11 +161,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             return
 
         response = await self.send(StopStreaming())
-        # if response and response.result is not None:
         self.status.is_streaming = False
-        #     logging.info(f"Stopped streaming from {self}")
-        # else:
-        #     logging.error(f"Failed to stop streaming from {self}: {response}")
 
     def __str__(self):
         return f"{self.host}:{self.port}"
