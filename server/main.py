@@ -340,8 +340,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
 
             star_processors = [GraxpertStretch()]
-            await self.client.send(IscopeStartView(params={"mode": "star"}))
-            await self.imaging.start_streaming()
+            # await self.client.send(IscopeStartView(params={"mode": "star"}))
+            # await self.imaging.start_streaming()
             yield b"\r\n--frame\r\n"
             async for image in self.imaging.get_next_image():
                 if image is not None and image.image is not None:
