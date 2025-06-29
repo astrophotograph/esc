@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, APIRouter, Request
 from fastapi.responses import StreamingResponse, Response
 from loguru import logger as logging
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.seestar.client import SeestarClient
@@ -487,62 +488,24 @@ class Controller:
     def _create_proxy_router(self, telescope_name: str, remote_host: str, remote_port: int):
         """Create a proxy router that forwards requests to the remote controller."""
         router = APIRouter()
+        client = httpx.AsyncClient(base_url=f"http://{remote_host}:{remote_port}/", timeout=None)
 
         @router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy_request(request: Request, path: str):
             """Proxy all requests to the remote controller."""
             try:
-                # Build the target URL
-                target_url = f"http://{remote_host}:{remote_port}/api/telescopes/{telescope_name}/{path}"
-
-                # Forward query parameters
-                query_params = str(request.url.query) if request.url.query else ""
-                if query_params:
-                    target_url += f"?{query_params}"
-
-                # Forward headers (exclude host-specific headers)
-                headers = dict(request.headers)
-                headers.pop("host", None)
-                headers.pop("content-length", None)
-
-                # Forward request body for POST/PUT/PATCH
-                body = None
-                if request.method in ["POST", "PUT", "PATCH"]:
-                    body = await request.body()
-
-                # Stream all responses using a generator that manages its own client
-                async def stream_generator():
-                    client = httpx.AsyncClient(timeout=30.0)
-                    try:
-                        async with client.stream(
-                            method=request.method,
-                            url=target_url,
-                            headers=headers,
-                            content=body
-                        ) as response:
-                            # Yield status and headers info first if needed
-                            async for chunk in response.aiter_bytes():
-                                yield chunk
-                    finally:
-                        await client.aclose()
-                
-                # Get response info for headers
-                async with httpx.AsyncClient(timeout=5.0) as temp_client:
-                    temp_response = await temp_client.request(
-                        method="HEAD" if request.method == "GET" else request.method,
-                        url=target_url,
-                        headers=headers,
-                        content=body if request.method != "GET" else None
-                    )
-                    response_headers = dict(temp_response.headers)
-                    content_type = response_headers.get("content-type", "application/octet-stream")
-                
+                url = httpx.URL(path=request.url.path,
+                                query=request.url.query.encode("utf-8"))
+                rp_req = client.build_request(request.method, url,
+                                              headers=request.headers.raw,
+                                              content=request.stream())
+                rp_resp = await client.send(rp_req, stream=True)
                 return StreamingResponse(
-                    stream_generator(),
-                    headers=response_headers,
-                    media_type=content_type
+                    rp_resp.aiter_raw(),
+                    status_code=rp_resp.status_code,
+                    headers=rp_resp.headers,
+                    background=BackgroundTask(rp_resp.aclose),
                 )
-
             except Exception as e:
                 logging.error(f"Proxy request failed for {telescope_name}: {e}")
                 raise HTTPException(status_code=502, detail=f"Failed to proxy request to remote telescope: {e}")
