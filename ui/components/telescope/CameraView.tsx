@@ -238,6 +238,18 @@ export function CameraView() {
     };
   };
 
+  // Transform delta coordinates based on rotation angle
+  const transformDeltaForRotation = (dx: number, dy: number) => {
+    const angleRad = (rotationAngle * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    
+    return {
+      x: dx * cos + dy * sin,
+      y: -dx * sin + dy * cos
+    };
+  };
+
   // Validate if URL format is correct (handles both absolute and relative URLs)
   const isValidUrl = (url: string): boolean => {
     // Allow relative URLs starting with /api/
@@ -380,11 +392,14 @@ export function CameraView() {
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
 
+      // Transform deltas based on rotation angle
+      const transformedDelta = transformDeltaForRotation(dx, dy);
+
       // Update pan position (scale by zoom level to make movement feel natural)
       setPanPosition(prev => {
         const newPos = {
-          x: prev.x + dx / zoomLevel,
-          y: prev.y + dy / zoomLevel
+          x: prev.x + transformedDelta.x / zoomLevel,
+          y: prev.y + transformedDelta.y / zoomLevel
         };
 
         // Apply constraints to keep image within bounds
@@ -406,11 +421,14 @@ export function CameraView() {
       const dx = e.touches[0].clientX - dragStart.x;
       const dy = e.touches[0].clientY - dragStart.y;
 
+      // Transform deltas based on rotation angle
+      const transformedDelta = transformDeltaForRotation(dx, dy);
+
       // Update pan position with constraints
       setPanPosition(prev => {
         const newPos = {
-          x: prev.x + dx / zoomLevel,
-          y: prev.y + dy / zoomLevel
+          x: prev.x + transformedDelta.x / zoomLevel,
+          y: prev.y + transformedDelta.y / zoomLevel
         };
 
         return constrainPan(newPos.x, newPos.y);

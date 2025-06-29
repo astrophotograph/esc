@@ -17,11 +17,18 @@ export async function POST(request: NextRequest) {
 
     if (direction === 'stop') {
       // Handle stop command
-      const response = await fetch(`${BACKEND_URL}/api/telescopes/${telescopeId}/stop`, {
+      const movePayload = {
+        angle: 0,
+        level: 1,
+        dur_sec: 3,
+        percent: 0,
+      }
+      const response = await fetch(`${BACKEND_URL}/api/telescopes/${telescopeId}/move`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(movePayload),
       })
 
       if (!response.ok) {
@@ -42,8 +49,9 @@ export async function POST(request: NextRequest) {
     // Call backend API with specified parameters
     const movePayload = {
       angle,
-      speed: 1000,
-      dur_sec: 2,
+      level: 1,
+      dur_sec: 3,
+      percent: 100,
     }
 
     const response = await fetch(`${BACKEND_URL}/api/telescopes/${telescopeId}/move`, {
