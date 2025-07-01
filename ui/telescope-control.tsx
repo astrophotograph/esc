@@ -17,6 +17,7 @@ import { PictureInPictureOverlay } from "./components/telescope/PictureInPicture
 import { PipOverlayControls } from "./components/telescope/PipOverlayControls"
 import { DataManagementSettings } from "./components/telescope/modals/DataManagementSettings"
 import { EquipmentManager } from "./components/telescope/modals/EquipmentManager"
+import { CelestialSearchDialog } from "./components/telescope/CelestialSearchDialog"
 
 function TelescopeControlContent() {
   const {
@@ -31,6 +32,8 @@ function TelescopeControlContent() {
     handleKeyDown,
     showDataManagementSettings,
     setShowDataManagementSettings,
+    showCelestialSearch,
+    setShowCelestialSearch,
     showEquipmentManager,
     setShowEquipmentManager,
   } = useTelescopeContext()
@@ -67,6 +70,12 @@ function TelescopeControlContent() {
         {showLocationManager && <LocationManagement onClose={() => setShowLocationManager(false)} />}
         {showDataManagementSettings && <DataManagementSettings onClose={() => setShowDataManagementSettings(false)} />}
         {showEquipmentManager && <EquipmentManager onClose={() => setShowEquipmentManager(false)} />}
+        
+        {/* Celestial Search Dialog */}
+        <CelestialSearchDialog 
+          open={showCelestialSearch} 
+          onOpenChange={setShowCelestialSearch} 
+        />
 
         <DataPersistenceManager />
       </div>

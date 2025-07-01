@@ -197,6 +197,8 @@ interface TelescopeContextType {
   setPastSessions: (sessions: Session[]) => void
   showDataManagementSettings: boolean
   setShowDataManagementSettings: (show: boolean) => void
+  showCelestialSearch: boolean
+  setShowCelestialSearch: (show: boolean) => void
   showEquipmentManager: boolean
   setShowEquipmentManager: (show: boolean) => void
   equipment: Equipment[]
@@ -473,6 +475,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [celestialEvents, setCelestialEvents] = useState<CelestialEvent[]>(sampleCelestialEvents)
   const [weatherForecast, setWeatherForecast] = useState<WeatherForecast[]>(sampleWeatherForecast)
   const [showDataManagementSettings, setShowDataManagementSettings] = useState(false)
+  const [showCelestialSearch, setShowCelestialSearch] = useState(false)
   const [showEquipmentManager, setShowEquipmentManager] = useState(false)
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([])
   const [tabActivity, setTabActivity] = useState<TabActivityState>({
@@ -1523,6 +1526,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           setShowAnnotations(!showAnnotations)
         }
         break
+      case "k":
+        if (event.ctrlKey || event.metaKey) {
+          preventDefault()
+          setShowCelestialSearch(true)
+        }
+        break
     }
   }
 
@@ -1668,6 +1677,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setPastSessions,
     showDataManagementSettings,
     setShowDataManagementSettings,
+    showCelestialSearch,
+    setShowCelestialSearch,
     showEquipmentManager,
     setShowEquipmentManager,
     equipment,
