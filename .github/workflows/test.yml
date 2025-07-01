@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  test-frontend:
     runs-on: ubuntu-latest
 
     strategy:
@@ -22,23 +22,29 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: ui/package-lock.json
 
     - name: Install dependencies
+      working-directory: ./ui
       run: npm ci --legacy-peer-deps
 
     - name: Run linter
+      working-directory: ./ui
       run: npm run lint
 
     - name: Run tests
+      working-directory: ./ui
       run: npm test
 
     - name: Generate coverage report
+      working-directory: ./ui
       run: npm run test:coverage
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        flags: unittests
-        name: codecov-umbrella
+        flags: frontend
+        name: codecov-frontend
         fail_ci_if_error: false
+        directory: ./ui/coverage
