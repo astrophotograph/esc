@@ -105,6 +105,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
+                # Check if connection is still valid
+                if not self.connection.is_connected():
+                    logging.warning(f"Connection lost for {self}, attempting to reconnect...")
+                    await asyncio.sleep(1.0)  # Wait before next iteration
+                    continue
+                    
                 response_str = await self.connection.read()
                 if response_str is not None:
                     # Parse and handle the response
@@ -118,10 +124,17 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                             self.text_protocol.handle_incoming_message(parsed_response)
                         except Exception as parse_error:
                             logging.error(f"Error parsing response from {self}: {response_str} {parse_error}")
+                else:
+                    # response_str is None, which could mean connection issues handled by connection layer
+                    # Check if we're still connected and continue
+                    if not self.connection.is_connected():
+                        logging.debug(f"Connection not available for {self}, will retry")
+                        await asyncio.sleep(0.5)
+                    continue
             except Exception as e:
-                logging.error(f"Error in reader task for {self}: {e}")
+                logging.error(f"Unexpected error in reader task for {self}: {e}")
                 if self.is_connected:
-                    await asyncio.sleep(0.1)  # Brief pause before retrying
+                    await asyncio.sleep(1.0)  # Brief pause before retrying
                     continue
                 else:
                     break

@@ -71,19 +71,40 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
+                # Check if connection is still valid
+                if not self.connection.is_connected():
+                    logging.warning(f"Connection lost for {self}, attempting to reconnect...")
+                    await asyncio.sleep(1.0)  # Wait before next iteration
+                    continue
+                    
                 header = await self.connection.read_exactly(80)
+                if header is None:
+                    # Connection issue handled by connection layer, check status and continue
+                    if not self.connection.is_connected():
+                        logging.debug(f"Connection not available for {self}, will retry")
+                        await asyncio.sleep(0.5)
+                    continue
+                    
                 size, id, width, height = self.binary_protocol.parse_header(header)
                 logging.trace(f"imaging receive header: {size=} {width=} {height=} {id=}")
+                
                 data = None
                 if size is not None:
                     data = await self.connection.read_exactly(size)
+                    if data is None:
+                        # Connection issue during data read, check status and continue
+                        if not self.connection.is_connected():
+                            logging.debug(f"Connection lost during data read for {self}")
+                            await asyncio.sleep(0.5)
+                        continue
+                        
                 if data is not None:
                     self.image = await self.binary_protocol.handle_incoming_message(width, height, data, id)
 
             except Exception as e:
-                logging.error(f"Failed to read from {self}: {e}")
+                logging.error(f"Unexpected error in imaging reader task for {self}: {e}")
                 if self.is_connected:
-                    await asyncio.sleep(1)  # Brief pause before retrying
+                    await asyncio.sleep(1.0)  # Brief pause before retrying
                     continue
                 else:
                     break
