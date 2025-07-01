@@ -26,6 +26,23 @@ build: ## Build all containers
 build-clean: ## Build all containers without cache
 	docker-compose build --no-cache
 
+fix-server-permissions: ## Fix server permission issues using multistage build
+	@echo "🔧 Switching to server multistage Dockerfile..."
+	@sed -i.bak 's/dockerfile: Dockerfile/dockerfile: Dockerfile.multistage/' docker-compose.yml
+	docker-compose build server --no-cache
+	@echo "✅ Server rebuilt with permission fixes"
+
+fix-ui-permissions: ## Fix UI permission issues using multistage build
+	@echo "🔧 Switching to UI multistage Dockerfile..."
+	@sed -i.bak 's/dockerfile: Dockerfile/dockerfile: Dockerfile.multistage/' docker-compose.yml
+	docker-compose build ui --no-cache
+	@echo "✅ UI rebuilt with permission fixes"
+
+restore-dockerfiles: ## Restore original Dockerfiles in docker-compose.yml
+	@echo "🔄 Restoring original Dockerfiles..."
+	@sed -i.bak 's/dockerfile: Dockerfile.multistage/dockerfile: Dockerfile/' docker-compose.yml
+	@echo "✅ Restored to original Dockerfiles"
+
 # Container management
 start: ## Start all services
 	docker-compose start
@@ -123,3 +140,6 @@ stats: ## Show container resource usage
 quick-restart: stop start ## Quick restart without rebuild
 rebuild: down build dev ## Rebuild and start development
 fresh-start: down-clean build dev ## Complete fresh start
+
+# Permission fix commands
+fix-permissions: fix-server-permissions fix-ui-permissions ## Fix both server and UI permission issues

@@ -210,12 +210,19 @@ SEESTAR_PORT=4700
    docker-compose build --no-cache
    ```
 
-4. **Server permission errors (chown failures)**:
+4. **Permission errors (chown failures or .next/trace access)**:
    ```bash
-   # Use alternative multi-stage Dockerfile
-   # Edit docker-compose.yml and change:
+   # For server permission issues:
+   # Edit docker-compose.yml server section:
    # dockerfile: Dockerfile.multistage
+   
+   # For UI permission issues (.next/trace):
+   # Edit docker-compose.yml ui section:
+   # dockerfile: Dockerfile.multistage
+   
+   # Rebuild affected service
    docker-compose build server --no-cache
+   docker-compose build ui --no-cache
    ```
 
 5. **Network issues**:

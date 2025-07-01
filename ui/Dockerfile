@@ -1,28 +1,33 @@
 # Next.js UI Dockerfile
 FROM node:20-alpine
 
-# Set working directory
-WORKDIR /app
-
 # Install dependencies for Node.js builds
 RUN apk add --no-cache \
     curl \
     git
 
-# Copy package files
-COPY package*.json ./
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 -G nodejs
+
+# Set working directory and ensure ownership
+WORKDIR /app
+RUN chown nextjs:nodejs /app
+
+# Copy package files with proper ownership
+COPY --chown=nextjs:nodejs package*.json ./
+
+# Switch to non-root user for dependency installation
+USER nextjs
 
 # Install dependencies with legacy peer deps (as specified in CLAUDE.md)
 RUN npm install --legacy-peer-deps
 
-# Copy application source
-COPY . .
+# Copy application source with proper ownership
+COPY --chown=nextjs:nodejs . .
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs && \
-    chown -R nextjs:nodejs /app
-USER nextjs
+# Create .next directory with proper permissions for trace files
+RUN mkdir -p .next && chmod 755 .next
 
 # Expose port
 EXPOSE 3000

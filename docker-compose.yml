@@ -33,6 +33,7 @@ services:
     build:
       context: ./ui
       dockerfile: Dockerfile
+      # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
     ports:
       - "3000:3000"
     environment:
