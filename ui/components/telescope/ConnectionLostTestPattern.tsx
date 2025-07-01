@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Wifi, WifiOff, RotateCcw } from "lucide-react"
+import { WifiOff, RotateCcw } from "lucide-react"
 
 interface ConnectionLostTestPatternProps {
   isVisible: boolean

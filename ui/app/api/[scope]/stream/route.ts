@@ -1,5 +1,5 @@
-import {NextRequest, NextResponse} from 'next/server'
-import {fetchTelescopes, getTelescopeBaseUrl} from "@/lib/telescopes"
+import {NextRequest} from 'next/server'
+import {getTelescopeBaseUrl} from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -152,6 +152,7 @@ function buildStreamUrl(scope: string, streamType: string): string | null {
  * Extract telescope host from scope identifier
  * In production, this would lookup the telescope configuration from a database
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getTelescopeHost(scope: string): Promise<string> {
 
 
@@ -178,7 +179,7 @@ async function getTelescopeHost(scope: string): Promise<string> {
 }
 
 // OPTIONS handler for CORS preflight requests
-export async function OPTIONS(req: NextRequest) {
+export async function OPTIONS(_req: NextRequest) {
   return new Response(null, {
     status: 200,
     headers: {
