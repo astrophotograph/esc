@@ -73,6 +73,8 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.30.0",
+    "eslint-config-next": "15.3.4",
     "jest": "^30.0.3",
     "jest-environment-jsdom": "^30.0.2",
     "postcss": "^8",

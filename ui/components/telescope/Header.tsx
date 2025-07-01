@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Camera, CogIcon as Cog6Tooth, Keyboard, LogOut, User } from "lucide-react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,8 +18,8 @@ import {useTheme} from "next-themes"
 import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
 
 export function Header() {
-  const { theme, setTheme } = useTheme()
-  const { showKeyboard, setShowKeyboard, showPiP, setShowPiP } = useTelescope()
+  const { theme: _theme, setTheme: _setTheme } = useTheme()
+  const { showPiP, setShowPiP } = useTelescope()
 
   return (
     <div className="border-b">

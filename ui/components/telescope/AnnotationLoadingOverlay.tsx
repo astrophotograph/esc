@@ -9,7 +9,7 @@ interface AnnotationLoadingOverlayProps {
   height: number
 }
 
-export function AnnotationLoadingOverlay({ width, height }: AnnotationLoadingOverlayProps) {
+export function AnnotationLoadingOverlay({ width: _width, height }: AnnotationLoadingOverlayProps) {
   const { showAnnotations, annotationSettings } = useTelescopeContext()
   const [isLoading, setIsLoading] = useState(false)
   const [scanPosition, setScanPosition] = useState(0)

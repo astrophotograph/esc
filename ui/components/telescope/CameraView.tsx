@@ -5,11 +5,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  BarChart3,
   Battery,
   BatteryCharging,
-  BatteryFull,  // Add this import for the full battery icon
-  BookOpen,
+  BatteryFull,
   ChevronLeft,
   ChevronRight,
   Crosshair,
@@ -17,7 +15,6 @@ import {
   EyeOff,
   HardDrive,
   Thermometer,
-  Target,
   RotateCw,
   Layers,
   XCircle,
@@ -43,20 +40,20 @@ export function CameraView() {
   const {
     isControlsCollapsed,
     selectedTarget,
-    showOverlay,
-    setShowOverlay,
-    showStatsPanel,
-    setShowStatsPanel,
-    showLogPanel,
-    setShowLogPanel,
+    showOverlay: _showOverlay,
+    setShowOverlay: _setShowOverlay,
+    showStatsPanel: _showStatsPanel,
+    setShowStatsPanel: _setShowStatsPanel,
+    showLogPanel: _showLogPanel,
+    setShowLogPanel: _setShowLogPanel,
     setIsControlsCollapsed,
-    isTracking,
+    isTracking: _isTracking,
     systemStats,
     brightness,
     contrast,
-    imageStats,
-    showAnnotations,
-    setShowAnnotations,
+    imageStats: _imageStats,
+    showAnnotations: _showAnnotations,
+    setShowAnnotations: _setShowAnnotations,
     annotationSettings,
     handleTargetSelect,
     celestialObjects,
@@ -281,7 +278,7 @@ export function CameraView() {
   };
 
   // Generate video URL based on current telescope using streaming API
-  const generateVideoUrl = (telescope: any): string => {
+  const generateVideoUrl = (telescope: { name?: string; serial_number?: string } | null): string => {
     const url = generateStreamingUrl(telescope, 'video');
     console.log(`Generated streaming URL for telescope ${telescope?.name || 'unknown'}: ${url}`);
     return url;
@@ -1127,10 +1124,10 @@ export function CameraView() {
             {isImaging && <ImagingPanel />}
 
             {/* Statistics Panel - hidden when imaging */}
-            {showStatsPanel && !isImaging && <StatsPanel />}
+            {_showStatsPanel && !isImaging && <StatsPanel />}
 
             {/* Observation Log Panel - hidden when imaging */}
-            {showLogPanel && !isImaging && <LogPanel />}
+            {_showLogPanel && !isImaging && <LogPanel />}
           </div>
         </CardContent>
       </Card>

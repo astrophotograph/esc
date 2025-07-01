@@ -134,7 +134,7 @@ export const CameraSettingsPanel = () => {
                   id="capture-mode"
                   className="w-full rounded-md border border-gray-300 p-2 text-sm"
                   value={captureMode}
-                  onChange={(e) => setCaptureMode(e.target.value as any)}
+                  onChange={(e) => setCaptureMode(e.target.value as "single" | "continuous" | "sequence")}
                 >
                   <option value="single">Single</option>
                   <option value="continuous">Continuous</option>
@@ -149,7 +149,7 @@ export const CameraSettingsPanel = () => {
                   id="file-format"
                   className="w-full rounded-md border border-gray-300 p-2 text-sm"
                   value={fileFormat}
-                  onChange={(e) => setFileFormat(e.target.value as any)}
+                  onChange={(e) => setFileFormat(e.target.value as "raw" | "jpg" | "fits")}
                 >
                   <option value="raw">RAW</option>
                   <option value="jpg">JPG</option>

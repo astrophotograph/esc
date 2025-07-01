@@ -4,7 +4,7 @@ import {fetchTelescopes} from "@/lib/telescopes"
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Get backend server URL from environment or use default
     const telescopes = await fetchTelescopes()

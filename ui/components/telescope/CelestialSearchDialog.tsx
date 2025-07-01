@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
 import { 
-  addHorizonInfo, 
   filterVisibleObjects, 
   getDynamicCelestialObjects,
   DEFAULT_OBSERVER_LOCATION,
@@ -65,7 +64,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     }
   }
 
-  const getGroupIcon = (type: string) => {
+  const _getGroupIcon = (type: string) => {
     switch (type) {
       case 'planet': return <Sun className="w-4 h-4" />
       case 'moon': return <Moon className="w-4 h-4" />
@@ -82,13 +81,13 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     const celestialObject = {
       id: obj.id,
       name: obj.name,
-      type: obj.type as any,
+      type: obj.type as "galaxy" | "nebula" | "cluster" | "planet" | "moon" | "double-star",
       magnitude: obj.magnitude,
       ra: obj.ra,
       dec: obj.dec,
       bestSeenIn: obj.bestSeenIn,
       description: obj.description,
-      optimalMoonPhase: obj.optimalMoonPhase as any,
+      optimalMoonPhase: obj.optimalMoonPhase as "new" | "crescent" | "quarter" | "gibbous" | "full" | "any",
       isCurrentlyVisible: obj.isCurrentlyVisible
     }
     
