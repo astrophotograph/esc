@@ -25,7 +25,9 @@ import {
   ZoomOut,
   Maximize,
   Settings,
-  Filter
+  Filter,
+  Expand,
+  Minimize
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { useTelescopeContext } from "../../context/TelescopeContext"
@@ -63,6 +65,8 @@ export function CameraView() {
     setStreamStatus,
     setFocusPosition,
     isImaging,
+    liveViewFullscreen,
+    setLiveViewFullscreen,
   } = useTelescopeContext()
 
   // Sample annotations for demonstration
@@ -576,6 +580,23 @@ export function CameraView() {
     }
   }, [zoomLevel]);
 
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && liveViewFullscreen) {
+        setLiveViewFullscreen(false)
+      }
+    }
+
+    if (liveViewFullscreen) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [liveViewFullscreen, setLiveViewFullscreen])
+
   // Setup event source for streaming status
   useEffect(() => {
     if (!currentTelescope) {
@@ -648,17 +669,28 @@ export function CameraView() {
   const targetName = selectedTarget?.name || localStreamStatus?.status?.target_name;
 
   return (
-    <div className={`transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`}>
-      <Card className="bg-gray-800 border-gray-700">
+    <div className={liveViewFullscreen ? 
+      "fixed inset-0 z-50 bg-gray-800" : 
+      `transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`
+    }>
+      <Card className={liveViewFullscreen ? 
+        "bg-gray-800 border-none h-full rounded-none" : 
+        "bg-gray-800 border-gray-700"
+      }>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white flex items-center gap-2">
               <Crosshair className="w-5 h-5" />
               Live View
               {targetName && (
-                <Badge variant="outline" className="ml-2">
-                  {targetName}
-                </Badge>
+                <div className="flex items-center gap-2 ml-2">
+                  <Badge variant="outline" className="text-lg px-3 py-1">
+                    {targetName}
+                  </Badge>
+                  {localStreamStatus?.status?.stage === 'Stack' && (
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  )}
+                </div>
               )}
               {isImaging && (
                 <div className="ml-2 flex items-center gap-1">
@@ -746,6 +778,15 @@ export function CameraView() {
                   className="border-gray-600 text-white hover:bg-gray-700"
                 >
                   <RotateCw className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLiveViewFullscreen(!liveViewFullscreen)}
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                  title={liveViewFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                >
+                  {liveViewFullscreen ? <Minimize className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
                 </Button>
                 <Button
                   variant="outline"

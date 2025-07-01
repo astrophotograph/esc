@@ -68,14 +68,14 @@ function TelescopeControlContent() {
         {showDataManagementSettings && <DataManagementSettings onClose={() => setShowDataManagementSettings(false)} />}
         {showEquipmentManager && <EquipmentManager onClose={() => setShowEquipmentManager(false)} />}
 
-        {/* Picture-in-Picture Overlay */}
-        <PictureInPictureOverlay />
-
-        {/* PiP Overlay Controls - Now inside TelescopeProvider */}
-        <PipOverlayControls />
-
         <DataPersistenceManager />
       </div>
+      
+      {/* Picture-in-Picture Overlay - moved outside max-width container */}
+      <PictureInPictureOverlay />
+      
+      {/* PiP Overlay Controls - moved outside max-width container */}
+      <PipOverlayControls />
     </div>
   )
 }

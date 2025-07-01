@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { EyeOff } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, X, Minimize2, Maximize2, Camera, Eye } from "lucide-react"
+import { Settings, X, Minimize2, Maximize2, Camera, Eye, Expand, Minimize } from "lucide-react"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { PipOverlays } from "./PipOverlays"
 
@@ -29,6 +29,8 @@ export function PictureInPictureOverlay() {
     setAllskyUrls,
     showPipStatus,
     setShowPipStatus,
+    pipFullscreen,
+    setPipFullscreen,
   } = useTelescopeContext()
 
   const [isDragging, setIsDragging] = useState(false)
@@ -43,7 +45,9 @@ export function PictureInPictureOverlay() {
     large: { width: 480, height: 360 },
   }
 
-  const currentSize = sizeConfig[pipSize]
+  const currentSize = pipFullscreen 
+    ? { width: window.innerWidth, height: window.innerHeight } 
+    : sizeConfig[pipSize]
 
   // Update timestamp every 30 seconds
   useEffect(() => {
@@ -54,6 +58,23 @@ export function PictureInPictureOverlay() {
     // Clean up interval on component unmount
     return () => clearInterval(interval);
   }, []);
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && pipFullscreen) {
+        setPipFullscreen(false)
+      }
+    }
+
+    if (pipFullscreen) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [pipFullscreen, setPipFullscreen])
 
   // Camera feed URLs (simulated)
   const getCameraFeed = () => {
@@ -119,8 +140,18 @@ export function PictureInPictureOverlay() {
   return (
     <div
       ref={pipRef}
-      className="fixed z-40 bg-gray-800 rounded-lg shadow-2xl border border-gray-600"
-      style={{
+      className={`fixed z-[9999] bg-gray-800 shadow-2xl border border-gray-600 ${
+        pipFullscreen 
+          ? "inset-0 rounded-none" 
+          : "rounded-lg"
+      }`}
+      style={pipFullscreen ? {
+        left: 0,
+        top: 0,
+        width: "100vw",
+        height: "100vh",
+        cursor: "default",
+      } : {
         left: pipPosition.x,
         top: pipPosition.y,
         width: pipMinimized ? 200 : currentSize.width,
@@ -130,8 +161,10 @@ export function PictureInPictureOverlay() {
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between p-1 bg-gray-700 rounded-t-lg cursor-grab"
-        onMouseDown={handleMouseDown}
+        className={`flex items-center justify-between p-1 bg-gray-700 ${
+          pipFullscreen ? "rounded-none cursor-default" : "rounded-t-lg cursor-grab"
+        }`}
+        onMouseDown={pipFullscreen ? undefined : handleMouseDown}
       >
         <div className="flex items-center gap-2">
           <Camera className="w-4 h-4 text-gray-400" />
@@ -194,17 +227,6 @@ export function PictureInPictureOverlay() {
                 {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
               </Button>
 
-              {/* Status Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPipStatus(!showPipStatus)}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                title={showPipStatus ? "Hide Status" : "Show Status"}
-              >
-                {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-              </Button>
-
               {/* Settings Button */}
               <Button
                 variant="ghost"
@@ -217,6 +239,17 @@ export function PictureInPictureOverlay() {
               </Button>
             </>
           )}
+
+          {/* Fullscreen Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPipFullscreen(!pipFullscreen)}
+            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+            title={pipFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {pipFullscreen ? <Minimize className="h-3 w-3" /> : <Expand className="h-3 w-3" />}
+          </Button>
 
           {/* Minimize/Maximize Button */}
           <Button
@@ -244,7 +277,9 @@ export function PictureInPictureOverlay() {
 
       {/* Camera View */}
       {!pipMinimized && (
-        <div className="relative bg-black rounded-b-lg overflow-hidden">
+        <div className={`relative bg-black overflow-hidden ${
+          pipFullscreen ? "rounded-none" : "rounded-b-lg"
+        }`}>
           {/* Camera Feed */}
           <img
             src={getCameraFeed() || "/placeholder.svg"}

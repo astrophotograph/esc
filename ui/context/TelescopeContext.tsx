@@ -220,6 +220,10 @@ interface TelescopeContextType {
   setPipCamera: (camera: "allsky" | "guide" | "finder") => void
   pipMinimized: boolean
   setPipMinimized: (minimized: boolean) => void
+  pipFullscreen: boolean
+  setPipFullscreen: (fullscreen: boolean) => void
+  liveViewFullscreen: boolean
+  setLiveViewFullscreen: (fullscreen: boolean) => void
   pipOverlaySettings: PipOverlaySettings
   setPipOverlaySettings: (settings: PipOverlaySettings) => void
     showPipOverlayControls: boolean
@@ -501,6 +505,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [pipSize, setPipSize] = useState<"small" | "medium" | "large">("medium")
   const [pipCamera, setPipCamera] = useState<"allsky" | "guide" | "finder">("allsky")
   const [pipMinimized, setPipMinimized] = useState(false)
+  const [pipFullscreen, setPipFullscreen] = useState(false)
+  const [liveViewFullscreen, setLiveViewFullscreen] = useState(false)
   const [pipOverlaySettings, setPipOverlaySettings] = useState<PipOverlaySettings>({
     crosshairs: {
       enabled: false,
@@ -1684,6 +1690,10 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setPipCamera,
     pipMinimized,
     setPipMinimized,
+    pipFullscreen,
+    setPipFullscreen,
+    liveViewFullscreen,
+    setLiveViewFullscreen,
     pipOverlaySettings,
     setPipOverlaySettings,
     showPipOverlayControls,
