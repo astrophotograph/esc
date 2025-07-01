@@ -1,9 +1,6 @@
 # Python FastAPI Server Dockerfile
 FROM python:3.12-slim
 
-# Set working directory
-WORKDIR /app
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
@@ -16,18 +13,23 @@ RUN apt-get update && apt-get install -y \
 # Install uv package manager for faster Python dependency management
 RUN pip install uv
 
+# Set working directory
+WORKDIR /app
+
 # Copy dependency files
 COPY pyproject.toml requirements.txt ./
 
-# Install Python dependencies using uv
+# Install Python dependencies using uv as root
 RUN uv pip install --system -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash telescope && \
+# Create non-root user and change ownership of /app after all files are copied
+RUN useradd --create-home --shell /bin/bash --uid 1000 telescope && \
     chown -R telescope:telescope /app
+
+# Switch to non-root user
 USER telescope
 
 # Expose port

@@ -210,7 +210,15 @@ SEESTAR_PORT=4700
    docker-compose build --no-cache
    ```
 
-4. **Network issues**:
+4. **Server permission errors (chown failures)**:
+   ```bash
+   # Use alternative multi-stage Dockerfile
+   # Edit docker-compose.yml and change:
+   # dockerfile: Dockerfile.multistage
+   docker-compose build server --no-cache
+   ```
+
+5. **Network issues**:
    ```bash
    # Inspect networks
    docker network ls

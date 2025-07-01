@@ -6,6 +6,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+      # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
     ports:
       - "8000:8000"
     environment:

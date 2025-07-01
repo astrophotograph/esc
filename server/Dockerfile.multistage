@@ -1,0 +1,61 @@
+# Multi-stage Python FastAPI Server Dockerfile
+# This version uses multi-stage builds to avoid permission issues
+
+FROM python:3.12-slim AS builder
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libopencv-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv package manager
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml requirements.txt ./
+
+# Install dependencies to a specific location
+RUN uv pip install --target=/app/deps -r requirements.txt
+
+# Production stage
+FROM python:3.12-slim AS production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    libopencv-dev \
+    python3-opencv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash --uid 1000 telescope
+
+# Set working directory
+WORKDIR /app
+
+# Copy installed dependencies from builder stage
+COPY --from=builder --chown=telescope:telescope /app/deps /app/deps
+
+# Add dependencies to Python path
+ENV PYTHONPATH="/app/deps:$PYTHONPATH"
+
+# Copy application code with proper ownership
+COPY --chown=telescope:telescope . .
+
+# Switch to non-root user
+USER telescope
+
+# Expose port
+EXPOSE 8000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start the server
+CMD ["python", "main.py", "server", "--server-port", "8000"]

@@ -55,3 +55,7 @@ Thumbs.db
 # Docker
 Dockerfile
 .dockerignore
+
+# Test coverage
+coverage/
+*.coverage
