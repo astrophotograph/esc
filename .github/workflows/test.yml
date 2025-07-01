@@ -21,24 +21,41 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: ui/package-lock.json
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: false
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+    - uses: actions/cache@v4
+      name: Setup pnpm cache
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies
       working-directory: ./ui
-      run: npm ci --legacy-peer-deps
+      run: pnpm install --frozen-lockfile --config.strict-peer-dependencies=false
 
     - name: Run linter
       working-directory: ./ui
-      run: npm run lint
+      run: pnpm run lint
 
     - name: Run tests
       working-directory: ./ui
-      run: npm test
+      run: pnpm test
 
     - name: Generate coverage report
       working-directory: ./ui
-      run: npm run test:coverage
+      run: pnpm run test:coverage
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
