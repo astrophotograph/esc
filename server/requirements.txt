@@ -47,7 +47,7 @@ networkx==3.5
 numpy==2.3.0
 opencv-python==4.11.0.86
 packaging==25.0
-pillow==11.2.1
+pillow==11.3.0
 platformdirs==4.3.8
 propcache==0.3.1
 psutil==5.9.8
