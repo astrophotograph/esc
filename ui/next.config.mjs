@@ -9,6 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Enable standalone output for Docker production builds
+  output: 'standalone',
   // async rewrites() {
   //   return [
   //     {

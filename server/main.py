@@ -595,6 +595,15 @@ class Controller:
 
             return result
 
+        @self.app.get("/health")
+        async def health_check():
+            """Health check endpoint for Docker containers."""
+            return {
+                "status": "ok",
+                "timestamp": datetime.datetime.now().isoformat(),
+                "telescopes_count": len(self.telescopes) + len(self.remote_telescopes)
+            }
+
         config = uvicorn.Config(self.app, host="0.0.0.0", port=self.service_port,
                                 log_level="trace", log_config=None)
         server = uvicorn.Server(config)

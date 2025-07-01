@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount server code for development
+      - ./server:/app
+      # Exclude Python cache and virtual environments
+      - /app/__pycache__
+      - /app/.venv
+    networks:
+      - telescope-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Next.js Frontend UI
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      # Mount UI code for development
+      - ./ui:/app
+      # Exclude node_modules and build artifacts
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - telescope-network
+    restart: unless-stopped
+
+  # Optional: Redis for caching/session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - telescope-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  telescope-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
