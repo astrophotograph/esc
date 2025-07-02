@@ -50,7 +50,7 @@ class TextProtocol(ProtocolHandler[CommandResponse]):
             
             try:
                 # Wait for the future to be resolved with a timeout
-                response = await asyncio.wait_for(future, timeout=10.0)
+                response = await asyncio.wait_for(future, timeout=30.0)
                 logging.trace(f"Received text message with ID {message_id}: {response}")
                 return response
             except asyncio.TimeoutError:

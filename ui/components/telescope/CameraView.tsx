@@ -359,7 +359,7 @@ export function CameraView() {
   useEffect(() => {
     if (!streamActive || !imageRef.current) return;
     
-    const STREAM_TIMEOUT = 5000; // 5 seconds
+    const STREAM_TIMEOUT = 30000; // 30 seconds - increased for better stability
     const CHECK_INTERVAL = 1000; // Check every second
     
     const checkStreamActivity = () => {
@@ -408,7 +408,7 @@ export function CameraView() {
   useEffect(() => {
     if (!sseConnected) return;
 
-    const SSE_TIMEOUT = 10000; // 10 seconds timeout for SSE messages
+    const SSE_TIMEOUT = 30000; // 30 seconds timeout for SSE messages - increased for better stability
     const CHECK_INTERVAL = 2000; // Check every 2 seconds
 
     const checkSSEHealth = () => {
@@ -777,6 +777,7 @@ export function CameraView() {
       console.log("SSE connection opened");
       setSseConnected(true);
       setLastSSEMessage(Date.now());
+      setReconnectCounter(0); // Reset reconnect counter on successful connection
       
       // If connection was lost but SSE is back, check if we should restore
       // Only restore if video stream is also active
@@ -784,8 +785,8 @@ export function CameraView() {
         const now = Date.now();
         const timeSinceLastImageChange = now - lastSuccessfulLoad;
         
-        // Only restore if we've had recent image activity (within last 5 seconds)
-        if (timeSinceLastImageChange < 5000) {
+        // Only restore if we've had recent image activity (within last 30 seconds)
+        if (timeSinceLastImageChange < 30000) {
           setConnectionLost(false);
           console.log("SSE connection restored - both streams healthy");
         }
@@ -814,15 +815,19 @@ export function CameraView() {
     eventSource.onerror = (error) => {
       console.error("EventSource error:", error);
       setSseConnected(false);
-      setConnectionLost(true); // Show test pattern when SSE fails
+      
+      // Only mark connection as lost after multiple failures
+      if (reconnectCounter > 2) {
+        setConnectionLost(true); // Show test pattern after multiple SSE failures
+      }
+      
       eventSource.close();
       
-      const reconnectTimeout = setTimeout(() => {
+      // Automatically trigger reconnection after a delay
+      setTimeout(() => {
         console.log("Attempting to reconnect to status stream...");
         setReconnectCounter(prev => prev + 1);
       }, 5000);
-
-      return () => clearTimeout(reconnectTimeout);
     };
 
     return () => {

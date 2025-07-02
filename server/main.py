@@ -294,8 +294,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         async def status_stream_generator() -> AsyncGenerator[str, None]:
             """Generate a stream of client status updates."""
+            update_count = 0
             try:
                 while True:
+                    update_count += 1
                     # Create a status object with current client information
                     status = {
                         "timestamp": asyncio.get_event_loop().time(),
@@ -318,6 +320,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
                     # Send the status as a Server-Sent Event
                     yield f"data: {json.dumps(status)}\n\n"
+                    
+                    # Send a heartbeat comment every 10 updates to keep connection alive
+                    if update_count % 10 == 0:
+                        yield f": heartbeat at {datetime.datetime.now().isoformat()}\n\n"
 
                     # Wait for 1 seconds before sending next update
                     await asyncio.sleep(1)
