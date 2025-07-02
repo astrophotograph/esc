@@ -76,14 +76,22 @@ export function SessionManagement() {
               />
             </div>
 
-            <div className="text-xs text-gray-400 bg-gray-700/30 rounded p-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>Weather: {systemStats.weather.condition}</div>
-                <div>Seeing: {systemStats.weather.seeingCondition}</div>
-                <div>Temp: {systemStats.temperature.toFixed(1)}°C</div>
-                <div>Humidity: {Math.round(systemStats.weather.humidity)}%</div>
+            {systemStats && (
+              <div className="text-xs text-gray-400 bg-gray-700/30 rounded p-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {systemStats.weather && (
+                    <>
+                      <div>Weather: {systemStats.weather.condition}</div>
+                      <div>Seeing: {systemStats.weather.seeingCondition}</div>
+                      <div>Humidity: {Math.round(systemStats.weather.humidity)}%</div>
+                    </>
+                  )}
+                  {systemStats.temperature && (
+                    <div>Temp: {systemStats.temperature.toFixed(1)}°C</div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex gap-2">
               {sessionTimerRef.current ? (

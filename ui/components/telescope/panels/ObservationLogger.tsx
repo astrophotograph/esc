@@ -59,13 +59,17 @@ export function ObservationLogger() {
         <div className="text-xs text-gray-400 space-y-1">
           <div>Current Settings:</div>
           <div>
-            • Exposure: {exposure[0]}s, Gain: {gain[0]}
+            • Exposure: {exposure?.[0] ?? 'N/A'}s, Gain: {gain?.[0] ?? 'N/A'}
           </div>
           <div>
-            • Focus: {focusPosition[0]}, Brightness: {brightness[0]}
+            • Focus: {focusPosition?.[0] ?? 'N/A'}, Brightness: {brightness?.[0] ?? 'N/A'}
           </div>
-          <div>• Weather: {systemStats.weather.condition}</div>
-          <div>• Seeing: {systemStats.weather.seeingCondition}</div>
+          {systemStats?.weather && (
+            <>
+              <div>• Weather: {systemStats.weather.condition}</div>
+              <div>• Seeing: {systemStats.weather.seeingCondition}</div>
+            </>
+          )}
         </div>
 
         <Button
