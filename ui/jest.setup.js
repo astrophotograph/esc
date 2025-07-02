@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom'
+import 'jest-localstorage-mock'
+import fetchMock from 'jest-fetch-mock'
+
+// Enable fetch mocking
+fetchMock.enableMocks()
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -50,4 +55,16 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
+})
+
+// Reset mocks before each test
+beforeEach(() => {
+  fetchMock.resetMocks()
+  localStorage.clear()
+  sessionStorage.clear()
+})
+
+// Clean up after each test
+afterEach(() => {
+  jest.clearAllMocks()
 })
