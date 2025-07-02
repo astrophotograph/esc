@@ -409,6 +409,11 @@ export const createMockTelescopeContext = (overrides: any = {}) => ({
   updateEquipmentSet: jest.fn(),
   deleteEquipmentSet: jest.fn(),
   loadEquipmentSet: jest.fn(),
+  
+  // Telescope control functions
+  handleFocusAdjust: jest.fn(),
+  handleTelescopeMove: jest.fn(),
+  handleTelescopePark: jest.fn(),
 
   ...overrides,
 })

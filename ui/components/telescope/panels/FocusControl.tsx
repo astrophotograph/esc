@@ -29,7 +29,7 @@ export function FocusControl() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleFocusAdjust("in")}
+            onClick={() => handleFocusAdjust?.("in")}
             className="flex-1 border-gray-600 text-white hover:bg-gray-700"
           >
             Focus In
@@ -37,7 +37,7 @@ export function FocusControl() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleFocusAdjust("out")}
+            onClick={() => handleFocusAdjust?.("out")}
             className="flex-1 border-gray-600 text-white hover:bg-gray-700"
           >
             Focus Out

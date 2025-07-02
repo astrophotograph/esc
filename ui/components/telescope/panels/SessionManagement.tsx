@@ -155,10 +155,17 @@ export function SessionManagement() {
                   {pastSessions.slice(0, 3).map((session) => (
                     <div key={session.id} className="bg-gray-700/30 rounded p-2 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-gray-300">{session.startTime.toLocaleDateString()}</span>
+                        <span className="text-gray-300">
+                          {session.startTime instanceof Date 
+                            ? session.startTime.toLocaleDateString()
+                            : new Date(session.startTime).toLocaleDateString()}
+                        </span>
                         <span className="text-white">
                           {session.endTime
-                            ? Math.floor((session.endTime.getTime() - session.startTime.getTime()) / (1000 * 60))
+                            ? Math.floor((
+                                (session.endTime instanceof Date ? session.endTime : new Date(session.endTime)).getTime() - 
+                                (session.startTime instanceof Date ? session.startTime : new Date(session.startTime)).getTime()
+                              ) / (1000 * 60))
                             : "?"}{" "}
                           min
                         </span>

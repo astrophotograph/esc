@@ -16,24 +16,35 @@ const mockIsStorageAvailable = jest.fn()
 
 jest.mock('../../../utils/storage-utils', () => ({
   STORAGE_KEYS: {
-    OBSERVATION_LOG: 'observation-log',
-    PAST_SESSIONS: 'past-sessions',
-    PLANNED_SESSIONS: 'planned-sessions',
-    NOTIFICATION_SETTINGS: 'notification-settings',
-    NOTIFICATION_HISTORY: 'notification-history',
-    OBSERVING_LOCATIONS: 'observing-locations',
-    CURRENT_OBSERVING_LOCATION: 'current-observing-location',
-    UI_STATE: 'ui-state',
+    OBSERVATIONS: 'telescope-observations',
+    SESSIONS: 'telescope-sessions',
+    PLANNED_SESSIONS: 'telescope-planned-sessions',
+    NOTIFICATION_SETTINGS: 'telescope-notification-settings',
+    NOTIFICATION_HISTORY: 'telescope-notification-history',
+    LOCATIONS: 'telescope-locations',
+    CURRENT_LOCATION: 'telescope-current-location',
+    UI_STATE: 'telescope-ui-state',
   },
-  loadFromStorage: () => mockLoadFromStorage(),
+  loadFromStorage: (key: string, defaultValue: any) => mockLoadFromStorage(key, defaultValue),
   saveToStorage: (key: string, data: any) => mockSaveToStorage(key, data),
   isStorageAvailable: () => mockIsStorageAvailable(),
 }))
 
 describe('DataPersistenceManager', () => {
+  let consoleSpy: jest.SpyInstance
+
   beforeEach(() => {
     jest.clearAllMocks()
     mockIsStorageAvailable.mockReturnValue(true)
+    
+    // Suppress console.error to reduce test noise
+    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    if (consoleSpy) {
+      consoleSpy.mockRestore()
+    }
   })
 
   describe('component lifecycle', () => {
@@ -71,7 +82,15 @@ describe('DataPersistenceManager', () => {
       render(<DataPersistenceManager />)
 
       expect(mockLoadFromStorage).toHaveBeenCalled()
-      expect(mockSetObservationLog).toHaveBeenCalledWith(savedObservations)
+      // Verify that setObservationLog was called with observations where timestamp is converted to Date
+      expect(mockSetObservationLog).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ...savedObservations[0],
+            timestamp: expect.any(Date),
+          })
+        ])
+      )
     })
 
     it('should load past sessions from storage on mount', () => {
@@ -87,7 +106,16 @@ describe('DataPersistenceManager', () => {
 
       render(<DataPersistenceManager />)
 
-      expect(mockSetPastSessions).toHaveBeenCalledWith(savedSessions)
+      // Verify that setPastSessions was called with sessions where dates are converted to Date objects
+      expect(mockSetPastSessions).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ...savedSessions[0],
+            startTime: expect.any(Date),
+            endTime: undefined, // null becomes undefined
+          })
+        ])
+      )
     })
 
     it('should handle storage loading errors gracefully', () => {
@@ -136,7 +164,7 @@ describe('DataPersistenceManager', () => {
       render(<DataPersistenceManager />)
 
       expect(mockSaveToStorage).toHaveBeenCalledWith(
-        'observation-log',
+        'telescope-observations',
         observations
       )
     })
@@ -153,7 +181,7 @@ describe('DataPersistenceManager', () => {
       render(<DataPersistenceManager />)
 
       expect(mockSaveToStorage).toHaveBeenCalledWith(
-        'past-sessions',
+        'telescope-sessions',
         sessions
       )
     })
@@ -180,7 +208,7 @@ describe('DataPersistenceManager', () => {
       render(<DataPersistenceManager />)
 
       expect(mockSaveToStorage).toHaveBeenCalledWith(
-        'notification-settings',
+        'telescope-notification-settings',
         notificationSettings
       )
     })
@@ -198,7 +226,7 @@ describe('DataPersistenceManager', () => {
       render(<DataPersistenceManager />)
 
       expect(mockSaveToStorage).toHaveBeenCalledWith(
-        'ui-state',
+        'telescope-ui-state',
         expect.objectContaining({
           isControlsCollapsed: true,
           showOverlay: false,
@@ -239,8 +267,8 @@ describe('DataPersistenceManager', () => {
 
       render(<DataPersistenceManager />)
 
-      // Should handle gracefully and not set invalid data
-      expect(mockSetObservationLog).toHaveBeenCalledWith('invalid-json')
+      // Should handle gracefully and not crash (invalid data is caught by try-catch)
+      expect(mockSetObservationLog).not.toHaveBeenCalled()
     })
   })
 
@@ -294,8 +322,13 @@ describe('DataPersistenceManager', () => {
 
       render(<DataPersistenceManager />)
 
-      // Should still call setter even with invalid data (component handles validation)
-      expect(mockSetObservationLog).toHaveBeenCalledWith(invalidObservations)
+      // Should call setter with processed data, even if invalid (timestamp becomes Date object)
+      expect(mockSetObservationLog).toHaveBeenCalledWith([
+        expect.objectContaining({
+          invalid: 'data',
+          timestamp: expect.any(Date), // Invalid timestamp becomes Date object (possibly NaN)
+        }),
+      ])
     })
 
     it('should handle null or undefined loaded data', () => {
@@ -310,7 +343,8 @@ describe('DataPersistenceManager', () => {
 
       render(<DataPersistenceManager />)
 
-      expect(mockSetObservationLog).toHaveBeenCalledWith(null)
+      // Should not call setter when null/undefined is returned (checked with && length > 0)
+      expect(mockSetObservationLog).not.toHaveBeenCalled()
     })
   })
 
