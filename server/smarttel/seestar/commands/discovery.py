@@ -2,16 +2,7 @@
 import asyncio
 import json
 import socket
-import sys
-from contextlib import suppress
-import click
-from textual.app import App, ComposeResult
-from textual.containers import VerticalScroll
-from textual.widgets import Header, Footer, Static, Button, DataTable
 from loguru import logger as logging
-
-from cli.ui import CombinedSeestarUI
-from smarttel.seestar.client import SeestarClient
 
 
 def get_network_info():
@@ -94,35 +85,3 @@ async def discover_seestars(timeout=10):
 
     logging.trace(f"Discovery complete. Found {len(discovered_devices)} devices.")
     return discovered_devices
-
-
-async def select_device_and_connect(host=None, port=None):
-    """Discover devices and either connect directly or show a picker UI."""
-    app = CombinedSeestarUI(host, port)
-    
-    if not host or not port:
-        # Discover devices
-        logging.trace("Discovering Seestar devices...")
-        devices = await discover_seestars(timeout=3)
-        
-        if not devices:
-            logging.error("No Seestar devices found. Exiting.")
-            return
-        
-        # Set up the device picker in the app
-        app.set_device_picker(devices)
-
-    # Run the combined app - it will handle both device picking and connection
-    await app.run_async()
-
-
-@click.command()
-@click.option("--host", help="Seestar host address")
-@click.option("--port", type=int, default=4700, help="Seestar port (default: 4700)")
-def main(host, port):
-    """Connect to a Seestar device, with optional device discovery."""
-    asyncio.run(select_device_and_connect(host, port))
-
-
-if __name__ == "__main__":
-    main()

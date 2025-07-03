@@ -18,7 +18,5 @@ dependencies = [
     "pydantic>=2.11.4",
     "pydash>=8.0.5",
     "scikit-image>=0.25.2",
-    "textual-dev>=1.7.0",
-    "textual[syntax]>=3.2.0",
     "uvicorn>=0.34.3",
 ]
