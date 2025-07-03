@@ -28,7 +28,21 @@ command_exists() {
 echo -e "\n${YELLOW}Checking for Docker...${NC}"
 if ! command_exists docker; then
     echo -e "${RED}Docker is not installed!${NC}"
-    echo "Please install Docker from: https://docs.docker.com/get-docker/"
+    
+    # Check if running on Raspberry Pi
+    if [ -f /etc/os-release ] && grep -qi "raspbian" /etc/os-release; then
+        echo ""
+        echo "Detected Raspberry Pi. You can install Docker using:"
+        echo -e "${GREEN}sudo apt install docker.io${NC}"
+        echo ""
+        echo "After installation, add your user to the docker group:"
+        echo -e "${GREEN}sudo usermod -aG docker \$USER${NC}"
+        echo ""
+        echo "Then log out and back in for the group change to take effect."
+    else
+        echo "Please install Docker from: https://docs.docker.com/get-docker/"
+    fi
+    
     echo "After installing Docker, run this script again."
     exit 1
 fi
@@ -41,13 +55,35 @@ if ! command_exists docker-compose && ! docker compose version >/dev/null 2>&1; 
 fi
 
 # Check if Docker daemon is running
-if ! docker info >/dev/null 2>&1; then
+if ! docker info >/dev/null 2>&1 && ! sudo docker info >/dev/null 2>&1; then
     echo -e "${RED}Docker daemon is not running!${NC}"
     echo "Please start Docker and run this script again."
     exit 1
 fi
 
 echo -e "${GREEN}✓ Docker is installed and running${NC}"
+
+# Check if Docker needs sudo
+DOCKER_CMD="docker"
+DOCKER_COMPOSE_CMD="docker compose"
+if ! docker ps >/dev/null 2>&1 && sudo docker ps >/dev/null 2>&1; then
+    echo -e "${YELLOW}Docker requires sudo on this system${NC}"
+    DOCKER_CMD="sudo docker"
+    
+    # Check which compose command works with sudo
+    if sudo docker compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="sudo docker compose"
+    elif command_exists docker-compose && sudo docker-compose version >/dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD="sudo docker-compose"
+    fi
+    
+    echo -e "${YELLOW}Note: To run Docker without sudo, add your user to the docker group:${NC}"
+    echo -e "${GREEN}sudo usermod -aG docker \$USER${NC}"
+    echo "Then log out and back in for the change to take effect."
+    echo ""
+elif ! docker compose version >/dev/null 2>&1 && command_exists docker-compose; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+fi
 
 # Clone or update repository
 echo -e "\n${YELLOW}Setting up repository...${NC}"
@@ -87,30 +123,21 @@ fi
 
 # Stop any running containers
 echo -e "\n${YELLOW}Stopping any existing containers...${NC}"
-if docker compose version >/dev/null 2>&1; then
-    docker compose down 2>/dev/null || true
-else
-    docker-compose down 2>/dev/null || true
-fi
+$DOCKER_COMPOSE_CMD down 2>/dev/null || true
 
 # Start the application
 echo -e "\n${YELLOW}Starting ALP Experimental...${NC}"
 echo "This may take a few minutes on first run while Docker images are built."
 echo ""
 
-# Use appropriate docker compose command
-if docker compose version >/dev/null 2>&1; then
-    docker compose up -d
-else
-    docker-compose up -d
-fi
+$DOCKER_COMPOSE_CMD up -d
 
 # Wait for services to be ready
 echo -e "\n${YELLOW}Waiting for services to start...${NC}"
 sleep 5
 
 # Check if services are running
-if docker ps | grep -q alp-experimental; then
+if $DOCKER_CMD ps | grep -q alp-experimental; then
     echo -e "\n${GREEN}✅ ALP Experimental is running!${NC}"
     echo ""
     echo "Access the application at:"
@@ -118,10 +145,10 @@ if docker ps | grep -q alp-experimental; then
     echo "  - Backend API: http://localhost:8000"
     echo "  - API Documentation: http://localhost:8000/docs"
     echo ""
-    echo "To view logs: docker compose logs -f"
-    echo "To stop: docker compose down"
+    echo "To view logs: $DOCKER_COMPOSE_CMD logs -f"
+    echo "To stop: $DOCKER_COMPOSE_CMD down"
 else
     echo -e "\n${RED}❌ Failed to start services${NC}"
-    echo "Check logs with: docker compose logs"
+    echo "Check logs with: $DOCKER_COMPOSE_CMD logs"
     exit 1
 fi
