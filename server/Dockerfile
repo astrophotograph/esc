@@ -17,20 +17,13 @@ RUN pip install uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml requirements.txt uv.lock ./
 
 # Install Python dependencies using uv as root
-# RUN uv pip install --system -r requirements.txt
+RUN uv sync --frozen
 
 # Copy application code
 COPY . .
-
-# Create non-root user and change ownership of /app after all files are copied
-#RUN useradd --create-home --shell /bin/bash --uid 1000 telescope && \
-#    chown -R telescope:telescope /app
-
-# Switch to non-root user
-#USER telescope
 
 # Expose port
 EXPOSE 8000
