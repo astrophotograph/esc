@@ -7,8 +7,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
       # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
-    ports:
-      - "8000:8000"
+    network_mode: host
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -18,8 +17,6 @@ services:
       # Exclude Python cache and virtual environments
       - /app/__pycache__
       - /app/.venv
-    networks:
-      - telescope-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -34,8 +31,7 @@ services:
       context: ./ui
       dockerfile: Dockerfile
       # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
-    ports:
-      - "3000:3000"
+    network_mode: host
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:8000
@@ -48,25 +44,16 @@ services:
     depends_on:
       server:
         condition: service_healthy
-    networks:
-      - telescope-network
     restart: unless-stopped
 
   # Optional: Redis for caching/session management
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    network_mode: host
     volumes:
       - redis-data:/data
-    networks:
-      - telescope-network
     restart: unless-stopped
     command: redis-server --appendonly yes
-
-networks:
-  telescope-network:
-    driver: bridge
 
 volumes:
   redis-data:
