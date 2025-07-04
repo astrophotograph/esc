@@ -24,10 +24,6 @@ services:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
     network_mode: host
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    environment:
-      - DISPLAY=${DISPLAY:-:0}
 
 networks:
   alp-network:
