@@ -6,25 +6,17 @@ RUN apk add --no-cache \
     curl \
     git
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs
-
 # Set working directory and ensure ownership
 WORKDIR /app
-RUN chown nextjs:nodejs /app
 
 # Copy package files with proper ownership
-COPY --chown=nextjs:nodejs package*.json ./
-
-# Switch to non-root user for dependency installation
-USER nextjs
+COPY  package*.json ./
 
 # Install dependencies with legacy peer deps (as specified in CLAUDE.md)
 RUN npm install --legacy-peer-deps
 
 # Copy application source with proper ownership
-COPY --chown=nextjs:nodejs . .
+COPY  . .
 
 # Create .next directory with proper permissions for trace files
 RUN mkdir -p .next && chmod 755 .next
