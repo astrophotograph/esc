@@ -155,7 +155,7 @@ echo "This may take a few minutes on first run while Docker images are built."
 echo -e "${YELLOW}Note: The UI container will also build the Next.js application, which may take additional time.${NC}"
 echo ""
 
-$DOCKER_COMPOSE_CMD up -d
+$DOCKER_COMPOSE_CMD up -d --build
 
 # Wait for services to be ready
 echo -e "\n${YELLOW}Waiting for services to start...${NC}"
