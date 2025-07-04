@@ -1,0 +1,144 @@
+name: Build and Push Container Images
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_UI: ${{ github.repository }}-ui
+  IMAGE_NAME_SERVER: ${{ github.repository }}-server
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        include:
+          - context: ./ui
+            dockerfile: ./ui/Dockerfile
+            image: ui
+            platforms: linux/amd64,linux/arm64
+          - context: ./server
+            dockerfile: ./server/Dockerfile
+            image: server
+            platforms: linux/amd64,linux/arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for ${{ matrix.image }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-,format=short
+
+      - name: Build and push ${{ matrix.image }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-docker-compose:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update docker-compose.yml with new image tags
+        run: |
+          # Get the short SHA
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          
+          # Update docker-compose.yml to use the new images
+          sed -i "s|image: alp-ui:latest|image: ghcr.io/${{ github.repository }}-ui:main-${SHA_SHORT}|g" docker-compose.yml
+          sed -i "s|image: alp-server:latest|image: ghcr.io/${{ github.repository }}-server:main-${SHA_SHORT}|g" docker-compose.yml
+          
+          # Also update any build contexts to use pre-built images
+          sed -i '/build:/,/context:/d' docker-compose.yml
+
+      - name: Create docker-compose.ghcr.yml
+        run: |
+          cp docker-compose.yml docker-compose.ghcr.yml
+          
+          cat > README-GHCR.md << 'EOF'
+          # Using Pre-built Container Images
+          
+          You can use the pre-built container images from GitHub Container Registry:
+          
+          ```bash
+          # Pull and run the latest images
+          docker-compose -f docker-compose.ghcr.yml pull
+          docker-compose -f docker-compose.ghcr.yml up -d
+          ```
+          
+          Available tags:
+          - `latest` - Latest stable release from main branch
+          - `main-<sha>` - Specific commit from main branch
+          - `develop` - Latest from develop branch
+          - `v*.*.*` - Specific version tags
+          
+          Images are available for both linux/amd64 and linux/arm64 architectures.
+          EOF
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add docker-compose.ghcr.yml README-GHCR.md
+            git commit -m "Update docker-compose with GHCR images [skip ci]"
+            git push
+          fi
