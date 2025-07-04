@@ -63,6 +63,30 @@ fi
 
 echo -e "${GREEN}✓ Docker is installed and running${NC}"
 
+# Check if running on Raspberry Pi and ensure it's 64-bit
+if [ -f /etc/os-release ] && grep -qi "raspbian" /etc/os-release; then
+    echo -e "\n${YELLOW}Detected Raspberry Pi. Checking architecture...${NC}"
+    
+    ARCH=$(uname -m)
+    if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
+        echo -e "${RED}❌ 32-bit Raspberry Pi OS detected!${NC}"
+        echo ""
+        echo "ALP Experimental requires a 64-bit operating system."
+        echo "Your current architecture: $ARCH (32-bit)"
+        echo ""
+        echo "To use ALP Experimental on Raspberry Pi, you need to:"
+        echo "1. Download the 64-bit version of Raspberry Pi OS from:"
+        echo "   https://www.raspberrypi.com/software/operating-systems/"
+        echo "2. Flash it to your SD card"
+        echo "3. Boot from the new 64-bit OS"
+        echo ""
+        echo "Note: 64-bit OS is required for Docker compatibility and better performance."
+        exit 1
+    else
+        echo -e "${GREEN}✓ 64-bit Raspberry Pi OS detected (${ARCH})${NC}"
+    fi
+fi
+
 # Check if Docker needs sudo
 DOCKER_CMD="docker"
 DOCKER_COMPOSE_CMD="docker compose"
@@ -140,10 +164,41 @@ sleep 5
 if $DOCKER_CMD ps | grep -q alp-experimental; then
     echo -e "\n${GREEN}✅ ALP Experimental is running!${NC}"
     echo ""
+    
+    # Get the host IP address
+    if command_exists ip; then
+        # Linux with ip command
+        HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || echo "")
+    elif command_exists ifconfig; then
+        # macOS or older Linux with ifconfig
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            HOST_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}')
+        else
+            # Linux with ifconfig
+            HOST_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | sed 's/addr://')
+        fi
+    else
+        HOST_IP=""
+    fi
+    
+    # If we couldn't get the IP, fall back to localhost
+    if [ -z "$HOST_IP" ]; then
+        HOST_IP="localhost"
+    fi
+    
     echo "Access the application at:"
-    echo "  - Frontend: http://localhost:3000"
-    echo "  - Backend API: http://localhost:8000"
-    echo "  - API Documentation: http://localhost:8000/docs"
+    echo "  - Frontend: http://${HOST_IP}:3000"
+    echo "  - Backend API: http://${HOST_IP}:8000"
+    echo "  - API Documentation: http://${HOST_IP}:8000/docs"
+    
+    # Also show localhost for local access
+    if [ "$HOST_IP" != "localhost" ]; then
+        echo ""
+        echo "For local access, you can also use:"
+        echo "  - http://localhost:3000"
+    fi
+    
     echo ""
     echo "To view logs: $DOCKER_COMPOSE_CMD logs -f"
     echo "To stop: $DOCKER_COMPOSE_CMD down"
