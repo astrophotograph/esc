@@ -152,6 +152,7 @@ $DOCKER_COMPOSE_CMD down 2>/dev/null || true
 # Start the application
 echo -e "\n${YELLOW}Starting ALP Experimental...${NC}"
 echo "This may take a few minutes on first run while Docker images are built."
+echo -e "${YELLOW}Note: The UI container will also build the Next.js application, which may take additional time.${NC}"
 echo ""
 
 $DOCKER_COMPOSE_CMD up -d
@@ -202,6 +203,14 @@ if $DOCKER_CMD ps | grep -q alp-experimental; then
     echo ""
     echo "To view logs: $DOCKER_COMPOSE_CMD logs -f"
     echo "To stop: $DOCKER_COMPOSE_CMD down"
+    
+    # Show logs for 60 seconds
+    echo -e "\n${YELLOW}Showing container logs for 60 seconds...${NC}"
+    echo "Press Ctrl+C to stop viewing logs and exit."
+    echo ""
+    timeout 60 $DOCKER_COMPOSE_CMD logs -f || true
+    
+    echo -e "\n${GREEN}Setup complete! The services are running in the background.${NC}"
 else
     echo -e "\n${RED}❌ Failed to start services${NC}"
     echo "Check logs with: $DOCKER_COMPOSE_CMD logs"

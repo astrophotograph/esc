@@ -21,6 +21,9 @@ COPY  . .
 # Create .next directory with proper permissions for trace files
 RUN mkdir -p .next && chmod 755 .next
 
+# Build the Next.js application
+RUN npm run build
+
 # Expose port
 EXPOSE 3000
 
