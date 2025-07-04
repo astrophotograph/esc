@@ -12,7 +12,7 @@ import numpy as np
 import pydash
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Request
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse
 from loguru import logger as logging
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
@@ -20,11 +20,11 @@ from starlette.background import BackgroundTask
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.discovery import select_device_and_connect, discover_seestars
-from smarttel.seestar.commands.parameterized import IscopeStartView, GotoTargetParameters, GotoTarget, \
+from smarttel.seestar.commands.discovery import discover_seestars
+from smarttel.seestar.commands.parameterized import GotoTargetParameters, GotoTarget, \
     ScopeSpeedMoveParameters, ScopeSpeedMove, MoveFocuserParameters, MoveFocuser
 from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDeviceStateResponse, ScopePark, \
-    GetFocuserPosition, ScopeGetHorizCoord, ScopeGetEquCoord, ScopeGetRaDecCoord
+    GetFocuserPosition
 from smarttel.seestar.imaging_client import SeestarImagingClient
 from smarttel.util.eventbus import EventBus
 
@@ -622,12 +622,12 @@ def main():
     pass
 
 
-@main.command("console")
-@click.option("--host", help="Seestar host address")
-@click.option("--port", type=int, default=4700, help="Seestar port (default: 4700)")
-def console(host, port):
-    """Connect to a Seestar device, with optional device discovery."""
-    asyncio.run(select_device_and_connect(host, port))
+# @main.command("console")
+# @click.option("--host", help="Seestar host address")
+# @click.option("--port", type=int, default=4700, help="Seestar port (default: 4700)")
+# def console(host, port):
+#     """Connect to a Seestar device, with optional device discovery."""
+#     asyncio.run(select_device_and_connect(host, port))
 
 
 @main.command("panorama")
