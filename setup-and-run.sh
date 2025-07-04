@@ -147,15 +147,16 @@ fi
 
 # Stop any running containers
 echo -e "\n${YELLOW}Stopping any existing containers...${NC}"
-$DOCKER_COMPOSE_CMD down 2>/dev/null || true
+$DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml down 2>/dev/null || true
 
 # Start the application
 echo -e "\n${YELLOW}Starting ALP Experimental...${NC}"
-echo "This may take a few minutes on first run while Docker images are built."
-echo -e "${YELLOW}Note: The UI container will also build the Next.js application, which may take additional time.${NC}"
+echo "Pulling pre-built images from GitHub Container Registry..."
 echo ""
 
-$DOCKER_COMPOSE_CMD up -d --build
+# Use the ghcr compose file with pre-built images
+$DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml pull
+$DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml up -d
 
 # Wait for services to be ready
 echo -e "\n${YELLOW}Waiting for services to start...${NC}"
@@ -201,18 +202,18 @@ if $DOCKER_CMD ps | grep -q alp-experimental; then
     fi
     
     echo ""
-    echo "To view logs: $DOCKER_COMPOSE_CMD logs -f"
-    echo "To stop: $DOCKER_COMPOSE_CMD down"
+    echo "To view logs: $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml logs -f"
+    echo "To stop: $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml down"
     
     # Show logs for 60 seconds
     echo -e "\n${YELLOW}Showing container logs for 60 seconds...${NC}"
     echo "Press Ctrl+C to stop viewing logs and exit."
     echo ""
-    timeout 60 $DOCKER_COMPOSE_CMD logs -f || true
+    timeout 60 $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml logs -f || true
     
     echo -e "\n${GREEN}Setup complete! The services are running in the background.${NC}"
 else
     echo -e "\n${RED}❌ Failed to start services${NC}"
-    echo "Check logs with: $DOCKER_COMPOSE_CMD logs"
+    echo "Check logs with: $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml logs"
     exit 1
 fi

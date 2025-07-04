@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  ui:
+    image: ghcr.io/astrophotograph/alp-experimental-ui:latest
+    container_name: alp-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://server:8000
+    depends_on:
+      - server
+    restart: unless-stopped
+    networks:
+      - alp-network
+
+  server:
+    image: ghcr.io/astrophotograph/alp-experimental-server:latest
+    container_name: alp-server
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+
+networks:
+  alp-network:
+    driver: bridge
