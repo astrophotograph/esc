@@ -1,0 +1,93 @@
+name: Build and Push Container Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push images to registry'
+        required: false
+        default: true
+        type: boolean
+      platforms:
+        description: 'Target platforms'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_UI: ${{ github.repository }}-ui
+  IMAGE_NAME_SERVER: ${{ github.repository }}-server
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        include:
+          - context: ./ui
+            dockerfile: ./ui/Dockerfile.prod
+            image: ui
+            platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+          - context: ./server
+            dockerfile: ./server/Dockerfile.optimized
+            image: server
+            platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        if: github.event.inputs.push_images == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for ${{ matrix.image }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value=manual-{{date 'YYYYMMDD-HHmmss'}}
+
+      - name: Build and push ${{ matrix.image }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          push: ${{ github.event.inputs.push_images == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image build summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms**: ${{ matrix.platforms }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push to registry**: ${{ github.event.inputs.push_images }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY

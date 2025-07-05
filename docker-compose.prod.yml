@@ -3,6 +3,9 @@ version: '3.8'
 
 services:
   server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.optimized
     environment:
       - PYTHON_ENV=production
       - LOG_LEVEL=INFO
@@ -15,9 +18,9 @@ services:
       dockerfile: Dockerfile.prod
     environment:
       - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
     volumes: []  # Remove development volume mounts
     restart: always
-    command: ["npm", "start"]
 
   # Add nginx reverse proxy for production
   nginx:
