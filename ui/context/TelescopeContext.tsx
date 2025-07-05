@@ -760,7 +760,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         host: `${telescope.host}:${telescope.port}`,
         location: telescope.location || `Network: ${telescope.ssid}`,
         ssid: telescope.ssid,
-        // Derive isManual from discovery_method
+        // Derive isManual from discovery_method (default to false if not specified)
         isManual: telescope.discovery_method === 'manual'
       }))
 

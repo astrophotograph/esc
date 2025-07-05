@@ -993,7 +993,7 @@ export function CameraView() {
           </div>
         </CardHeader>
         <CardContent className="p-0 relative">
-          <div className="w-full h-[calc(100vh-200px)] bg-black rounded-lg overflow-hidden relative" ref={imageContainerRef}>
+          <div className={`w-full bg-black overflow-hidden relative ${liveViewFullscreen ? 'h-screen rounded-none' : 'h-[calc(100vh-200px)] rounded-lg'}`} ref={imageContainerRef}>
             {/* Image container with zoom and pan */}
             <div
               className="w-full h-full cursor-grab"

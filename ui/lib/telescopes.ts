@@ -14,7 +14,7 @@ export const Telescope = z.object({
   product_model: z.string(),
   ssid: z.string().optional(),
   is_remote: z.boolean().optional(),
-  discovery_method: z.string(), // "manual" or "auto_discovery"
+  discovery_method: z.string().optional(), // "manual" or "auto_discovery"
   // altitude: z.number(),
   // diameter: z.number(),
   // mass: z.number(),

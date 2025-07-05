@@ -116,7 +116,8 @@ export function TelescopeManagementModal({
   const [isAddingManual, setIsAddingManual] = useState(false)
 
   // Separate discovered and manual telescopes
-  const discoveredTelescopes = telescopes.filter(t => t.discovery_method === 'auto_discovery')
+  // If discovery_method is not specified, assume it's auto-discovered
+  const discoveredTelescopes = telescopes.filter(t => !t.discovery_method || t.discovery_method === 'auto_discovery')
   const manualTelescopes = telescopes.filter(t => t.discovery_method === 'manual')
 
   const handleAddManualTelescope = async () => {
@@ -184,16 +185,18 @@ export function TelescopeManagementModal({
             <CardTitle className="text-lg flex items-center gap-2">
               <Telescope className="w-4 h-4" />
               {telescope.name || telescope.host}
-              <Badge 
-                variant="secondary" 
-                className={`text-xs ${
-                  telescope.discovery_method === 'manual' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-green-600 text-white'
-                }`}
-              >
-                {telescope.discovery_method === 'manual' ? 'Manual' : 'Auto-discovered'}
-              </Badge>
+              {telescope.discovery_method && (
+                <Badge 
+                  variant="secondary" 
+                  className={`text-xs ${
+                    telescope.discovery_method === 'manual' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-green-600 text-white'
+                  }`}
+                >
+                  {telescope.discovery_method === 'manual' ? 'Manual' : 'Auto-discovered'}
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription className="text-sm text-gray-400">
               {telescope.product_model || telescope.type || 'Unknown Type'}

@@ -8,7 +8,7 @@ export interface TelescopeInfo {
   product_model: string
   ssid: string
   is_remote?: boolean
-  discovery_method: string // "manual" or "auto_discovery"
+  discovery_method?: string // "manual" or "auto_discovery" - optional field
   // Computed properties for UI compatibility
   id: string
   status: "online" | "offline" | "maintenance" | "error"
