@@ -6,6 +6,7 @@ services:
     container_name: alp-ui
     environment:
       - NODE_ENV=production
+      - BACKEND_URL=http://localhost:8000
     depends_on:
       - server
     restart: unless-stopped
@@ -21,8 +22,13 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: alp-redis
     network_mode: host
     volumes:
       - redis-data:/data
     restart: unless-stopped
     command: redis-server --appendonly yes
+
+volumes:
+  redis-data:
+    driver: local
