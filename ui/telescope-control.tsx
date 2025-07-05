@@ -18,6 +18,7 @@ import { PipOverlayControls } from "./components/telescope/PipOverlayControls"
 import { DataManagementSettings } from "./components/telescope/modals/DataManagementSettings"
 import { EquipmentManager } from "./components/telescope/modals/EquipmentManager"
 import { CelestialSearchDialog } from "./components/telescope/CelestialSearchDialog"
+import { TelescopeManagementModal } from "./components/telescope/modals/TelescopeManagementModal"
 
 function TelescopeControlContent() {
   const {
@@ -36,6 +37,8 @@ function TelescopeControlContent() {
     setShowCelestialSearch,
     showEquipmentManager,
     setShowEquipmentManager,
+    showTelescopeManagement,
+    setShowTelescopeManagement,
   } = useTelescopeContext()
 
   // Set up keyboard event listeners
@@ -75,6 +78,12 @@ function TelescopeControlContent() {
         <CelestialSearchDialog 
           open={showCelestialSearch} 
           onOpenChange={setShowCelestialSearch} 
+        />
+        
+        {/* Telescope Management Modal */}
+        <TelescopeManagementModal 
+          open={showTelescopeManagement} 
+          onOpenChange={setShowTelescopeManagement} 
         />
 
         <DataPersistenceManager />

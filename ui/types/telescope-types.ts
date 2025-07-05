@@ -8,6 +8,7 @@ export interface TelescopeInfo {
   product_model: string
   ssid: string
   is_remote?: boolean
+  discovery_method: string // "manual" or "auto_discovery"
   // Computed properties for UI compatibility
   id: string
   status: "online" | "offline" | "maintenance" | "error"
@@ -15,6 +16,8 @@ export interface TelescopeInfo {
   location?: string
   description?: string
   isConnected?: boolean
+  // Computed property derived from discovery_method
+  isManual?: boolean
 }
 
 // Define celestial object types

@@ -79,6 +79,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
     serial_number: Optional[str] = None
     product_model: Optional[str] = None
     ssid: Optional[str] = None
+    discovery_method: str = "manual"  # "manual" or "auto_discovery"
     router: APIRouter | None = None
     event_bus: EventBus | None = None
     client: SeestarClient | None = None
@@ -472,6 +473,7 @@ class Controller:
                               serial_number=serial_number,
                               product_model=product_model,
                               ssid=ssid,
+                              discovery_method="auto_discovery" if discover else "manual",
                               _location=location)
         logging.info(f"Added telescope {telescope.name} at {host}:{port} {serial_number=} {product_model=} {ssid=} {location=}")
 
@@ -575,7 +577,8 @@ class Controller:
                     await self.add_telescope(device['address'], 4700,
                                              serial_number=pydash.get(device, 'data.result.sn'),
                                              product_model=pydash.get(device, 'data.result.product_model'),
-                                             ssid=pydash.get(device, 'data.result.ssid'))
+                                             ssid=pydash.get(device, 'data.result.ssid'),
+                                             discover=True)
 
             await asyncio.sleep(60)
 
@@ -602,6 +605,7 @@ class Controller:
                     "serial_number": telescope.serial_number,
                     "product_model": telescope.product_model,
                     "ssid": telescope.ssid,
+                    "discovery_method": telescope.discovery_method,
                     "is_remote": False
                 })
 
@@ -656,6 +660,7 @@ class Controller:
                             "serial_number": telescope.serial_number,
                             "product_model": telescope.product_model,
                             "ssid": telescope.ssid,
+                            "discovery_method": telescope.discovery_method,
                             "is_remote": False
                         }
                     }
@@ -797,19 +802,21 @@ def panorama(input, output, detector, max_features, frame_skip, max_frames, matc
 @click.option("--seestar-host", help="Seestar device host address")
 @click.option("--seestar-port", type=int, default=4700, help="Seestar device port (default: 4700)")
 @click.option("--remote-controller", help="Remote controller address (format: host:port)")
-def server(server_port, seestar_host, seestar_port, remote_controller):
+@click.option("--no-discovery", is_flag=True, help="Disable automatic telescope discovery")
+def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery):
     """Start a FastAPI server for controlling a Seestar device."""
 
     click.echo(f"Starting Seestar API server on port {server_port}")
+    if no_discovery:
+        click.echo("Auto-discovery is disabled")
 
     app = FastAPI(title="Seestar API", description="API for controlling Seestar devices")
 
-    controller = Controller(app, service_port=server_port)
+    controller = Controller(app, service_port=server_port, discover=not no_discovery)
 
     async def run_server():
         if seestar_host and seestar_port:
             click.echo(f"Connecting to Seestar at {seestar_host}:{seestar_port}")
-            controller.discover = False
             await controller.add_telescope(seestar_host, seestar_port)
 
         # Add remote controller if specified

@@ -100,6 +100,10 @@ interface TelescopeContextType {
   telescopeError: string | null
   fetchTelescopes: () => Promise<void>
   selectTelescope: (telescope: TelescopeInfo, showNotification?: boolean) => void
+  addManualTelescope: (telescope: Omit<TelescopeInfo, 'id'>) => Promise<void>
+  removeManualTelescope: (telescopeId: string) => Promise<void>
+  showTelescopeManagement: boolean
+  setShowTelescopeManagement: (show: boolean) => void
 
   // State
   showOverlay: boolean
@@ -302,6 +306,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   )
   const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
   const [telescopeError, setTelescopeError] = useState<string | null>(null)
+  const [showTelescopeManagement, setShowTelescopeManagement] = useState(false)
 
   // State variables
   const [showOverlay, setShowOverlay] = useState(true)
@@ -754,7 +759,9 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         description: `${telescope.host}:${telescope.port} on ${telescope.ssid}`,
         host: `${telescope.host}:${telescope.port}`,
         location: telescope.location || `Network: ${telescope.ssid}`,
-        ssid: telescope.ssid
+        ssid: telescope.ssid,
+        // Derive isManual from discovery_method
+        isManual: telescope.discovery_method === 'manual'
       }))
 
       setTelescopes(transformedTelescopes)
@@ -869,6 +876,116 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         title: 'Telescope Selected',
         message: `Connected to ${telescope.name}`
       })
+    }
+  }
+
+  const addManualTelescope = async (telescope: Omit<TelescopeInfo, 'id'>) => {
+    try {
+      // Call the API to add the telescope
+      const response = await fetch('/api/v2/telescopes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...telescope,
+          discovery_method: 'manual',
+        }),
+      })
+
+      if (!response.ok) {
+        // If backend doesn't support manual telescopes, fall back to local storage
+        if (response.status === 404 || response.status === 405) {
+          console.warn('Backend does not support manual telescope management, using local fallback')
+          
+          const newTelescope: TelescopeInfo = {
+            ...telescope,
+            id: `manual-${Date.now()}`,
+            discovery_method: 'manual',
+            isManual: true,
+          }
+
+          setTelescopes(prev => [...prev, newTelescope])
+
+          addStatusAlert({
+            type: 'success',
+            title: 'Telescope Added',
+            message: `Successfully added ${telescope.name} (local storage)`
+          })
+          return
+        }
+        throw new Error(`Failed to add telescope: ${response.status}`)
+      }
+
+      // Refresh the telescope list to get the updated data from server
+      await fetchTelescopes()
+
+      addStatusAlert({
+        type: 'success',
+        title: 'Telescope Added',
+        message: `Successfully added ${telescope.name}`
+      })
+    } catch (error) {
+      console.error('Error adding manual telescope:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Add Telescope',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+      throw error
+    }
+  }
+
+  const removeManualTelescope = async (telescopeId: string) => {
+    try {
+      // Call the API to remove the telescope
+      const response = await fetch(`/api/v2/telescopes?id=${encodeURIComponent(telescopeId)}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        // If backend doesn't support manual telescopes, fall back to local storage
+        if (response.status === 404 || response.status === 405) {
+          console.warn('Backend does not support manual telescope management, using local fallback')
+          
+          setTelescopes(prev => prev.filter(t => t.id !== telescopeId))
+
+          // If the removed telescope was selected, clear selection
+          if (currentTelescope?.id === telescopeId) {
+            setCurrentTelescope(null)
+          }
+
+          addStatusAlert({
+            type: 'info',
+            title: 'Telescope Removed',
+            message: 'Successfully removed telescope (local storage)'
+          })
+          return
+        }
+        throw new Error(`Failed to remove telescope: ${response.status}`)
+      }
+
+      // If the removed telescope was selected, clear selection
+      if (currentTelescope?.id === telescopeId) {
+        setCurrentTelescope(null)
+      }
+
+      // Refresh the telescope list to get the updated data from server
+      await fetchTelescopes()
+
+      addStatusAlert({
+        type: 'info',
+        title: 'Telescope Removed',
+        message: 'Successfully removed telescope'
+      })
+    } catch (error) {
+      console.error('Error removing telescope:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Remove Telescope',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+      throw error
     }
   }
 
@@ -1580,6 +1697,10 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     telescopeError,
     fetchTelescopes,
     selectTelescope,
+    addManualTelescope,
+    removeManualTelescope,
+    showTelescopeManagement,
+    setShowTelescopeManagement,
 
     // State
     showOverlay,

@@ -12,6 +12,7 @@ import {
   Cloud,
   MapPin,
   Radio,
+  Cog,
 } from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {
@@ -89,6 +90,7 @@ export function TelescopeSelector() {
     telescopeError,
     fetchTelescopes,
     selectTelescope,
+    setShowTelescopeManagement,
   } = useTelescopeContext()
 
   useEffect(() => {
@@ -117,8 +119,18 @@ export function TelescopeSelector() {
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setShowTelescopeManagement(true)}
+          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          title="Add Telescope"
+        >
+          <Cog className="w-3 h-3"/>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={fetchTelescopes}
           className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          title="Refresh"
         >
           <RefreshCw className="w-3 h-3"/>
         </Button>
@@ -136,8 +148,18 @@ export function TelescopeSelector() {
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setShowTelescopeManagement(true)}
+          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          title="Add Telescope"
+        >
+          <Cog className="w-3 h-3"/>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={fetchTelescopes}
           className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          title="Refresh"
         >
           <RefreshCw className="w-3 h-3"/>
         </Button>
@@ -173,15 +195,27 @@ export function TelescopeSelector() {
         <DropdownMenuContent align="start" className="w-[480px] bg-gray-800 border-gray-700">
           <DropdownMenuLabel className="text-gray-300 flex items-center justify-between">
             <span>Available Telescopes</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchTelescopes}
-              className="h-6 w-6 p-0 hover:bg-gray-700"
-              disabled={isLoadingTelescopes}
-            >
-              <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoadingTelescopes ? 'animate-spin' : ''}`}/>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTelescopeManagement(true)}
+                className="h-6 w-6 p-0 hover:bg-gray-700"
+                title="Manage Telescopes"
+              >
+                <Cog className="w-3 h-3 text-gray-400"/>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchTelescopes}
+                className="h-6 w-6 p-0 hover:bg-gray-700"
+                disabled={isLoadingTelescopes}
+                title="Refresh Telescopes"
+              >
+                <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoadingTelescopes ? 'animate-spin' : ''}`}/>
+              </Button>
+            </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-gray-700"/>
 
