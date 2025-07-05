@@ -74,26 +74,49 @@ class TelescopeVideoTrack(VideoStreamTrack):
         """Receive the next video frame."""
         pts, time_base = await self.next_timestamp()
         
-        # Check if we have a new image from telescope
-        if self.imaging_client.image and self.imaging_client.image.image is not None:
-            # Process and cache the new frame
+        # Create placeholder with debugging info
+        frame_data = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        # Check imaging client status
+        if not self.imaging_client.is_connected:
+            text = f"Imaging client not connected"
+            logger.debug(f"Frame #{self.frame_count}: Imaging client not connected")
+        elif not self.imaging_client.status.is_streaming:
+            text = f"Imaging client not streaming"
+            logger.debug(f"Frame #{self.frame_count}: Imaging client not streaming (status: {self.imaging_client.status.is_streaming})")
+        elif self.imaging_client.image is None:
+            text = f"No image data received"
+            logger.debug(f"Frame #{self.frame_count}: No image data")
+        elif self.imaging_client.image.image is None:
+            text = f"Image data is None"
+            logger.debug(f"Frame #{self.frame_count}: Image data is None")
+        else:
+            # We have image data! Process it
             telescope_image = self.imaging_client.image.image
             self.cached_frame = self._process_telescope_image(telescope_image)
-            logger.debug(f"Processed new telescope frame #{self.frame_count}")
-        
-        # Use cached frame or create placeholder
-        if self.cached_frame is not None:
             frame_data = self.cached_frame
-        else:
-            # Create a placeholder frame with "Waiting for telescope..." text
-            frame_data = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-            text = "Waiting for telescope..."
+            text = None
+            if self.frame_count % 30 == 0:  # Log every 30 frames to avoid spam
+                logger.info(f"Processing telescope frame #{self.frame_count}, image shape: {telescope_image.shape}")
+        
+        # If we have cached frame but no new data, use cached frame
+        if text and self.cached_frame is not None:
+            frame_data = self.cached_frame
+            text = f"Using cached frame - {text}"
+        
+        # Add status text if needed
+        if text:
             font = cv2.FONT_HERSHEY_SIMPLEX
-            text_size = cv2.getTextSize(text, font, 1, 2)[0]
+            text_size = cv2.getTextSize(text, font, 0.7, 2)[0]
             text_x = (self.width - text_size[0]) // 2
             text_y = (self.height + text_size[1]) // 2
-            cv2.putText(frame_data, text, (text_x, text_y), font, 1, 
+            cv2.putText(frame_data, text, (text_x, text_y), font, 0.7, 
                        (128, 128, 128), 2, cv2.LINE_AA)
+            
+            # Add frame counter in corner
+            counter_text = f"Frame: {self.frame_count}"
+            cv2.putText(frame_data, counter_text, (10, 30), font, 0.5, 
+                       (64, 64, 64), 1, cv2.LINE_AA)
         
         # Create VideoFrame
         frame = VideoFrame.from_ndarray(frame_data, format="rgb24")

@@ -135,15 +135,37 @@ class WebRTCService:
         if not telescope:
             raise ValueError(f"Telescope {telescope_name} not found")
         
+        logger.info(f"Creating video track for telescope {telescope_name}, type: {stream_type}")
+        
         # Get the imaging client
         imaging_client = getattr(telescope, 'imaging', None)
         if not imaging_client:
             raise ValueError(f"No imaging client for telescope {telescope_name}")
         
+        logger.info(f"Imaging client status - connected: {imaging_client.is_connected}, streaming: {imaging_client.status.is_streaming}")
+        
+        # Ensure imaging client is connected
+        if not imaging_client.is_connected:
+            logger.info(f"Imaging client not connected for {telescope_name}, attempting to connect...")
+            try:
+                await imaging_client.connect()
+                logger.info(f"Successfully connected imaging client for {telescope_name}")
+            except Exception as e:
+                logger.error(f"Failed to connect imaging client for {telescope_name}: {e}")
+                raise ValueError(f"Cannot connect to imaging client for telescope {telescope_name}: {e}")
+        
         # Ensure streaming is started
         if not imaging_client.status.is_streaming:
             logger.info(f"Starting imaging stream for telescope {telescope_name}")
             await imaging_client.start_streaming()
+            
+            # Wait a bit for streaming to actually start
+            await asyncio.sleep(1.0)
+            
+            if not imaging_client.status.is_streaming:
+                logger.warning(f"Imaging streaming may not have started properly for {telescope_name}")
+            else:
+                logger.info(f"Imaging streaming started successfully for {telescope_name}")
         
         # Create appropriate video track based on stream type
         if stream_type == "stacked":
@@ -151,6 +173,7 @@ class WebRTCService:
         else:
             track = TelescopeVideoTrack(imaging_client)
         
+        logger.info(f"Created {type(track).__name__} for telescope {telescope_name}")
         return track
     
     async def add_ice_candidate(self, session_id: str, candidate: WebRTCIceCandidate) -> bool:
