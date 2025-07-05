@@ -657,6 +657,34 @@ class Controller:
             asyncio.create_task(self.auto_discover())
 
         # Add our own endpoints
+        @self.app.get("/")
+        async def root():
+            """Root endpoint providing API information and navigation."""
+            return {
+                "message": "ALP Experimental Telescope Control API",
+                "version": "1.0.0",
+                "description": "API for controlling Seestar telescopes with real-time event streaming",
+                "frontend_url": f"http://localhost:3000",
+                "api_docs": f"http://localhost:{self.service_port}/docs",
+                "redoc_docs": f"http://localhost:{self.service_port}/redoc",
+                "endpoints": {
+                    "telescopes": {
+                        "list": "/api/telescopes",
+                        "add": "POST /api/telescopes",
+                        "remove": "DELETE /api/telescopes/{telescope_name}"
+                    },
+                    "configurations": {
+                        "list": "/api/configurations",
+                        "save": "POST /api/configurations", 
+                        "get": "/api/configurations/{config_name}",
+                        "delete": "DELETE /api/configurations/{config_name}"
+                    },
+                    "health": "/health"
+                },
+                "telescope_count": len(self.telescopes) + len(self.remote_telescopes),
+                "documentation": "Visit /docs for interactive API documentation or /redoc for alternative docs"
+            }
+
         @self.app.get("/api/telescopes")
         async def get_telescopes():
             """Get a list of all telescopes."""
