@@ -80,8 +80,14 @@ jobs:
           push: ${{ github.event.inputs.push_images == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
 
       - name: Image build summary
         run: |

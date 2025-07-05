@@ -9,17 +9,26 @@ RUN npm i -g pnpm
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-RUN pnpm i --prod
+COPY package*.json pnpm-lock.yaml* ./
+
+# Mount pnpm cache and install dependencies
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm i --prod --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN npm i -g pnpm
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files and install all dependencies (dev + prod) for build
+COPY package*.json pnpm-lock.yaml* ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm i --frozen-lockfile
+
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # Production image, copy all the files and run next
 FROM gcr.io/distroless/nodejs24-debian12 AS runner
