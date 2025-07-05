@@ -14,7 +14,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger as logging
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
@@ -59,6 +59,16 @@ class InterceptHandler(orig_logging.Handler):
 
 
 orig_logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
+
+class AddTelescopeRequest(BaseModel):
+    """Request model for adding a telescope."""
+    host: str = Field(..., description="IP address or hostname of the telescope")
+    port: int = Field(default=4700, description="Port for telescope control")
+    serial_number: Optional[str] = Field(None, description="Serial number of the telescope")
+    product_model: Optional[str] = Field(None, description="Product model of the telescope")
+    ssid: Optional[str] = Field(None, description="SSID of the telescope's WiFi network")
+    location: Optional[str] = Field(None, description="Physical location of the telescope")
 
 
 class Telescope(BaseModel, arbitrary_types_allowed=True):
@@ -600,6 +610,72 @@ class Controller:
                 result.append(remote_telescope)
 
             return result
+
+        @self.app.post("/api/telescopes")
+        async def add_telescope_endpoint(telescope_request: AddTelescopeRequest):
+            """Manually add a telescope."""
+            try:
+                # Check if telescope already exists
+                # First try by serial number if provided
+                if telescope_request.serial_number:
+                    if telescope_request.serial_number in self.telescopes:
+                        raise HTTPException(status_code=409, 
+                                          detail=f"Telescope with serial number {telescope_request.serial_number} already exists")
+                
+                # Check by host if no serial number or not found by serial number
+                for telescope in self.telescopes.values():
+                    if telescope.host == telescope_request.host and telescope.port == telescope_request.port:
+                        raise HTTPException(status_code=409, 
+                                          detail=f"Telescope at {telescope_request.host}:{telescope_request.port} already exists")
+                
+                # Add the telescope
+                await self.add_telescope(
+                    host=telescope_request.host,
+                    port=telescope_request.port,
+                    serial_number=telescope_request.serial_number,
+                    product_model=telescope_request.product_model,
+                    ssid=telescope_request.ssid,
+                    location=telescope_request.location,
+                    discover=False  # Manual addition, not from discovery
+                )
+                
+                # Get the newly added telescope
+                telescope_name = telescope_request.serial_number or telescope_request.host
+                telescope = self.telescopes.get(telescope_name)
+                
+                if telescope:
+                    return {
+                        "status": "success",
+                        "message": f"Telescope {telescope.name} added successfully",
+                        "telescope": {
+                            "name": telescope.name,
+                            "host": telescope.host,
+                            "port": telescope.port,
+                            "location": await telescope.location,
+                            "connected": telescope.client.is_connected if telescope.client else False,
+                            "serial_number": telescope.serial_number,
+                            "product_model": telescope.product_model,
+                            "ssid": telescope.ssid,
+                            "is_remote": False
+                        }
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail="Failed to add telescope")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error adding telescope: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to add telescope: {str(e)}")
+
+        @self.app.delete("/api/telescopes/{telescope_name}")
+        async def remove_telescope_endpoint(telescope_name: str):
+            """Remove a telescope."""
+            if telescope_name not in self.telescopes and telescope_name not in self.remote_telescopes:
+                raise HTTPException(status_code=404, detail=f"Telescope {telescope_name} not found")
+            
+            self.remove_telescope(telescope_name)
+            return {"status": "success", "message": f"Telescope {telescope_name} removed"}
 
         @self.app.get("/health")
         async def health_check():
