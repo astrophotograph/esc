@@ -26,12 +26,13 @@ class TelescopeVideoTrack(VideoStreamTrack):
         self.cached_frame: Optional[np.ndarray] = None
         self.frame_count = 0
         self.start_time = datetime.now()
+        self._started = False
         
         # Video dimensions (landscape orientation)
         self.width = 1280
         self.height = 720
         
-        logger.info(f"Created telescope video track with target FPS: {target_fps}")
+        logger.info(f"Created telescope video track with target FPS: {target_fps}, track ID: {id(self)}")
     
     def _process_telescope_image(self, image: np.ndarray) -> np.ndarray:
         """Process telescope image for WebRTC streaming."""
@@ -72,72 +73,84 @@ class TelescopeVideoTrack(VideoStreamTrack):
     
     async def recv(self) -> VideoFrame:
         """Receive the next video frame."""
-        pts, time_base = await self.next_timestamp()
-        
-        # Create placeholder with debugging info
-        frame_data = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        
-        # Check imaging client status
-        if not self.imaging_client.is_connected:
-            text = f"Imaging client not connected"
-            logger.debug(f"Frame #{self.frame_count}: Imaging client not connected")
-        elif not self.imaging_client.status.is_streaming:
-            text = f"Imaging client not streaming"
-            logger.debug(f"Frame #{self.frame_count}: Imaging client not streaming (status: {self.imaging_client.status.is_streaming})")
-        elif self.imaging_client.image is None:
-            text = f"No image data received"
-            logger.debug(f"Frame #{self.frame_count}: No image data")
-        elif self.imaging_client.image.image is None:
-            text = f"Image data is None"
-            logger.debug(f"Frame #{self.frame_count}: Image data is None")
-        else:
-            # We have image data! Process it
-            telescope_image = self.imaging_client.image.image
-            self.cached_frame = self._process_telescope_image(telescope_image)
-            frame_data = self.cached_frame
-            text = None
-            if self.frame_count % 30 == 0:  # Log every 30 frames to avoid spam
-                logger.info(f"Processing telescope frame #{self.frame_count}, image shape: {telescope_image.shape}")
-        
-        # If we have cached frame but no new data, use cached frame
-        if text and self.cached_frame is not None:
-            frame_data = self.cached_frame
-            text = f"Using cached frame - {text}"
-        
-        # Add status text if needed
-        if text:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            text_size = cv2.getTextSize(text, font, 0.7, 2)[0]
-            text_x = (self.width - text_size[0]) // 2
-            text_y = (self.height + text_size[1]) // 2
-            cv2.putText(frame_data, text, (text_x, text_y), font, 0.7, 
-                       (128, 128, 128), 2, cv2.LINE_AA)
-            
-            # Add frame counter in corner
-            counter_text = f"Frame: {self.frame_count}"
-            cv2.putText(frame_data, counter_text, (10, 30), font, 0.5, 
-                       (64, 64, 64), 1, cv2.LINE_AA)
-        
-        # Create VideoFrame
-        frame = VideoFrame.from_ndarray(frame_data, format="rgb24")
-        frame.pts = pts
-        frame.time_base = time_base
-        
-        self.frame_count += 1
-        
-        # Maintain target frame rate
-        current_time = time.time()
-        elapsed = current_time - self.last_frame_time
-        if elapsed < self.frame_duration:
-            await asyncio.sleep(self.frame_duration - elapsed)
-        self.last_frame_time = time.time()
-        
-        return frame
+        logger.debug("Received request to receive next video frame")
+        try:
+            pts, time_base = await self.next_timestamp()
+
+            # Create placeholder with debugging info
+            frame_data = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+
+            # Check imaging client status
+            if not self.imaging_client.is_connected:
+                text = f"Imaging client not connected"
+                logger.debug(f"Frame #{self.frame_count}: Imaging client not connected")
+            elif not self.imaging_client.status.is_streaming:
+                text = f"Imaging client not streaming"
+                logger.debug(f"Frame #{self.frame_count}: Imaging client not streaming (status: {self.imaging_client.status.is_streaming})")
+            elif self.imaging_client.image is None:
+                text = f"No image data received"
+                logger.debug(f"Frame #{self.frame_count}: No image data")
+            elif self.imaging_client.image.image is None:
+                text = f"Image data is None"
+                logger.debug(f"Frame #{self.frame_count}: Image data is None")
+            else:
+                # We have image data! Process it
+                telescope_image = self.imaging_client.image.image
+                self.cached_frame = self._process_telescope_image(telescope_image)
+                frame_data = self.cached_frame
+                text = None
+                if self.frame_count % 30 == 0:  # Log every 30 frames to avoid spam
+                    logger.info(f"Processing telescope frame #{self.frame_count}, image shape: {telescope_image.shape}")
+
+            # If we have cached frame but no new data, use cached frame
+            if text and self.cached_frame is not None:
+                frame_data = self.cached_frame
+                text = f"Using cached frame - {text}"
+
+            # Add status text if needed
+            if text:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                text_size = cv2.getTextSize(text, font, 0.7, 2)[0]
+                text_x = (self.width - text_size[0]) // 2
+                text_y = (self.height + text_size[1]) // 2
+                cv2.putText(frame_data, text, (text_x, text_y), font, 0.7,
+                           (128, 128, 128), 2, cv2.LINE_AA)
+
+                # Add frame counter in corner
+                counter_text = f"Frame: {self.frame_count}"
+                cv2.putText(frame_data, counter_text, (10, 30), font, 0.5,
+                           (64, 64, 64), 1, cv2.LINE_AA)
+
+            # Create VideoFrame
+            frame = VideoFrame.from_ndarray(frame_data, format="rgb24")
+            frame.pts = pts
+            frame.time_base = time_base
+
+            self.frame_count += 1
+
+            # Maintain target frame rate
+            current_time = time.time()
+            elapsed = current_time - self.last_frame_time
+            if elapsed < self.frame_duration:
+                await asyncio.sleep(self.frame_duration - elapsed)
+            self.last_frame_time = time.time()
+
+            return frame
+        except Exception as e:
+            logger.error(f"Error processing telescope image: {e}")
+            raise
+    
+    async def start(self):
+        """Start the video track."""
+        await super().start()
+        self._started = True
+        logger.info(f"Started telescope video track {id(self)}")
     
     async def stop(self):
         """Stop the video track."""
+        self._started = False
         await super().stop()
-        logger.info(f"Stopped telescope video track after {self.frame_count} frames")
+        logger.info(f"Stopped telescope video track {id(self)} after {self.frame_count} frames")
 
 
 class StackedImageVideoTrack(TelescopeVideoTrack):
@@ -153,7 +166,7 @@ class StackedImageVideoTrack(TelescopeVideoTrack):
     async def start(self):
         """Start the track and begin fetching stacked images."""
         await super().start()
-        self.update_task = asyncio.create_task(self._fetch_stacked_images())
+        # self.update_task = asyncio.create_task(self._fetch_stacked_images())
     
     async def stop(self):
         """Stop the track and cancel update task."""

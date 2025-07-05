@@ -83,6 +83,14 @@ class WebRTCService:
             logger.info(f"Connection state for session {session_id}: {pc.connectionState}")
             if session_id in self.sessions:
                 self.sessions[session_id].state = pc.connectionState
+                
+                # Log track status when connected
+                if pc.connectionState == "connected":
+                    logger.info(f"Connection established for session {session_id}")
+                    session = self.sessions.get(session_id)
+                    if session and session.video_track:
+                        logger.info(f"Video track {id(session.video_track)} should now be active")
+                        logger.info(f"Video track started: {getattr(session.video_track, '_started', 'unknown')}")
             
             if pc.connectionState == "failed":
                 await pc.close()
@@ -111,7 +119,11 @@ class WebRTCService:
                 logger.info(f"Creating video track for telescope {telescope_name}")
                 video_track = await self.create_video_track(telescope_name, stream_type)
                 if video_track:
-                    pc.addTrack(video_track)
+                    # Log track details before adding
+                    logger.info(f"About to add video track {id(video_track)} to peer connection")
+                    sender = pc.addTrack(video_track)
+                    logger.info(f"Track added, sender: {sender}, track kind: {video_track.kind}")
+                    
                     session.video_track = video_track
                     logger.info(f"Successfully added {stream_type} video track for telescope {telescope_name}")
                 else:
@@ -146,7 +158,7 @@ class WebRTCService:
         logger.info(f"Creating video track for telescope {telescope_name}, type: {stream_type}")
         
         # Get the imaging client
-        imaging_client = getattr(telescope, 'imaging', None)
+        imaging_client = telescope.imaging
         if not imaging_client:
             raise ValueError(f"No imaging client for telescope {telescope_name}")
         
