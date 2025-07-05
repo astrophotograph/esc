@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getTelescopeBaseUrl } from "@/lib/telescopes"
+import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,8 +17,8 @@ export async function GET(
 ) {
   try {
     const { session_id } = await params
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const streamUrl = `${telescopeBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates/stream`
+    const backendBaseUrl = getBackendBaseUrl()
+    const streamUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates/stream`
     
     console.log(`Starting ICE candidates stream for session ${session_id}`)
     

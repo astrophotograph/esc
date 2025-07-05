@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getTelescopeBaseUrl } from "@/lib/telescopes"
+import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,8 +13,8 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   try {
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const configUrl = `${telescopeBaseUrl}/api/webrtc/config`
+    const backendBaseUrl = getBackendBaseUrl()
+    const configUrl = `${backendBaseUrl}/api/webrtc/config`
     
     console.log(`Fetching WebRTC config from: ${configUrl}`)
     

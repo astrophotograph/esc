@@ -27,6 +27,10 @@ export function getTelescopeBaseUrl() {
   return `${backendUrl}/api/telescopes`
 }
 
+export function getBackendBaseUrl() {
+  return process.env.BACKEND_URL || 'http://localhost:8000'
+}
+
 export async function fetchTelescopes() {
   const telescopesUrl = getTelescopeBaseUrl()
 

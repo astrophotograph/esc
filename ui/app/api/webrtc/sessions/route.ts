@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getTelescopeBaseUrl } from "@/lib/telescopes"
+import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,8 +13,8 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   try {
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const sessionsUrl = `${telescopeBaseUrl}/api/webrtc/sessions`
+    const backendBaseUrl = getBackendBaseUrl()
+    const sessionsUrl = `${backendBaseUrl}/api/webrtc/sessions`
     
     console.log(`Fetching WebRTC sessions from: ${sessionsUrl}`)
     
@@ -70,8 +70,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const sessionsUrl = `${telescopeBaseUrl}/api/webrtc/sessions`
+    const backendBaseUrl = getBackendBaseUrl()
+    const sessionsUrl = `${backendBaseUrl}/api/webrtc/sessions`
     
     const body = await req.text()
     

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getTelescopeBaseUrl } from "@/lib/telescopes"
+import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,8 +17,8 @@ export async function GET(
 ) {
   try {
     const { session_id } = await params
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const sessionUrl = `${telescopeBaseUrl}/api/webrtc/sessions/${session_id}`
+    const backendBaseUrl = getBackendBaseUrl()
+    const sessionUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}`
     
     console.log(`Fetching WebRTC session from: ${sessionUrl}`)
     
@@ -78,8 +78,8 @@ export async function DELETE(
 ) {
   try {
     const { session_id } = await params
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const sessionUrl = `${telescopeBaseUrl}/api/webrtc/sessions/${session_id}`
+    const backendBaseUrl = getBackendBaseUrl()
+    const sessionUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}`
     
     console.log(`Deleting WebRTC session at: ${sessionUrl}`)
     

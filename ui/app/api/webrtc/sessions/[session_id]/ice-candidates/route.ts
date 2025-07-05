@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getTelescopeBaseUrl } from "@/lib/telescopes"
+import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,8 +17,8 @@ export async function POST(
 ) {
   try {
     const { session_id } = await params
-    const telescopeBaseUrl = getTelescopeBaseUrl()
-    const iceCandidatesUrl = `${telescopeBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates`
+    const backendBaseUrl = getBackendBaseUrl()
+    const iceCandidatesUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates`
     
     const body = await req.text()
     
