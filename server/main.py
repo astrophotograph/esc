@@ -12,7 +12,7 @@ import numpy as np
 import pydash
 import uvicorn
 from fastapi import FastAPI, HTTPException, APIRouter, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from loguru import logger as logging
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
@@ -657,33 +657,196 @@ class Controller:
             asyncio.create_task(self.auto_discover())
 
         # Add our own endpoints
-        @self.app.get("/")
+        @self.app.get("/", response_class=HTMLResponse)
         async def root():
-            """Root endpoint providing API information and navigation."""
-            return {
-                "message": "ALP Experimental Telescope Control API",
-                "version": "1.0.0",
-                "description": "API for controlling Seestar telescopes with real-time event streaming",
-                "frontend_url": f"http://localhost:3000",
-                "api_docs": f"http://localhost:{self.service_port}/docs",
-                "redoc_docs": f"http://localhost:{self.service_port}/redoc",
-                "endpoints": {
-                    "telescopes": {
-                        "list": "/api/telescopes",
-                        "add": "POST /api/telescopes",
-                        "remove": "DELETE /api/telescopes/{telescope_name}"
-                    },
-                    "configurations": {
-                        "list": "/api/configurations",
-                        "save": "POST /api/configurations", 
-                        "get": "/api/configurations/{config_name}",
-                        "delete": "DELETE /api/configurations/{config_name}"
-                    },
-                    "health": "/health"
-                },
-                "telescope_count": len(self.telescopes) + len(self.remote_telescopes),
-                "documentation": "Visit /docs for interactive API documentation or /redoc for alternative docs"
-            }
+            """Root endpoint providing API information and navigation as HTML."""
+            telescope_count = len(self.telescopes) + len(self.remote_telescopes)
+            
+            html_content = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>ALP Experimental Telescope Control API</title>
+                <style>
+                    body {{
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        line-height: 1.6;
+                        color: #333;
+                        background-color: #f5f5f5;
+                    }}
+                    .container {{
+                        background: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }}
+                    h1 {{
+                        color: #2c3e50;
+                        border-bottom: 3px solid #3498db;
+                        padding-bottom: 10px;
+                    }}
+                    h2 {{
+                        color: #34495e;
+                        margin-top: 30px;
+                    }}
+                    .badge {{
+                        background: #3498db;
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 0.8em;
+                    }}
+                    .endpoint-grid {{
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 20px;
+                        margin: 20px 0;
+                    }}
+                    .endpoint-card {{
+                        border: 1px solid #e1e8ed;
+                        border-radius: 8px;
+                        padding: 15px;
+                        background: #f8f9fa;
+                    }}
+                    .endpoint-title {{
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin-bottom: 10px;
+                    }}
+                    .endpoint-item {{
+                        margin: 5px 0;
+                        font-family: monospace;
+                        font-size: 0.9em;
+                    }}
+                    .method-get {{ color: #28a745; }}
+                    .method-post {{ color: #007bff; }}
+                    .method-delete {{ color: #dc3545; }}
+                    .quick-links {{
+                        display: flex;
+                        gap: 15px;
+                        margin: 20px 0;
+                        flex-wrap: wrap;
+                    }}
+                    .btn {{
+                        display: inline-block;
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        transition: background-color 0.2s;
+                    }}
+                    .btn-primary {{
+                        background: #3498db;
+                        color: white;
+                    }}
+                    .btn-primary:hover {{
+                        background: #2980b9;
+                    }}
+                    .btn-secondary {{
+                        background: #95a5a6;
+                        color: white;
+                    }}
+                    .btn-secondary:hover {{
+                        background: #7f8c8d;
+                    }}
+                    .status {{
+                        background: #e8f5e8;
+                        border: 1px solid #c3e6c3;
+                        border-radius: 5px;
+                        padding: 10px;
+                        margin: 15px 0;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🔭 ALP Experimental Telescope Control API</h1>
+                    <p><span class="badge">v1.0.0</span> API for controlling Seestar telescopes with real-time event streaming</p>
+                    
+                    <div class="status">
+                        <strong>📊 Status:</strong> Running | 
+                        <strong>🔭 Telescopes:</strong> {telescope_count} connected
+                    </div>
+
+                    <h2>🚀 Quick Start</h2>
+                    <div class="quick-links">
+                        <a href="http://localhost:3000" class="btn btn-primary" target="_blank">
+                            🖥️ Frontend Application
+                        </a>
+                        <a href="/docs" class="btn btn-secondary" target="_blank">
+                            📚 API Documentation
+                        </a>
+                        <a href="/redoc" class="btn btn-secondary" target="_blank">
+                            📖 ReDoc Documentation
+                        </a>
+                    </div>
+
+                    <h2>🛠️ API Endpoints</h2>
+                    <div class="endpoint-grid">
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">🔭 Telescope Management</div>
+                            <div class="endpoint-item">
+                                <span class="method-get">GET</span> /api/telescopes
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-post">POST</span> /api/telescopes
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-delete">DELETE</span> /api/telescopes/{{name}}
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">⚙️ Configuration Management</div>
+                            <div class="endpoint-item">
+                                <span class="method-get">GET</span> /api/configurations
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-post">POST</span> /api/configurations
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-get">GET</span> /api/configurations/{{name}}
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-delete">DELETE</span> /api/configurations/{{name}}
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">🏥 System Health</div>
+                            <div class="endpoint-item">
+                                <span class="method-get">GET</span> /health
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>📋 Individual Telescope Controls</h2>
+                    <p>Each connected telescope provides additional endpoints at:</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace;">
+                        /api/telescopes/{{telescope_name}}/{{endpoint}}
+                    </div>
+                    <p><em>Available after connecting telescopes. Visit the API documentation for complete endpoint details.</em></p>
+
+                    <h2>🔗 Getting Started</h2>
+                    <ol>
+                        <li><strong>Frontend Users:</strong> Click the "Frontend Application" button above to access the web interface</li>
+                        <li><strong>API Developers:</strong> Visit the "API Documentation" for interactive endpoint testing</li>
+                        <li><strong>Integration:</strong> Use the endpoints documented above for programmatic access</li>
+                    </ol>
+
+                    <footer style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666;">
+                        <p>ALP Experimental - Telescope Control System</p>
+                    </footer>
+                </div>
+            </body>
+            </html>
+            """
+            return html_content
 
         @self.app.get("/api/telescopes")
         async def get_telescopes():
