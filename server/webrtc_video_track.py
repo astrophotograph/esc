@@ -1,0 +1,163 @@
+"""WebRTC video track for streaming telescope images."""
+
+import asyncio
+import time
+from datetime import datetime
+from typing import Optional
+
+import cv2
+import numpy as np
+from aiortc import VideoStreamTrack
+from av import VideoFrame
+from loguru import logger
+
+from smarttel.seestar.imaging_client import SeestarImagingClient
+
+
+class TelescopeVideoTrack(VideoStreamTrack):
+    """Custom video track that streams telescope images via WebRTC."""
+    
+    def __init__(self, imaging_client: SeestarImagingClient, target_fps: int = 30):
+        super().__init__()
+        self.imaging_client = imaging_client
+        self.target_fps = target_fps
+        self.frame_duration = 1.0 / target_fps
+        self.last_frame_time = time.time()
+        self.cached_frame: Optional[np.ndarray] = None
+        self.frame_count = 0
+        self.start_time = datetime.now()
+        
+        # Video dimensions (landscape orientation)
+        self.width = 1280
+        self.height = 720
+        
+        logger.info(f"Created telescope video track with target FPS: {target_fps}")
+    
+    def _process_telescope_image(self, image: np.ndarray) -> np.ndarray:
+        """Process telescope image for WebRTC streaming."""
+        try:
+            # Convert from 16-bit to 8-bit
+            # Telescope images are 16-bit, but WebRTC needs 8-bit
+            if image.dtype == np.uint16:
+                # Scale to 8-bit range
+                img_8bit = cv2.convertScaleAbs(image, alpha=(255.0/65535.0))
+            else:
+                img_8bit = image
+            
+            # Resize to target dimensions
+            # Original telescope images are 1080x1920 (portrait)
+            # We want 1280x720 (landscape) for better web viewing
+            if img_8bit.shape[:2] != (self.height, self.width):
+                # Rotate if needed (telescope images are often portrait)
+                if img_8bit.shape[0] > img_8bit.shape[1]:
+                    img_8bit = cv2.rotate(img_8bit, cv2.ROTATE_90_CLOCKWISE)
+                
+                # Resize to target resolution
+                img_8bit = cv2.resize(img_8bit, (self.width, self.height), 
+                                     interpolation=cv2.INTER_LINEAR)
+            
+            # Convert BGR to RGB (OpenCV uses BGR, WebRTC needs RGB)
+            if len(img_8bit.shape) == 3 and img_8bit.shape[2] == 3:
+                img_rgb = cv2.cvtColor(img_8bit, cv2.COLOR_BGR2RGB)
+            else:
+                # If grayscale, convert to RGB
+                img_rgb = cv2.cvtColor(img_8bit, cv2.COLOR_GRAY2RGB)
+            
+            return img_rgb
+            
+        except Exception as e:
+            logger.error(f"Error processing telescope image: {e}")
+            # Return a black frame on error
+            return np.zeros((self.height, self.width, 3), dtype=np.uint8)
+    
+    async def recv(self) -> VideoFrame:
+        """Receive the next video frame."""
+        pts, time_base = await self.next_timestamp()
+        
+        # Check if we have a new image from telescope
+        if self.imaging_client.image and self.imaging_client.image.image is not None:
+            # Process and cache the new frame
+            telescope_image = self.imaging_client.image.image
+            self.cached_frame = self._process_telescope_image(telescope_image)
+            logger.debug(f"Processed new telescope frame #{self.frame_count}")
+        
+        # Use cached frame or create placeholder
+        if self.cached_frame is not None:
+            frame_data = self.cached_frame
+        else:
+            # Create a placeholder frame with "Waiting for telescope..." text
+            frame_data = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+            text = "Waiting for telescope..."
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            text_size = cv2.getTextSize(text, font, 1, 2)[0]
+            text_x = (self.width - text_size[0]) // 2
+            text_y = (self.height + text_size[1]) // 2
+            cv2.putText(frame_data, text, (text_x, text_y), font, 1, 
+                       (128, 128, 128), 2, cv2.LINE_AA)
+        
+        # Create VideoFrame
+        frame = VideoFrame.from_ndarray(frame_data, format="rgb24")
+        frame.pts = pts
+        frame.time_base = time_base
+        
+        self.frame_count += 1
+        
+        # Maintain target frame rate
+        current_time = time.time()
+        elapsed = current_time - self.last_frame_time
+        if elapsed < self.frame_duration:
+            await asyncio.sleep(self.frame_duration - elapsed)
+        self.last_frame_time = time.time()
+        
+        return frame
+    
+    async def stop(self):
+        """Stop the video track."""
+        await super().stop()
+        logger.info(f"Stopped telescope video track after {self.frame_count} frames")
+
+
+class StackedImageVideoTrack(TelescopeVideoTrack):
+    """Video track specifically for stacked images with periodic updates."""
+    
+    def __init__(self, imaging_client: SeestarImagingClient, update_interval: float = 5.0):
+        # Stacked images update less frequently, so lower FPS
+        super().__init__(imaging_client, target_fps=5)
+        self.update_interval = update_interval
+        self.last_update = 0
+        self.update_task: Optional[asyncio.Task] = None
+    
+    async def start(self):
+        """Start the track and begin fetching stacked images."""
+        await super().start()
+        self.update_task = asyncio.create_task(self._fetch_stacked_images())
+    
+    async def stop(self):
+        """Stop the track and cancel update task."""
+        if self.update_task:
+            self.update_task.cancel()
+            try:
+                await self.update_task
+            except asyncio.CancelledError:
+                pass
+        await super().stop()
+    
+    async def _fetch_stacked_images(self):
+        """Periodically fetch stacked images."""
+        try:
+            while True:
+                current_time = time.time()
+                if current_time - self.last_update >= self.update_interval:
+                    try:
+                        # Request stacked image
+                        await self.imaging_client.get_stacked_image()
+                        self.last_update = current_time
+                        logger.debug("Requested stacked image update")
+                    except Exception as e:
+                        logger.error(f"Error fetching stacked image: {e}")
+                
+                await asyncio.sleep(1.0)  # Check every second
+                
+        except asyncio.CancelledError:
+            logger.info("Stacked image fetch task cancelled")
+            raise

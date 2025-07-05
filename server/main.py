@@ -28,6 +28,7 @@ from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDe
 from smarttel.seestar.imaging_client import SeestarImagingClient
 from smarttel.util.eventbus import EventBus
 from database import TelescopeDatabase
+from webrtc_router import router as webrtc_router
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -655,6 +656,24 @@ class Controller:
 
         if self.discover:
             asyncio.create_task(self.auto_discover())
+
+        # Initialize WebRTC service with telescope getter
+        from webrtc_router import initialize_webrtc_service
+        
+        def get_telescope(telescope_name: str):
+            """Get telescope by name for WebRTC service."""
+            return self.telescopes.get(telescope_name)
+        
+        initialize_webrtc_service(get_telescope)
+        
+        # Add WebRTC router
+        self.app.include_router(webrtc_router)
+        
+        # Add shutdown handler for WebRTC cleanup
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            from webrtc_router import cleanup_webrtc_service
+            await cleanup_webrtc_service()
 
         # Add our own endpoints
         @self.app.get("/", response_class=HTMLResponse)
