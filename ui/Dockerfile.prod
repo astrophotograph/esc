@@ -1,5 +1,5 @@
 # Optimized Production Next.js UI Dockerfile
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -20,7 +20,7 @@ COPY . .
 RUN npm run build
 
 # Production image, copy all the files and run next
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
+FROM gcr.io/distroless/nodejs24-debian12 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
