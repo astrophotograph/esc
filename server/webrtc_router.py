@@ -50,6 +50,12 @@ async def create_webrtc_session(request: WebRTCCreateSessionRequest) -> WebRTCCr
     This endpoint handles the initial WebRTC offer/answer exchange to establish
     a peer connection for streaming telescope video.
     """
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     try:
         session_id, answer = await webrtc_service.create_session(
             telescope_name=request.telescope_name,
@@ -68,12 +74,23 @@ async def create_webrtc_session(request: WebRTCCreateSessionRequest) -> WebRTCCr
 @router.get("/sessions", response_model=list[WebRTCSession])
 async def list_webrtc_sessions() -> list[WebRTCSession]:
     """List all active WebRTC sessions."""
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
     return webrtc_service.list_sessions()
 
 
 @router.get("/sessions/{session_id}", response_model=WebRTCSession)
 async def get_webrtc_session(session_id: str) -> WebRTCSession:
     """Get information about a specific WebRTC session."""
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     session = webrtc_service.get_session(session_id)
     if not session:
         raise HTTPException(
@@ -91,6 +108,12 @@ async def add_ice_candidate(session_id: str, candidate: WebRTCIceCandidate) -> d
     This endpoint is used during the ICE gathering process to exchange
     network connectivity information between peers.
     """
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     success = await webrtc_service.add_ice_candidate(session_id, candidate)
     if not success:
         raise HTTPException(
@@ -108,6 +131,12 @@ async def stream_ice_candidates(session_id: str):
     This endpoint uses Server-Sent Events to stream ICE candidates
     to the client as they become available during the connection process.
     """
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     session = webrtc_service.get_session(session_id)
     if not session:
         raise HTTPException(
@@ -129,6 +158,12 @@ async def stream_ice_candidates(session_id: str):
 @router.delete("/sessions/{session_id}")
 async def close_webrtc_session(session_id: str) -> dict:
     """Close and clean up a WebRTC session."""
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     session = webrtc_service.get_session(session_id)
     if not session:
         raise HTTPException(
@@ -148,6 +183,12 @@ async def get_webrtc_config() -> dict:
     This endpoint provides the client with necessary configuration
     for establishing WebRTC connections.
     """
+    if webrtc_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="WebRTC service not initialized"
+        )
+    
     return {
         "iceServers": [
             {"urls": webrtc_service.stun_servers}
