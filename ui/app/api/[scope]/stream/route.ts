@@ -1,5 +1,5 @@
 import {NextRequest} from 'next/server'
-import {getTelescopeBaseUrl} from "@/lib/telescopes"
+import {getBackendBaseUrl} from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -118,13 +118,13 @@ export async function GET(req: NextRequest,
 function buildStreamUrl(scope: string, streamType: string): string | null {
   // Get telescope host from scope - in production this would come from telescope configuration
   // For now, assume scope contains the telescope identifier
-  const telescopeBaseUrl = getTelescopeBaseUrl()
+  const backendBaseUrl = getBackendBaseUrl()
 
   switch (streamType) {
     case 'video':
     case 'live':
       // Main video stream
-      return `${telescopeBaseUrl}/${scope}/stream`
+      return `${backendBaseUrl}/api/telescopes/${scope}/stream`
 
     // case 'preview':
     // case 'thumb':
