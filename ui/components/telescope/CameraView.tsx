@@ -35,6 +35,7 @@ import { AnnotationLayer } from "./AnnotationLayer"
 import { RandomTestPattern } from "./RandomTestPattern"
 import type { ScreenAnnotation } from "../../types/telescope-types"
 import { generateStreamingUrl } from "../../utils/streaming"
+import { WebRTCLiveView } from "./WebRTCLiveView"
 
 export function CameraView() {
   const {
@@ -51,6 +52,8 @@ export function CameraView() {
     systemStats,
     brightness,
     contrast,
+    connectionType,
+    setConnectionType,
     imageStats: _imageStats,
     showAnnotations: _showAnnotations,
     setShowAnnotations: _setShowAnnotations,
@@ -1037,26 +1040,19 @@ export function CameraView() {
                 </div>
               )}
 
-              {/* Only show image when it's loaded successfully and connection is not lost */}
-              <img
-                ref={imageRef}
-                src={videoUrl}
-                alt="Telescope view"
-                className={`w-full h-full transition-transform duration-200 select-none ${imageError || connectionLost ? 'hidden' : ''}`}
-                style={{
-                  filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%)`,
-                  transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
-                  transformOrigin: 'center center',
-                  userSelect: 'none',
-                  MozUserSelect: 'none',
-                  pointerEvents: 'none',
-                  objectFit: isPortrait ? 'contain' : 'cover',
-                  objectPosition: 'center',
-                }}
+              {/* WebRTC Live View with MJPEG fallback */}
+              <WebRTCLiveView
+                telescope={currentTelescope}
+                className={`${imageError || connectionLost ? 'hidden' : ''}`}
+                brightness={brightness}
+                contrast={contrast}
+                rotationAngle={rotationAngle}
+                zoomLevel={zoomLevel}
+                panPosition={panPosition}
+                isPortrait={isPortrait}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                draggable="false"
-                onDragStart={(e) => e.preventDefault()}
+                onConnectionStateChange={setConnectionType}
               />
             </div>
 

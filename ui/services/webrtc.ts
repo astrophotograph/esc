@@ -362,4 +362,11 @@ export class WebRTCService extends EventEmitter {
   getSessionId(): string | null {
     return this.sessionId;
   }
+
+  /**
+   * Get peer connection for stats (if available)
+   */
+  getPeerConnection(): RTCPeerConnection | null {
+    return this.peerConnection;
+  }
 }

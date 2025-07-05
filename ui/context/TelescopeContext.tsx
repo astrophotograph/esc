@@ -116,6 +116,8 @@ interface TelescopeContextType {
   setBrightness: (brightness: number[]) => void
   contrast: number[]
   setContrast: (contrast: number[]) => void
+  connectionType: 'webrtc' | 'mjpeg' | 'disconnected'
+  setConnectionType: (type: 'webrtc' | 'mjpeg' | 'disconnected') => void
   focusPosition: number[]
   setFocusPosition: (position: number[]) => void
   isTracking: boolean
@@ -316,6 +318,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [contrast, setContrast] = useState([100])
   const [focusPosition, setFocusPosition] = useState([5000])
   const [isTracking, setIsTracking] = useState(true)
+  const [connectionType, setConnectionType] = useState<'webrtc' | 'mjpeg' | 'disconnected'>('disconnected')
   const [imageStats, setImageStats] = useState<ImageStats>({
     mean: 128.5,
     std: 45.2,
@@ -1713,6 +1716,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setBrightness,
     contrast,
     setContrast,
+    connectionType,
+    setConnectionType,
     focusPosition,
     setFocusPosition,
     isTracking,

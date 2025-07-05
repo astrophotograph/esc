@@ -91,6 +91,7 @@ export function TelescopeSelector() {
     fetchTelescopes,
     selectTelescope,
     setShowTelescopeManagement,
+    connectionType,
   } = useTelescopeContext()
 
   useEffect(() => {
@@ -294,9 +295,23 @@ export function TelescopeSelector() {
 
       {/* Status indicator */}
       {currentTelescope && (
-        <div className="flex items-center gap-1 text-xs">
-          <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
-          <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
+            <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
+          </div>
+          {connectionType !== 'disconnected' && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                connectionType === 'webrtc' ? 'bg-green-400' : 'bg-yellow-400'
+              }`}/>
+              <span className={`text-xs font-medium ${
+                connectionType === 'webrtc' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+              }`}>
+                {connectionType === 'webrtc' ? 'WebRTC' : 'MJPEG'}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
