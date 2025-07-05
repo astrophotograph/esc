@@ -43,6 +43,17 @@ class TelescopeDatabase:
                     UNIQUE(host, port)
                 )
             """)
+            
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS configurations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    description TEXT,
+                    config_data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             await db.commit()
             
         self._initialized = True
@@ -169,4 +180,98 @@ class TelescopeDatabase:
                     return row is not None
         except Exception as e:
             logging.error(f"Failed to check telescope existence in database: {e}")
+            return False
+    
+    async def save_configuration(self, name: str, description: Optional[str], config_data: str) -> bool:
+        """Save a configuration to the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    INSERT OR REPLACE INTO configurations 
+                    (name, description, config_data, updated_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                """, (name, description, config_data))
+                await db.commit()
+                logging.info(f"Saved configuration '{name}' to database")
+                return True
+        except Exception as e:
+            logging.error(f"Failed to save configuration to database: {e}")
+            return False
+    
+    async def load_configuration(self, name: str) -> Optional[Dict[str, Any]]:
+        """Load a specific configuration from the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("""
+                    SELECT name, description, config_data, created_at, updated_at
+                    FROM configurations 
+                    WHERE name = ?
+                """, (name,)) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        return {
+                            'name': row['name'],
+                            'description': row['description'],
+                            'config_data': row['config_data'],
+                            'created_at': row['created_at'],
+                            'updated_at': row['updated_at']
+                        }
+                    return None
+        except Exception as e:
+            logging.error(f"Failed to load configuration from database: {e}")
+            return None
+    
+    async def list_configurations(self) -> List[Dict[str, Any]]:
+        """List all configurations from the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("""
+                    SELECT name, description, created_at, updated_at
+                    FROM configurations 
+                    ORDER BY updated_at DESC
+                """) as cursor:
+                    rows = await cursor.fetchall()
+                    configurations = []
+                    for row in rows:
+                        config_info = {
+                            'name': row['name'],
+                            'description': row['description'],
+                            'created_at': row['created_at'],
+                            'updated_at': row['updated_at']
+                        }
+                        configurations.append(config_info)
+                    
+                    logging.info(f"Listed {len(configurations)} configurations from database")
+                    return configurations
+        except Exception as e:
+            logging.error(f"Failed to list configurations from database: {e}")
+            return []
+    
+    async def delete_configuration(self, name: str) -> bool:
+        """Delete a configuration from the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute("""
+                    DELETE FROM configurations WHERE name = ?
+                """, (name,))
+                await db.commit()
+                
+                if cursor.rowcount > 0:
+                    logging.info(f"Deleted configuration '{name}' from database")
+                    return True
+                else:
+                    logging.warning(f"Configuration '{name}' not found in database")
+                    return False
+        except Exception as e:
+            logging.error(f"Failed to delete configuration from database: {e}")
             return False

@@ -72,6 +72,30 @@ class AddTelescopeRequest(BaseModel):
     location: Optional[str] = Field(None, description="Physical location of the telescope")
 
 
+class SaveConfigurationRequest(BaseModel):
+    """Request model for saving a configuration."""
+    name: str = Field(..., description="Name of the configuration", min_length=1, max_length=100)
+    description: Optional[str] = Field(None, description="Description of the configuration", max_length=500)
+    config_data: dict = Field(..., description="Configuration data as a JSON object")
+
+
+class ConfigurationResponse(BaseModel):
+    """Response model for configuration data."""
+    name: str
+    description: Optional[str]
+    config_data: dict
+    created_at: str
+    updated_at: str
+
+
+class ConfigurationListItem(BaseModel):
+    """Response model for configuration list items."""
+    name: str
+    description: Optional[str]
+    created_at: str
+    updated_at: str
+
+
 class Telescope(BaseModel, arbitrary_types_allowed=True):
     """Telescope."""
     host: str
@@ -725,6 +749,81 @@ class Controller:
             
             self.remove_telescope(telescope_name)
             return {"status": "success", "message": f"Telescope {telescope_name} removed"}
+
+        @self.app.post("/api/configurations")
+        async def save_configuration(config_request: SaveConfigurationRequest):
+            """Save a configuration to the database."""
+            try:
+                success = await self.db.save_configuration(
+                    name=config_request.name,
+                    description=config_request.description,
+                    config_data=json.dumps(config_request.config_data)
+                )
+                
+                if success:
+                    return {
+                        "status": "success",
+                        "message": f"Configuration '{config_request.name}' saved successfully"
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail="Failed to save configuration")
+                    
+            except Exception as e:
+                logging.error(f"Error saving configuration: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to save configuration: {str(e)}")
+
+        @self.app.get("/api/configurations")
+        async def list_configurations():
+            """List all saved configurations."""
+            try:
+                configurations = await self.db.list_configurations()
+                return [ConfigurationListItem(**config) for config in configurations]
+            except Exception as e:
+                logging.error(f"Error listing configurations: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to list configurations: {str(e)}")
+
+        @self.app.get("/api/configurations/{config_name}")
+        async def get_configuration(config_name: str):
+            """Get a specific configuration by name."""
+            try:
+                config = await self.db.load_configuration(config_name)
+                if config is None:
+                    raise HTTPException(status_code=404, detail=f"Configuration '{config_name}' not found")
+                
+                # Parse the JSON config_data back to a dict
+                config_data = json.loads(config['config_data'])
+                
+                return ConfigurationResponse(
+                    name=config['name'],
+                    description=config['description'],
+                    config_data=config_data,
+                    created_at=config['created_at'],
+                    updated_at=config['updated_at']
+                )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error getting configuration: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to get configuration: {str(e)}")
+
+        @self.app.delete("/api/configurations/{config_name}")
+        async def delete_configuration(config_name: str):
+            """Delete a configuration by name."""
+            try:
+                success = await self.db.delete_configuration(config_name)
+                if success:
+                    return {
+                        "status": "success",
+                        "message": f"Configuration '{config_name}' deleted successfully"
+                    }
+                else:
+                    raise HTTPException(status_code=404, detail=f"Configuration '{config_name}' not found")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error deleting configuration: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to delete configuration: {str(e)}")
 
         @self.app.get("/health")
         async def health_check():
