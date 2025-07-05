@@ -56,15 +56,20 @@ async def create_webrtc_session(request: WebRTCCreateSessionRequest) -> WebRTCCr
             detail="WebRTC service not initialized"
         )
     
+    logger.info(f"Creating WebRTC session for telescope: {request.telescope_name}, stream type: {request.stream_type}")
+    
     try:
         session_id, answer = await webrtc_service.create_session(
             telescope_name=request.telescope_name,
             offer=request.offer,
             stream_type=request.stream_type
         )
+        logger.info(f"Successfully created WebRTC session {session_id} for telescope {request.telescope_name}")
         return WebRTCCreateSessionResponse(session_id=session_id, answer=answer)
     except Exception as e:
-        logger.error(f"Failed to create WebRTC session: {e}")
+        logger.error(f"Failed to create WebRTC session for telescope {request.telescope_name}: {e}")
+        import traceback
+        logger.error(f"WebRTC session creation traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create WebRTC session: {str(e)}"

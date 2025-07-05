@@ -108,14 +108,22 @@ class WebRTCService:
         # Add video track if telescope is available
         if self.telescope_getter:
             try:
+                logger.info(f"Creating video track for telescope {telescope_name}")
                 video_track = await self.create_video_track(telescope_name, stream_type)
                 if video_track:
                     pc.addTrack(video_track)
                     session.video_track = video_track
-                    logger.info(f"Added {stream_type} video track for telescope {telescope_name}")
+                    logger.info(f"Successfully added {stream_type} video track for telescope {telescope_name}")
+                else:
+                    logger.error(f"Video track creation returned None for telescope {telescope_name}")
             except Exception as e:
-                logger.error(f"Failed to create video track: {e}")
-                # Continue without video track
+                logger.error(f"Failed to create video track for telescope {telescope_name}: {e}")
+                import traceback
+                logger.error(f"Video track creation traceback: {traceback.format_exc()}")
+                # Continue without video track - this might be why no stream is received
+                raise e  # Re-raise to see if this helps identify the issue
+        else:
+            logger.warning("No telescope getter configured - no video track will be added")
         
         # Create answer
         answer = await pc.createAnswer()

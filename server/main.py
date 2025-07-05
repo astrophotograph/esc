@@ -662,7 +662,11 @@ class Controller:
         
         def get_telescope(telescope_name: str):
             """Get telescope by name for WebRTC service."""
-            return self.telescopes.get(telescope_name)
+            telescope = self.telescopes.get(telescope_name)
+            logging.info(f"WebRTC telescope lookup for '{telescope_name}': {'found' if telescope else 'not found'}")
+            if not telescope:
+                logging.info(f"Available telescopes: {list(self.telescopes.keys())}")
+            return telescope
         
         initialize_webrtc_service(get_telescope)
         
