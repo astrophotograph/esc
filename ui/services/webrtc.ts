@@ -78,11 +78,15 @@ export class WebRTCService extends EventEmitter {
     streamType: 'live' | 'stacked' = 'live'
   ): Promise<MediaStream> {
     try {
+      console.log(`WebRTC: Creating session for telescope "${telescopeName}" with stream type "${streamType}"`);
+      
       // Clean up any existing session
       await this.disconnect();
 
       // Get WebRTC configuration
+      console.log('WebRTC: Getting config...');
       const config = await this.getConfig();
+      console.log('WebRTC: Got config:', config);
 
       // Create peer connection
       this.peerConnection = new RTCPeerConnection(config);
@@ -105,6 +109,8 @@ export class WebRTCService extends EventEmitter {
         stream_type: streamType,
       };
 
+      console.log('WebRTC: Sending session creation request:', request);
+      
       const response = await fetch(`${this.apiUrl}/api/webrtc/sessions`, {
         method: 'POST',
         headers: {
@@ -112,6 +118,8 @@ export class WebRTCService extends EventEmitter {
         },
         body: JSON.stringify(request),
       });
+      
+      console.log('WebRTC: Session creation response status:', response.status);
 
       if (!response.ok) {
         throw new Error(`Failed to create session: ${response.statusText}`);
