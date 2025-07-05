@@ -35,6 +35,14 @@ After running, the application will be available at:
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 
+### Data Persistence
+
+The application automatically persists manually added telescopes in a SQLite database. In Docker setups, this database is stored in a volume and survives container restarts and updates.
+
+- **Auto-discovered telescopes**: Rediscovered on each startup
+- **Manually added telescopes**: Persisted and restored automatically
+- **Backup instructions**: See [Docker documentation](README.Docker.md#backup-and-recovery)
+
 ## Manual Setup
 
 ### Server

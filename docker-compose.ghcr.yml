@@ -17,6 +17,8 @@ services:
     container_name: alp-server
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      - telescope-data:/app/data
     restart: unless-stopped
     network_mode: host
 
@@ -31,4 +33,6 @@ services:
 
 volumes:
   redis-data:
+    driver: local
+  telescope-data:
     driver: local

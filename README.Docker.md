@@ -232,6 +232,24 @@ SEESTAR_PORT=4700
    docker network inspect main_telescope-network
    ```
 
+6. **Database issues**:
+   ```bash
+   # Check if database file exists
+   docker run --rm -v telescope-data:/data alpine ls -la /data/
+   
+   # View database contents
+   docker run --rm -v telescope-data:/data alpine \
+     sqlite3 /data/telescopes.db "SELECT * FROM telescopes;"
+   
+   # Reset database (removes all manually added telescopes)
+   docker run --rm -v telescope-data:/data alpine rm -f /data/telescopes.db
+   docker-compose restart server
+   
+   # Check database file permissions
+   docker run --rm -v telescope-data:/data alpine \
+     stat /data/telescopes.db
+   ```
+
 ### Health Checks
 
 ```bash
@@ -343,6 +361,14 @@ curl http://localhost:8000/metrics
 docker-compose exec redis redis-cli BGSAVE
 docker cp $(docker-compose ps -q redis):/data/dump.rdb ./backup/
 
+# Backup SQLite telescope database (for manually added telescopes)
+docker run --rm -v telescope-data:/data -v $(pwd)/backup:/backup alpine \
+  tar czf /backup/telescope-db-$(date +%Y%m%d).tar.gz -C /data .
+
+# Alternative: Direct SQLite backup
+docker run --rm -v telescope-data:/data -v $(pwd)/backup:/backup alpine \
+  cp /data/telescopes.db /backup/telescopes-$(date +%Y%m%d).db
+
 # Backup configuration
 tar -czf backup/config-$(date +%Y%m%d).tar.gz .env docker-compose.yml
 ```
@@ -353,6 +379,36 @@ tar -czf backup/config-$(date +%Y%m%d).tar.gz .env docker-compose.yml
 # Restore Redis data
 docker cp ./backup/dump.rdb $(docker-compose ps -q redis):/data/
 docker-compose restart redis
+
+# Restore SQLite database
+docker run --rm -v telescope-data:/data -v $(pwd)/backup:/backup alpine \
+  tar xzf /backup/telescope-db-YYYYMMDD.tar.gz -C /data
+
+# Alternative: Direct SQLite restore
+docker run --rm -v telescope-data:/data -v $(pwd)/backup:/backup alpine \
+  cp /backup/telescopes-YYYYMMDD.db /data/telescopes.db
+
+# Restart server to reload database
+docker-compose restart server
+```
+
+### Database Volume Management
+
+```bash
+# List all volumes
+docker volume ls
+
+# Inspect telescope data volume
+docker volume inspect main_telescope-data
+
+# Create manual backup of entire volume
+docker run --rm -v main_telescope-data:/source -v $(pwd):/backup alpine \
+  tar czf /backup/full-telescope-volume-$(date +%Y%m%d).tar.gz -C /source .
+
+# Restore entire volume
+docker volume create main_telescope-data
+docker run --rm -v main_telescope-data:/target -v $(pwd):/backup alpine \
+  tar xzf /backup/full-telescope-volume-YYYYMMDD.tar.gz -C /target
 ```
 
 ## Support

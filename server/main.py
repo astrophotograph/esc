@@ -27,6 +27,7 @@ from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, GetDe
     GetFocuserPosition
 from smarttel.seestar.imaging_client import SeestarImagingClient
 from smarttel.util.eventbus import EventBus
+from database import TelescopeDatabase
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -441,6 +442,7 @@ class Controller:
         self.remote_telescopes: dict[str, dict] = {}  # Track remote telescope metadata
         self.service_port = service_port
         self.discover = discover
+        self.db = TelescopeDatabase()
 
     async def add_telescope(self, host: str, port: int, *,
                             serial_number: Optional[str] = None,
@@ -479,6 +481,19 @@ class Controller:
 
         self.telescopes[telescope.name] = telescope
 
+        # Save manually added telescopes to database
+        if telescope.discovery_method == "manual":
+            telescope_data = {
+                'host': telescope.host,
+                'port': telescope.port,
+                'serial_number': telescope.serial_number,
+                'product_model': telescope.product_model,
+                'ssid': telescope.ssid,
+                'location': telescope._location,
+                'discovery_method': telescope.discovery_method
+            }
+            asyncio.create_task(self.db.save_telescope(telescope_data))
+
         self.app.include_router(telescope.create_telescope_api(),
                                 prefix=f"/api/telescopes/{telescope.name}", )
 
@@ -488,6 +503,11 @@ class Controller:
         telescope = self.telescopes.pop(name, None)
         if telescope:
             logging.info(f"Removed local telescope {telescope.name}")
+            
+            # Remove from database if it was manually added
+            if telescope.discovery_method == "manual":
+                asyncio.create_task(self.db.delete_telescope_by_name(name))
+            
             # todo : need to remove from router and shut down connection...
             return
 
@@ -582,8 +602,32 @@ class Controller:
 
             await asyncio.sleep(60)
 
+    async def load_saved_telescopes(self):
+        """Load manually added telescopes from the database."""
+        try:
+            saved_telescopes = await self.db.load_telescopes()
+            for telescope_data in saved_telescopes:
+                # Check if telescope is already loaded (avoid duplicates)
+                telescope_name = telescope_data.get('serial_number') or telescope_data['host']
+                if telescope_name not in self.telescopes:
+                    await self.add_telescope(
+                        host=telescope_data['host'],
+                        port=telescope_data['port'],
+                        serial_number=telescope_data.get('serial_number'),
+                        product_model=telescope_data.get('product_model'),
+                        ssid=telescope_data.get('ssid'),
+                        location=telescope_data.get('location'),
+                        discover=False  # These are manually added telescopes
+                    )
+                    logging.info(f"Restored telescope {telescope_name} from database")
+        except Exception as e:
+            logging.error(f"Failed to load saved telescopes: {e}")
+
     async def runner(self):
         """Create and run the Uvicorn server."""
+
+        # Load saved telescopes first
+        await self.load_saved_telescopes()
 
         if self.discover:
             asyncio.create_task(self.auto_discover())
