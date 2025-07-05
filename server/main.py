@@ -761,6 +761,58 @@ class Controller:
                         padding: 10px;
                         margin: 15px 0;
                     }}
+                    .telescope-table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }}
+                    .telescope-table th,
+                    .telescope-table td {{
+                        padding: 12px;
+                        text-align: left;
+                        border-bottom: 1px solid #ddd;
+                    }}
+                    .telescope-table th {{
+                        background-color: #f8f9fa;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }}
+                    .telescope-table tr:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                    .status-connected {{
+                        color: #28a745;
+                        font-weight: bold;
+                    }}
+                    .status-disconnected {{
+                        color: #dc3545;
+                        font-weight: bold;
+                    }}
+                    .discovery-badge {{
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        font-size: 0.75em;
+                        font-weight: bold;
+                    }}
+                    .discovery-manual {{
+                        background: #17a2b8;
+                        color: white;
+                    }}
+                    .discovery-auto {{
+                        background: #28a745;
+                        color: white;
+                    }}
+                    .discovery-remote {{
+                        background: #6f42c1;
+                        color: white;
+                    }}
+                    .no-telescopes {{
+                        text-align: center;
+                        padding: 20px;
+                        color: #666;
+                        font-style: italic;
+                    }}
                 </style>
             </head>
             <body>
@@ -825,6 +877,75 @@ class Controller:
                         </div>
                     </div>
 
+                    <h2>🔭 Connected Telescopes</h2>
+            """
+            
+            # Generate telescope table
+            if telescope_count > 0:
+                html_content += """
+                    <table class="telescope-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Host:Port</th>
+                                <th>Model</th>
+                                <th>Serial Number</th>
+                                <th>Connection</th>
+                                <th>Discovery</th>
+                                <th>Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>"""
+                
+                # Add local telescopes
+                for telescope in self.telescopes.values():
+                    location_text = telescope._location or "Unknown"
+                    
+                    connection_status = "Connected" if (telescope.client and telescope.client.is_connected) else "Disconnected"
+                    connection_class = "status-connected" if (telescope.client and telescope.client.is_connected) else "status-disconnected"
+                    
+                    discovery_method = telescope.discovery_method if telescope.discovery_method else "manual"
+                    discovery_class = f"discovery-{discovery_method.replace('_', '-')}"
+                    discovery_text = discovery_method.replace('_', ' ').title()
+                    
+                    html_content += f"""
+                            <tr>
+                                <td><strong>{telescope.name}</strong></td>
+                                <td><code>{telescope.host}:{telescope.port}</code></td>
+                                <td>{telescope.product_model or "Unknown"}</td>
+                                <td>{telescope.serial_number or "N/A"}</td>
+                                <td><span class="{connection_class}">{connection_status}</span></td>
+                                <td><span class="discovery-badge {discovery_class}">{discovery_text}</span></td>
+                                <td>{location_text}</td>
+                            </tr>"""
+                
+                # Add remote telescopes
+                for remote_telescope in self.remote_telescopes.values():
+                    connection_status = "Connected" if remote_telescope.get("connected", False) else "Disconnected"
+                    connection_class = "status-connected" if remote_telescope.get("connected", False) else "status-disconnected"
+                    
+                    html_content += f"""
+                            <tr>
+                                <td><strong>{remote_telescope.get("name", "Unknown")}</strong></td>
+                                <td><code>{remote_telescope.get("host", "Unknown")}:{remote_telescope.get("port", "Unknown")}</code></td>
+                                <td>{remote_telescope.get("product_model", "Unknown")}</td>
+                                <td>{remote_telescope.get("serial_number", "N/A")}</td>
+                                <td><span class="{connection_class}">{connection_status}</span></td>
+                                <td><span class="discovery-badge discovery-remote">Remote</span></td>
+                                <td>{remote_telescope.get("location", "Unknown")}</td>
+                            </tr>"""
+                
+                html_content += """
+                        </tbody>
+                    </table>"""
+            else:
+                html_content += """
+                    <div class="no-telescopes">
+                        <p>🔍 No telescopes currently connected</p>
+                        <p>Add telescopes manually via the API or enable auto-discovery to see them here.</p>
+                    </div>"""
+            
+            html_content += """
                     <h2>📋 Individual Telescope Controls</h2>
                     <p>Each connected telescope provides additional endpoints at:</p>
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace;">
