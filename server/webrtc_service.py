@@ -5,7 +5,7 @@ import json
 from typing import Dict, Optional, Any, Callable
 from uuid import uuid4
 
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCConfiguration, RTCIceServer
 from aiortc.contrib.media import MediaPlayer, MediaRelay
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -59,9 +59,8 @@ class WebRTCService:
         
     async def create_peer_connection(self, session_id: str) -> RTCPeerConnection:
         """Create a new RTCPeerConnection with configured ICE servers."""
-        configuration = {
-            "iceServers": [{"urls": self.stun_servers}]
-        }
+        ice_servers = [RTCIceServer(urls=self.stun_servers)]
+        configuration = RTCConfiguration(iceServers=ice_servers)
         pc = RTCPeerConnection(configuration=configuration)
         
         # Set up ICE candidate queue for this session
