@@ -34,8 +34,22 @@
     ],
     "extraResources": [
       {
-        "from": "../ui/out",
+        "from": "../ui/.next/standalone",
         "to": "ui",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../ui/.next/static",
+        "to": "ui/.next/static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../ui/public",
+        "to": "ui/public",
         "filter": [
           "**/*"
         ]

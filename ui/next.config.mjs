@@ -9,8 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Enable static export for Electron builds
-  output: process.env.BUILD_TARGET === 'electron' ? 'export' : 'standalone',
+  // Enable standalone output for production builds
+  output: 'standalone',
   // async rewrites() {
   //   return [
   //     {

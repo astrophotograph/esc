@@ -129,9 +129,40 @@ class ProcessManager {
         // This method is mainly for development where Next.js dev server might be needed
         
         if (app.isPackaged) {
-          // In production, frontend is already built and served statically
-          log.info('Frontend is served as static files in production');
-          resolve();
+          // In production, start the built Next.js server
+          log.info('Starting production frontend server...');
+          
+          const frontendPath = path.join(process.resourcesPath, 'ui');
+          
+          this.processes.frontend = spawn('node', ['server.js'], {
+            cwd: frontendPath,
+            env: { ...process.env, PORT: '3000', NODE_ENV: 'production' }
+          });
+
+          this.processes.frontend.stdout.on('data', (data) => {
+            const output = data.toString();
+            log.info(`Frontend: ${output}`);
+            
+            if (output.includes('Ready on') || output.includes('started on')) {
+              log.info('Production frontend server is ready');
+              resolve();
+            }
+          });
+
+          this.processes.frontend.stderr.on('data', (data) => {
+            log.error(`Frontend Error: ${data.toString()}`);
+          });
+
+          this.processes.frontend.on('error', (error) => {
+            log.error('Failed to start production frontend:', error);
+            reject(error);
+          });
+
+          this.processes.frontend.on('exit', (code) => {
+            log.info(`Frontend process exited with code ${code}`);
+            this.processes.frontend = null;
+          });
+          
           return;
         }
 

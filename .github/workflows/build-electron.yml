@@ -68,8 +68,6 @@ jobs:
     - name: Build frontend
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: ui
-      env:
-        BUILD_TARGET: electron
       run: |
         pnpm run build
 
