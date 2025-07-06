@@ -89,12 +89,12 @@ jobs:
           build-args: |
             BUILDKIT_INLINE_CACHE=1
 
-      - name: Delete Package Versions
-        uses: actions/delete-package-versions@v5.0.0
-        with:
-          package-name: ${{ github.repository }}-${{ matrix.image }}
-          package-type: 'container'
-          min-versions-to-keep: 10
+      #- name: Delete Package Versions
+      #  uses: actions/delete-package-versions@v5.0.0
+      #  with:
+      #    package-name: ${{ github.repository }}-${{ matrix.image }}
+      #    package-type: 'container'
+      #    min-versions-to-keep: 10
 
       - name: Image build summary
         run: |
