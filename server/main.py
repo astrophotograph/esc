@@ -81,6 +81,14 @@ class SaveConfigurationRequest(BaseModel):
     config_data: dict = Field(..., description="Configuration data as a JSON object")
 
 
+class AddRemoteControllerRequest(BaseModel):
+    """Request model for adding a remote controller."""
+    host: str = Field(..., description="IP address or hostname of the remote controller")
+    port: int = Field(..., description="Port for the remote controller API")
+    name: Optional[str] = Field(None, description="Optional name for the remote controller")
+    description: Optional[str] = Field(None, description="Optional description of the remote controller")
+
+
 class ConfigurationResponse(BaseModel):
     """Response model for configuration data."""
     name: str
@@ -96,6 +104,17 @@ class ConfigurationListItem(BaseModel):
     description: Optional[str]
     created_at: str
     updated_at: str
+
+
+class RemoteControllerResponse(BaseModel):
+    """Response model for remote controller data."""
+    host: str
+    port: int
+    name: Optional[str]
+    description: Optional[str]
+    status: str
+    last_connected: Optional[str]
+    telescopes_count: int = 0
 
 
 class Telescope(BaseModel, arbitrary_types_allowed=True):
@@ -695,6 +714,7 @@ class Controller:
         self.app = app
         self.telescopes: dict[str, Telescope] = {}
         self.remote_telescopes: dict[str, dict] = {}  # Track remote telescope metadata
+        self.remote_controllers: dict[str, dict] = {}  # Track remote controller metadata
         self.service_port = service_port
         self.discover = discover
         self.db = TelescopeDatabase()
@@ -775,13 +795,17 @@ class Controller:
 
         logging.info(f"Telescope {name} not found")
 
-    async def add_remote_controller(self, host: str, port: int):
+    async def add_remote_controller(self, host: str, port: int, name: Optional[str] = None, description: Optional[str] = None, persist: bool = True):
         """Add proxy routes for telescopes from a remote controller by calling its /api/telescopes endpoint."""
+        controller_key = f"{host}:{port}"
+        
         try:
             async with httpx.AsyncClient(timeout=5.0, http2=True) as client:
                 response = await client.get(f"http://{host}:{port}/api/telescopes")
                 if response.status_code == 200:
                     telescopes = response.json()
+                    telescope_count = 0
+                    
                     for telescope_data in telescopes:
                         telescope_name = telescope_data.get("name")
                         if telescope_name not in self.telescopes and telescope_name not in self.remote_telescopes:
@@ -797,19 +821,95 @@ class Controller:
                                 "serial_number": telescope_data.get("serial_number"),
                                 "product_model": telescope_data.get("product_model"),
                                 "ssid": telescope_data.get("ssid"),
-                                "remote_controller": f"{host}:{port}",
+                                "remote_controller": controller_key,
                                 "is_remote": True
                             }
+                            telescope_count += 1
                             logging.info(
                                 f"Created proxy route for remote telescope {telescope_name} from {host}:{port}")
                         else:
                             logging.debug(f"Telescope {telescope_name} already exists, skipping")
+                    
+                    # Store remote controller metadata
+                    self.remote_controllers[controller_key] = {
+                        "host": host,
+                        "port": port,
+                        "name": name or f"Remote Controller {host}:{port}",
+                        "description": description,
+                        "status": "connected",
+                        "last_connected": datetime.datetime.now().isoformat(),
+                        "telescopes_count": telescope_count
+                    }
+                    
+                    # Persist to database if requested
+                    if persist:
+                        await self.db.save_remote_controller(self.remote_controllers[controller_key])
+                    
                     logging.info(
-                        f"Successfully created proxy routes for {len(telescopes)} telescopes from remote controller {host}:{port}")
+                        f"Successfully connected to remote controller {host}:{port} with {telescope_count} telescopes")
+                    return True
                 else:
                     logging.error(f"Failed to fetch telescopes from {host}:{port}, status code: {response.status_code}")
+                    return False
         except Exception as e:
             logging.error(f"Failed to connect to remote controller at {host}:{port}: {e}")
+            
+            # Update status to disconnected if controller was previously added
+            if controller_key in self.remote_controllers:
+                self.remote_controllers[controller_key]["status"] = "disconnected"
+                if persist:
+                    await self.db.update_remote_controller_status(host, port, "disconnected")
+            return False
+
+    async def remove_remote_controller(self, host: str, port: int):
+        """Remove a remote controller and all its telescopes."""
+        controller_key = f"{host}:{port}"
+        
+        if controller_key not in self.remote_controllers:
+            logging.warning(f"Remote controller {controller_key} not found")
+            return False
+        
+        # Remove all telescopes from this remote controller
+        telescopes_to_remove = []
+        for telescope_name, telescope_data in self.remote_telescopes.items():
+            if telescope_data.get("remote_controller") == controller_key:
+                telescopes_to_remove.append(telescope_name)
+        
+        for telescope_name in telescopes_to_remove:
+            del self.remote_telescopes[telescope_name]
+            logging.info(f"Removed remote telescope {telescope_name}")
+        
+        # Remove the controller
+        del self.remote_controllers[controller_key]
+        
+        # Remove from database
+        await self.db.delete_remote_controller(host, port)
+        
+        logging.info(f"Removed remote controller {controller_key} and {len(telescopes_to_remove)} telescopes")
+        return True
+
+    async def load_saved_remote_controllers(self):
+        """Load saved remote controllers from the database and try to connect to them."""
+        try:
+            saved_controllers = await self.db.load_remote_controllers()
+            
+            for controller_data in saved_controllers:
+                host = controller_data['host']
+                port = controller_data['port']
+                name = controller_data.get('name')
+                description = controller_data.get('description')
+                
+                logging.info(f"Attempting to reconnect to saved remote controller {host}:{port}")
+                
+                # Try to reconnect (with persist=False since it's already in DB)
+                success = await self.add_remote_controller(host, port, name, description, persist=False)
+                if not success:
+                    # Update status to disconnected if connection failed
+                    await self.db.update_remote_controller_status(host, port, "disconnected")
+                    logging.warning(f"Failed to reconnect to remote controller {host}:{port}")
+                    
+        except Exception as e:
+            logging.error(f"Failed to load saved remote controllers: {e}")
 
     def _create_proxy_router(self, telescope_name: str, remote_host: str, remote_port: int):
         """Create a proxy router that forwards requests to the remote controller."""
@@ -1115,6 +1215,9 @@ class Controller:
         # Load saved telescopes first
         await self.load_saved_telescopes()
         
+        # Load saved remote controllers
+        await self.load_saved_remote_controllers()
+        
         # Add a dummy test telescope for WebRTC testing
         await self.add_test_telescope()
 
@@ -1174,6 +1277,7 @@ class Controller:
             auto_discovered_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "auto_discovery")
             manual_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "manual")
             remote_count = len(self.remote_telescopes)
+            controller_count = len(self.remote_controllers)
             
             html_content = f"""
             <!DOCTYPE html>
@@ -1364,6 +1468,19 @@ class Controller:
                                 {"Auto-discovery enabled" if self.discover else "Auto-discovery disabled"}
                             </div>
                         </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">🌐 Remote Controllers</div>
+                            <div class="endpoint-item">
+                                <span style="color: #e74c3c;">●</span> Connected controllers: {controller_count}
+                            </div>
+                            <div class="endpoint-item">
+                                <span style="color: #6f42c1;">●</span> Proxied telescopes: {remote_count}
+                            </div>
+                            <div class="endpoint-item" style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                                {f"{controller_count} active connections" if controller_count > 0 else "No remote controllers connected"}
+                            </div>
+                        </div>
                     </div>
 
                     <h2>🚀 Quick Start</h2>
@@ -1450,6 +1567,22 @@ class Controller:
                             </div>
                             <div class="endpoint-item">
                                 <span class="method-delete">DELETE</span> /api/configurations/{{name}}
+                            </div>
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">🌐 Remote Controllers</div>
+                            <div class="endpoint-item">
+                                <span class="method-get">GET</span> /api/remote-controllers
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-post">POST</span> /api/remote-controllers
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-delete">DELETE</span> /api/remote-controllers/{{host}}/{{port}}
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-post">POST</span> /api/remote-controllers/{{host}}/{{port}}/reconnect
                             </div>
                         </div>
                         
@@ -1778,7 +1911,7 @@ class Controller:
                 
                 return {
                     "status": "success",
-                    "message": f"Parallel connection attempt completed",
+                    "message": "Parallel connection attempt completed",
                     "total_telescopes": len(self.telescopes),
                     "connected_telescopes": connected_count,
                     "connection_details": [
@@ -1796,13 +1929,106 @@ class Controller:
                 logging.error(f"Failed to connect telescopes: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to connect telescopes: {str(e)}")
 
+        @self.app.get("/api/remote-controllers")
+        async def get_remote_controllers():
+            """Get a list of all remote controllers."""
+            result = []
+            for controller_data in self.remote_controllers.values():
+                result.append(RemoteControllerResponse(**controller_data))
+            return result
+
+        @self.app.post("/api/remote-controllers")
+        async def add_remote_controller_endpoint(controller_request: AddRemoteControllerRequest):
+            """Add a remote controller."""
+            try:
+                # Check if controller already exists
+                controller_key = f"{controller_request.host}:{controller_request.port}"
+                if controller_key in self.remote_controllers:
+                    raise HTTPException(status_code=409, 
+                                      detail=f"Remote controller at {controller_request.host}:{controller_request.port} already exists")
+                
+                # Try to connect to the remote controller
+                success = await self.add_remote_controller(
+                    host=controller_request.host,
+                    port=controller_request.port,
+                    name=controller_request.name,
+                    description=controller_request.description,
+                    persist=True
+                )
+                
+                if success:
+                    controller_data = self.remote_controllers[controller_key]
+                    return {
+                        "status": "success",
+                        "message": f"Remote controller {controller_request.host}:{controller_request.port} added successfully",
+                        "controller": RemoteControllerResponse(**controller_data)
+                    }
+                else:
+                    raise HTTPException(status_code=502, detail=f"Failed to connect to remote controller at {controller_request.host}:{controller_request.port}")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error adding remote controller: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to add remote controller: {str(e)}")
+
+        @self.app.delete("/api/remote-controllers/{host}/{port}")
+        async def remove_remote_controller_endpoint(host: str, port: int):
+            """Remove a remote controller."""
+            try:
+                success = await self.remove_remote_controller(host, port)
+                if success:
+                    return {"status": "success", "message": f"Remote controller {host}:{port} removed"}
+                else:
+                    raise HTTPException(status_code=404, detail=f"Remote controller {host}:{port} not found")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error removing remote controller: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to remove remote controller: {str(e)}")
+
+        @self.app.post("/api/remote-controllers/{host}/{port}/reconnect")
+        async def reconnect_remote_controller_endpoint(host: str, port: int):
+            """Try to reconnect to a remote controller."""
+            try:
+                controller_key = f"{host}:{port}"
+                
+                # Get existing controller data if it exists
+                existing_controller = self.remote_controllers.get(controller_key)
+                name = existing_controller.get("name") if existing_controller else None
+                description = existing_controller.get("description") if existing_controller else None
+                
+                # Remove existing controller and telescopes first
+                if controller_key in self.remote_controllers:
+                    await self.remove_remote_controller(host, port)
+                
+                # Try to reconnect
+                success = await self.add_remote_controller(host, port, name, description, persist=True)
+                
+                if success:
+                    controller_data = self.remote_controllers[controller_key]
+                    return {
+                        "status": "success",
+                        "message": f"Remote controller {host}:{port} reconnected successfully",
+                        "controller": RemoteControllerResponse(**controller_data)
+                    }
+                else:
+                    raise HTTPException(status_code=502, detail=f"Failed to reconnect to remote controller at {host}:{port}")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                logging.error(f"Error reconnecting to remote controller: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to reconnect to remote controller: {str(e)}")
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint for Docker containers."""
             return {
                 "status": "ok",
                 "timestamp": datetime.datetime.now().isoformat(),
-                "telescopes_count": len(self.telescopes) + len(self.remote_telescopes)
+                "telescopes_count": len(self.telescopes) + len(self.remote_telescopes),
+                "remote_controllers_count": len(self.remote_controllers)
             }
 
         config = uvicorn.Config(self.app, host="0.0.0.0", port=self.service_port,
@@ -1915,7 +2141,7 @@ def panorama(input, output, detector, max_features, frame_skip, max_frames, matc
 @click.option("--server-port", type=int, default=8000, help="Port for the API server (default: 8000)")
 @click.option("--seestar-host", help="Seestar device host address")
 @click.option("--seestar-port", type=int, default=4700, help="Seestar device port (default: 4700)")
-@click.option("--remote-controller", help="Remote controller address (format: host:port)")
+@click.option("--remote-controller", multiple=True, help="Remote controller address (format: host:port). Can be specified multiple times")
 @click.option("--no-discovery", is_flag=True, help="Disable automatic telescope discovery")
 def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery):
     """Start a FastAPI server for controlling a Seestar device."""
@@ -1933,19 +2159,20 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
             click.echo(f"Connecting to Seestar at {seestar_host}:{seestar_port}")
             await controller.add_telescope(seestar_host, seestar_port)
 
-        # Add remote controller if specified
+        # Add remote controllers if specified
         if remote_controller:
-            try:
-                host, port = remote_controller.split(":", 1)
-                port = int(port)
-                click.echo(f"Adding remote controller at {host}:{port}")
-                await controller.add_remote_controller(host, port)
-            except ValueError:
-                click.echo(f"Error: Invalid remote controller format '{remote_controller}'. Use host:port format.")
-                return
-            except Exception as e:
-                click.echo(f"Error connecting to remote controller: {e}")
-                return
+            for remote_addr in remote_controller:
+                try:
+                    host, port = remote_addr.split(":", 1)
+                    port = int(port)
+                    click.echo(f"Adding remote controller at {host}:{port}")
+                    await controller.add_remote_controller(host, port)
+                except ValueError:
+                    click.echo(f"Error: Invalid remote controller format '{remote_addr}'. Use host:port format.")
+                    continue
+                except Exception as e:
+                    click.echo(f"Error connecting to remote controller {remote_addr}: {e}")
+                    continue
 
         # Run the controller
         await controller.runner()

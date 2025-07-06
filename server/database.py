@@ -54,6 +54,21 @@ class TelescopeDatabase:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS remote_controllers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    host TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    name TEXT,
+                    description TEXT,
+                    status TEXT DEFAULT 'disconnected',
+                    last_connected TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(host, port)
+                )
+            """)
             await db.commit()
             
         self._initialized = True
@@ -274,4 +289,105 @@ class TelescopeDatabase:
                     return False
         except Exception as e:
             logging.error(f"Failed to delete configuration from database: {e}")
+            return False
+    
+    async def save_remote_controller(self, controller_data: Dict[str, Any]) -> bool:
+        """Save a remote controller to the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
+                    INSERT OR REPLACE INTO remote_controllers 
+                    (host, port, name, description, status, last_connected, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    controller_data['host'],
+                    controller_data['port'],
+                    controller_data.get('name'),
+                    controller_data.get('description'),
+                    controller_data.get('status', 'disconnected'),
+                    controller_data.get('last_connected')
+                ))
+                await db.commit()
+                logging.info(f"Saved remote controller {controller_data['host']}:{controller_data['port']} to database")
+                return True
+        except Exception as e:
+            logging.error(f"Failed to save remote controller to database: {e}")
+            return False
+    
+    async def load_remote_controllers(self) -> List[Dict[str, Any]]:
+        """Load all remote controllers from the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("""
+                    SELECT host, port, name, description, status, last_connected
+                    FROM remote_controllers 
+                    ORDER BY created_at
+                """) as cursor:
+                    rows = await cursor.fetchall()
+                    controllers = []
+                    for row in rows:
+                        controller_data = {
+                            'host': row['host'],
+                            'port': row['port'],
+                            'name': row['name'],
+                            'description': row['description'],
+                            'status': row['status'],
+                            'last_connected': row['last_connected']
+                        }
+                        controllers.append(controller_data)
+                    
+                    logging.info(f"Loaded {len(controllers)} remote controllers from database")
+                    return controllers
+        except Exception as e:
+            logging.error(f"Failed to load remote controllers from database: {e}")
+            return []
+    
+    async def delete_remote_controller(self, host: str, port: int) -> bool:
+        """Delete a remote controller from the database."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute("""
+                    DELETE FROM remote_controllers WHERE host = ? AND port = ?
+                """, (host, port))
+                await db.commit()
+                
+                if cursor.rowcount > 0:
+                    logging.info(f"Deleted remote controller {host}:{port} from database")
+                    return True
+                else:
+                    logging.warning(f"Remote controller {host}:{port} not found in database")
+                    return False
+        except Exception as e:
+            logging.error(f"Failed to delete remote controller from database: {e}")
+            return False
+    
+    async def update_remote_controller_status(self, host: str, port: int, status: str, last_connected: Optional[str] = None) -> bool:
+        """Update the status of a remote controller."""
+        await self.initialize()
+        
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                if last_connected:
+                    await db.execute("""
+                        UPDATE remote_controllers 
+                        SET status = ?, last_connected = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE host = ? AND port = ?
+                    """, (status, last_connected, host, port))
+                else:
+                    await db.execute("""
+                        UPDATE remote_controllers 
+                        SET status = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE host = ? AND port = ?
+                    """, (status, host, port))
+                await db.commit()
+                return True
+        except Exception as e:
+            logging.error(f"Failed to update remote controller status: {e}")
             return False
