@@ -39,19 +39,19 @@ jobs:
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '24'
 
     - name: Install pnpm
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: pnpm/action-setup@v2
       with:
-        version: 8
+        version: 10
 
     - name: Setup Python
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
 
     - name: Install uv
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
