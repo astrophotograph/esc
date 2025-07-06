@@ -174,7 +174,7 @@ export function WebRTCLiveView({
     userSelect: 'none' as const,
     MozUserSelect: 'none' as const,
     pointerEvents: 'none' as const,
-    objectFit: isPortrait ? 'contain' as const : 'cover' as const,
+    objectFit: 'contain' as const,  // Always use contain to show full video without cropping
     objectPosition: 'center',
     ...style,
   };
@@ -182,7 +182,7 @@ export function WebRTCLiveView({
   // Render WebRTC video element
   if (enableWebRTC) {
     return (
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full bg-black">
         <video
           ref={videoRef}
           className={`w-full h-full transition-transform duration-200 select-none ${className}`}
@@ -241,7 +241,7 @@ export function WebRTCLiveView({
 
   // Render MJPEG fallback
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-black">
       <img
         ref={imgRef}
         src={mjpegUrl}
