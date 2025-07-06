@@ -54,8 +54,20 @@ function createWindow() {
   });
 
   // Load the app
-  const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
-  mainWindow.loadURL(startUrl);
+  if (app.isPackaged) {
+    // In production, serve the built static files
+    const url = require('url');
+    const startUrl = url.format({
+      pathname: path.join(app.getAppPath(), '../ui/index.html'),
+      protocol: 'file:',
+      slashes: true
+    });
+    mainWindow.loadURL(startUrl);
+  } else {
+    // In development, connect to the dev server
+    const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+    mainWindow.loadURL(startUrl);
+  }
 
   // Handle window closed
   mainWindow.on('closed', () => {
