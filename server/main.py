@@ -194,15 +194,42 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             """Connect to the Seestar on startup."""
             try:
                 logging.info(f"Connecting to Seestar at {self.host}:{self.port}")
-                await self.client.connect()
-                await self.imaging.connect()
-                logging.info(f"Connected to Seestar at {self.host}:{self.port}")
+                
+                # Connect main client and imaging client in parallel
+                connection_tasks = [
+                    self.client.connect(),
+                    self.imaging.connect()
+                ]
+                
+                results = await asyncio.gather(*connection_tasks, return_exceptions=True)
+                
+                # Check results
+                client_result, imaging_result = results
+                
+                if isinstance(client_result, Exception):
+                    logging.error(f"Failed to connect main client to {self.host}:{self.port}: {client_result}")
+                else:
+                    logging.info(f"Main client connected to Seestar at {self.host}:{self.port}")
+                
+                if isinstance(imaging_result, Exception):
+                    logging.error(f"Failed to connect imaging client to {self.host}:{self.imaging_port}: {imaging_result}")
+                else:
+                    logging.info(f"Imaging client connected to Seestar at {self.host}:{self.imaging_port}")
+                
+                # If both succeeded, log overall success
+                if not isinstance(client_result, Exception) and not isinstance(imaging_result, Exception):
+                    logging.info(f"Successfully connected both clients to Seestar at {self.host}:{self.port}")
+                    
             except Exception as e:
                 logging.error(f"Failed to connect to Seestar: {e}")
 
         @router.get("/")
         async def root():
             """Root endpoint with basic info."""
+            # Get network scanning information
+            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            network_interfaces = get_all_network_interfaces()
+            
             return {
                 "status": "running",
                 "seestar": {
@@ -216,6 +243,18 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         "file": self.client.status.pattern_match_file,
                         "last_check": self.client.status.pattern_match_last_check
                     }
+                },
+                "network_discovery": {
+                    "scanned_networks": [
+                        {
+                            "local_ip": local_ip,
+                            "broadcast_ip": broadcast_ip,
+                            "network_range": f"{local_ip.rsplit('.', 1)[0]}.0/24"
+                        }
+                        for local_ip, broadcast_ip in network_interfaces
+                    ],
+                    "interfaces_count": len(network_interfaces),
+                    "discovery_method": "UDP broadcast on port 4720"
                 }
             }
 
@@ -795,15 +834,34 @@ class Controller:
         """Automatically discover and add telescopes."""
         while True:
             devices = await discover_seestars(timeout=3)
+            
+            # Collect new devices to add in parallel
+            new_devices = []
             for device in devices:
                 logging.trace(f"Auto discovery: {device}")
                 name = pydash.get(device, 'data.result.sn') or device['address']
                 if name not in self.telescopes:
-                    await self.add_telescope(device['address'], 4700,
+                    new_devices.append(device)
+            
+            # Add new telescopes in parallel
+            if new_devices:
+                tasks = []
+                for device in new_devices:
+                    task = self.add_telescope(device['address'], 4700,
                                              serial_number=pydash.get(device, 'data.result.sn'),
                                              product_model=pydash.get(device, 'data.result.product_model'),
                                              ssid=pydash.get(device, 'data.result.ssid'),
                                              discover=True)
+                    tasks.append(task)
+                
+                # Execute all telescope additions in parallel
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Log any errors
+                for i, result in enumerate(results):
+                    if isinstance(result, Exception):
+                        device = new_devices[i]
+                        logging.error(f"Failed to add telescope {device['address']}: {result}")
 
             await asyncio.sleep(60)
 
@@ -811,12 +869,20 @@ class Controller:
         """Load manually added telescopes from the database."""
         try:
             saved_telescopes = await self.db.load_telescopes()
+            
+            # Collect telescopes to load in parallel
+            telescopes_to_load = []
             for telescope_data in saved_telescopes:
-                # Check if telescope is already loaded (avoid duplicates)
                 telescope_name = telescope_data.get('serial_number') or telescope_data['host']
                 print(f"telescope_name : {telescope_name}: {telescope_data}")
                 if telescope_name not in self.telescopes:
-                    await self.add_telescope(
+                    telescopes_to_load.append(telescope_data)
+            
+            # Load telescopes in parallel
+            if telescopes_to_load:
+                tasks = []
+                for telescope_data in telescopes_to_load:
+                    task = self.add_telescope(
                         host=telescope_data['host'],
                         port=telescope_data['port'],
                         serial_number=telescope_data.get('serial_number'),
@@ -825,9 +891,72 @@ class Controller:
                         location=telescope_data.get('location'),
                         discover=False  # These are manually added telescopes
                     )
-                    logging.info(f"Restored telescope {telescope_name} from database")
+                    tasks.append(task)
+                
+                # Execute all telescope loads in parallel
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Log results
+                for i, result in enumerate(results):
+                    telescope_data = telescopes_to_load[i]
+                    telescope_name = telescope_data.get('serial_number') or telescope_data['host']
+                    if isinstance(result, Exception):
+                        logging.error(f"Failed to restore telescope {telescope_name}: {result}")
+                    else:
+                        logging.info(f"Restored telescope {telescope_name} from database")
+                        
         except Exception as e:
             logging.error(f"Failed to load saved telescopes: {e}")
+
+    async def connect_all_telescopes(self):
+        """Connect to all telescopes in parallel."""
+        if not self.telescopes:
+            logging.info("No telescopes to connect to")
+            return
+        
+        logging.info(f"Connecting to {len(self.telescopes)} telescopes in parallel...")
+        
+        # Create connection tasks for all telescopes
+        connection_tasks = []
+        telescope_names = []
+        
+        for telescope in self.telescopes.values():
+            if hasattr(telescope, 'client') and hasattr(telescope, 'imaging') and telescope.client and telescope.imaging:
+                # Create a task to connect both clients for this telescope
+                async def connect_telescope_clients(tel=telescope):
+                    try:
+                        # Connect main client and imaging client in parallel
+                        await asyncio.gather(
+                            tel.client.connect(),
+                            tel.imaging.connect(),
+                            return_exceptions=True
+                        )
+                        return tel.name, True
+                    except Exception as e:
+                        logging.error(f"Failed to connect telescope {tel.name}: {e}")
+                        return tel.name, False
+                
+                connection_tasks.append(connect_telescope_clients())
+                telescope_names.append(telescope.name)
+        
+        if connection_tasks:
+            # Execute all connections in parallel
+            results = await asyncio.gather(*connection_tasks, return_exceptions=True)
+            
+            # Log results
+            connected_count = 0
+            for result in results:
+                if isinstance(result, Exception):
+                    logging.error(f"Connection task failed: {result}")
+                else:
+                    telescope_name, success = result
+                    if success:
+                        connected_count += 1
+                        logging.info(f"Successfully connected to telescope: {telescope_name}")
+                    else:
+                        logging.error(f"Failed to connect to telescope: {telescope_name}")
+            
+            logging.info(f"Parallel connection complete: {connected_count}/{len(connection_tasks)} telescopes connected")
 
     async def add_test_telescope(self):
         """Add a dummy test telescope for WebRTC testing."""
@@ -862,6 +991,11 @@ class Controller:
         # Add a dummy test telescope for WebRTC testing
         await self.add_test_telescope()
 
+        # Connect to all loaded telescopes in parallel
+        if self.telescopes:
+            click.secho(f"Connecting to {len(self.telescopes)} telescopes in parallel...", fg="blue")
+            await self.connect_all_telescopes()
+
         print(f"Discover {self.discover}")
         if self.discover:
             click.secho("Starting auto-discovery...", fg="green")
@@ -894,6 +1028,15 @@ class Controller:
         async def root():
             """Root endpoint providing API information and navigation as HTML."""
             telescope_count = len(self.telescopes) + len(self.remote_telescopes)
+            
+            # Get network scanning information
+            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            network_interfaces = get_all_network_interfaces()
+            
+            # Get discovery statistics
+            auto_discovered_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "auto_discovery")
+            manual_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "manual")
+            remote_count = len(self.remote_telescopes)
             
             html_content = f"""
             <!DOCTYPE html>
@@ -1058,6 +1201,34 @@ class Controller:
                         <strong>🔭 Telescopes:</strong> {telescope_count} connected
                     </div>
 
+                    <h2>🔍 Network Discovery Status</h2>
+                    <div class="endpoint-grid">
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">📡 Scanned Networks</div>
+                            <div style="font-size: 0.9em; margin: 10px 0;">
+                                <strong>Interfaces Scanned:</strong> {len(network_interfaces)}<br>
+                                <strong>Discovery Method:</strong> UDP broadcast on port 4720
+                            </div>
+                            {"".join([f'<div class="endpoint-item">🌐 {local_ip} → {broadcast_ip.rsplit(".", 1)[0]}.0/24</div>' for local_ip, broadcast_ip in network_interfaces]) if network_interfaces else '<div class="endpoint-item" style="color: #666;">No network interfaces detected</div>'}
+                        </div>
+                        
+                        <div class="endpoint-card">
+                            <div class="endpoint-title">🔭 Discovery Results</div>
+                            <div class="endpoint-item">
+                                <span style="color: #28a745;">●</span> Auto-discovered: {auto_discovered_count}
+                            </div>
+                            <div class="endpoint-item">
+                                <span style="color: #17a2b8;">●</span> Manually added: {manual_count}
+                            </div>
+                            <div class="endpoint-item">
+                                <span style="color: #6f42c1;">●</span> Remote telescopes: {remote_count}
+                            </div>
+                            <div class="endpoint-item" style="margin-top: 10px; font-size: 0.8em; color: #666;">
+                                {"Auto-discovery enabled" if self.discover else "Auto-discovery disabled"}
+                            </div>
+                        </div>
+                    </div>
+
                     <h2>🚀 Quick Start</h2>
                     <div class="quick-links">
                         <a href="http://localhost:3000" class="btn btn-primary" target="_blank">
@@ -1069,7 +1240,47 @@ class Controller:
                         <a href="/redoc" class="btn btn-secondary" target="_blank">
                             📖 ReDoc Documentation
                         </a>
+                        <button onclick="connectAllTelescopes()" class="btn btn-primary" style="border: none; cursor: pointer;">
+                            🔗 Connect All Telescopes
+                        </button>
                     </div>
+
+                    <script>
+                    async function connectAllTelescopes() {{
+                        const button = event.target;
+                        button.disabled = true;
+                        button.textContent = '🔄 Connecting...';
+                        
+                        try {{
+                            const response = await fetch('/api/telescopes/connect-all', {{
+                                method: 'POST',
+                                headers: {{'Content-Type': 'application/json'}}
+                            }});
+                            
+                            const result = await response.json();
+                            
+                            if (response.ok) {{
+                                button.textContent = `✅ Connected ${{result.connected_telescopes}}/${{result.total_telescopes}}`;
+                                setTimeout(() => {{
+                                    button.textContent = '🔗 Connect All Telescopes';
+                                    button.disabled = false;
+                                }}, 3000);
+                            }} else {{
+                                button.textContent = '❌ Connection Failed';
+                                setTimeout(() => {{
+                                    button.textContent = '🔗 Connect All Telescopes';
+                                    button.disabled = false;
+                                }}, 3000);
+                            }}
+                        }} catch (error) {{
+                            button.textContent = '❌ Connection Error';
+                            setTimeout(() => {{
+                                button.textContent = '🔗 Connect All Telescopes';
+                                button.disabled = false;
+                            }}, 3000);
+                        }}
+                    }}
+                    </script>
 
                     <h2>🛠️ API Endpoints</h2>
                     <div class="endpoint-grid">
@@ -1080,6 +1291,9 @@ class Controller:
                             </div>
                             <div class="endpoint-item">
                                 <span class="method-post">POST</span> /api/telescopes
+                            </div>
+                            <div class="endpoint-item">
+                                <span class="method-post">POST</span> /api/telescopes/connect-all
                             </div>
                             <div class="endpoint-item">
                                 <span class="method-delete">DELETE</span> /api/telescopes/{{name}}
@@ -1369,6 +1583,76 @@ class Controller:
             except Exception as e:
                 logging.error(f"Error deleting configuration: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to delete configuration: {str(e)}")
+
+        @self.app.get("/api/network-discovery")
+        async def get_network_discovery():
+            """Get network discovery information."""
+            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            network_interfaces = get_all_network_interfaces()
+            
+            # Get discovery statistics
+            auto_discovered_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "auto_discovery")
+            manual_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "manual")
+            remote_count = len(self.remote_telescopes)
+            
+            return {
+                "network_scanning": {
+                    "scanned_networks": [
+                        {
+                            "local_ip": local_ip,
+                            "broadcast_ip": broadcast_ip,
+                            "network_range": f"{local_ip.rsplit('.', 1)[0]}.0/24",
+                            "interface_name": f"Network interface {i+1}"
+                        }
+                        for i, (local_ip, broadcast_ip) in enumerate(network_interfaces)
+                    ],
+                    "interfaces_count": len(network_interfaces),
+                    "discovery_method": "UDP broadcast on port 4720",
+                    "discovery_enabled": self.discover
+                },
+                "telescope_discovery": {
+                    "total_telescopes": len(self.telescopes) + len(self.remote_telescopes),
+                    "auto_discovered": auto_discovered_count,
+                    "manually_added": manual_count,
+                    "remote_telescopes": remote_count,
+                    "discovery_methods": {
+                        "auto_discovery": "UDP broadcast discovery on all network interfaces",
+                        "manual": "User-configured telescope connections",
+                        "remote": "Telescopes proxied from remote controllers"
+                    }
+                },
+                "last_scan": "Continuous scanning" if self.discover else "Discovery disabled"
+            }
+
+        @self.app.post("/api/telescopes/connect-all")
+        async def connect_all_telescopes_endpoint():
+            """Connect to all telescopes in parallel."""
+            try:
+                await self.connect_all_telescopes()
+                
+                # Count successful connections
+                connected_count = sum(1 for t in self.telescopes.values() 
+                                    if hasattr(t, 'client') and t.client and t.client.is_connected)
+                
+                return {
+                    "status": "success",
+                    "message": f"Parallel connection attempt completed",
+                    "total_telescopes": len(self.telescopes),
+                    "connected_telescopes": connected_count,
+                    "connection_details": [
+                        {
+                            "name": telescope.name,
+                            "host": telescope.host,
+                            "port": telescope.port,
+                            "connected": telescope.client.is_connected if telescope.client else False,
+                            "imaging_connected": telescope.imaging.is_connected if telescope.imaging else False
+                        }
+                        for telescope in self.telescopes.values()
+                    ]
+                }
+            except Exception as e:
+                logging.error(f"Failed to connect telescopes: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to connect telescopes: {str(e)}")
 
         @self.app.get("/health")
         async def health_check():
