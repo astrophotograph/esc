@@ -66,23 +66,33 @@ class WebRTCService:
         
         # Log network info for debugging
         import socket
+        import netifaces
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
         logger.info(f"WebRTC service initialized - Hostname: {hostname}, Local IP: {local_ip}")
         
+        # List all network interfaces
+        try:
+            interfaces = netifaces.interfaces()
+            logger.info(f"Available network interfaces: {interfaces}")
+            for interface in interfaces:
+                addrs = netifaces.ifaddresses(interface)
+                if netifaces.AF_INET in addrs:
+                    ipv4_addrs = [addr['addr'] for addr in addrs[netifaces.AF_INET]]
+                    logger.info(f"Interface {interface} IPv4: {ipv4_addrs}")
+        except ImportError:
+            logger.info("netifaces not available, using basic socket info")
+        except Exception as e:
+            logger.error(f"Error getting network interfaces: {e}")
+        
     async def create_peer_connection(self, session_id: str) -> RTCPeerConnection:
         """Create a new RTCPeerConnection with configured ICE servers."""
-        # For local testing, try without STUN servers to force host candidates only
-        ice_servers = []  # Empty list forces host candidates only
+        # Try adding STUN servers back to force ICE candidate generation
+        ice_servers = [RTCIceServer(urls=self.stun_servers)]
         
-        if ice_servers:
-            configuration = RTCConfiguration(iceServers=ice_servers)
-        else:
-            # Use default configuration for host candidates only
-            configuration = None
-            
-        logger.info(f"Creating peer connection with configuration: {len(ice_servers)} ICE servers")
-        pc = RTCPeerConnection(configuration) if configuration else RTCPeerConnection()
+        configuration = RTCConfiguration(iceServers=ice_servers)
+        logger.info(f"Creating peer connection with {len(ice_servers)} ICE servers: {[server.urls for server in ice_servers]}")
+        pc = RTCPeerConnection(configuration)
         
         # Set up ICE candidate queue for this session
         self.ice_candidate_queues[session_id] = asyncio.Queue()
@@ -211,10 +221,18 @@ class WebRTCService:
         logger.info(f"Set local description for session {session_id}")
         
         # ICE gathering should start automatically after setLocalDescription
-        # Give it a moment to generate candidates
-        await asyncio.sleep(0.5)
-        logger.info(f"ICE gathering state after 0.5s: {pc.iceGatheringState}")
-        logger.info(f"Current candidate count for session {session_id}: {self.candidate_stats[session_id]['local_generated']}")
+        # Give it more time and check multiple times
+        for i in range(5):
+            await asyncio.sleep(0.5)
+            state = pc.iceGatheringState
+            count = self.candidate_stats[session_id]['local_generated']
+            logger.info(f"ICE gathering check #{i+1}: state={state}, candidates={count}")
+            
+            if state == "complete" and count > 0:
+                break
+            elif state == "complete" and count == 0:
+                logger.warning(f"ICE gathering completed but no candidates generated! This indicates a network issue.")
+                break
         
         logger.info(f"Created WebRTC session {session_id} for telescope {telescope_name}")
         
