@@ -74,13 +74,15 @@ class WebRTCService:
         """Create a new RTCPeerConnection with configured ICE servers."""
         # For local testing, try without STUN servers to force host candidates only
         ice_servers = []  # Empty list forces host candidates only
-        configuration = RTCConfiguration(
-            iceServers=ice_servers,
-            # Force host candidates only for local testing
-            iceTransportPolicy="all"
-        )
+        
+        if ice_servers:
+            configuration = RTCConfiguration(iceServers=ice_servers)
+        else:
+            # Use default configuration for host candidates only
+            configuration = None
+            
         logger.info(f"Creating peer connection with configuration: {len(ice_servers)} ICE servers")
-        pc = RTCPeerConnection(configuration=configuration)
+        pc = RTCPeerConnection(configuration) if configuration else RTCPeerConnection()
         
         # Set up ICE candidate queue for this session
         self.ice_candidate_queues[session_id] = asyncio.Queue()
