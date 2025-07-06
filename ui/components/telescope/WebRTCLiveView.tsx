@@ -66,8 +66,24 @@ export function WebRTCLiveView({
   // Generate MJPEG fallback URL
   useEffect(() => {
     if (telescope) {
-      // Use test endpoint for now since WebRTC ICE is not working on this system
-      const url = '/api/webrtc/test/video-stream';
+      // Check if this is a test telescope
+      const isTestTelescope = (
+        telescope.serial_number?.toLowerCase().includes('test') ||
+        telescope.name?.toLowerCase().includes('test') ||
+        telescope.product_model?.toLowerCase().includes('test')
+      );
+      
+      let url;
+      if (isTestTelescope) {
+        // Use WebRTC test endpoint for test telescopes
+        url = '/api/webrtc/test/video-stream';
+        console.log('Using WebRTC test endpoint for test telescope:', telescope.name);
+      } else {
+        // Use real telescope stream endpoint for actual telescopes
+        url = `/api/${telescope.name}/stream`;
+        console.log('Using real telescope stream endpoint for:', telescope.name);
+      }
+      
       setMjpegUrl(url);
       console.log('Setting MJPEG fallback URL:', url);
     }
