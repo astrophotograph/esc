@@ -13,7 +13,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "electron-reload": "2.0.0-alpha.1"
   },
   "dependencies": {
     "electron-log": "^5.0.1",
@@ -29,31 +30,32 @@
       "main.js",
       "preload.js",
       "processManager.js",
-      "!node_modules/**/*"
+      "node_modules/**/*"
     ],
     "extraResources": [
       {
         "from": "../ui/out",
         "to": "ui",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../server/dist",
         "to": "server",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "assets/icon.icns"
+      "category": "public.app-category.utilities"
     },
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": "nsis"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": "AppImage"
     }
   }
 }

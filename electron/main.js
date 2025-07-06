@@ -44,7 +44,6 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: true
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     show: false // Don't show until ready
   });
