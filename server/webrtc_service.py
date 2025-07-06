@@ -62,6 +62,7 @@ class WebRTCService:
         # ]
         self.ice_candidate_queues: Dict[str, asyncio.Queue] = {}
         self.telescope_getter = telescope_getter
+        self.candidate_stats: Dict[str, Dict] = {}  # Track candidate stats per session
         
         # Log network info for debugging
         import socket
@@ -71,20 +72,24 @@ class WebRTCService:
         
     async def create_peer_connection(self, session_id: str) -> RTCPeerConnection:
         """Create a new RTCPeerConnection with configured ICE servers."""
-        ice_servers = [RTCIceServer(urls=self.stun_servers)]
+        # For local testing, try without STUN servers to force host candidates only
+        ice_servers = []  # Empty list forces host candidates only
         configuration = RTCConfiguration(
             iceServers=ice_servers,
-            # For local network testing, you can try forcing host candidates only:
-            # iceTransportPolicy="all"  # or "relay" to force TURN
+            # Force host candidates only for local testing
+            iceTransportPolicy="all"
         )
+        logger.info(f"Creating peer connection with configuration: {len(ice_servers)} ICE servers")
         pc = RTCPeerConnection(configuration=configuration)
         
         # Set up ICE candidate queue for this session
         self.ice_candidate_queues[session_id] = asyncio.Queue()
+        self.candidate_stats[session_id] = {"local_generated": 0, "remote_added": 0}
         
         @pc.on("icecandidate")
         async def on_ice_candidate(candidate):
             if candidate:
+                self.candidate_stats[session_id]["local_generated"] += 1
                 ice_candidate = WebRTCIceCandidate(
                     candidate=candidate.candidate,
                     sdpMLineIndex=candidate.sdpMLineIndex,
@@ -92,9 +97,9 @@ class WebRTCService:
                     usernameFragment=candidate.usernameFragment
                 )
                 await self.ice_candidate_queues[session_id].put(ice_candidate)
-                logger.info(f"ICE candidate generated for session {session_id}: {candidate.candidate}")
+                logger.info(f"ICE candidate #{self.candidate_stats[session_id]['local_generated']} generated for session {session_id}: {candidate.candidate}")
             else:
-                logger.info(f"ICE gathering complete for session {session_id}")
+                logger.info(f"ICE gathering complete for session {session_id}. Total local candidates: {self.candidate_stats[session_id]['local_generated']}")
         
         @pc.on("icegatheringstatechange")
         async def on_ice_gathering_state_change():
@@ -102,7 +107,15 @@ class WebRTCService:
         
         @pc.on("iceconnectionstatechange")
         async def on_ice_connection_state_change():
-            logger.info(f"ICE connection state for session {session_id}: {pc.iceConnectionState}")
+            state = pc.iceConnectionState
+            stats = self.candidate_stats[session_id]
+            logger.info(f"ICE connection state for session {session_id}: {state} (Local: {stats['local_generated']}, Remote: {stats['remote_added']} candidates)")
+            
+            if state == "failed":
+                logger.error(f"ICE connection failed for session {session_id}! Candidate exchange summary:")
+                logger.error(f"  - Local candidates generated: {stats['local_generated']}")
+                logger.error(f"  - Remote candidates received: {stats['remote_added']}")
+                logger.error(f"  - This usually indicates network connectivity issues between peers")
         
         @pc.on("signalingstatechange")
         async def on_signaling_state_change():
@@ -251,7 +264,8 @@ class WebRTCService:
             return False
         
         try:
-            logger.info(f"Adding remote ICE candidate to session {session_id}: {candidate.candidate}")
+            self.candidate_stats[session_id]["remote_added"] += 1
+            logger.info(f"Adding remote ICE candidate #{self.candidate_stats[session_id]['remote_added']} to session {session_id}: {candidate.candidate}")
             rtc_candidate = RTCIceCandidate(
                 candidate=candidate.candidate,
                 sdpMLineIndex=candidate.sdpMLineIndex,
@@ -260,7 +274,7 @@ class WebRTCService:
             )
             await session.peer_connection.addIceCandidate(rtc_candidate)
             session.ice_candidates.append(candidate)
-            logger.info(f"Successfully added remote ICE candidate to session {session_id}")
+            logger.info(f"Successfully added remote ICE candidate #{self.candidate_stats[session_id]['remote_added']} to session {session_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to add ICE candidate to session {session_id}: {e}")

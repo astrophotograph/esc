@@ -53,6 +53,7 @@ export class WebRTCService extends EventEmitter {
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
   private connectionState: ConnectionState = 'new';
+  private candidateStats = { localGenerated: 0, remoteReceived: 0 };
 
   constructor(apiUrl: string = '') {
     super();
@@ -79,6 +80,9 @@ export class WebRTCService extends EventEmitter {
   ): Promise<MediaStream> {
     try {
       console.log(`WebRTC: Creating session for telescope "${telescopeName}" with stream type "${streamType}"`);
+      
+      // Reset candidate stats
+      this.candidateStats = { localGenerated: 0, remoteReceived: 0 };
       
       // Clean up any existing session
       await this.disconnect();
@@ -183,7 +187,8 @@ export class WebRTCService extends EventEmitter {
     // Handle ICE candidates
     this.peerConnection.onicecandidate = async (event) => {
       if (event.candidate) {
-        console.log('Local ICE candidate generated:', event.candidate.candidate);
+        this.candidateStats.localGenerated++;
+        console.log(`Local ICE candidate #${this.candidateStats.localGenerated} generated:`, event.candidate.candidate);
         if (this.sessionId) {
           try {
             await this.sendIceCandidate(event.candidate);
@@ -195,7 +200,7 @@ export class WebRTCService extends EventEmitter {
           console.warn('No session ID available to send ICE candidate');
         }
       } else {
-        console.log('ICE gathering complete');
+        console.log(`ICE gathering complete. Total local candidates: ${this.candidateStats.localGenerated}`);
       }
     };
 
@@ -214,11 +219,28 @@ export class WebRTCService extends EventEmitter {
     // Handle ICE connection state changes
     this.peerConnection.oniceconnectionstatechange = () => {
       const state = this.peerConnection!.iceConnectionState;
-      console.log('ICE connection state:', state);
+      console.log(`ICE connection state: ${state} (Local: ${this.candidateStats.localGenerated}, Remote: ${this.candidateStats.remoteReceived} candidates)`);
       this.emit('iceConnectionStateChange', state);
       
       if (state === 'failed') {
-        console.error('ICE connection failed - this usually means connectivity issues');
+        console.error('ICE connection failed! Candidate exchange summary:');
+        console.error(`  - Local candidates generated: ${this.candidateStats.localGenerated}`);
+        console.error(`  - Remote candidates received: ${this.candidateStats.remoteReceived}`);
+        console.error('  - This usually indicates network connectivity issues between peers');
+      } else if (state === 'checking') {
+        console.log('ICE is checking connectivity between candidates');
+      } else if (state === 'connected') {
+        console.log('ICE connection established successfully!');
+      }
+    };
+    
+    // Handle ICE gathering state changes
+    this.peerConnection.onicegatheringstatechange = () => {
+      const state = this.peerConnection!.iceGatheringState;
+      console.log('ICE gathering state:', state);
+      
+      if (state === 'complete') {
+        console.log('ICE gathering complete - all candidates discovered');
       }
     };
   }
@@ -273,12 +295,13 @@ export class WebRTCService extends EventEmitter {
           return; // Ignore keepalive messages
         }
 
-        console.log('Received remote ICE candidate:', data.candidate);
+        this.candidateStats.remoteReceived++;
+        console.log(`Received remote ICE candidate #${this.candidateStats.remoteReceived}:`, data.candidate);
         
         // Add remote ICE candidate
         const candidate = new RTCIceCandidate(data);
         await this.peerConnection?.addIceCandidate(candidate);
-        console.log('Successfully added remote ICE candidate');
+        console.log(`Successfully added remote ICE candidate #${this.candidateStats.remoteReceived}`);
       } catch (error) {
         console.error('Failed to add remote ICE candidate:', error);
       }
