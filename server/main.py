@@ -1267,15 +1267,20 @@ class Controller:
         @self.app.get("/", response_class=HTMLResponse)
         async def root():
             """Root endpoint providing API information and navigation as HTML."""
-            telescope_count = len(self.telescopes) + len(self.remote_telescopes)
+            # Count telescopes excluding test telescopes
+            local_telescope_count = sum(1 for t in self.telescopes.values() 
+                                      if not (isinstance(t, TestTelescope) or t.port == 9999))
+            telescope_count = local_telescope_count + len(self.remote_telescopes)
             
             # Get network scanning information
             from smarttel.seestar.commands.discovery import get_all_network_interfaces
             network_interfaces = get_all_network_interfaces()
             
-            # Get discovery statistics
-            auto_discovered_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "auto_discovery")
-            manual_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "manual")
+            # Get discovery statistics (exclude test telescopes)
+            auto_discovered_count = sum(1 for t in self.telescopes.values() 
+                                       if t.discovery_method == "auto_discovery" and not (isinstance(t, TestTelescope) or t.port == 9999))
+            manual_count = sum(1 for t in self.telescopes.values() 
+                             if t.discovery_method == "manual" and not (isinstance(t, TestTelescope) or t.port == 9999))
             remote_count = len(self.remote_telescopes)
             controller_count = len(self.remote_controllers)
             
@@ -1614,8 +1619,12 @@ class Controller:
                         </thead>
                         <tbody>"""
                 
-                # Add local telescopes
+                # Add local telescopes (exclude test telescopes)
                 for telescope in self.telescopes.values():
+                    # Skip test telescopes
+                    if isinstance(telescope, TestTelescope) or telescope.port == 9999:
+                        continue
+                        
                     location_text = telescope._location or "Unknown"
                     
                     connection_status = "Connected" if (telescope.client and telescope.client.is_connected) else "Disconnected"
@@ -1691,8 +1700,12 @@ class Controller:
             """Get a list of all telescopes."""
             result = []
 
-            # Add local telescopes
+            # Add local telescopes (exclude test telescopes)
             for telescope in self.telescopes.values():
+                # Skip test telescopes (identified by TestTelescope class or port 9999)
+                if isinstance(telescope, TestTelescope) or telescope.port == 9999:
+                    continue
+                    
                 result.append({
                     "name": telescope.name,
                     "host": telescope.host,
@@ -1865,10 +1878,14 @@ class Controller:
             from smarttel.seestar.commands.discovery import get_all_network_interfaces
             network_interfaces = get_all_network_interfaces()
             
-            # Get discovery statistics
-            auto_discovered_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "auto_discovery")
-            manual_count = sum(1 for t in self.telescopes.values() if t.discovery_method == "manual")
+            # Get discovery statistics (exclude test telescopes)
+            auto_discovered_count = sum(1 for t in self.telescopes.values() 
+                                       if t.discovery_method == "auto_discovery" and not (isinstance(t, TestTelescope) or t.port == 9999))
+            manual_count = sum(1 for t in self.telescopes.values() 
+                             if t.discovery_method == "manual" and not (isinstance(t, TestTelescope) or t.port == 9999))
             remote_count = len(self.remote_telescopes)
+            local_telescope_count = sum(1 for t in self.telescopes.values() 
+                                      if not (isinstance(t, TestTelescope) or t.port == 9999))
             
             return {
                 "network_scanning": {
@@ -1886,7 +1903,7 @@ class Controller:
                     "discovery_enabled": self.discover
                 },
                 "telescope_discovery": {
-                    "total_telescopes": len(self.telescopes) + len(self.remote_telescopes),
+                    "total_telescopes": local_telescope_count + len(self.remote_telescopes),
                     "auto_discovered": auto_discovered_count,
                     "manually_added": manual_count,
                     "remote_telescopes": remote_count,
@@ -1905,14 +1922,19 @@ class Controller:
             try:
                 await self.connect_all_telescopes()
                 
-                # Count successful connections
+                # Count successful connections (exclude test telescopes)
                 connected_count = sum(1 for t in self.telescopes.values() 
-                                    if hasattr(t, 'client') and t.client and t.client.is_connected)
+                                    if hasattr(t, 'client') and t.client and t.client.is_connected 
+                                    and not (isinstance(t, TestTelescope) or t.port == 9999))
+                
+                # Count total telescopes excluding test telescopes
+                total_telescopes = sum(1 for t in self.telescopes.values() 
+                                     if not (isinstance(t, TestTelescope) or t.port == 9999))
                 
                 return {
                     "status": "success",
                     "message": "Parallel connection attempt completed",
-                    "total_telescopes": len(self.telescopes),
+                    "total_telescopes": total_telescopes,
                     "connected_telescopes": connected_count,
                     "connection_details": [
                         {
@@ -1923,6 +1945,7 @@ class Controller:
                             "imaging_connected": telescope.imaging.is_connected if telescope.imaging else False
                         }
                         for telescope in self.telescopes.values()
+                        if not (isinstance(telescope, TestTelescope) or telescope.port == 9999)
                     ]
                 }
             except Exception as e:
@@ -2024,10 +2047,13 @@ class Controller:
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint for Docker containers."""
+            # Count telescopes excluding test telescopes
+            local_telescope_count = sum(1 for t in self.telescopes.values() 
+                                      if not (isinstance(t, TestTelescope) or t.port == 9999))
             return {
                 "status": "ok",
                 "timestamp": datetime.datetime.now().isoformat(),
-                "telescopes_count": len(self.telescopes) + len(self.remote_telescopes),
+                "telescopes_count": local_telescope_count + len(self.remote_telescopes),
                 "remote_controllers_count": len(self.remote_controllers)
             }
 
