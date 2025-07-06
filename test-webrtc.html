@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaMTX WebRTC Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            background: #000;
+            border: 2px solid #333;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #005fa3;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        .status.info {
+            background: #004085;
+            border: 1px solid #0056b3;
+        }
+        
+        .status.success {
+            background: #155724;
+            border: 1px solid #28a745;
+        }
+        
+        .status.error {
+            background: #721c24;
+            border: 1px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 MediaMTX WebRTC Test</h1>
+    
+    <div class="controls">
+        <button id="startBtn" onclick="startStream()">Start WebRTC Stream</button>
+        <button id="restartBtn" onclick="restartFFmpeg()" disabled>Restart FFmpeg Source</button>
+        <button id="stopBtn" onclick="stopStream()" disabled>Stop Stream</button>
+    </div>
+    
+    <video id="video" autoplay muted playsinline controls></video>
+    
+    <div id="status" class="status info">
+        Ready to test WebRTC streaming. Click "Start WebRTC Stream" to begin.
+    </div>
+    
+    <h2>📋 Instructions</h2>
+    <ol>
+        <li>Make sure MediaMTX is running: <code>docker ps | grep mediamtx</code></li>
+        <li>Start the FFmpeg stream: <code>docker run --rm -d --name ffmpeg-continuous --network host linuxserver/ffmpeg:latest -re -f mjpeg -i http://192.168.42.33:8000/api/webrtc/test/video-stream -c:v libx264 -preset ultrafast -tune zerolatency -r 30 -f rtsp rtsp://localhost:8554/telescope</code></li>
+        <li>Click "Start WebRTC Stream" above</li>
+        <li>If the stream times out, click "Restart FFmpeg Source" to restart the dummy video</li>
+    </ol>
+    
+    <h2>🔗 Alternative Access Methods</h2>
+    <ul>
+        <li><strong>HLS:</strong> <a href="http://localhost:8888/telescope/index.m3u8" target="_blank">http://localhost:8888/telescope/index.m3u8</a></li>
+        <li><strong>RTSP:</strong> <code>rtsp://localhost:8554/telescope</code></li>
+        <li><strong>WebRTC Direct:</strong> <a href="http://localhost:8889/telescope/whep" target="_blank">http://localhost:8889/telescope/whep</a></li>
+    </ul>
+
+    <script>
+        let pc = null;
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        async function startStream() {
+            try {
+                updateStatus('Starting WebRTC connection...', 'info');
+                
+                // Create WebRTC peer connection
+                pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                });
+                
+                // Handle incoming stream
+                pc.ontrack = (event) => {
+                    updateStatus('WebRTC stream received!', 'success');
+                    const video = document.getElementById('video');
+                    video.srcObject = event.streams[0];
+                    
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    document.getElementById('restartBtn').disabled = false;
+                };
+                
+                pc.oniceconnectionstatechange = () => {
+                    updateStatus(`ICE connection state: ${pc.iceConnectionState}`, 'info');
+                    if (pc.iceConnectionState === 'failed') {
+                        updateStatus('WebRTC connection failed. Try restarting the FFmpeg source.', 'error');
+                    }
+                };
+                
+                // Connect to MediaMTX WebRTC endpoint using WHEP
+                const response = await fetch('http://localhost:8889/telescope/whep', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/sdp'
+                    },
+                    body: (await pc.createOffer()).sdp
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`MediaMTX returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const answerSdp = await response.text();
+                await pc.setLocalDescription(await pc.createOffer());
+                await pc.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerSdp
+                });
+                
+                updateStatus('WebRTC offer/answer exchange completed', 'success');
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+                console.error('WebRTC error:', error);
+            }
+        }
+        
+        function stopStream() {
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            
+            const video = document.getElementById('video');
+            video.srcObject = null;
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('restartBtn').disabled = true;
+            
+            updateStatus('WebRTC stream stopped', 'info');
+        }
+        
+        async function restartFFmpeg() {
+            try {
+                updateStatus('Restarting FFmpeg source...', 'info');
+                
+                // This would ideally call a backend API to restart the stream
+                // For now, just show instructions
+                updateStatus('Please run this command to restart FFmpeg: docker stop ffmpeg-push && docker run --rm -d --name ffmpeg-push --network host linuxserver/ffmpeg:latest -re -f mjpeg -i http://192.168.42.33:8000/api/webrtc/test/video-stream -c:v libx264 -preset ultrafast -tune zerolatency -r 30 -f rtsp rtsp://localhost:8554/telescope', 'info');
+                
+            } catch (error) {
+                updateStatus(`Error restarting FFmpeg: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

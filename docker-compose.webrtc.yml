@@ -17,7 +17,7 @@ services:
       - MTX_WEBRTCADDITIONALHOSTS=192.168.42.33
     volumes:
       - ./mediamtx.yml:/mediamtx.yml
-    command: /mediamtx /mediamtx.yml
+    command: ["/mediamtx", "/mediamtx.yml"]
 
   # FFmpeg sidecar to push telescope stream to MediaMTX
   ffmpeg-pusher:

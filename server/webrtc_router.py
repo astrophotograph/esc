@@ -217,7 +217,7 @@ async def test_video_stream():
         
         try:
             frame_count = 0
-            while frame_count < 300:  # Stream for ~30 seconds at 10fps
+            while True:  # Stream continuously for testing
                 try:
                     # Get frame from dummy track
                     video_frame = await track.recv()
