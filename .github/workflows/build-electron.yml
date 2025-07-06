@@ -1,0 +1,102 @@
+name: Build Electron App
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - windows
+        - macos
+        - linux
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            build_target: linux
+          - os: windows-latest
+            platform: windows
+            build_target: win
+          - os: macos-latest
+            platform: macos
+            build_target: mac
+    if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install frontend dependencies
+      working-directory: ui
+      run: |
+        npm install --legacy-peer-deps
+
+    - name: Build frontend
+      working-directory: ui
+      run: |
+        npm run build
+
+    - name: Install backend dependencies
+      working-directory: server
+      run: |
+        uv sync
+        uv add pyinstaller
+
+    - name: Build backend (Linux/macOS)
+      if: matrix.platform != 'windows'
+      working-directory: server
+      run: |
+        mkdir -p dist
+        uv run pyinstaller --onefile --name main main.py
+        cp dist/main dist/
+
+    - name: Build backend (Windows)
+      if: matrix.platform == 'windows'
+      working-directory: server
+      run: |
+        mkdir -p dist
+        uv run pyinstaller --onefile --name main.exe main.py
+        cp dist/main.exe dist/
+
+    - name: Install Electron dependencies
+      working-directory: electron
+      run: |
+        npm install
+
+    - name: Build Electron app
+      working-directory: electron
+      run: |
+        npm run dist -- --${{ matrix.build_target }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: electron-app-${{ matrix.platform }}
+        path: |
+          dist/*
+        retention-days: 30
