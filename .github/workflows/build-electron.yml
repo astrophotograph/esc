@@ -84,7 +84,8 @@ jobs:
       run: |
         mkdir -p dist
         uv run pyinstaller --onefile --name main main.py
-        cp dist/main dist/
+        ls -al
+        # cp dist/main dist/
 
     - name: Build backend (Windows)
       if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform == 'windows'
@@ -92,7 +93,7 @@ jobs:
       run: |
         mkdir -p dist
         uv run pyinstaller --onefile --name main.exe main.py
-        cp dist/main.exe dist/
+        # cp dist/main.exe dist/
 
     - name: Install Electron dependencies
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
