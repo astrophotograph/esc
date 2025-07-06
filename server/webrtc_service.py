@@ -62,10 +62,20 @@ class WebRTCService:
         self.ice_candidate_queues: Dict[str, asyncio.Queue] = {}
         self.telescope_getter = telescope_getter
         
+        # Log network info for debugging
+        import socket
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        logger.info(f"WebRTC service initialized - Hostname: {hostname}, Local IP: {local_ip}")
+        
     async def create_peer_connection(self, session_id: str) -> RTCPeerConnection:
         """Create a new RTCPeerConnection with configured ICE servers."""
         ice_servers = [RTCIceServer(urls=self.stun_servers)]
-        configuration = RTCConfiguration(iceServers=ice_servers)
+        configuration = RTCConfiguration(
+            iceServers=ice_servers,
+            # For local network testing, you can try forcing host candidates only:
+            # iceTransportPolicy="all"  # or "relay" to force TURN
+        )
         pc = RTCPeerConnection(configuration=configuration)
         
         # Set up ICE candidate queue for this session
