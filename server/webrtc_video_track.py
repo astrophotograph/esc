@@ -17,6 +17,8 @@ from smarttel.seestar.imaging_client import SeestarImagingClient
 class TelescopeVideoTrack(VideoStreamTrack):
     """Custom video track that streams telescope images via WebRTC."""
     
+    kind = "video"  # Explicitly set track kind
+    
     def __init__(self, imaging_client: SeestarImagingClient, target_fps: int = 30):
         super().__init__()
         self.imaging_client = imaging_client
@@ -32,7 +34,7 @@ class TelescopeVideoTrack(VideoStreamTrack):
         self.width = 1280
         self.height = 720
         
-        logger.info(f"Created telescope video track with target FPS: {target_fps}, track ID: {id(self)}")
+        logger.info(f"Created telescope video track with target FPS: {target_fps}, track ID: {id(self)}, kind: {self.kind}")
     
     def _process_telescope_image(self, image: np.ndarray) -> np.ndarray:
         """Process telescope image for WebRTC streaming."""

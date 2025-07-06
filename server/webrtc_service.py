@@ -78,6 +78,18 @@ class WebRTCService:
                 await self.ice_candidate_queues[session_id].put(ice_candidate)
                 logger.debug(f"ICE candidate generated for session {session_id}: {candidate.candidate}")
         
+        @pc.on("icegatheringstatechange")
+        async def on_ice_gathering_state_change():
+            logger.info(f"ICE gathering state for session {session_id}: {pc.iceGatheringState}")
+        
+        @pc.on("iceconnectionstatechange")
+        async def on_ice_connection_state_change():
+            logger.info(f"ICE connection state for session {session_id}: {pc.iceConnectionState}")
+        
+        @pc.on("signalingstatechange")
+        async def on_signaling_state_change():
+            logger.info(f"Signaling state for session {session_id}: {pc.signalingState}")
+        
         @pc.on("connectionstatechange")
         async def on_connection_state_change():
             logger.info(f"Connection state for session {session_id}: {pc.connectionState}")
@@ -111,9 +123,11 @@ class WebRTCService:
         self.sessions[session_id] = session
         
         # Set remote description (offer)
+        logger.debug(f"Setting remote description (offer) for session {session_id}")
+        logger.debug(f"Offer SDP preview: {offer.sdp[:200]}...")
         await pc.setRemoteDescription(RTCSessionDescription(sdp=offer.sdp, type=offer.type))
         
-        # Add video track if telescope is available
+        # Add video track AFTER setting remote description but BEFORE creating answer
         if self.telescope_getter:
             try:
                 logger.info(f"Creating video track for telescope {telescope_name}")
@@ -139,6 +153,14 @@ class WebRTCService:
         
         # Create answer
         answer = await pc.createAnswer()
+        logger.debug(f"Answer SDP preview: {answer.sdp[:200]}...")
+        
+        # Check if answer contains video
+        if 'm=video' in answer.sdp:
+            logger.info(f"Answer contains video media section")
+        else:
+            logger.warning(f"Answer does NOT contain video media section!")
+        
         await pc.setLocalDescription(answer)
         
         logger.info(f"Created WebRTC session {session_id} for telescope {telescope_name}")
