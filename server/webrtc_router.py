@@ -12,6 +12,9 @@ from webrtc_service import (
     WebRTCIceCandidate,
     WebRTCSession
 )
+from dummy_video_track import DummyVideoTrack
+import cv2
+import asyncio
 from loguru import logger
 
 
@@ -200,6 +203,53 @@ async def get_webrtc_config() -> dict:
         ]
     }
 
+
+# Add a test endpoint that serves the dummy video as MJPEG
+@router.get("/test/video-stream")
+async def test_video_stream():
+    """Serve dummy video as MJPEG stream for testing purposes."""
+    logger.info("Starting test video stream endpoint")
+    
+    async def generate_mjpeg():
+        """Generate MJPEG stream from dummy video track."""
+        track = DummyVideoTrack(target_fps=10)  # Lower FPS for HTTP streaming
+        await track.start()
+        
+        try:
+            frame_count = 0
+            while frame_count < 300:  # Stream for ~30 seconds at 10fps
+                try:
+                    # Get frame from dummy track
+                    video_frame = await track.recv()
+                    
+                    # Convert to numpy array
+                    frame_array = video_frame.to_ndarray(format="rgb24")
+                    
+                    # Convert RGB to BGR for OpenCV
+                    frame_bgr = cv2.cvtColor(frame_array, cv2.COLOR_RGB2BGR)
+                    
+                    # Encode as JPEG
+                    _, buffer = cv2.imencode('.jpg', frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    frame_bytes = buffer.tobytes()
+                    
+                    # Yield as MJPEG frame
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    
+                    frame_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error generating test frame: {e}")
+                    break
+                    
+        finally:
+            await track.stop()
+            logger.info(f"Test video stream ended after {frame_count} frames")
+    
+    return StreamingResponse(
+        generate_mjpeg(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )
 
 # Cleanup on shutdown
 async def cleanup_webrtc_service():

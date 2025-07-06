@@ -75,13 +75,26 @@ class WebRTCService:
         try:
             interfaces = netifaces.interfaces()
             logger.info(f"Available network interfaces: {interfaces}")
+            valid_interfaces = []
             for interface in interfaces:
                 addrs = netifaces.ifaddresses(interface)
                 if netifaces.AF_INET in addrs:
                     ipv4_addrs = [addr['addr'] for addr in addrs[netifaces.AF_INET]]
                     logger.info(f"Interface {interface} IPv4: {ipv4_addrs}")
+                    # Filter out loopback addresses for WebRTC viability
+                    non_loopback = [addr for addr in ipv4_addrs if not addr.startswith('127.')]
+                    if non_loopback:
+                        valid_interfaces.extend(non_loopback)
+            
+            if not valid_interfaces:
+                logger.error("No valid non-loopback IPv4 interfaces found! This will prevent ICE candidate generation.")
+                logger.error("aiortc needs at least one non-loopback network interface to generate candidates.")
+            else:
+                logger.info(f"Valid interfaces for WebRTC: {valid_interfaces}")
+                
         except ImportError:
-            logger.info("netifaces not available, using basic socket info")
+            logger.warning("netifaces not available, using basic socket info")
+            logger.warning("Install netifaces for detailed network debugging: pip install netifaces")
         except Exception as e:
             logger.error(f"Error getting network interfaces: {e}")
         
