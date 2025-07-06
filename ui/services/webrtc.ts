@@ -182,12 +182,20 @@ export class WebRTCService extends EventEmitter {
 
     // Handle ICE candidates
     this.peerConnection.onicecandidate = async (event) => {
-      if (event.candidate && this.sessionId) {
-        try {
-          await this.sendIceCandidate(event.candidate);
-        } catch (error) {
-          console.error('Failed to send ICE candidate:', error);
+      if (event.candidate) {
+        console.log('Local ICE candidate generated:', event.candidate.candidate);
+        if (this.sessionId) {
+          try {
+            await this.sendIceCandidate(event.candidate);
+            console.log('ICE candidate sent successfully');
+          } catch (error) {
+            console.error('Failed to send ICE candidate:', error);
+          }
+        } else {
+          console.warn('No session ID available to send ICE candidate');
         }
+      } else {
+        console.log('ICE gathering complete');
       }
     };
 
@@ -208,6 +216,10 @@ export class WebRTCService extends EventEmitter {
       const state = this.peerConnection!.iceConnectionState;
       console.log('ICE connection state:', state);
       this.emit('iceConnectionStateChange', state);
+      
+      if (state === 'failed') {
+        console.error('ICE connection failed - this usually means connectivity issues');
+      }
     };
   }
 
@@ -257,13 +269,16 @@ export class WebRTCService extends EventEmitter {
         const data = JSON.parse(event.data);
         
         if (data.type === 'keepalive') {
+          console.log('ICE candidates stream keepalive');
           return; // Ignore keepalive messages
         }
 
+        console.log('Received remote ICE candidate:', data.candidate);
+        
         // Add remote ICE candidate
         const candidate = new RTCIceCandidate(data);
         await this.peerConnection?.addIceCandidate(candidate);
-        console.log('Added remote ICE candidate');
+        console.log('Successfully added remote ICE candidate');
       } catch (error) {
         console.error('Failed to add remote ICE candidate:', error);
       }

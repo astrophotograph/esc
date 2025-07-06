@@ -52,8 +52,13 @@ class WebRTCService:
         self.media_relay = MediaRelay()
         self.stun_servers = [
             "stun:stun.l.google.com:19302",
-            "stun:stun1.l.google.com:19302"
+            "stun:stun1.l.google.com:19302",
+            "stun:stun2.l.google.com:19302"
         ]
+        # Note: In production, you may need TURN servers for better connectivity
+        # self.turn_servers = [
+        #     "turn:your-turn-server.com:3478"
+        # ]
         self.ice_candidate_queues: Dict[str, asyncio.Queue] = {}
         self.telescope_getter = telescope_getter
         
@@ -76,7 +81,9 @@ class WebRTCService:
                     usernameFragment=candidate.usernameFragment
                 )
                 await self.ice_candidate_queues[session_id].put(ice_candidate)
-                logger.debug(f"ICE candidate generated for session {session_id}: {candidate.candidate}")
+                logger.info(f"ICE candidate generated for session {session_id}: {candidate.candidate}")
+            else:
+                logger.info(f"ICE gathering complete for session {session_id}")
         
         @pc.on("icegatheringstatechange")
         async def on_ice_gathering_state_change():
@@ -137,6 +144,13 @@ class WebRTCService:
                     logger.info(f"About to add video track {id(video_track)} to peer connection")
                     sender = pc.addTrack(video_track)
                     logger.info(f"Track added, sender: {sender}, track kind: {video_track.kind}")
+                    
+                    # Explicitly start the track
+                    try:
+                        await video_track.start()
+                        logger.info(f"Video track {id(video_track)} started explicitly")
+                    except Exception as start_error:
+                        logger.error(f"Failed to start video track: {start_error}")
                     
                     session.video_track = video_track
                     logger.info(f"Successfully added {stream_type} video track for telescope {telescope_name}")
@@ -226,6 +240,7 @@ class WebRTCService:
             return False
         
         try:
+            logger.info(f"Adding remote ICE candidate to session {session_id}: {candidate.candidate}")
             rtc_candidate = RTCIceCandidate(
                 candidate=candidate.candidate,
                 sdpMLineIndex=candidate.sdpMLineIndex,
@@ -234,10 +249,12 @@ class WebRTCService:
             )
             await session.peer_connection.addIceCandidate(rtc_candidate)
             session.ice_candidates.append(candidate)
-            logger.debug(f"Added ICE candidate to session {session_id}")
+            logger.info(f"Successfully added remote ICE candidate to session {session_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to add ICE candidate to session {session_id}: {e}")
+            import traceback
+            logger.error(f"ICE candidate error traceback: {traceback.format_exc()}")
             return False
     
     async def get_ice_candidates_stream(self, session_id: str):
