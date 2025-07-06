@@ -482,6 +482,43 @@ class MockImagingClient:
         self._is_streaming = False
 
 
+class MockSeestarClient:
+    """Mock Seestar client for test telescope."""
+    
+    def __init__(self):
+        self.is_connected = False
+        self._status = None
+        
+    async def connect(self):
+        """Mock connect method."""
+        self.is_connected = True
+        
+    async def disconnect(self):
+        """Mock disconnect method."""
+        self.is_connected = False
+        
+    async def send_and_recv(self, command):
+        """Mock send_and_recv method."""
+        # Return empty response
+        from smarttel.seestar.commands.common import CommandResponse
+        return CommandResponse(id=1, result={})
+    
+    @property
+    def status(self):
+        """Mock status property."""
+        if self._status is None:
+            self._status = type('Status', (), {
+                'is_connected': self.is_connected,
+                'is_slewing': False,
+                'is_tracking': False,
+                'is_calibrating': False,
+                'target_name': 'Test Target',
+                'target_ra': 0.0,
+                'target_dec': 0.0,
+            })()
+        return self._status
+
+
 class TestTelescope(BaseModel, arbitrary_types_allowed=True):
     """Test telescope for WebRTC dummy video testing."""
     host: str
@@ -496,13 +533,17 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
     # Mock properties for compatibility
     router: APIRouter | None = None
     event_bus: EventBus | None = None
-    client: SeestarClient | None = None
+    client: MockSeestarClient | None = None
     imaging: MockImagingClient | None = None
 
     def __init__(self, **data):
         super().__init__(**data)
-        # Initialize mock imaging client
+        # Initialize mock clients
+        self.client = MockSeestarClient()
         self.imaging = MockImagingClient()
+        # Initialize event bus if needed
+        from smarttel.seestar.client import EventBus
+        self.event_bus = EventBus()
 
     @property
     def name(self):
