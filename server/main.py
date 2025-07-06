@@ -867,11 +867,21 @@ class Controller:
                 # Execute all telescope additions in parallel
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 
-                # Log any errors
+                # Log any errors and collect successfully added telescopes
+                newly_added_telescopes = []
                 for i, result in enumerate(results):
                     if isinstance(result, Exception):
                         device = new_devices[i]
                         logging.error(f"Failed to add telescope {device['address']}: {result}")
+                    else:
+                        device = new_devices[i]
+                        telescope_name = pydash.get(device, 'data.result.sn') or device['address']
+                        newly_added_telescopes.append(telescope_name)
+                
+                # Connect newly discovered telescopes
+                if newly_added_telescopes:
+                    logging.info(f"Connecting {len(newly_added_telescopes)} newly discovered telescopes: {newly_added_telescopes}")
+                    await self.connect_telescopes(newly_added_telescopes)
 
             await asyncio.sleep(60)
 
@@ -996,6 +1006,84 @@ class Controller:
             
             logging.info(f"Parallel connection complete: {connected_count}/{len(connection_tasks)} telescopes connected")
 
+    async def connect_telescopes(self, telescope_names: list[str]):
+        """Connect specific telescopes by name."""
+        if not telescope_names:
+            return
+        
+        logging.info(f"Connecting {len(telescope_names)} specific telescopes...")
+        
+        # Create connection tasks for specified telescopes
+        connection_tasks = []
+        delay_offset = 0
+        
+        for telescope_name in telescope_names:
+            telescope = self.telescopes.get(telescope_name)
+            if not telescope:
+                logging.warning(f"Telescope {telescope_name} not found for connection")
+                continue
+            
+            # Ensure clients are initialized before connecting
+            if hasattr(telescope, 'initialize_clients'):
+                telescope.initialize_clients()
+            
+            if hasattr(telescope, 'client') and hasattr(telescope, 'imaging') and telescope.client and telescope.imaging:
+                # Create a task to connect both clients for this telescope
+                async def connect_telescope_clients(tel=telescope, delay=delay_offset):
+                    try:
+                        # Add a small staggered delay to prevent overwhelming the network
+                        if delay > 0:
+                            await asyncio.sleep(delay * 0.1)  # 100ms delay per telescope
+                        
+                        # Check if already connected to avoid duplicate connections
+                        if tel.client.is_connected and tel.imaging.is_connected:
+                            logging.info(f"Telescope {tel.name} already connected, skipping")
+                            return tel.name, True
+                        
+                        logging.info(f"Connecting to newly discovered telescope {tel.name} at {tel.host}:{tel.port}")
+                        
+                        # Connect main client and imaging client in parallel
+                        tasks = []
+                        if not tel.client.is_connected:
+                            tasks.append(tel.client.connect())
+                        if not tel.imaging.is_connected:
+                            tasks.append(tel.imaging.connect())
+                        
+                        if tasks:
+                            results = await asyncio.gather(*tasks, return_exceptions=True)
+                            
+                            # Check for connection errors
+                            for i, result in enumerate(results):
+                                if isinstance(result, Exception):
+                                    logging.error(f"Connection error for {tel.name}: {result}")
+                        
+                        return tel.name, True
+                    except Exception as e:
+                        logging.error(f"Failed to connect telescope {tel.name}: {e}")
+                        return tel.name, False
+                
+                connection_tasks.append(connect_telescope_clients())
+                delay_offset += 1
+        
+        if connection_tasks:
+            # Execute all connections in parallel
+            results = await asyncio.gather(*connection_tasks, return_exceptions=True)
+            
+            # Log results
+            connected_count = 0
+            for result in results:
+                if isinstance(result, Exception):
+                    logging.error(f"Connection task failed: {result}")
+                else:
+                    telescope_name, success = result
+                    if success:
+                        connected_count += 1
+                        logging.info(f"Successfully connected to newly discovered telescope: {telescope_name}")
+                    else:
+                        logging.error(f"Failed to connect to telescope: {telescope_name}")
+            
+            logging.info(f"New telescope connection complete: {connected_count}/{len(connection_tasks)} telescopes connected")
+
     async def add_test_telescope(self):
         """Add a dummy test telescope for WebRTC testing."""
         try:
@@ -1029,11 +1117,6 @@ class Controller:
         # Add a dummy test telescope for WebRTC testing
         await self.add_test_telescope()
 
-        # Connect to all loaded telescopes in parallel
-        if self.telescopes:
-            click.secho(f"Connecting to {len(self.telescopes)} telescopes in parallel...", fg="blue")
-            await self.connect_all_telescopes()
-
         print(f"Discover {self.discover}")
         if self.discover:
             click.secho("Starting auto-discovery...", fg="green")
@@ -1055,6 +1138,18 @@ class Controller:
         # Add WebRTC router
         self.app.include_router(webrtc_router)
         
+        # Add startup handler to connect telescopes after server is ready
+        @self.app.on_event("startup")
+        async def startup_event():
+            # Connect to all loaded telescopes after server is fully started
+            if self.telescopes:
+                async def delayed_connect():
+                    await asyncio.sleep(2)  # Wait for server to be fully ready
+                    click.secho(f"Connecting to {len(self.telescopes)} telescopes after startup...", fg="blue")
+                    await self.connect_all_telescopes()
+                
+                asyncio.create_task(delayed_connect())
+
         # Add shutdown handler for WebRTC cleanup
         @self.app.on_event("shutdown")
         async def shutdown_event():
@@ -1511,6 +1606,11 @@ class Controller:
                 # Get the newly added telescope
                 telescope_name = telescope_request.serial_number or telescope_request.host
                 telescope = self.telescopes.get(telescope_name)
+                
+                # Connect the newly added telescope
+                if telescope:
+                    logging.info(f"Connecting newly added telescope: {telescope_name}")
+                    await self.connect_telescopes([telescope_name])
                 
                 if telescope:
                     return {
