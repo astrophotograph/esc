@@ -1,0 +1,186 @@
+"""
+WebSocket router for FastAPI integration.
+
+This module provides the FastAPI WebSocket endpoints and integrates
+with the WebSocket manager for telescope control.
+"""
+
+import uuid
+from typing import Optional
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
+from loguru import logger
+
+from websocket_manager import websocket_manager
+
+
+router = APIRouter()
+
+
+async def get_websocket_manager():
+    """Dependency to get the WebSocket manager."""
+    return websocket_manager
+
+
+@router.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    telescope_id: Optional[str] = Query(None, description="Specific telescope to connect to"),
+    client_id: Optional[str] = Query(None, description="Client identifier for reconnection"),
+    manager=Depends(get_websocket_manager)
+):
+    """
+    WebSocket endpoint for telescope communication.
+    
+    Query parameters:
+    - telescope_id: Optional specific telescope to connect to
+    - client_id: Optional client identifier for connection tracking
+    """
+    # Generate connection ID
+    connection_id = client_id or f"client-{uuid.uuid4().hex[:8]}"
+    
+    try:
+        # Establish WebSocket connection
+        connection = await manager.connect(websocket, connection_id)
+        
+        logger.info(f"WebSocket client connected: {connection_id}")
+        if telescope_id:
+            logger.info(f"Client {connection_id} targeting telescope: {telescope_id}")
+        
+        # Main message handling loop
+        while True:
+            try:
+                # Wait for incoming message
+                message = await websocket.receive_text()
+                await manager.handle_message(connection_id, message)
+                
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket client disconnected normally: {connection_id}")
+                break
+            except Exception as e:
+                logger.error(f"Error handling message from {connection_id}: {e}")
+                # Continue processing other messages
+                continue
+    
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client disconnected during handshake: {connection_id}")
+    except Exception as e:
+        logger.error(f"WebSocket connection error for {connection_id}: {e}")
+    finally:
+        # Clean up connection
+        await manager.disconnect(connection_id)
+
+
+@router.websocket("/ws/{telescope_id}")
+async def telescope_websocket_endpoint(
+    websocket: WebSocket,
+    telescope_id: str,
+    client_id: Optional[str] = Query(None, description="Client identifier for reconnection"),
+    manager=Depends(get_websocket_manager)
+):
+    """
+    WebSocket endpoint for specific telescope communication.
+    
+    Path parameters:
+    - telescope_id: ID of the telescope to connect to
+    
+    Query parameters:
+    - client_id: Optional client identifier for connection tracking
+    """
+    # Generate connection ID with telescope reference
+    connection_id = client_id or f"client-{telescope_id}-{uuid.uuid4().hex[:8]}"
+    
+    try:
+        # Establish WebSocket connection
+        connection = await manager.connect(websocket, connection_id)
+        
+        logger.info(f"WebSocket client connected to telescope {telescope_id}: {connection_id}")
+        
+        # Auto-subscribe to all updates for this telescope
+        from websocket_protocol import SubscriptionType
+        connection.add_subscription(telescope_id, [SubscriptionType.ALL])
+        
+        # Main message handling loop
+        while True:
+            try:
+                # Wait for incoming message
+                message = await websocket.receive_text()
+                await manager.handle_message(connection_id, message)
+                
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket client disconnected normally: {connection_id}")
+                break
+            except Exception as e:
+                logger.error(f"Error handling message from {connection_id}: {e}")
+                # Continue processing other messages
+                continue
+    
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client disconnected during handshake: {connection_id}")
+    except Exception as e:
+        logger.error(f"WebSocket connection error for {connection_id}: {e}")
+    finally:
+        # Clean up connection
+        await manager.disconnect(connection_id)
+
+
+@router.on_event("startup")
+async def startup_websocket_manager():
+    """Start the WebSocket manager when the router starts."""
+    await websocket_manager.start()
+    logger.info("WebSocket router started")
+
+
+@router.on_event("shutdown")
+async def shutdown_websocket_manager():
+    """Stop the WebSocket manager when the router shuts down."""
+    await websocket_manager.stop()
+    logger.info("WebSocket router stopped")
+
+
+# Health check endpoint for WebSocket status
+@router.get("/ws/health")
+async def websocket_health(manager=Depends(get_websocket_manager)):
+    """Get WebSocket manager health status."""
+    return {
+        "status": "healthy" if manager._running else "stopped",
+        "active_connections": len(manager.connections),
+        "registered_telescopes": len(manager.telescope_clients),
+        "connection_details": [
+            {
+                "connection_id": conn.connection_id,
+                "subscriptions": {
+                    telescope_id: list(subs) 
+                    for telescope_id, subs in conn.subscriptions.items()
+                },
+                "is_alive": conn.is_alive
+            }
+            for conn in manager.connections.values()
+        ]
+    }
+
+
+# Endpoint to broadcast a test message (for development/testing)
+@router.post("/ws/test/broadcast")
+async def test_broadcast(
+    telescope_id: str,
+    message: str,
+    manager=Depends(get_websocket_manager)
+):
+    """Send a test message to all connections subscribed to a telescope."""
+    test_status = {
+        "test_message": message,
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
+    
+    await manager.broadcast_status_update(telescope_id, test_status)
+    
+    return {
+        "status": "sent",
+        "telescope_id": telescope_id,
+        "message": message,
+        "recipients": len([
+            conn for conn in manager.connections.values()
+            if conn.is_subscribed_to(telescope_id, "status")
+        ])
+    }

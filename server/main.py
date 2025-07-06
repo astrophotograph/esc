@@ -29,6 +29,7 @@ from smarttel.seestar.imaging_client import SeestarImagingClient
 from smarttel.util.eventbus import EventBus
 from database import TelescopeDatabase
 from webrtc_router import router as webrtc_router
+from websocket_router import router as websocket_router
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -1137,6 +1138,9 @@ class Controller:
         
         # Add WebRTC router
         self.app.include_router(webrtc_router)
+        
+        # Add WebSocket router
+        self.app.include_router(websocket_router, prefix="/api")
         
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
