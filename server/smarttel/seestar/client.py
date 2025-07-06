@@ -13,10 +13,21 @@ from loguru import logger as logging
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.simple import GetTime, GetDeviceState, GetViewState, GetFocuserPosition, GetDiskVolume, \
-    ScopeGetEquCoord
+from smarttel.seestar.commands.simple import (
+    GetTime,
+    GetDeviceState,
+    GetViewState,
+    GetFocuserPosition,
+    GetDiskVolume,
+    ScopeGetEquCoord,
+)
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, PiStatusEvent, AnnotateResult, AnnotateEvent
+from smarttel.seestar.events import (
+    EventTypes,
+    PiStatusEvent,
+    AnnotateResult,
+    AnnotateEvent,
+)
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
 
@@ -25,8 +36,9 @@ U = TypeVar("U")
 
 class SeestarStatus(BaseModel):
     """Seestar status."""
+
     temp: float | None = None
-    charger_status: Literal['Discharging', 'Charging', 'Full'] | None = None
+    charger_status: Literal["Discharging", "Charging", "Full"] | None = None
     stage: str | None = None
     charge_online: bool | None = None
     battery_capacity: int | None = None
@@ -69,11 +81,13 @@ class SeestarStatus(BaseModel):
 
 class ParsedEvent(BaseModel):
     """Parsed event."""
+
     event: EventTypes
 
 
 class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     """Seestar client."""
+
     host: str
     port: int
     event_bus: EventBus | None = None
@@ -95,10 +109,36 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     pattern_regex: str = r"OPEN"
     pattern_check_interval: float = 5.0
 
-    def __init__(self, host: str, port: int, event_bus: EventBus):
-        super().__init__(host=host, port=port, event_bus=event_bus)
+    # Timeout configuration
+    connection_timeout: float = 10.0
+    read_timeout: float = 30.0
+    write_timeout: float = 10.0
 
-        self.connection = SeestarConnection(host=host, port=port)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        event_bus: EventBus,
+        connection_timeout: float = 10.0,
+        read_timeout: float = 30.0,
+        write_timeout: float = 10.0,
+    ):
+        super().__init__(
+            host=host,
+            port=port,
+            event_bus=event_bus,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
+            write_timeout=write_timeout,
+        )
+
+        self.connection = SeestarConnection(
+            host=host,
+            port=port,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
+            write_timeout=write_timeout,
+        )
 
     async def _reader(self):
         """Background task that continuously reads messages and handles them."""
@@ -107,28 +147,36 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             try:
                 # Check if connection is still valid
                 if not self.connection.is_connected():
-                    logging.warning(f"Connection lost for {self}, attempting to reconnect...")
+                    logging.warning(
+                        f"Connection lost for {self}, attempting to reconnect..."
+                    )
                     await asyncio.sleep(1.0)  # Wait before next iteration
                     continue
-                    
+
                 response_str = await self.connection.read()
                 if response_str is not None:
                     # Parse and handle the response
-                    if 'Event' in response_str:
+                    if "Event" in response_str:
                         # Handle events
                         await self._handle_event(response_str)
-                    elif 'jsonrpc' in response_str:
+                    elif "jsonrpc" in response_str:
                         # Parse as command response and let protocol handler process it
                         try:
-                            parsed_response = CommandResponse(**json.loads(response_str))
+                            parsed_response = CommandResponse(
+                                **json.loads(response_str)
+                            )
                             self.text_protocol.handle_incoming_message(parsed_response)
                         except Exception as parse_error:
-                            logging.error(f"Error parsing response from {self}: {response_str} {parse_error}")
+                            logging.error(
+                                f"Error parsing response from {self}: {response_str} {parse_error}"
+                            )
                 else:
                     # response_str is None, which could mean connection issues handled by connection layer
                     # Check if we're still connected and continue
                     if not self.connection.is_connected():
-                        logging.debug(f"Connection not available for {self}, will retry")
+                        logging.debug(
+                            f"Connection not available for {self}, will retry"
+                        )
                         await asyncio.sleep(0.5)
                     continue
             except Exception as e:
@@ -142,7 +190,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _pattern_monitor(self):
         """Background task that monitors a file for specific patterns."""
-        logging.info(f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}")
+        logging.info(
+            f"Starting pattern monitor task for {self} - monitoring {self.pattern_file_path}"
+        )
         last_modified_time = None
         last_file_size = 0
 
@@ -163,17 +213,22 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 current_size = stat.st_size
 
                 # Check if file has been modified or grown
-                if (last_modified_time is None or
-                        current_modified_time > last_modified_time or
-                        current_size > last_file_size):
-
+                if (
+                    last_modified_time is None
+                    or current_modified_time > last_modified_time
+                    or current_size > last_file_size
+                ):
                     # Read the file content
                     try:
-                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        with open(
+                            file_path, "r", encoding="utf-8", errors="ignore"
+                        ) as f:
                             content = f.read()
 
                         # Search for pattern
-                        pattern_found = bool(re.search(self.pattern_regex, content, re.IGNORECASE))
+                        pattern_found = bool(
+                            re.search(self.pattern_regex, content, re.IGNORECASE)
+                        )
 
                         # Update status
                         self.status.pattern_match_found = pattern_found
@@ -181,9 +236,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.pattern_match_last_check = current_time
 
                         if pattern_found:
-                            logging.info(f"Pattern '{self.pattern_regex}' found in {file_path}")
+                            logging.info(
+                                f"Pattern '{self.pattern_regex}' found in {file_path}"
+                            )
                         else:
-                            logging.trace(f"Pattern '{self.pattern_regex}' not found in {file_path}")
+                            logging.trace(
+                                f"Pattern '{self.pattern_regex}' not found in {file_path}"
+                            )
 
                         # Update tracking variables
                         last_modified_time = current_modified_time
@@ -224,8 +283,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 response = await self.send_and_recv(GetViewState())
                 self._process_view_state(response)
                 response = await self.send_and_recv(GetDiskVolume())
-                self.status.freeMB = response.result.get('freeMB')
-                self.status.totalMB = response.result.get('totalMB')
+                self.status.freeMB = response.result.get("freeMB")
+                self.status.totalMB = response.result.get("totalMB")
             await asyncio.sleep(30)
 
     def _process_view_state(self, response: CommandResponse):
@@ -233,9 +292,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
             # print(f"view state: {response.result}")
-            self.status.target_name = pydash.get(response.result, 'View.target_name', 'unknown')
-            self.status.gain = pydash.get(response.result, 'View.gain', 0)
-            self.status.stage = pydash.get(response.result, 'View.stage', 'unknown')
+            self.status.target_name = pydash.get(
+                response.result, "View.target_name", "unknown"
+            )
+            self.status.gain = pydash.get(response.result, "View.gain", 0)
+            self.status.stage = pydash.get(response.result, "View.stage", "unknown")
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
 
@@ -243,13 +304,17 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         """Process device state."""
         logging.trace(f"Processing device state from {self}: {response}")
         if response.result is not None:
-            pi_status = PiStatusEvent(**response.result['pi_status'], Timestamp=response.Timestamp)
+            pi_status = PiStatusEvent(
+                **response.result["pi_status"], Timestamp=response.Timestamp
+            )
             self.status.temp = pi_status.temp
             self.status.charger_status = pi_status.charger_status
             self.status.charge_online = pi_status.charge_online
             self.status.battery_capacity = pi_status.battery_capacity
         else:
-            logging.error(f"Error while processing device state from {self}: {response}")
+            logging.error(
+                f"Error while processing device state from {self}: {response}"
+            )
 
     def _process_focuser_position(self, response: CommandResponse):
         """Process focuser position."""
@@ -257,7 +322,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         if response.result is not None:
             self.status.focus_position = response.result
         else:
-            logging.error(f"Error while processing focuser position from {self}: {response}")
+            logging.error(
+                f"Error while processing focuser position from {self}: {response}"
+            )
 
     async def connect(self):
         await self.connection.open()
@@ -337,10 +404,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
             # print(f"Received event from {self}: {type(parser.event)} {parser}")
-            logging.trace(f'Received event from {self}: {parser.event.Event} {type(parser.event)}')
+            logging.trace(
+                f"Received event from {self}: {parser.event.Event} {type(parser.event)}"
+            )
             self.recent_events.append(parser.event)
             match parser.event.Event:
-                case 'PiStatus':
+                case "PiStatus":
                     pi_status = parser.event
                     if pi_status.temp is not None:
                         self.status.temp = pi_status.temp
@@ -350,29 +419,31 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.charge_online = pi_status.charge_online
                     if pi_status.battery_capacity is not None:
                         self.status.battery_capacity = pi_status.battery_capacity
-                case 'Stack':
+                case "Stack":
                     logging.debug(f"Updating stacked frame and dropped frame: {parsed}")
                     if self.status.stacked_frame is not None:
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
                         self.status.dropped_frame = parser.event.dropped_frame
-                    self.event_bus.emit('Stack', parser.event)
-                case 'Annotate':
+                    self.event_bus.emit("Stack", parser.event)
+                case "Annotate":
                     self.status.annotate = AnnotateEvent(**parser.event).result
-                case 'FocuserMove':
+                case "FocuserMove":
                     focuser_event = parser.event
                     if focuser_event.position is not None:
                         self.status.focus_position = focuser_event.position
                     logging.trace(f"Focuser event: {focuser_event}")
-                case 'WheelMove':
+                case "WheelMove":
                     wheel_event = parser.event
-                    if wheel_event.state == 'complete':
+                    if wheel_event.state == "complete":
                         self.status.lp_filter = wheel_event.position == 2
                 # Todo: include Exposure, Stacked
                 # case _:
                 #    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
-            logging.error(f"Error while parsing event from {self}: {event_str} {type(e)} {e}")
+            logging.error(
+                f"Error while parsing event from {self}: {event_str} {type(e)} {e}"
+            )
 
     async def send_and_recv(self, data: str | BaseModel) -> CommandResponse | None:
         # Get or assign message ID
@@ -399,8 +470,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Received ScopeGetEquCoord: {response}")
         if response is not None:
             # Normalize to degrees...
-            new_ra = response.result.get('ra') * 15.0
-            new_dec = response.result.get('dec')
+            new_ra = response.result.get("ra") * 15.0
+            new_dec = response.result.get("dec")
 
             if new_ra != self.status.ra or new_dec != self.status.dec:
                 self.status.ra = new_ra

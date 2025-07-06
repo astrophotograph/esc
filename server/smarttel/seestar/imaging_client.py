@@ -5,7 +5,11 @@ from typing import TypeVar, Literal
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.imaging import BeginStreaming, StopStreaming, GetStackedImage
+from smarttel.seestar.commands.imaging import (
+    BeginStreaming,
+    StopStreaming,
+    GetStackedImage,
+)
 from smarttel.seestar.commands.simple import TestConnection
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent
@@ -17,8 +21,9 @@ U = TypeVar("U")
 
 class SeestarImagingStatus(BaseModel):
     """Seestar imaging status."""
+
     temp: float | None = None
-    charger_status: Literal['Discharging', 'Charging', 'Full'] | None = None
+    charger_status: Literal["Discharging", "Charging", "Full"] | None = None
     charge_online: bool | None = None
     battery_capacity: int | None = None
     stacked_frame: int = 0
@@ -42,11 +47,13 @@ class SeestarImagingStatus(BaseModel):
 
 class ParsedEvent(BaseModel):
     """Parsed event."""
+
     event: EventTypes
 
 
 class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     """Seestar imaging client."""
+
     host: str
     port: int
     connection: SeestarConnection | None = None
@@ -60,11 +67,37 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     binary_protocol: BinaryProtocol = BinaryProtocol()
     image: ScopeImage | None = None
 
-    def __init__(self, host: str, port: int, event_bus: EventBus | None = None):
-        super().__init__(host=host, port=port, event_bus=event_bus)
+    # Timeout configuration
+    connection_timeout: float = 10.0
+    read_timeout: float = 30.0
+    write_timeout: float = 10.0
 
-        self.event_bus.add_listener('Stack', self._handle_stack_event)
-        self.connection = SeestarConnection(host=host, port=port)
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        event_bus: EventBus | None = None,
+        connection_timeout: float = 10.0,
+        read_timeout: float = 30.0,
+        write_timeout: float = 10.0,
+    ):
+        super().__init__(
+            host=host,
+            port=port,
+            event_bus=event_bus,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
+            write_timeout=write_timeout,
+        )
+
+        self.event_bus.add_listener("Stack", self._handle_stack_event)
+        self.connection = SeestarConnection(
+            host=host,
+            port=port,
+            connection_timeout=connection_timeout,
+            read_timeout=read_timeout,
+            write_timeout=write_timeout,
+        )
 
     async def _reader(self):
         """Background task that continuously reads messages and handles them."""
@@ -73,36 +106,48 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             try:
                 # Check if connection is still valid
                 if not self.connection.is_connected():
-                    logging.warning(f"Connection lost for {self}, attempting to reconnect...")
+                    logging.warning(
+                        f"Connection lost for {self}, attempting to reconnect..."
+                    )
                     await asyncio.sleep(1.0)  # Wait before next iteration
                     continue
-                    
+
                 header = await self.connection.read_exactly(80)
                 if header is None:
                     # Connection issue handled by connection layer, check status and continue
                     if not self.connection.is_connected():
-                        logging.debug(f"Connection not available for {self}, will retry")
+                        logging.debug(
+                            f"Connection not available for {self}, will retry"
+                        )
                         await asyncio.sleep(0.5)
                     continue
-                    
+
                 size, id, width, height = self.binary_protocol.parse_header(header)
-                logging.trace(f"imaging receive header: {size=} {width=} {height=} {id=}")
-                
+                logging.trace(
+                    f"imaging receive header: {size=} {width=} {height=} {id=}"
+                )
+
                 data = None
                 if size is not None:
                     data = await self.connection.read_exactly(size)
                     if data is None:
                         # Connection issue during data read, check status and continue
                         if not self.connection.is_connected():
-                            logging.debug(f"Connection lost during data read for {self}")
+                            logging.debug(
+                                f"Connection lost during data read for {self}"
+                            )
                             await asyncio.sleep(0.5)
                         continue
-                        
+
                 if data is not None:
-                    self.image = await self.binary_protocol.handle_incoming_message(width, height, data, id)
+                    self.image = await self.binary_protocol.handle_incoming_message(
+                        width, height, data, id
+                    )
 
             except Exception as e:
-                logging.error(f"Unexpected error in imaging reader task for {self}: {e}")
+                logging.error(
+                    f"Unexpected error in imaging reader task for {self}: {e}"
+                )
                 if self.is_connected:
                     await asyncio.sleep(1.0)  # Brief pause before retrying
                     continue
@@ -156,7 +201,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         self.status.is_fetching_images = False
 
     async def _handle_stack_event(self, event: BaseEvent):
-        if event.state == 'frame_complete' and self.status.is_fetching_images:
+        if event.state == "frame_complete" and self.status.is_fetching_images:
             # Only grab the frame if we're streaming in client!
             logging.trace("Grabbing frame")
             await self.send(GetStackedImage(id=23))

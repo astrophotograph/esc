@@ -21,4 +21,6 @@ dependencies = [
     "pydash>=8.0.5",
     "scikit-image>=0.25.2",
     "uvicorn>=0.34.3",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
 ]
