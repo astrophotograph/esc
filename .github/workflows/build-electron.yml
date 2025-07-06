@@ -40,7 +40,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
+
+    - name: Install pnpm
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
 
     - name: Setup Python
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
@@ -58,13 +63,13 @@ jobs:
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: ui
       run: |
-        npm install --legacy-peer-deps
+        pnpm install
 
     - name: Build frontend
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: ui
       run: |
-        npm run build
+        pnpm run build
 
     - name: Install backend dependencies
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
@@ -93,13 +98,13 @@ jobs:
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: electron
       run: |
-        npm install
+        pnpm install
 
     - name: Build Electron app
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: electron
       run: |
-        npm run dist -- --${{ matrix.build_target }}
+        pnpm run dist -- --${{ matrix.build_target }}
 
     - name: Upload artifacts
       if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
