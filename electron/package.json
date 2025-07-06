@@ -1,0 +1,59 @@
+{
+  "name": "alp-experimental-electron",
+  "version": "1.0.0",
+  "description": "ALP Experimental telescope control application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "ALP Experimental Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-log": "^5.0.1",
+    "electron-updater": "^6.1.7"
+  },
+  "build": {
+    "appId": "com.alp.experimental",
+    "productName": "ALP Experimental",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "processManager.js",
+      "!node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../ui/out",
+        "to": "ui",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../server/dist",
+        "to": "server",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "assets/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  }
+}

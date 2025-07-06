@@ -41,6 +41,9 @@ function TelescopeControlContent() {
     setShowTelescopeManagement,
   } = useTelescopeContext()
 
+  // Check if running in Electron
+  const isElectron = typeof window !== 'undefined' && window.navigator.userAgent.includes('Electron')
+
   // Set up keyboard event listeners
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown)
@@ -50,9 +53,17 @@ function TelescopeControlContent() {
   }, [handleKeyDown])
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-2">
-      <div className="max-w-7xl mx-auto">
-        <Header />
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Draggable title bar for Electron only */}
+      {isElectron && (
+        <div className="h-8 bg-gray-800 flex items-center justify-center px-4 electron-drag">
+          <span className="text-sm text-gray-400">ALP Experimental</span>
+        </div>
+      )}
+      
+      <div className="p-2">
+        <div className="max-w-7xl mx-auto">
+          <Header />
 
         <div className={`grid gap-6 ${isControlsCollapsed ? "grid-cols-1" : "lg:grid-cols-4"}`}>
           <div className={`${isControlsCollapsed ? "col-span-1" : "lg:col-span-3"}`}>
@@ -87,13 +98,14 @@ function TelescopeControlContent() {
         />
 
         <DataPersistenceManager />
+        </div>
+        
+        {/* Picture-in-Picture Overlay - moved outside max-width container */}
+        <PictureInPictureOverlay />
+        
+        {/* PiP Overlay Controls - moved outside max-width container */}
+        <PipOverlayControls />
       </div>
-      
-      {/* Picture-in-Picture Overlay - moved outside max-width container */}
-      <PictureInPictureOverlay />
-      
-      {/* PiP Overlay Controls - moved outside max-width container */}
-      <PipOverlayControls />
     </div>
   )
 }

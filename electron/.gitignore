@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env.local
+.env.production
+
+# Electron Builder
+electron-builder.yml
+!electron-builder.json
+
+# Temporary files
+*.tmp
+*.temp
+
+# Platform-specific builds
+*.dmg
+*.app
+*.exe
+*.deb
+*.rpm
+*.AppImage
+*.snap

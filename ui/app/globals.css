@@ -6,6 +6,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Electron draggable title bar */
+.electron-drag {
+  -webkit-app-region: drag;
+}
+
+.electron-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
