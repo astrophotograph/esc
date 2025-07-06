@@ -491,9 +491,19 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         self.router = router
 
-        asyncio.create_task(startup())
+        # Don't auto-connect during API creation - let the controller handle connections
+        # asyncio.create_task(startup())
 
         return router
+
+    def initialize_clients(self):
+        """Initialize clients without connecting."""
+        if not hasattr(self, 'event_bus') or not self.event_bus:
+            self.event_bus = EventBus()
+        if not hasattr(self, 'client') or not self.client:
+            self.client = SeestarClient(self.host, self.port, self.event_bus)
+        if not hasattr(self, 'imaging') or not self.imaging:
+            self.imaging = SeestarImagingClient(self.host, self.imaging_port, self.event_bus)
 
 
 class MockImagingClient:
@@ -909,7 +919,7 @@ class Controller:
             logging.error(f"Failed to load saved telescopes: {e}")
 
     async def connect_all_telescopes(self):
-        """Connect to all telescopes in parallel."""
+        """Connect to all telescopes in parallel with throttling."""
         if not self.telescopes:
             logging.info("No telescopes to connect to")
             return
@@ -920,17 +930,44 @@ class Controller:
         connection_tasks = []
         telescope_names = []
         
+        # Add a small delay counter to stagger connections slightly
+        delay_offset = 0
+        
         for telescope in self.telescopes.values():
+            # Ensure clients are initialized before connecting
+            if hasattr(telescope, 'initialize_clients'):
+                telescope.initialize_clients()
+            
             if hasattr(telescope, 'client') and hasattr(telescope, 'imaging') and telescope.client and telescope.imaging:
-                # Create a task to connect both clients for this telescope
-                async def connect_telescope_clients(tel=telescope):
+                # Create a task to connect both clients for this telescope with staggered timing
+                async def connect_telescope_clients(tel=telescope, delay=delay_offset):
                     try:
+                        # Add a small staggered delay to prevent overwhelming the network
+                        if delay > 0:
+                            await asyncio.sleep(delay * 0.1)  # 100ms delay per telescope
+                        
+                        # Check if already connected to avoid duplicate connections
+                        if tel.client.is_connected and tel.imaging.is_connected:
+                            logging.info(f"Telescope {tel.name} already connected, skipping")
+                            return tel.name, True
+                        
+                        logging.info(f"Connecting to telescope {tel.name} at {tel.host}:{tel.port}")
+                        
                         # Connect main client and imaging client in parallel
-                        await asyncio.gather(
-                            tel.client.connect(),
-                            tel.imaging.connect(),
-                            return_exceptions=True
-                        )
+                        tasks = []
+                        if not tel.client.is_connected:
+                            tasks.append(tel.client.connect())
+                        if not tel.imaging.is_connected:
+                            tasks.append(tel.imaging.connect())
+                        
+                        if tasks:
+                            results = await asyncio.gather(*tasks, return_exceptions=True)
+                            
+                            # Check for connection errors
+                            for i, result in enumerate(results):
+                                if isinstance(result, Exception):
+                                    logging.error(f"Connection error for {tel.name}: {result}")
+                        
                         return tel.name, True
                     except Exception as e:
                         logging.error(f"Failed to connect telescope {tel.name}: {e}")
@@ -938,6 +975,7 @@ class Controller:
                 
                 connection_tasks.append(connect_telescope_clients())
                 telescope_names.append(telescope.name)
+                delay_offset += 1
         
         if connection_tasks:
             # Execute all connections in parallel
