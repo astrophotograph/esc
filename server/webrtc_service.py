@@ -92,16 +92,23 @@ class WebRTCService:
         async def on_ice_candidate(candidate):
             if candidate:
                 self.candidate_stats[session_id]["local_generated"] += 1
+                logger.info(f"Backend ICE candidate #{self.candidate_stats[session_id]['local_generated']} generated for session {session_id}: {candidate.candidate}")
+                
                 ice_candidate = WebRTCIceCandidate(
                     candidate=candidate.candidate,
                     sdpMLineIndex=candidate.sdpMLineIndex,
                     sdpMid=candidate.sdpMid,
                     usernameFragment=candidate.usernameFragment
                 )
-                await self.ice_candidate_queues[session_id].put(ice_candidate)
-                logger.info(f"ICE candidate #{self.candidate_stats[session_id]['local_generated']} generated for session {session_id}: {candidate.candidate}")
+                
+                # Check if queue exists before putting
+                if session_id in self.ice_candidate_queues:
+                    await self.ice_candidate_queues[session_id].put(ice_candidate)
+                    logger.info(f"Backend candidate #{self.candidate_stats[session_id]['local_generated']} queued for streaming")
+                else:
+                    logger.error(f"No ICE candidate queue found for session {session_id}!")
             else:
-                logger.info(f"ICE gathering complete for session {session_id}. Total local candidates: {self.candidate_stats[session_id]['local_generated']}")
+                logger.info(f"Backend ICE gathering complete for session {session_id}. Total local candidates: {self.candidate_stats[session_id]['local_generated']}")
         
         @pc.on("icegatheringstatechange")
         async def on_ice_gathering_state_change():
@@ -201,6 +208,13 @@ class WebRTCService:
             logger.warning(f"Answer does NOT contain video media section!")
         
         await pc.setLocalDescription(answer)
+        logger.info(f"Set local description for session {session_id}")
+        
+        # ICE gathering should start automatically after setLocalDescription
+        # Give it a moment to generate candidates
+        await asyncio.sleep(0.5)
+        logger.info(f"ICE gathering state after 0.5s: {pc.iceGatheringState}")
+        logger.info(f"Current candidate count for session {session_id}: {self.candidate_stats[session_id]['local_generated']}")
         
         logger.info(f"Created WebRTC session {session_id} for telescope {telescope_name}")
         
@@ -291,17 +305,22 @@ class WebRTCService:
             return
         
         queue = self.ice_candidate_queues[session_id]
+        logger.info(f"Starting ICE candidates stream for session {session_id}")
         
         try:
+            streamed_count = 0
             while session_id in self.sessions:
                 try:
                     candidate = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    streamed_count += 1
+                    logger.info(f"Streaming ICE candidate #{streamed_count} for session {session_id}: {candidate.candidate}")
                     yield f"data: {candidate.model_dump_json()}\n\n"
                 except asyncio.TimeoutError:
                     # Send keepalive
+                    logger.debug(f"Sending keepalive for session {session_id}")
                     yield f"data: {json.dumps({'type': 'keepalive'})}\n\n"
         finally:
-            logger.debug(f"Stopped streaming ICE candidates for session {session_id}")
+            logger.info(f"Stopped streaming ICE candidates for session {session_id}. Total streamed: {streamed_count}")
     
     async def cleanup_session(self, session_id: str):
         """Clean up a WebRTC session."""
