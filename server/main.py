@@ -507,6 +507,15 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
     @property
     def name(self):
         return self.serial_number or self.host
+    
+    @property
+    async def location(self) -> Optional[str]:
+        """Return the location for the test telescope."""
+        return self._location or "Test Lab"
+    
+    async def _get_public_ip(self) -> Optional[str]:
+        """Mock method - test telescope doesn't need real IP."""
+        return "127.0.0.1"
 
     def create_test_api(self) -> APIRouter:
         """Create a test API router for the dummy telescope."""
