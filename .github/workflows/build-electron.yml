@@ -29,46 +29,52 @@ jobs:
           - os: macos-latest
             platform: macos
             build_target: mac
-    if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
     
     steps:
     - name: Checkout code
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/checkout@v4
 
     - name: Setup Node.js
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
 
     - name: Setup Python
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
     - name: Install uv
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: astral-sh/setup-uv@v3
       with:
         version: "latest"
 
     - name: Install frontend dependencies
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: ui
       run: |
         npm install --legacy-peer-deps
 
     - name: Build frontend
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: ui
       run: |
         npm run build
 
     - name: Install backend dependencies
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: server
       run: |
         uv sync
         uv add pyinstaller
 
     - name: Build backend (Linux/macOS)
-      if: matrix.platform != 'windows'
+      if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform != 'windows'
       working-directory: server
       run: |
         mkdir -p dist
@@ -76,7 +82,7 @@ jobs:
         cp dist/main dist/
 
     - name: Build backend (Windows)
-      if: matrix.platform == 'windows'
+      if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform == 'windows'
       working-directory: server
       run: |
         mkdir -p dist
@@ -84,16 +90,19 @@ jobs:
         cp dist/main.exe dist/
 
     - name: Install Electron dependencies
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: electron
       run: |
         npm install
 
     - name: Build Electron app
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       working-directory: electron
       run: |
         npm run dist -- --${{ matrix.build_target }}
 
     - name: Upload artifacts
+      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
       uses: actions/upload-artifact@v4
       with:
         name: electron-app-${{ matrix.platform }}
