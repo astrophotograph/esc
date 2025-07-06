@@ -107,11 +107,32 @@ jobs:
       run: |
         pnpm run dist -- --${{ matrix.build_target }}
 
-    - name: Upload artifacts
-      if: github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform
+    - name: Upload artifacts (macOS)
+      if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform == 'macos'
       uses: actions/upload-artifact@v4
       with:
         name: electron-app-${{ matrix.platform }}
         path: |
-          dist/*
+          dist/*.dmg
+        retention-days: 30
+
+    - name: Upload artifacts (Windows)
+      if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform == 'windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: electron-app-${{ matrix.platform }}
+        path: |
+          dist/*.exe
+          dist/*.msi
+        retention-days: 30
+
+    - name: Upload artifacts (Linux)
+      if: (github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.platform) && matrix.platform == 'linux'
+      uses: actions/upload-artifact@v4
+      with:
+        name: electron-app-${{ matrix.platform }}
+        path: |
+          dist/*.AppImage
+          dist/*.deb
+          dist/*.rpm
         retention-days: 30
