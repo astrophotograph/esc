@@ -457,6 +457,136 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         return router
 
 
+class MockImagingClient:
+    """Mock imaging client for test telescope."""
+    
+    def __init__(self):
+        self.is_connected = False
+        self._is_streaming = False
+        
+    @property
+    def status(self):
+        """Mock status object."""
+        return type('Status', (), {'is_streaming': self._is_streaming})()
+    
+    async def connect(self):
+        """Mock connect method."""
+        self.is_connected = True
+        
+    async def start_streaming(self):
+        """Mock start streaming method."""
+        self._is_streaming = True
+        
+    async def stop_streaming(self):
+        """Mock stop streaming method."""
+        self._is_streaming = False
+
+
+class TestTelescope(BaseModel, arbitrary_types_allowed=True):
+    """Test telescope for WebRTC dummy video testing."""
+    host: str
+    port: int = 9999  # Non-existent port
+    imaging_port: int = 9998  # Non-existent port  
+    serial_number: Optional[str] = None
+    product_model: Optional[str] = None
+    ssid: Optional[str] = None
+    discovery_method: str = "manual"
+    _location: Optional[str] = None
+    
+    # Mock properties for compatibility
+    router: APIRouter | None = None
+    event_bus: EventBus | None = None
+    client: SeestarClient | None = None
+    imaging: MockImagingClient | None = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Initialize mock imaging client
+        self.imaging = MockImagingClient()
+
+    @property
+    def name(self):
+        return self.serial_number or self.host
+
+    def create_test_api(self) -> APIRouter:
+        """Create a test API router for the dummy telescope."""
+        router = APIRouter()
+        
+        @router.get("/")
+        async def root():
+            """Root endpoint for test telescope."""
+            return {
+                "status": "test_mode",
+                "telescope": {
+                    "name": self.name,
+                    "host": self.host,
+                    "port": self.port,
+                    "serial_number": self.serial_number,
+                    "product_model": self.product_model,
+                    "connected": False,  # Always false for test telescope
+                    "type": "dummy"
+                }
+            }
+        
+        @router.get("/status")
+        async def get_status():
+            """Get test telescope status."""
+            return {
+                "status": "test_mode",
+                "connected": False,
+                "message": "This is a test telescope for WebRTC dummy video testing"
+            }
+            
+        # Add basic MJPEG endpoint that serves dummy video
+        @router.get("/video", response_class=StreamingResponse)
+        async def get_video():
+            """Serve dummy video as MJPEG stream."""
+            from dummy_video_track import DummyVideoTrack
+            import cv2
+            
+            async def generate_mjpeg():
+                """Generate MJPEG stream from dummy video track."""
+                track = DummyVideoTrack(target_fps=10)
+                await track.start()
+                
+                try:
+                    frame_count = 0
+                    while frame_count < 300:  # Stream for ~30 seconds
+                        try:
+                            # Get frame from dummy track
+                            video_frame = await track.recv()
+                            
+                            # Convert to numpy array
+                            frame_array = video_frame.to_ndarray(format="rgb24")
+                            
+                            # Convert RGB to BGR for OpenCV
+                            frame_bgr = cv2.cvtColor(frame_array, cv2.COLOR_RGB2BGR)
+                            
+                            # Encode as JPEG
+                            _, buffer = cv2.imencode('.jpg', frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                            frame_bytes = buffer.tobytes()
+                            
+                            # Yield as MJPEG frame
+                            yield (b'--frame\r\n'
+                                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                            
+                            frame_count += 1
+                            
+                        except Exception as e:
+                            logging.error(f"Error generating test frame: {e}")
+                            break
+                            
+                finally:
+                    await track.stop()
+            
+            return StreamingResponse(
+                generate_mjpeg(),
+                media_type="multipart/x-mixed-replace; boundary=frame"
+            )
+        
+        return router
+
+
 class Controller:
     """Controller for all of the telescopes."""
 
@@ -634,6 +764,7 @@ class Controller:
             for telescope_data in saved_telescopes:
                 # Check if telescope is already loaded (avoid duplicates)
                 telescope_name = telescope_data.get('serial_number') or telescope_data['host']
+                print(f"telescope_name : {telescope_name}: {telescope_data}")
                 if telescope_name not in self.telescopes:
                     await self.add_telescope(
                         host=telescope_data['host'],
@@ -648,13 +779,42 @@ class Controller:
         except Exception as e:
             logging.error(f"Failed to load saved telescopes: {e}")
 
+    async def add_test_telescope(self):
+        """Add a dummy test telescope for WebRTC testing."""
+        try:
+            # Create a mock telescope for testing WebRTC with dummy video
+            test_telescope = TestTelescope(
+                host="127.0.0.1",
+                port=9999,  # Non-existent port, won't connect
+                serial_number="test-dummy-01",
+                product_model="Test Telescope",
+                ssid="TEST_SCOPE",
+                discovery_method="manual",
+                _location="Test Lab"
+            )
+            
+            logging.info(f"Added test telescope {test_telescope.name} for WebRTC dummy video testing")
+            self.telescopes[test_telescope.name] = test_telescope
+            
+            # Create router for test telescope (but don't try to connect)
+            self.app.include_router(test_telescope.create_test_api(),
+                                    prefix=f"/api/telescopes/{test_telescope.name}")
+            
+        except Exception as e:
+            logging.error(f"Failed to add test telescope: {e}")
+
     async def runner(self):
         """Create and run the Uvicorn server."""
 
         # Load saved telescopes first
         await self.load_saved_telescopes()
+        
+        # Add a dummy test telescope for WebRTC testing
+        await self.add_test_telescope()
 
+        print(f"Discover {self.discover}")
         if self.discover:
+            click.secho("Starting auto-discovery...", fg="green")
             asyncio.create_task(self.auto_discover())
 
         # Initialize WebRTC service with telescope getter
