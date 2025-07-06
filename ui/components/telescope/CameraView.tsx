@@ -1009,8 +1009,8 @@ export function CameraView() {
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
             >
-              {/* Show test pattern when connection is lost */}
-              {connectionLost && (
+              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) */}
+              {connectionLost && connectionType === 'disconnected' && (
                 <div className="w-full h-full flex items-center justify-center bg-black">
                   <RandomTestPattern
                     width={containerDimensions.width || 800}
@@ -1020,8 +1020,8 @@ export function CameraView() {
                 </div>
               )}
 
-              {/* Show placeholder when image is loading, has error, or isn't available (and connection is not lost) */}
-              {(imageLoading || imageError) && !connectionLost && (
+              {/* Show placeholder only when no telescope is available (WebRTCLiveView handles its own states) */}
+              {!currentTelescope && (
                 <div className="w-full h-full flex items-center justify-center bg-gray-800">
                   <div className="text-center text-gray-400">
                     <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
@@ -1040,10 +1040,10 @@ export function CameraView() {
                 </div>
               )}
 
-              {/* WebRTC Live View with MJPEG fallback */}
+              {/* WebRTC Live View with MJPEG fallback - handles its own error states */}
               <WebRTCLiveView
                 telescope={currentTelescope}
-                className={`${imageError || connectionLost ? 'hidden' : ''}`}
+                className=""
                 brightness={brightness}
                 contrast={contrast}
                 rotationAngle={rotationAngle}
