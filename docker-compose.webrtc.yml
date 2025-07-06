@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # MediaMTX - Simple WebRTC/RTMP/HLS streaming server
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: alp-mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554"   # RTSP
+      - "1935:1935"   # RTMP
+      - "8888:8888"   # HLS
+      - "8889:8889"   # WebRTC
+      - "8890:8890"   # SRT
+    environment:
+      - MTX_PROTOCOLS=tcp
+      - MTX_WEBRTCADDITIONALHOSTS=192.168.42.33
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+    command: /mediamtx /mediamtx.yml
+
+  # FFmpeg sidecar to push telescope stream to MediaMTX
+  ffmpeg-pusher:
+    image: linuxserver/ffmpeg:latest
+    container_name: alp-ffmpeg
+    restart: unless-stopped
+    depends_on:
+      - mediamtx
+    command: >
+      -re -f mjpeg -i http://host.docker.internal:8000/api/telescopes/test-dummy-01/video
+      -c:v libx264 -preset ultrafast -tune zerolatency
+      -f rtsp rtsp://mediamtx:8554/telescope-test

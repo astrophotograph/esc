@@ -1,0 +1,47 @@
+# MediaMTX configuration for telescope streaming
+
+###############################################
+# General parameters
+
+# Sets the verbosity of the program; available values are "error", "warn", "info", "debug".
+logLevel: info
+# Destinations of log messages; available values are "stdout", "file" and "syslog".
+logDestinations: [stdout]
+
+# HTTP API
+api: yes
+apiAddress: :9997
+
+# Metrics
+metrics: yes
+metricsAddress: :9998
+
+# WebRTC parameters
+webrtc: yes
+webrtcAddress: :8889
+webrtcServerKey: ""
+webrtcServerCert: ""
+webrtcAllowOrigin: "*"
+webrtcTrustedProxies: []
+webrtcICEServers:
+  - urls: [stun:stun.l.google.com:19302]
+
+# Default path settings
+pathDefaults:
+  # Source settings
+  source: publisher
+  sourceOnDemand: no
+  
+  # WebRTC settings
+  webrtcUse: yes
+
+# Paths
+paths:
+  # Test telescope with dummy video
+  telescope-test:
+    source: publisher
+    sourceOnDemand: yes
+    
+  # Real telescope streams can be added here
+  # telescope-real:
+  #   source: rtsp://telescope-ip:554/stream

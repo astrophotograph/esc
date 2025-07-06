@@ -6,6 +6,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import type { TelescopeInfo } from '../../types/telescope-types';
 import { generateStreamingUrl } from '../../utils/streaming';
+import SimpleWebRTC from './SimpleWebRTC';
 
 interface WebRTCLiveViewProps {
   telescope: TelescopeInfo | null;
@@ -43,6 +44,7 @@ export function WebRTCLiveView({
   const [mjpegUrl, setMjpegUrl] = useState<string>('');
   const [mjpegError, setMjpegError] = useState(false);
   const [mjpegLoading, setMjpegLoading] = useState(false);
+  const [useSimpleWebRTC, setUseSimpleWebRTC] = useState(false);
 
   // WebRTC hook configuration
   const {
@@ -179,6 +181,38 @@ export function WebRTCLiveView({
     ...style,
   };
 
+  // Render Simple WebRTC if enabled
+  if (useSimpleWebRTC) {
+    return (
+      <div className="relative w-full h-full">
+        <SimpleWebRTC
+          telescope={telescope}
+          className={className}
+          brightness={brightness}
+          contrast={contrast}
+          rotationAngle={rotationAngle}
+          zoomLevel={zoomLevel}
+          panPosition={panPosition}
+          isPortrait={isPortrait}
+          onLoad={onLoad}
+          onError={onError}
+          onConnectionStateChange={onConnectionStateChange}
+        />
+        
+        {/* Controls overlay */}
+        <div className="absolute bottom-2 right-2 flex gap-2">
+          <button
+            onClick={() => setUseSimpleWebRTC(false)}
+            className="bg-gray-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-gray-700/90 transition-colors"
+            title="Switch to MJPEG"
+          >
+            Use MJPEG
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Render WebRTC video element
   if (enableWebRTC) {
     return (
@@ -299,6 +333,16 @@ export function WebRTCLiveView({
             title="Try WebRTC connection"
           >
             Try WebRTC
+          </button>
+          <button
+            onClick={() => {
+              console.log('User requested Simple WebRTC');
+              setUseSimpleWebRTC(true);
+            }}
+            className="bg-purple-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-purple-700/90 transition-colors"
+            title="Try Simple WebRTC (Canvas-based)"
+          >
+            Simple WebRTC
           </button>
         </div>
       )}
