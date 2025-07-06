@@ -11,6 +11,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from webrtc_video_track import TelescopeVideoTrack, StackedImageVideoTrack
+from dummy_video_track import DummyVideoTrack, StaticTestVideoTrack
 
 
 class WebRTCOffer(BaseModel):
@@ -145,35 +146,34 @@ class WebRTCService:
         await pc.setRemoteDescription(RTCSessionDescription(sdp=offer.sdp, type=offer.type))
         
         # Add video track AFTER setting remote description but BEFORE creating answer
-        if self.telescope_getter:
-            try:
-                logger.info(f"Creating video track for telescope {telescope_name}")
-                video_track = await self.create_video_track(telescope_name, stream_type)
-                if video_track:
-                    # Log track details before adding
-                    logger.info(f"About to add video track {id(video_track)} to peer connection")
-                    sender = pc.addTrack(video_track)
-                    logger.info(f"Track added, sender: {sender}, track kind: {video_track.kind}")
-                    
-                    # Explicitly start the track
-                    try:
-                        await video_track.start()
-                        logger.info(f"Video track {id(video_track)} started explicitly")
-                    except Exception as start_error:
-                        logger.error(f"Failed to start video track: {start_error}")
-                    
-                    session.video_track = video_track
-                    logger.info(f"Successfully added {stream_type} video track for telescope {telescope_name}")
-                else:
-                    logger.error(f"Video track creation returned None for telescope {telescope_name}")
-            except Exception as e:
-                logger.error(f"Failed to create video track for telescope {telescope_name}: {e}")
-                import traceback
-                logger.error(f"Video track creation traceback: {traceback.format_exc()}")
-                # Continue without video track - this might be why no stream is received
-                raise e  # Re-raise to see if this helps identify the issue
-        else:
-            logger.warning("No telescope getter configured - no video track will be added")
+        # Use dummy video track for testing
+        try:
+            logger.info(f"Creating DUMMY video track for testing")
+            video_track = DummyVideoTrack(target_fps=30)
+            
+            if video_track:
+                # Log track details before adding
+                logger.info(f"About to add DUMMY video track {id(video_track)} to peer connection")
+                sender = pc.addTrack(video_track)
+                logger.info(f"Track added, sender: {sender}, track kind: {video_track.kind}")
+                
+                # Explicitly start the track
+                try:
+                    await video_track.start()
+                    logger.info(f"Dummy video track {id(video_track)} started explicitly")
+                except Exception as start_error:
+                    logger.error(f"Failed to start dummy video track: {start_error}")
+                
+                session.video_track = video_track
+                logger.info(f"Successfully added DUMMY video track")
+            else:
+                logger.error(f"Dummy video track creation returned None")
+        except Exception as e:
+            logger.error(f"Failed to create dummy video track: {e}")
+            import traceback
+            logger.error(f"Dummy video track creation traceback: {traceback.format_exc()}")
+            # Continue without video track
+            raise e
         
         # Create answer
         answer = await pc.createAnswer()
@@ -191,56 +191,57 @@ class WebRTCService:
         
         return session_id, WebRTCAnswer(sdp=answer.sdp, type=answer.type)
     
-    async def create_video_track(self, telescope_name: str, stream_type: str = "live"):
-        """Create a video track for the telescope stream."""
-        if not self.telescope_getter:
-            raise ValueError("No telescope getter configured")
-        
-        # Get the telescope instance
-        telescope = self.telescope_getter(telescope_name)
-        if not telescope:
-            raise ValueError(f"Telescope {telescope_name} not found")
-        
-        logger.info(f"Creating video track for telescope {telescope_name}, type: {stream_type}")
-        
-        # Get the imaging client
-        imaging_client = telescope.imaging
-        if not imaging_client:
-            raise ValueError(f"No imaging client for telescope {telescope_name}")
-        
-        logger.info(f"Imaging client status - connected: {imaging_client.is_connected}, streaming: {imaging_client.status.is_streaming}")
-        
-        # Ensure imaging client is connected
-        if not imaging_client.is_connected:
-            logger.info(f"Imaging client not connected for {telescope_name}, attempting to connect...")
-            try:
-                await imaging_client.connect()
-                logger.info(f"Successfully connected imaging client for {telescope_name}")
-            except Exception as e:
-                logger.error(f"Failed to connect imaging client for {telescope_name}: {e}")
-                raise ValueError(f"Cannot connect to imaging client for telescope {telescope_name}: {e}")
-        
-        # Ensure streaming is started
-        if not imaging_client.status.is_streaming:
-            logger.info(f"Starting imaging stream for telescope {telescope_name}")
-            await imaging_client.start_streaming()
-            
-            # Wait a bit for streaming to actually start
-            await asyncio.sleep(1.0)
-            
-            if not imaging_client.status.is_streaming:
-                logger.warning(f"Imaging streaming may not have started properly for {telescope_name}")
-            else:
-                logger.info(f"Imaging streaming started successfully for {telescope_name}")
-        
-        # Create appropriate video track based on stream type
-        if stream_type == "stacked":
-            track = StackedImageVideoTrack(imaging_client)
-        else:
-            track = TelescopeVideoTrack(imaging_client)
-        
-        logger.info(f"Created {type(track).__name__} for telescope {telescope_name}")
-        return track
+    # Commented out for dummy testing
+    # async def create_video_track(self, telescope_name: str, stream_type: str = "live"):
+    #     """Create a video track for the telescope stream."""
+    #     if not self.telescope_getter:
+    #         raise ValueError("No telescope getter configured")
+    #     
+    #     # Get the telescope instance
+    #     telescope = self.telescope_getter(telescope_name)
+    #     if not telescope:
+    #         raise ValueError(f"Telescope {telescope_name} not found")
+    #     
+    #     logger.info(f"Creating video track for telescope {telescope_name}, type: {stream_type}")
+    #     
+    #     # Get the imaging client
+    #     imaging_client = telescope.imaging
+    #     if not imaging_client:
+    #         raise ValueError(f"No imaging client for telescope {telescope_name}")
+    #     
+    #     logger.info(f"Imaging client status - connected: {imaging_client.is_connected}, streaming: {imaging_client.status.is_streaming}")
+    #     
+    #     # Ensure imaging client is connected
+    #     if not imaging_client.is_connected:
+    #         logger.info(f"Imaging client not connected for {telescope_name}, attempting to connect...")
+    #         try:
+    #             await imaging_client.connect()
+    #             logger.info(f"Successfully connected imaging client for {telescope_name}")
+    #         except Exception as e:
+    #             logger.error(f"Failed to connect imaging client for {telescope_name}: {e}")
+    #             raise ValueError(f"Cannot connect to imaging client for telescope {telescope_name}: {e}")
+    #     
+    #     # Ensure streaming is started
+    #     if not imaging_client.status.is_streaming:
+    #         logger.info(f"Starting imaging stream for telescope {telescope_name}")
+    #         await imaging_client.start_streaming()
+    #         
+    #         # Wait a bit for streaming to actually start
+    #         await asyncio.sleep(1.0)
+    #         
+    #         if not imaging_client.status.is_streaming:
+    #             logger.warning(f"Imaging streaming may not have started properly for {telescope_name}")
+    #         else:
+    #             logger.info(f"Imaging streaming started successfully for {telescope_name}")
+    #     
+    #     # Create appropriate video track based on stream type
+    #     if stream_type == "stacked":
+    #         track = StackedImageVideoTrack(imaging_client)
+    #     else:
+    #         track = TelescopeVideoTrack(imaging_client)
+    #     
+    #     logger.info(f"Created {type(track).__name__} for telescope {telescope_name}")
+    #     return track
     
     async def add_ice_candidate(self, session_id: str, candidate: WebRTCIceCandidate) -> bool:
         """Add an ICE candidate to a session."""
