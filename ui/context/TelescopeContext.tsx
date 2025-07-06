@@ -302,10 +302,58 @@ const TelescopeContext = createContext<TelescopeContextType | undefined>(undefin
 export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
-  const [currentTelescope, setCurrentTelescope] = usePersistentState<TelescopeInfo | null>(
+  // Validation function for saved telescope data
+  const validateSavedTelescope = (telescope: any): telescope is TelescopeInfo => {
+    if (!telescope || typeof telescope !== 'object') {
+      console.warn('Invalid telescope data: not an object')
+      return false
+    }
+    
+    // Check for required fields
+    if (!telescope.name && !telescope.serial_number && !telescope.id) {
+      console.warn('Invalid telescope data: missing identifying fields')
+      return false
+    }
+    
+    // Validate data types
+    if (telescope.name && typeof telescope.name !== 'string') {
+      console.warn('Invalid telescope data: name is not a string')
+      return false
+    }
+    
+    if (telescope.serial_number && typeof telescope.serial_number !== 'string') {
+      console.warn('Invalid telescope data: serial_number is not a string')
+      return false
+    }
+    
+    if (telescope.host && typeof telescope.host !== 'string') {
+      console.warn('Invalid telescope data: host is not a string')
+      return false
+    }
+    
+    console.log('Telescope data validation passed:', telescope.name || telescope.id)
+    return true
+  }
+
+  const [rawCurrentTelescope, setRawCurrentTelescope] = usePersistentState<TelescopeInfo | null>(
     STORAGE_KEYS.CURRENT_TELESCOPE,
     null
   )
+  
+  // Validated current telescope (ensure saved data is valid)
+  const currentTelescope = rawCurrentTelescope && validateSavedTelescope(rawCurrentTelescope) 
+    ? rawCurrentTelescope 
+    : null
+    
+  const setCurrentTelescope = (telescope: TelescopeInfo | null) => {
+    if (telescope && !validateSavedTelescope(telescope)) {
+      console.error('Attempted to save invalid telescope data:', telescope)
+      return
+    }
+    setRawCurrentTelescope(telescope)
+  }
+  
+  
   const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
   const [telescopeError, setTelescopeError] = useState<string | null>(null)
   const [showTelescopeManagement, setShowTelescopeManagement] = useState(false)
@@ -326,7 +374,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     max: 255,
     histogram: Array.from({ length: 10 }, () => Math.random() * 100),
   })
-  const [isControlsCollapsed, setIsControlsCollapsed] = useState(false)
+  const [isControlsCollapsed, setIsControlsCollapsed] = usePersistentState(STORAGE_KEYS.UI_STATE + "-controls-collapsed", false)
   const [selectedTarget, setSelectedTarget] = useState<CelestialObject | null>(null)
   const [observationNotes, setObservationNotes] = useState("")
   const [observationRating, setObservationRating] = useState(3)
@@ -502,7 +550,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showPipStatus, setShowPipStatus] = useState(true)
 
   // Show stream status in main view
-  const [showStreamStatus, setShowStreamStatus] = useState(true)
+  const [showStreamStatus, setShowStreamStatus] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-stream-status", true)
 
   // Stream status
   const [streamStatus, setStreamStatus] = useState<any>(null)
@@ -511,14 +559,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [isImaging, setIsImaging] = useState(false)
 
   // Picture-in-Picture state
-  const [showPiP, setShowPiP] = useState(false)
-  const [pipPosition, setPipPosition] = useState({ x: 20, y: 20 })
-  const [pipSize, setPipSize] = useState<"small" | "medium" | "large">("medium")
-  const [pipCamera, setPipCamera] = useState<"allsky" | "guide" | "finder">("allsky")
-  const [pipMinimized, setPipMinimized] = useState(false)
-  const [pipFullscreen, setPipFullscreen] = useState(false)
+  const [showPiP, setShowPiP] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-pip", false)
+  const [pipPosition, setPipPosition] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-position", { x: 20, y: 20 })
+  const [pipSize, setPipSize] = usePersistentState<"small" | "medium" | "large">(STORAGE_KEYS.UI_STATE + "-pip-size", "medium")
+  const [pipCamera, setPipCamera] = usePersistentState<"allsky" | "guide" | "finder">(STORAGE_KEYS.UI_STATE + "-pip-camera", "allsky")
+  const [pipMinimized, setPipMinimized] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-minimized", false)
+  const [pipFullscreen, setPipFullscreen] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-fullscreen", false)
   const [liveViewFullscreen, setLiveViewFullscreen] = useState(false)
-  const [pipOverlaySettings, setPipOverlaySettings] = useState<PipOverlaySettings>({
+  const [pipOverlaySettings, setPipOverlaySettings] = usePersistentState<PipOverlaySettings>(STORAGE_KEYS.UI_STATE + "-pip-overlay-settings", {
     crosshairs: {
       enabled: false,
       color: "#ff0000",
@@ -772,41 +820,107 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       // Restore previously selected telescope or auto-select first one
       if (transformedTelescopes.length > 0) {
         if (currentTelescope) {
-          // Try to find the previously selected telescope in the new list
-          const savedTelescope = transformedTelescopes.find(
-            t => t.id === currentTelescope.id ||
-                 t.serial_number === currentTelescope.serial_number ||
-                 (t.host === currentTelescope.host && t.name === currentTelescope.name)
-          )
+          // Enhanced telescope matching with validation
+          const findTelescopeMatch = (saved: TelescopeInfo, telescopes: TelescopeInfo[]) => {
+            // Priority 1: Match by serial number (most reliable)
+            if (saved.serial_number) {
+              const match = telescopes.find(t => t.serial_number === saved.serial_number)
+              if (match) {
+                console.log(`Telescope matched by serial number: ${match.name} (${match.serial_number})`)
+                return { telescope: match, confidence: 'high' as const }
+              }
+            }
 
-          if (savedTelescope) {
-            // Only update if the telescope data has meaningfully changed
-            const hasChanged = 
-              currentTelescope.status !== savedTelescope.status ||
-              currentTelescope.isConnected !== savedTelescope.isConnected ||
-              currentTelescope.host !== savedTelescope.host ||
-              currentTelescope.description !== savedTelescope.description
+            // Priority 2: Match by computed ID (fallback for devices without serial)
+            if (saved.id) {
+              const match = telescopes.find(t => t.id === saved.id)
+              if (match) {
+                console.log(`Telescope matched by ID: ${match.name} (${match.id})`)
+                return { telescope: match, confidence: 'medium' as const }
+              }
+            }
 
-            if (hasChanged) {
-              // Update with fresh telescope data while maintaining the selection
-              setCurrentTelescope(savedTelescope)
-              console.log(`Updated telescope data: ${savedTelescope.name}`)
+            // Priority 3: Match by name and host (least reliable due to network changes)
+            if (saved.name && saved.host) {
+              const match = telescopes.find(t => t.name === saved.name && t.host === saved.host)
+              if (match) {
+                console.log(`Telescope matched by name+host: ${match.name} (${match.host})`)
+                return { telescope: match, confidence: 'low' as const }
+              }
+            }
 
-              // Show a subtle notification about the restoration
+            // Priority 4: Match by name only (very low confidence)
+            if (saved.name) {
+              const match = telescopes.find(t => t.name === saved.name)
+              if (match) {
+                console.log(`Telescope matched by name only: ${match.name} (low confidence)`)
+                return { telescope: match, confidence: 'very_low' as const }
+              }
+            }
+
+            return null
+          }
+
+          try {
+            console.log(`Attempting to restore telescope: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
+            console.log(`Available telescopes: ${transformedTelescopes.map(t => `${t.name} (${t.serial_number || 'no-serial'})`).join(', ')}`)
+            
+            const matchResult = findTelescopeMatch(currentTelescope, transformedTelescopes)
+            
+            if (matchResult) {
+              const { telescope: savedTelescope, confidence } = matchResult
+              
+              // Only update if the telescope data has meaningfully changed
+              const hasChanged = 
+                currentTelescope.status !== savedTelescope.status ||
+                currentTelescope.isConnected !== savedTelescope.isConnected ||
+                currentTelescope.host !== savedTelescope.host ||
+                currentTelescope.description !== savedTelescope.description
+
+              if (hasChanged) {
+                // Update with fresh telescope data while maintaining the selection
+                setCurrentTelescope(savedTelescope)
+                console.log(`Updated telescope data: ${savedTelescope.name} (confidence: ${confidence})`)
+
+                // Show notification based on confidence level
+                setTimeout(() => {
+                  if (confidence === 'high' || confidence === 'medium') {
+                    addStatusAlert({
+                      type: 'info',
+                      title: 'Welcome Back',
+                      message: `Reconnected to ${savedTelescope.name}`
+                    })
+                  } else {
+                    addStatusAlert({
+                      type: 'warning',
+                      title: 'Telescope Restored',
+                      message: `Restored connection to ${savedTelescope.name} (please verify)`
+                    })
+                  }
+                }, 1000) // Delay to avoid showing immediately on load
+              } else {
+                console.log(`Telescope data unchanged: ${savedTelescope.name} (confidence: ${confidence})`)
+              }
+            } else {
+              // Previously selected telescope no longer available
+              console.warn(`Previous telescope not found: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
+              setCurrentTelescope(transformedTelescopes[0])
+              console.log(`Auto-selected first available telescope: ${transformedTelescopes[0].name}`)
+              
+              // Show notification about telescope change
               setTimeout(() => {
                 addStatusAlert({
-                  type: 'info',
-                  title: 'Welcome Back',
-                  message: `Reconnected to ${savedTelescope.name}`
+                  type: 'warning',
+                  title: 'Telescope Changed',
+                  message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
                 })
-              }, 1000) // Delay to avoid showing immediately on load
-            } else {
-              console.log(`Telescope data unchanged: ${savedTelescope.name}`)
+              }, 1000)
             }
-          } else {
-            // Previously selected telescope no longer available, select first available
+          } catch (error) {
+            console.error('Error during telescope restoration:', error)
+            // Fallback to first telescope on restoration error
             setCurrentTelescope(transformedTelescopes[0])
-            console.log(`Previous telescope not found, selected: ${transformedTelescopes[0].name}`)
+            console.log(`Fallback to first telescope due to error: ${transformedTelescopes[0].name}`)
           }
         } else {
           // No previous selection, auto-select first telescope
@@ -1003,6 +1117,18 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  // Monitor for invalid telescope data and clear it
+  useEffect(() => {
+    if (rawCurrentTelescope && !validateSavedTelescope(rawCurrentTelescope)) {
+      console.warn('Clearing invalid telescope data from storage:', rawCurrentTelescope)
+      setRawCurrentTelescope(null)
+      addStatusAlert({
+        type: 'warning',
+        title: 'Data Reset',
+        message: 'Invalid telescope data was cleared. Please reselect your telescope.'
+      })
+    }
+  }, [rawCurrentTelescope])
 
   const handleTelescopeMove = async (direction: string) => {
     console.log(`Moving telescope ${direction}`)
