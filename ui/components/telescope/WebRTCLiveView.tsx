@@ -39,7 +39,7 @@ export function WebRTCLiveView({
   const videoRef = useRef<HTMLVideoElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [connectionType, setConnectionType] = useState<'webrtc' | 'mjpeg' | 'disconnected'>('disconnected');
-  const [enableWebRTC, setEnableWebRTC] = useState(true);
+  const [enableWebRTC, setEnableWebRTC] = useState(false); // Start with MJPEG fallback
   const [mjpegUrl, setMjpegUrl] = useState<string>('');
   const [mjpegError, setMjpegError] = useState(false);
   const [mjpegLoading, setMjpegLoading] = useState(false);
@@ -59,15 +59,18 @@ export function WebRTCLiveView({
     telescopeName: telescope?.name || telescope?.serial_number || 'default',
     streamType: 'live',
     autoConnect: enableWebRTC && !!telescope,
-    autoReconnect: true,
-    maxReconnectAttempts: 3,
+    autoReconnect: false, // Disable auto-reconnect for faster fallback
+    maxReconnectAttempts: 1, // Only try once
   });
 
   // Generate MJPEG fallback URL
   useEffect(() => {
-    // Use test endpoint for now since WebRTC ICE is not working on this system
-    const url = '/api/webrtc/test/video-stream';
-    setMjpegUrl(url);
+    if (telescope) {
+      // Use test endpoint for now since WebRTC ICE is not working on this system
+      const url = '/api/webrtc/test/video-stream';
+      setMjpegUrl(url);
+      console.log('Setting MJPEG fallback URL:', url);
+    }
   }, [telescope]);
 
   // Handle WebRTC stream assignment to video element
@@ -85,34 +88,38 @@ export function WebRTCLiveView({
     if (webrtcError || connectionState === 'failed') {
       console.warn('WebRTC connection failed, falling back to MJPEG:', webrtcError);
       setEnableWebRTC(false);
-    } else if (connectionState === 'disconnected') {
+    } else if (connectionState === 'disconnected' && !enableWebRTC) {
       setConnectionType('disconnected');
       onConnectionStateChange?.('disconnected');
     }
-  }, [webrtcError, connectionState, onConnectionStateChange]);
+  }, [webrtcError, connectionState, enableWebRTC, onConnectionStateChange]);
 
   // Auto-fallback to MJPEG if WebRTC doesn't work (for systems with ICE issues)
   useEffect(() => {
     if (enableWebRTC) {
-      // Set a timeout to fallback if WebRTC doesn't connect quickly
+      // Set a much shorter timeout to fallback quickly
       const fallbackTimer = setTimeout(() => {
-        if (!isConnected && !isConnecting) {
-          console.warn('WebRTC auto-fallback: No connection established, switching to MJPEG');
+        if (!isConnected) {
+          console.warn('WebRTC auto-fallback: No connection established within 2s, switching to MJPEG');
           setEnableWebRTC(false);
         }
-      }, 5000); // 5 second fallback
+      }, 2000); // 2 second fallback
 
       return () => clearTimeout(fallbackTimer);
     }
-  }, [enableWebRTC, isConnected, isConnecting]);
+  }, [enableWebRTC, isConnected]);
 
   // Handle MJPEG fallback
   useEffect(() => {
-    if (!enableWebRTC) {
+    if (!enableWebRTC && mjpegUrl) {
+      console.log('Switching to MJPEG mode with URL:', mjpegUrl);
       setConnectionType('mjpeg');
       onConnectionStateChange?.('mjpeg');
+      // Reset MJPEG error state when switching to MJPEG
+      setMjpegError(false);
+      setMjpegLoading(true);
     }
-  }, [enableWebRTC, onConnectionStateChange]);
+  }, [enableWebRTC, mjpegUrl, onConnectionStateChange]);
 
   // MJPEG handlers
   const handleMjpegLoad = useCallback(() => {
@@ -263,8 +270,20 @@ export function WebRTCLiveView({
 
       {/* MJPEG Connection Indicator */}
       {!mjpegError && !mjpegLoading && (
-        <div className="absolute top-2 left-2 bg-yellow-600/90 text-white px-2 py-1 rounded text-xs font-medium">
-          MJPEG Fallback
+        <div className="absolute top-2 left-2 flex items-center gap-2">
+          <div className="bg-yellow-600/90 text-white px-2 py-1 rounded text-xs font-medium">
+            MJPEG Stream
+          </div>
+          <button
+            onClick={() => {
+              console.log('User requested WebRTC trial');
+              setEnableWebRTC(true);
+            }}
+            className="bg-blue-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700/90 transition-colors"
+            title="Try WebRTC connection"
+          >
+            Try WebRTC
+          </button>
         </div>
       )}
     </div>
