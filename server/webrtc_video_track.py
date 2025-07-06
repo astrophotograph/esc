@@ -144,14 +144,14 @@ class TelescopeVideoTrack(VideoStreamTrack):
     
     async def start(self):
         """Start the video track."""
-        await super().start()
+        # await super().start()
         self._started = True
         logger.info(f"Started telescope video track {id(self)}")
     
     async def stop(self):
         """Stop the video track."""
         self._started = False
-        await super().stop()
+        # await super().stop()
         logger.info(f"Stopped telescope video track {id(self)} after {self.frame_count} frames")
 
 

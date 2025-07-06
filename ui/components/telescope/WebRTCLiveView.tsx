@@ -65,7 +65,8 @@ export function WebRTCLiveView({
 
   // Generate MJPEG fallback URL
   useEffect(() => {
-    const url = generateStreamingUrl(telescope, 'video');
+    // Use test endpoint for now since WebRTC ICE is not working on this system
+    const url = '/api/webrtc/test/video-stream';
     setMjpegUrl(url);
   }, [telescope]);
 
@@ -89,6 +90,21 @@ export function WebRTCLiveView({
       onConnectionStateChange?.('disconnected');
     }
   }, [webrtcError, connectionState, onConnectionStateChange]);
+
+  // Auto-fallback to MJPEG if WebRTC doesn't work (for systems with ICE issues)
+  useEffect(() => {
+    if (enableWebRTC) {
+      // Set a timeout to fallback if WebRTC doesn't connect quickly
+      const fallbackTimer = setTimeout(() => {
+        if (!isConnected && !isConnecting) {
+          console.warn('WebRTC auto-fallback: No connection established, switching to MJPEG');
+          setEnableWebRTC(false);
+        }
+      }, 5000); // 5 second fallback
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [enableWebRTC, isConnected, isConnecting]);
 
   // Handle MJPEG fallback
   useEffect(() => {
