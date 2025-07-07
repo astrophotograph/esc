@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getBackendBaseUrl } from "@/lib/telescopes"
+// import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,7 +13,8 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   try {
-    const backendBaseUrl = getBackendBaseUrl()
+    // Use direct backend URL to avoid circular proxy calls
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
     const sessionsUrl = `${backendBaseUrl}/api/webrtc/sessions`
     
     console.log(`Fetching WebRTC sessions from: ${sessionsUrl}`)
@@ -70,7 +71,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const backendBaseUrl = getBackendBaseUrl()
+    // Use direct backend URL to avoid circular proxy calls
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
     const sessionsUrl = `${backendBaseUrl}/api/webrtc/sessions`
     
     const body = await req.text()

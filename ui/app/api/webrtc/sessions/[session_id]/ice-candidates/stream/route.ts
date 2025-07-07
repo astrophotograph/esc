@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getBackendBaseUrl } from "@/lib/telescopes"
+// import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,8 +17,9 @@ export async function GET(
 ) {
   try {
     const { session_id } = await params
-    const backendBaseUrl = getBackendBaseUrl()
-    const streamUrl = `${backendBaseUrl}/webrtc/sessions/${session_id}/ice-candidates/stream`
+    // Use direct backend URL to avoid circular proxy calls
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const streamUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates/stream`
     
     console.log(`Starting ICE candidates stream for session ${session_id}`)
     

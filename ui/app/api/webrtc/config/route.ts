@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getBackendBaseUrl } from "@/lib/telescopes"
+// import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,7 +13,8 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   try {
-    const backendBaseUrl = getBackendBaseUrl()
+    // Use direct backend URL to avoid circular proxy calls
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
     const configUrl = `${backendBaseUrl}/api/webrtc/config`
     
     console.log(`Fetching WebRTC config from: ${configUrl}`)

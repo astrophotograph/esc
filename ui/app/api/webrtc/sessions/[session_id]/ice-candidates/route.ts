@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { getBackendBaseUrl } from "@/lib/telescopes"
+// import { getBackendBaseUrl } from "@/lib/telescopes"
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -17,7 +17,8 @@ export async function POST(
 ) {
   try {
     const { session_id } = await params
-    const backendBaseUrl = getBackendBaseUrl()
+    // Use direct backend URL to avoid circular proxy calls
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
     const iceCandidatesUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates`
     
     const body = await req.text()
