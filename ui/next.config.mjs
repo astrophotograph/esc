@@ -27,11 +27,6 @@ const nextConfig = {
         source: '/api/:scope/status/stream',
         destination: 'http://localhost:8000/api/telescopes/:scope/status/stream',
       },
-      // WebRTC endpoints
-      {
-        source: '/api/webrtc/:path*',
-        destination: 'http://localhost:8000/api/webrtc/:path*',
-      },
       // Remote controllers
       {
         source: '/api/remote-controllers/:path*',
@@ -40,16 +35,6 @@ const nextConfig = {
       {
         source: '/api/remote-controllers',
         destination: 'http://localhost:8000/api/remote-controllers',
-      },
-      // Health check
-      {
-        source: '/api/health',
-        destination: 'http://localhost:8000/api/health',
-      },
-      // Catch-all for any other API endpoints
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
       },
     ]
   },

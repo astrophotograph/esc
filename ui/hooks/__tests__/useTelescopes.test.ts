@@ -60,7 +60,7 @@ describe('useTelescopes', () => {
 
       expect(result.current.telescopes).toEqual(mockTelescopes)
       expect(result.current.error).toBeNull()
-      expect(global.fetch).toHaveBeenCalledWith('/api/v2/telescopes')
+      expect(global.fetch).toHaveBeenCalledWith('/api/telescopes')
     })
 
     it('should handle empty telescope list', async () => {

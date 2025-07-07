@@ -808,7 +808,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setTelescopeError(null)
 
     try {
-      const response = await fetch('/api/v2/telescopes')
+      const response = await fetch('/api/telescopes')
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -1014,7 +1014,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const addManualTelescope = async (telescope: Omit<TelescopeInfo, 'id'>) => {
     try {
       // Call the API to add the telescope
-      const response = await fetch('/api/v2/telescopes', {
+      const response = await fetch('/api/telescopes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1071,7 +1071,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const removeManualTelescope = async (telescopeId: string) => {
     try {
       // Call the API to remove the telescope
-      const response = await fetch(`/api/v2/telescopes?id=${encodeURIComponent(telescopeId)}`, {
+      const response = await fetch(`/api/telescopes?id=${encodeURIComponent(telescopeId)}`, {
         method: 'DELETE',
       })
 
@@ -1271,15 +1271,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/v2/telescopes/move', {
+      const response = await fetch(`/api/telescopes/${currentTelescope.id}/move`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          direction,
-          telescopeId: currentTelescope.serial_number,
-        }),
+        body: JSON.stringify({ direction }),
       })
 
       if (!response.ok) {
@@ -1323,14 +1320,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/v2/telescopes/park', {
+      const response = await fetch(`/api/telescopes/${currentTelescope.id}/park`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          telescopeId: currentTelescope.serial_number,
-        }),
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -1365,15 +1360,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     const increment = direction === "in" ? -10 : 10
 
     try {
-      const response = await fetch('/api/v2/telescopes/focus-inc', {
+      const response = await fetch(`/api/telescopes/${currentTelescope.id}/focus_inc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          telescopeId: currentTelescope.serial_number,
-          increment,
-        }),
+        body: JSON.stringify(increment),
       })
 
       if (!response.ok) {

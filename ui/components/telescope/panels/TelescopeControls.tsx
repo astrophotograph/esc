@@ -113,14 +113,14 @@ export function TelescopeControls() {
     }
 
     try {
-      const response = await fetch('/api/v2/telescopes/focus', {
+      const response = await fetch(`/api/telescopes/${currentTelescope?.id}/focus`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          telescopeId: currentTelescope.serial_number,
           step,
+          ret_step: true
         }),
       })
 

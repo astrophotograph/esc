@@ -19,7 +19,7 @@ export function useTelescopes(): UseTelescopesReturn {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch("/api/v2/telescopes")
+      const response = await fetch("/api/telescopes")
 
       if (!response.ok) {
         throw new Error(`Failed to fetch telescopes: ${response.status} ${response.statusText}`)
