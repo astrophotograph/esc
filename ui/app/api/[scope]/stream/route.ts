@@ -124,7 +124,7 @@ function buildStreamUrl(scope: string, streamType: string): string | null {
     case 'video':
     case 'live':
       // Main video stream
-      return `${backendBaseUrl}/api/telescopes/${scope}/stream`
+      return `${backendBaseUrl}/telescopes/${scope}/stream`
 
     // case 'preview':
     // case 'thumb':
