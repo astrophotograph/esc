@@ -452,3 +452,22 @@ export interface AnnotationSettings {
     autoHideDelay: number // seconds
   }
 }
+
+// Remote Controller Management Types
+export interface RemoteController {
+  host: string
+  port: number
+  name?: string
+  description?: string
+  status: "connected" | "disconnected" | "connecting" | "error"
+  last_connected?: string
+  telescopes_count: number
+  error?: string
+}
+
+export interface AddRemoteControllerRequest {
+  host: string
+  port: number
+  name?: string
+  description?: string
+}

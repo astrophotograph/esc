@@ -23,12 +23,13 @@ export const Telescope = z.object({
 // todo : cache the telescopes?
 
 export function getTelescopeBaseUrl() {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
-  return `${backendUrl}/api/telescopes`
+  // Use NextJS proxy instead of direct backend calls
+  return '/api/telescopes'
 }
 
 export function getBackendBaseUrl() {
-  return process.env.BACKEND_URL || 'http://localhost:8000'
+  // Use NextJS proxy instead of direct backend calls
+  return '/api'
 }
 
 export async function fetchTelescopes() {

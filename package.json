@@ -1,0 +1,26 @@
+{
+  "name": "alp-experimental",
+  "version": "1.0.0",
+  "description": "ALP Experimental - Telescope control application",
+  "private": true,
+  "scripts": {
+    "dev:ui": "cd ui && pnpm run dev",
+    "dev:server": "cd server && uv run python main.py server",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:ui\"",
+    "build:ui": "cd ui && pnpm run build",
+    "build:server": "cd server && pyinstaller --onefile --name main --add-data \"templates:templates\" --add-data \"static:static\" --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py",
+    "electron:dev": "cd electron && npm start",
+    "electron:build": "npm run build:ui && npm run build:server && cd electron && npm run build",
+    "electron:dist": "npm run build:ui && npm run build:server && cd electron && npm run dist",
+    "test": "cd ui && pnpm test && cd ../server && uv run pytest",
+    "lint": "cd ui && pnpm run lint && cd ../server && uv run ruff check ."
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "pyinstaller": "^6.3.0"
+  },
+  "workspaces": [
+    "ui",
+    "electron"
+  ]
+}

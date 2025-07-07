@@ -237,7 +237,7 @@ export function WebSocketDebugPanel() {
                 <div>
                   <strong>WebSocket URL:</strong><br />
                   <code className="text-xs break-all">
-                    ws://localhost:8000/api/ws{telescopeId ? `/${telescopeId}` : ''}
+                    ws://localhost:3000/api/ws{telescopeId ? `/${telescopeId}` : ''}
                   </code>
                 </div>
                 <div>

@@ -156,7 +156,7 @@ export class WebSocketService extends EventEmitter {
     this.config = {
       baseUrl: config.baseUrl || (typeof window !== 'undefined' ? 
         `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` : 
-        'ws://localhost:8000'),
+        'ws://localhost:3000'),
       reconnectAttempts: config.reconnectAttempts || 5,
       reconnectDelayMs: config.reconnectDelayMs || 1000,
       maxReconnectDelayMs: config.maxReconnectDelayMs || 30000,

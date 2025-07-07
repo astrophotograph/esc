@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { useTelescopeContext } from "@/context/TelescopeContext"
-import type { TelescopeInfo } from "@/types/telescope-types"
+import type { TelescopeInfo, RemoteController } from "@/types/telescope-types"
 import {
   Telescope,
   Plus,
@@ -48,6 +48,9 @@ import {
   MapPin,
   Radio,
   Check,
+  Server,
+  RotateCcw,
+  Globe,
 } from "lucide-react"
 
 interface TelescopeManagementModalProps {
@@ -85,6 +88,7 @@ const getStatusText = (status: TelescopeInfo["status"]) => {
   }
 }
 
+
 export function TelescopeManagementModal({
   open,
   onOpenChange,
@@ -98,13 +102,19 @@ export function TelescopeManagementModal({
     addManualTelescope,
     removeManualTelescope,
     addStatusAlert,
+    remoteControllers,
+    isLoadingRemoteControllers,
+    fetchRemoteControllers,
+    addRemoteController,
+    removeRemoteController,
+    reconnectRemoteController,
   } = useTelescopeContext()
 
   // Default to "add" tab if no telescopes exist, otherwise "discovered"
   const [activeTab, setActiveTab] = useState(
     telescopes.length === 0 ? "add" : "discovered"
   )
-  
+
   // Manual telescope addition form state
   const [manualName, setManualName] = useState("")
   const [manualHost, setManualHost] = useState("")
@@ -114,6 +124,13 @@ export function TelescopeManagementModal({
   const [manualSsid, setManualSsid] = useState("")
   const [manualLocation, setManualLocation] = useState("")
   const [isAddingManual, setIsAddingManual] = useState(false)
+
+  // Remote controller form state
+  const [remoteHost, setRemoteHost] = useState("")
+  const [remotePort, setRemotePort] = useState("8000")
+  const [remoteName, setRemoteName] = useState("")
+  const [remoteDescription, setRemoteDescription] = useState("")
+  const [isAddingRemote, setIsAddingRemote] = useState(false)
 
   // Separate discovered and manual telescopes
   // If discovery_method is not specified, assume it's auto-discovered
@@ -177,6 +194,56 @@ export function TelescopeManagementModal({
     }
   }
 
+  const handleAddRemoteController = async () => {
+    if (!remoteHost || !remotePort) {
+      addStatusAlert({
+        type: "error",
+        title: "Missing Information",
+        message: "Please provide host and port for the remote controller",
+      })
+      return
+    }
+
+    setIsAddingRemote(true)
+
+    try {
+      await addRemoteController({
+        host: remoteHost,
+        port: parseInt(remotePort),
+        name: remoteName || undefined,
+        description: remoteDescription || undefined,
+      })
+
+      // Reset form
+      setRemoteHost("")
+      setRemotePort("8000")
+      setRemoteName("")
+      setRemoteDescription("")
+
+      setActiveTab("remote")
+    } catch (error) {
+      console.error('Error adding remote controller:', error)
+    } finally {
+      setIsAddingRemote(false)
+    }
+  }
+
+  const handleRemoveRemoteController = async (host: string, port: number) => {
+    try {
+      await removeRemoteController(host, port)
+    } catch (error) {
+      console.error('Error removing remote controller:', error)
+    }
+  }
+
+  const handleReconnectRemoteController = async (host: string, port: number) => {
+    try {
+      await reconnectRemoteController(host, port)
+    } catch (error) {
+      console.error('Error reconnecting remote controller:', error)
+    }
+  }
+
   const TelescopeCard = ({ telescope }: { telescope: TelescopeInfo }) => (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader className="pb-3">
@@ -186,8 +253,8 @@ export function TelescopeManagementModal({
               <Telescope className="w-4 h-4" />
               {telescope.name || telescope.host}
               {telescope.discovery_method && (
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className={`text-xs ${
                     telescope.discovery_method === 'manual' 
                       ? 'bg-blue-600 text-white' 
@@ -272,6 +339,99 @@ export function TelescopeManagementModal({
     </Card>
   )
 
+  const RemoteControllerCard = ({ controller }: { controller: RemoteController }) => (
+    <Card className="bg-gray-800 border-gray-700">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              {controller.name || `${controller.host}:${controller.port}`}
+              <Badge
+                variant="secondary"
+                className="text-xs bg-purple-600 text-white"
+              >
+                Remote Controller
+              </Badge>
+            </CardTitle>
+            <CardDescription className="text-sm text-gray-400">
+              {controller.description || 'Remote telescope controller'}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {controller.status === 'connected' ? (
+              <Wifi className="w-4 h-4 text-green-500" />
+            ) : controller.status === 'connecting' ? (
+              <RefreshCw className="w-4 h-4 text-yellow-500 animate-spin" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-red-500" />
+            )}
+            <Badge
+              variant="secondary"
+              className={`text-xs ${
+                controller.status === 'connected'
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : controller.status === 'connecting'
+                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                  : 'bg-red-500 hover:bg-red-600'
+              } text-white border-0`}
+            >
+              {controller.status === 'connected' ? 'Connected' :
+               controller.status === 'connecting' ? 'Connecting' :
+               controller.status === 'error' ? 'Error' : 'Disconnected'}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-gray-400">
+            <Globe className="w-3 h-3" />
+            <span className="font-mono">{controller.host}:{controller.port}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-400">
+            <Telescope className="w-3 h-3" />
+            <span>{controller.telescopes_count} telescope{controller.telescopes_count !== 1 ? 's' : ''}</span>
+          </div>
+          {controller.last_connected && (
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-gray-500">Last connected:</span>
+              <span>{new Date(controller.last_connected).toLocaleString()}</span>
+            </div>
+          )}
+          {controller.error && (
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-3 h-3" />
+              <span className="text-xs">{controller.error}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          {controller.status !== 'connected' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleReconnectRemoteController(controller.host, controller.port)}
+              className="flex-1"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Reconnect
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleRemoveRemoteController(controller.host, controller.port)}
+            className="text-red-400 hover:text-red-300"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] bg-gray-900 border-gray-700">
@@ -283,12 +443,15 @@ export function TelescopeManagementModal({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
             <TabsTrigger value="discovered" className="data-[state=active]:bg-gray-700">
               Discovered ({discoveredTelescopes.length})
             </TabsTrigger>
             <TabsTrigger value="manual" className="data-[state=active]:bg-gray-700">
               Manual ({manualTelescopes.length})
+            </TabsTrigger>
+            <TabsTrigger value="remote" className="data-[state=active]:bg-gray-700">
+              Remote Controllers
             </TabsTrigger>
             <TabsTrigger value="add" className="data-[state=active]:bg-gray-700">
               Add New
@@ -354,13 +517,148 @@ export function TelescopeManagementModal({
             </div>
           </TabsContent>
 
-          <TabsContent value="add" className="mt-4">
+          <TabsContent value="remote" className="mt-4">
             <div className="space-y-4">
-              <p className="text-sm text-gray-400">
-                Add a telescope that wasn&apos;t automatically discovered
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">
+                  Remote telescope controllers on your network
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchRemoteControllers}
+                  disabled={isLoadingRemoteControllers}
+                >
+                  <RefreshCw className={`w-3 h-3 mr-1 ${isLoadingRemoteControllers ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <ScrollArea className="h-[400px] pr-4">
+                {remoteControllers.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <Server className="w-12 h-12 mb-2" />
+                    <p>No remote controllers configured</p>
+                    <p className="text-sm">Add one using the &quot;Add New&quot; tab</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {remoteControllers.map((controller) => (
+                      <RemoteControllerCard
+                        key={`${controller.host}:${controller.port}`}
+                        controller={controller}
+                      />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="add" className="mt-4">
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-6">
+                {/* Remote Controller Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Server className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-lg font-semibold">Add Remote Controller</h3>
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    Connect to another ALP instance to access its telescopes
+                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                    <Label htmlFor="remoteHost">Host/IP Address *</Label>
+                    <Input
+                      id="remoteHost"
+                      placeholder="192.168.1.100"
+                      value={remoteHost}
+                      onChange={(e) => setRemoteHost(e.target.value)}
+                      className="bg-gray-800 border-gray-700"
+                    />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="remotePort">Port *</Label>
+                    <Input
+                      id="remotePort"
+                      type="number"
+                      placeholder="8000"
+                      value={remotePort}
+                      onChange={(e) => setRemotePort(e.target.value)}
+                      className="bg-gray-800 border-gray-700"
+                    />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="remoteName">Name (Optional)</Label>
+                      <Input
+                      id="remoteName"
+                      placeholder="Observatory Controller"
+                      value={remoteName}
+                      onChange={(e) => setRemoteName(e.target.value)}
+                      className="bg-gray-800 border-gray-700"
+                    />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="remoteDescription">Description (Optional)</Label>
+                      <Input
+                      id="remoteDescription"
+                      placeholder="Remote telescope controller"
+                      value={remoteDescription}
+                      onChange={(e) => setRemoteDescription(e.target.value)}
+                      className="bg-gray-800 border-gray-700"
+                    />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                      setRemoteHost("")
+                      setRemotePort("8000")
+                      setRemoteName("")
+                      setRemoteDescription("")
+                    }}
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      onClick={handleAddRemoteController}
+                      disabled={isAddingRemote || !remoteHost || !remotePort}
+                    >
+                    {isAddingRemote ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Remote Controller
+                      </>
+                    )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator className="bg-gray-700" />
+
+                {/* Manual Telescope Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Telescope className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold">Add Manual Telescope</h3>
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    Add a telescope that wasn&apos;t automatically discovered
+                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Telescope Name *</Label>
                   <Input
@@ -477,7 +775,9 @@ export function TelescopeManagementModal({
                   )}
                 </Button>
               </div>
-            </div>
+              </div>
+              </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </DialogContent>

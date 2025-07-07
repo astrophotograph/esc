@@ -23,4 +23,5 @@ dependencies = [
     "uvicorn>=0.34.3",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.0.0",
+    "numpy-typing>=1.1.1",
 ]

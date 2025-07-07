@@ -579,6 +579,15 @@ wheels = [
 ]
 
 [[package]]
+name = "numpy-typing"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b0/71/0e00b8ea4d0a6b6ec89ee16b68225fbe68e390e43e5e49c4532d9b7e8165/numpy_typing-1.1.1.tar.gz", hash = "sha256:023005afafbc72d84b450d23a2f110cfca255bddd1ef55aa8ef87207a9dbf83c", size = 6922, upload-time = "2024-10-14T09:00:25.842Z" }
+
+[[package]]
 name = "opencv-python"
 version = "4.11.0.86"
 source = { registry = "https://pypi.org/simple" }
@@ -935,6 +944,7 @@ dependencies = [
     { name = "loguru" },
     { name = "netifaces" },
     { name = "numpy" },
+    { name = "numpy-typing" },
     { name = "opencv-python" },
     { name = "pydantic" },
     { name = "pydash" },
@@ -957,6 +967,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "netifaces", specifier = ">=0.11.0" },
     { name = "numpy", specifier = ">=2.3.0" },
+    { name = "numpy-typing", specifier = ">=1.1.1" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },
     { name = "pydantic", specifier = ">=2.11.4" },
     { name = "pydash", specifier = ">=8.0.5" },

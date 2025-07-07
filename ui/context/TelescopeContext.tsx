@@ -23,6 +23,8 @@ import type {
   MaintenanceRecord,
   EquipmentSet,
   TelescopeInfo,
+  RemoteController,
+  AddRemoteControllerRequest,
 } from "../types/telescope-types"
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
@@ -104,6 +106,14 @@ interface TelescopeContextType {
   removeManualTelescope: (telescopeId: string) => Promise<void>
   showTelescopeManagement: boolean
   setShowTelescopeManagement: (show: boolean) => void
+
+  // Remote Controller Management
+  remoteControllers: RemoteController[]
+  isLoadingRemoteControllers: boolean
+  fetchRemoteControllers: () => Promise<void>
+  addRemoteController: (controller: AddRemoteControllerRequest) => Promise<void>
+  removeRemoteController: (host: string, port: number) => Promise<void>
+  reconnectRemoteController: (host: string, port: number) => Promise<void>
 
   // State
   showOverlay: boolean
@@ -302,6 +312,11 @@ const TelescopeContext = createContext<TelescopeContextType | undefined>(undefin
 export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
+  
+  // Remote Controller Management State
+  const [remoteControllers, setRemoteControllers] = useState<RemoteController[]>([])
+  const [isLoadingRemoteControllers, setIsLoadingRemoteControllers] = useState(false)
+  
   // Validation function for saved telescope data
   const validateSavedTelescope = (telescope: any): telescope is TelescopeInfo => {
     if (!telescope || typeof telescope !== 'object') {
@@ -1117,6 +1132,119 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  // Remote Controller Management Functions
+  const fetchRemoteControllers = async () => {
+    setIsLoadingRemoteControllers(true)
+    try {
+      const response = await fetch('/api/remote-controllers')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch remote controllers: ${response.status}`)
+      }
+      const data = await response.json()
+      setRemoteControllers(data)
+    } catch (error) {
+      console.error('Failed to fetch remote controllers:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Load Remote Controllers',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    } finally {
+      setIsLoadingRemoteControllers(false)
+    }
+  }
+
+  const addRemoteController = async (controller: AddRemoteControllerRequest) => {
+    try {
+      const response = await fetch('/api/remote-controllers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(controller),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to add remote controller: ${response.status}`)
+      }
+
+      // Refresh the remote controller list and telescopes
+      await Promise.all([fetchRemoteControllers(), fetchTelescopes()])
+
+      addStatusAlert({
+        type: 'success',
+        title: 'Remote Controller Added',
+        message: `Successfully added remote controller at ${controller.host}:${controller.port}`
+      })
+    } catch (error) {
+      console.error('Error adding remote controller:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Add Remote Controller',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+      throw error
+    }
+  }
+
+  const removeRemoteController = async (host: string, port: number) => {
+    try {
+      const response = await fetch(`/api/remote-controllers/${encodeURIComponent(host)}/${port}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to remove remote controller: ${response.status}`)
+      }
+
+      // Refresh the remote controller list and telescopes
+      await Promise.all([fetchRemoteControllers(), fetchTelescopes()])
+
+      addStatusAlert({
+        type: 'info',
+        title: 'Remote Controller Removed',
+        message: `Successfully removed remote controller at ${host}:${port}`
+      })
+    } catch (error) {
+      console.error('Error removing remote controller:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Remove Remote Controller',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+      throw error
+    }
+  }
+
+  const reconnectRemoteController = async (host: string, port: number) => {
+    try {
+      const response = await fetch(`/api/remote-controllers/${encodeURIComponent(host)}/${port}/reconnect`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to reconnect remote controller: ${response.status}`)
+      }
+
+      // Refresh the remote controller list and telescopes
+      await Promise.all([fetchRemoteControllers(), fetchTelescopes()])
+
+      addStatusAlert({
+        type: 'success',
+        title: 'Remote Controller Reconnected',
+        message: `Successfully reconnected to remote controller at ${host}:${port}`
+      })
+    } catch (error) {
+      console.error('Error reconnecting remote controller:', error)
+      addStatusAlert({
+        type: 'error',
+        title: 'Failed to Reconnect Remote Controller',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+      throw error
+    }
+  }
+
   // Monitor for invalid telescope data and clear it
   useEffect(() => {
     if (rawCurrentTelescope && !validateSavedTelescope(rawCurrentTelescope)) {
@@ -1569,6 +1697,11 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [streamStatus])
 
+  // Initialize remote controllers on component mount
+  useEffect(() => {
+    fetchRemoteControllers()
+  }, [])
+
   // Keyboard event handler
   const handleKeyDown = (event: KeyboardEvent) => {
     // Prevent shortcuts when typing in input fields
@@ -1830,6 +1963,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     removeManualTelescope,
     showTelescopeManagement,
     setShowTelescopeManagement,
+
+    // Remote Controller Management
+    remoteControllers,
+    isLoadingRemoteControllers,
+    fetchRemoteControllers,
+    addRemoteController,
+    removeRemoteController,
+    reconnectRemoteController,
 
     // State
     showOverlay,
