@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { 
-  WebSocketService, 
+  getWebSocketService,
   CommandAction, 
   SubscriptionType, 
   ConnectionState,
@@ -54,8 +54,8 @@ export function useTelescopeWebSocket(
     subscriptions = [SubscriptionType.ALL]
   } = options;
   
-  // WebSocket service instance (persistent across renders)
-  const wsServiceRef = useRef<WebSocketService | null>(null);
+  // WebSocket service instance (persistent across renders) - using singleton
+  const wsServiceRef = useRef<ReturnType<typeof getWebSocketService> | null>(null);
   
   // State
   const [isConnected, setIsConnected] = useState(false);
@@ -63,39 +63,64 @@ export function useTelescopeWebSocket(
   const [status, setStatus] = useState<TelescopeStatus | null>(null);
   const [lastUpdate, setLastUpdate] = useState(0);
   const [currentTelescope, setCurrentTelescope] = useState<TelescopeInfo | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Use refs to avoid dependency issues
+  const isConnectingRef = useRef(false);
+  const currentTelescopeRef = useRef<TelescopeInfo | null>(null);
+  const isConnectedRef = useRef(false);
   
   // Initialize WebSocket service
   useEffect(() => {
+    let wsService: ReturnType<typeof getWebSocketService>;
+    let isNewServiceInstance = false;
+    
     if (!wsServiceRef.current) {
-      wsServiceRef.current = new WebSocketService({
+      isNewServiceInstance = true;
+      wsServiceRef.current = getWebSocketService({
         baseUrl: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000',
         reconnectAttempts: 5,
         reconnectDelayMs: 1000,
         commandTimeoutMs: 10000
       });
-      
+    }
+    
+    wsService = wsServiceRef.current;
+    
+    // Only set up event listeners if this is a new service instance or if listeners aren't already registered
+    const hasStatusListeners = wsService.listenerCount(MessageType.STATUS_UPDATE) > 0;
+    
+    if (isNewServiceInstance || !hasStatusListeners) {
       // Set up event listeners
-      const wsService = wsServiceRef.current;
+      
+      // Check current connection state immediately
+      const currentState = wsService.getConnectionState();
+      const currentlyConnected = currentState === ConnectionState.CONNECTED;
+      setConnectionState(currentState);
+      setIsConnected(currentlyConnected);
+      isConnectedRef.current = currentlyConnected;
       
       wsService.on('connectionStateChanged', (state: ConnectionState) => {
         setConnectionState(state);
-        setIsConnected(state === ConnectionState.CONNECTED);
+        const connected = state === ConnectionState.CONNECTED;
+        setIsConnected(connected);
+        isConnectedRef.current = connected;
       });
       
       wsService.on('message', (message: any) => {
-        console.log('WebSocket message received:', message);
+        // Generic message handler for debugging if needed
       });
       
-      wsService.on(MessageType.STATUS_UPDATE, (message: StatusUpdateMessage) => {
-        console.log('Status update received:', message.payload);
+      const statusListener = (message: StatusUpdateMessage) => {
         if (message.payload.status) {
           setStatus(message.payload.status);
           setLastUpdate(Date.now());
         }
-      });
+      };
+      
+      wsService.on(MessageType.STATUS_UPDATE, statusListener);
       
       wsService.on('reconnected', () => {
-        console.log('WebSocket reconnected, re-subscribing...');
         if (currentTelescope) {
           wsService.subscribe(subscriptions, currentTelescope.serial_number || currentTelescope.id);
         }
@@ -103,30 +128,46 @@ export function useTelescopeWebSocket(
     }
     
     return () => {
-      // Cleanup on unmount
-      if (wsServiceRef.current) {
-        wsServiceRef.current.disconnect();
-        wsServiceRef.current.removeAllListeners();
-      }
+      // Don't disconnect or remove listeners from singleton service
     };
   }, []);
   
   // Connect to telescope
   const connect = useCallback(async (telescope: TelescopeInfo) => {
-    if (!wsServiceRef.current) return;
+    if (isConnectingRef.current) {
+      return;
+    }
     
-    console.log(`Connecting WebSocket to telescope: ${telescope.name}`);
+    if (!wsServiceRef.current) {
+      return;
+    }
+    
+    // Check if already connected to the same telescope
+    const currentTel = currentTelescopeRef.current;
+    if (currentTel && (currentTel.serial_number || currentTel.id) === (telescope.serial_number || telescope.id) && isConnectedRef.current) {
+      return;
+    }
+    
+    isConnectingRef.current = true;
+    setIsConnecting(true);
     setCurrentTelescope(telescope);
+    currentTelescopeRef.current = telescope;
     
     try {
       const telescopeId = telescope.serial_number || telescope.id;
       await wsServiceRef.current.connect(telescopeId, `client-${Date.now()}`);
+      
+      // Wait longer for server-side connection to be fully established
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Subscribe to status updates
       await wsServiceRef.current.subscribe(subscriptions, telescopeId);
       
     } catch (error) {
       console.error('Failed to connect WebSocket:', error);
+    } finally {
+      isConnectingRef.current = false;
+      setIsConnecting(false);
     }
   }, [subscriptions]);
   
@@ -134,53 +175,56 @@ export function useTelescopeWebSocket(
   const disconnect = useCallback(() => {
     if (!wsServiceRef.current) return;
     
-    console.log('Disconnecting telescope WebSocket');
+    isConnectingRef.current = false;
+    setIsConnecting(false);
     wsServiceRef.current.disconnect();
     setCurrentTelescope(null);
+    currentTelescopeRef.current = null;
     setStatus(null);
   }, []);
   
   // Control functions using WebSocket commands
-  const moveTelescope = useCallback(async (direction: string) => {
-    if (!wsServiceRef.current || !currentTelescope) {
+  const moveTelescope = useCallback(async (direction: string, telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
       throw new Error('WebSocket not connected or no telescope selected');
     }
-    
-    console.log(`WebSocket: Moving telescope ${direction}`);
     
     return await wsServiceRef.current.sendCommand(
       CommandAction.MOVE,
       { direction },
-      currentTelescope.serial_number || currentTelescope.id
+      targetTelescope.serial_number || targetTelescope.id
     );
   }, [currentTelescope]);
   
-  const parkTelescope = useCallback(async () => {
-    if (!wsServiceRef.current || !currentTelescope) {
+  const parkTelescope = useCallback(async (telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
       throw new Error('WebSocket not connected or no telescope selected');
     }
-    
-    console.log('WebSocket: Parking telescope');
     
     return await wsServiceRef.current.sendCommand(
       CommandAction.PARK,
       {},
-      currentTelescope.serial_number || currentTelescope.id
+      targetTelescope.serial_number || targetTelescope.id
     );
   }, [currentTelescope]);
   
-  const adjustFocus = useCallback(async (direction: 'in' | 'out') => {
-    if (!wsServiceRef.current || !currentTelescope) {
+  const adjustFocus = useCallback(async (direction: 'in' | 'out', telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
       throw new Error('WebSocket not connected or no telescope selected');
     }
     
     const increment = direction === 'in' ? -10 : 10;
-    console.log(`WebSocket: Adjusting focus ${direction} (${increment})`);
     
     return await wsServiceRef.current.sendCommand(
       CommandAction.FOCUS_INCREMENT,
       { increment },
-      currentTelescope.serial_number || currentTelescope.id
+      targetTelescope.serial_number || targetTelescope.id
     );
   }, [currentTelescope]);
   

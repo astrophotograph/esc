@@ -421,6 +421,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     moveTelescope: wsMoveTelescope,
     parkTelescope: wsParkTelescope,
     adjustFocus: wsAdjustFocus,
+    isConnected: wsIsConnected,
+    connectionState: wsConnectionState,
   } = useTelescopeWebSocket({
     autoConnect: false
   });
@@ -1270,8 +1272,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }, [rawCurrentTelescope])
 
   const handleTelescopeMove = async (direction: string) => {
-    console.log(`Moving telescope ${direction} via WebSocket`)
-
     if (!currentTelescope) {
       addStatusAlert({
         type: "error",
@@ -1281,8 +1281,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot move telescope - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
     try {
-      await wsMoveTelescope(direction)
+      await wsMoveTelescope(direction, currentTelescope)
 
       // Add status alert for telescope movement
       if (direction !== "stop") {
@@ -1309,8 +1318,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }
 
   const handleTelescopePark = async () => {
-    console.log('Parking telescope via WebSocket')
-
     if (!currentTelescope) {
       addStatusAlert({
         type: "error",
@@ -1320,8 +1327,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot park telescope - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
     try {
-      await wsParkTelescope()
+      await wsParkTelescope(currentTelescope)
 
       addStatusAlert({
         type: "success",
@@ -1348,10 +1364,19 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot adjust focus - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
     const increment = direction === "in" ? -10 : 10
 
     try {
-      await wsAdjustFocus(direction)
+      await wsAdjustFocus(direction, currentTelescope)
 
       addStatusAlert({
         type: "info",

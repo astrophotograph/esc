@@ -1,6 +1,6 @@
 /**
  * WebSocket service for real-time telescope communication.
- * 
+ *
  * This service handles WebSocket connections to the backend,
  * manages reconnection logic, and provides a clean API for
  * sending commands and receiving status updates.
@@ -100,12 +100,12 @@ export interface ErrorMessage extends WebSocketMessage {
   }
 }
 
-export type WebSocketMessageUnion = 
-  | StatusUpdateMessage 
-  | ControlCommandMessage 
-  | CommandResponseMessage 
-  | TelescopeDiscoveredMessage 
-  | TelescopeLostMessage 
+export type WebSocketMessageUnion =
+  | StatusUpdateMessage
+  | ControlCommandMessage
+  | CommandResponseMessage
+  | TelescopeDiscoveredMessage
+  | TelescopeLostMessage
   | ErrorMessage
 
 export enum ConnectionState {
@@ -132,6 +132,9 @@ export interface PendingCommand {
   timeout: NodeJS.Timeout
 }
 
+// Static counter to track instances
+let instanceCounter = 0;
+
 /**
  * WebSocket service for telescope communication
  */
@@ -145,17 +148,20 @@ export class WebSocketService extends EventEmitter {
   private messageQueue: WebSocketMessage[] = []
   private pendingCommands = new Map<string, PendingCommand>()
   private subscriptions = new Set<string>()
-  
+
   // Connection details
   private telescopeId: string | null = null
   private clientId: string | null = null
+  private instanceId: number
 
   constructor(config: WebSocketServiceConfig = {}) {
     super()
-    
+
+    this.instanceId = ++instanceCounter
+
     this.config = {
-      baseUrl: config.baseUrl || (typeof window !== 'undefined' ? 
-        `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` : 
+      baseUrl: config.baseUrl || (typeof window !== 'undefined' ?
+        `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` :
         'ws://localhost:3000'),
       reconnectAttempts: config.reconnectAttempts || 5,
       reconnectDelayMs: config.reconnectDelayMs || 1000,
@@ -173,20 +179,24 @@ export class WebSocketService extends EventEmitter {
       return
     }
 
+    if (this.connectionState === ConnectionState.CONNECTING) {
+      return
+    }
+
     this.telescopeId = telescopeId || null
     this.clientId = clientId || null
-    
+
     this.setConnectionState(ConnectionState.CONNECTING)
 
     return new Promise((resolve, reject) => {
       try {
         // Build WebSocket URL
         let wsUrl = `${this.config.baseUrl}/api/ws`
-        
+
         if (telescopeId) {
           wsUrl = `${this.config.baseUrl}/api/ws/${encodeURIComponent(telescopeId)}`
         }
-        
+
         const params = new URLSearchParams()
         if (clientId) {
           params.set('client_id', clientId)
@@ -195,16 +205,21 @@ export class WebSocketService extends EventEmitter {
           wsUrl += `?${params.toString()}`
         }
 
-        console.log(`Connecting to WebSocket: ${wsUrl}`)
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected')
           this.setConnectionState(ConnectionState.CONNECTED)
           this.reconnectAttempts = 0
-          this.startHeartbeat()
-          this.processMessageQueue()
-          resolve()
+
+          // Small delay to ensure the server-side connection is fully established
+          setTimeout(() => {
+            this.processMessageQueue()
+            // Start heartbeat after connection is fully established
+            setTimeout(() => {
+              this.startHeartbeat()
+            }, 1000)  // Wait 1 second before starting heartbeats
+            resolve()
+          }, 100)
         }
 
         this.ws.onmessage = (event) => {
@@ -212,16 +227,14 @@ export class WebSocketService extends EventEmitter {
         }
 
         this.ws.onclose = (event) => {
-          console.log(`WebSocket closed: ${event.code} ${event.reason}`)
           this.cleanup()
-          
+
           if (!event.wasClean && this.connectionState !== ConnectionState.DISCONNECTED) {
             this.handleReconnect()
           }
         }
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error)
           this.setConnectionState(ConnectionState.ERROR)
           reject(new Error('Failed to connect to WebSocket'))
         }
@@ -239,7 +252,7 @@ export class WebSocketService extends EventEmitter {
   disconnect(): void {
     this.setConnectionState(ConnectionState.DISCONNECTED)
     this.cleanup()
-    
+
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect')
       this.ws = null
@@ -305,7 +318,7 @@ export class WebSocketService extends EventEmitter {
     }
 
     await this.sendMessage(message)
-    
+
     // Track subscription for reconnection
     const subKey = `${telescopeId || 'all'}:${subscriptionTypes.join(',')}`
     this.subscriptions.add(subKey)
@@ -330,7 +343,7 @@ export class WebSocketService extends EventEmitter {
     }
 
     await this.sendMessage(message)
-    
+
     // Remove from tracked subscriptions
     const subKey = `${telescopeId || 'all'}:${subscriptionTypes.join(',')}`
     this.subscriptions.delete(subKey)
@@ -347,7 +360,7 @@ export class WebSocketService extends EventEmitter {
    * Check if WebSocket is connected
    */
   isConnected(): boolean {
-    return this.connectionState === ConnectionState.CONNECTED && 
+    return this.connectionState === ConnectionState.CONNECTED &&
            this.ws?.readyState === WebSocket.OPEN
   }
 
@@ -378,7 +391,7 @@ export class WebSocketService extends EventEmitter {
   private handleMessage(data: string): void {
     try {
       const message: WebSocketMessageUnion = JSON.parse(data)
-      
+
       // Handle command responses
       if (message.type === MessageType.COMMAND_RESPONSE) {
         this.handleCommandResponse(message as CommandResponseMessage)
@@ -387,13 +400,8 @@ export class WebSocketService extends EventEmitter {
 
       // Handle heartbeat
       if (message.type === MessageType.HEARTBEAT) {
-        // Echo heartbeat back
-        this.sendMessage({
-          id: this.generateMessageId(),
-          type: MessageType.HEARTBEAT,
-          timestamp: Date.now(),
-          payload: {}
-        }).catch(console.error)
+        // Don't echo heartbeat back - this causes a ping-pong loop!
+        // The client sends its own heartbeats on a timer
         return
       }
 
@@ -417,9 +425,8 @@ export class WebSocketService extends EventEmitter {
   private handleCommandResponse(message: CommandResponseMessage): void {
     const commandId = message.payload.command_id
     const pendingCommand = this.pendingCommands.get(commandId)
-    
+
     if (!pendingCommand) {
-      console.warn(`Received response for unknown command: ${commandId}`)
       return
     }
 
@@ -444,14 +451,13 @@ export class WebSocketService extends EventEmitter {
     }
 
     if (this.reconnectAttempts >= this.config.reconnectAttempts) {
-      console.error('Max reconnect attempts reached')
       this.setConnectionState(ConnectionState.ERROR)
       this.emit('reconnectFailed')
       return
     }
 
     this.setConnectionState(ConnectionState.RECONNECTING)
-    
+
     // Calculate delay with exponential backoff
     const delay = Math.min(
       this.config.reconnectDelayMs * Math.pow(2, this.reconnectAttempts),
@@ -459,23 +465,21 @@ export class WebSocketService extends EventEmitter {
     )
 
     this.reconnectAttempts++
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.reconnectAttempts})`)
 
     this.reconnectTimeout = setTimeout(async () => {
       try {
         await this.connect(this.telescopeId || undefined, this.clientId || undefined)
-        
+
         // Restore subscriptions
         for (const subscription of this.subscriptions) {
           const [telescopeId, types] = subscription.split(':')
           const subscriptionTypes = types.split(',') as SubscriptionType[]
           await this.subscribe(subscriptionTypes, telescopeId === 'all' ? undefined : telescopeId)
         }
-        
+
         this.emit('reconnected')
-        
+
       } catch (error) {
-        console.error('Reconnection failed:', error)
         this.handleReconnect() // Try again
       }
     }, delay)
@@ -497,7 +501,7 @@ export class WebSocketService extends EventEmitter {
    */
   private startHeartbeat(): void {
     this.stopHeartbeat()
-    
+
     this.heartbeatInterval = setInterval(() => {
       if (this.isConnected()) {
         this.sendMessage({
@@ -535,7 +539,7 @@ export class WebSocketService extends EventEmitter {
    */
   private cleanup(): void {
     this.stopHeartbeat()
-    
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = null
@@ -555,6 +559,30 @@ export class WebSocketService extends EventEmitter {
   private generateMessageId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }
+}
+
+// Singleton instance
+let globalWebSocketService: WebSocketService | null = null
+
+/**
+ * Get or create the global WebSocket service instance
+ */
+export function getWebSocketService(config?: WebSocketServiceConfig): WebSocketService {
+  if (!globalWebSocketService) {
+    globalWebSocketService = new WebSocketService(config)
+  }
+  return globalWebSocketService
+}
+
+/**
+ * Reset the global WebSocket service (for testing/cleanup)
+ */
+export function resetWebSocketService(): void {
+  if (globalWebSocketService) {
+    globalWebSocketService.disconnect()
+    globalWebSocketService.removeAllListeners()
+  }
+  globalWebSocketService = null
 }
 
 // Default export for convenience

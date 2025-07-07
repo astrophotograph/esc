@@ -5,6 +5,7 @@ This module provides the FastAPI WebSocket endpoints and integrates
 with the WebSocket manager for telescope control.
 """
 
+import asyncio
 import uuid
 from typing import Optional
 
@@ -39,19 +40,40 @@ async def websocket_endpoint(
     # Generate connection ID
     connection_id = client_id or f"client-{uuid.uuid4().hex[:8]}"
     
+    # Accept the WebSocket connection first
     try:
-        # Establish WebSocket connection
-        connection = await manager.connect(websocket, connection_id)
-        
+        await websocket.accept()
+        logger.info(f"WebSocket accepted: {connection_id}")
+    except Exception as e:
+        logger.error(f"Failed to accept WebSocket for {connection_id}: {e}")
+        return
+    
+    # Use manager to create connection but skip the accept step
+    try:
+        connection = await manager.connect(websocket, connection_id, skip_accept=True)
+    except Exception as e:
+        logger.error(f"Failed to create connection for {connection_id}: {e}")
+        return
+    
+    try:
         logger.info(f"WebSocket client connected: {connection_id}")
         if telescope_id:
             logger.info(f"Client {connection_id} targeting telescope: {telescope_id}")
+        
+        # Note: Initial heartbeat is handled by the manager
         
         # Main message handling loop
         while True:
             try:
                 # Wait for incoming message
                 message = await websocket.receive_text()
+                logger.info(f"Received message on {connection_id}: {message[:200]}...")
+                
+                # Check if connection is still alive before handling message
+                if not connection.is_alive:
+                    logger.warning(f"Received message on dead connection {connection_id}, breaking")
+                    break
+                
                 await manager.handle_message(connection_id, message)
                 
             except WebSocketDisconnect:
@@ -59,8 +81,9 @@ async def websocket_endpoint(
                 break
             except Exception as e:
                 logger.error(f"Error handling message from {connection_id}: {e}")
-                # Continue processing other messages
-                continue
+                # Don't try to send error messages - just log and break
+                logger.debug(f"Breaking connection loop for {connection_id} due to error")
+                break
     
     except WebSocketDisconnect:
         logger.info(f"WebSocket client disconnected during handshake: {connection_id}")
@@ -90,21 +113,42 @@ async def telescope_websocket_endpoint(
     # Generate connection ID with telescope reference
     connection_id = client_id or f"client-{telescope_id}-{uuid.uuid4().hex[:8]}"
     
+    # Accept the WebSocket connection first
     try:
-        # Establish WebSocket connection
-        connection = await manager.connect(websocket, connection_id)
-        
+        await websocket.accept()
+        logger.info(f"WebSocket accepted for telescope {telescope_id}: {connection_id}")
+    except Exception as e:
+        logger.error(f"Failed to accept WebSocket for {connection_id}: {e}")
+        return
+    
+    # Use manager to create connection but skip the accept step
+    try:
+        connection = await manager.connect(websocket, connection_id, skip_accept=True)
+    except Exception as e:
+        logger.error(f"Failed to create connection for {connection_id}: {e}")
+        return
+    
+    try:
         logger.info(f"WebSocket client connected to telescope {telescope_id}: {connection_id}")
         
         # Auto-subscribe to all updates for this telescope
         from websocket_protocol import SubscriptionType
         connection.add_subscription(telescope_id, [SubscriptionType.ALL])
         
+        # Note: Initial heartbeat is handled by the manager
+        
         # Main message handling loop
         while True:
             try:
                 # Wait for incoming message
                 message = await websocket.receive_text()
+                logger.info(f"Received message on {connection_id}: {message[:200]}...")
+                
+                # Check if connection is still alive before handling message
+                if not connection.is_alive:
+                    logger.warning(f"Received message on dead connection {connection_id}, breaking")
+                    break
+                
                 await manager.handle_message(connection_id, message)
                 
             except WebSocketDisconnect:
@@ -112,8 +156,9 @@ async def telescope_websocket_endpoint(
                 break
             except Exception as e:
                 logger.error(f"Error handling message from {connection_id}: {e}")
-                # Continue processing other messages
-                continue
+                # Don't try to send error messages - just log and break
+                logger.debug(f"Breaking connection loop for {connection_id} due to error")
+                break
     
     except WebSocketDisconnect:
         logger.info(f"WebSocket client disconnected during handshake: {connection_id}")
@@ -124,18 +169,7 @@ async def telescope_websocket_endpoint(
         await manager.disconnect(connection_id)
 
 
-@router.on_event("startup")
-async def startup_websocket_manager():
-    """Start the WebSocket manager when the router starts."""
-    await websocket_manager.start()
-    logger.info("WebSocket router started")
-
-
-@router.on_event("shutdown")
-async def shutdown_websocket_manager():
-    """Stop the WebSocket manager when the router shuts down."""
-    await websocket_manager.stop()
-    logger.info("WebSocket router stopped")
+# Note: startup/shutdown events moved to main.py for proper initialization
 
 
 # Health check endpoint for WebSocket status

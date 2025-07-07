@@ -37,6 +37,15 @@ class WebSocketConnection:
             return False
         
         try:
+            # Check if WebSocket is still connected
+            try:
+                if hasattr(self.websocket, 'client_state') and self.websocket.client_state.name != "CONNECTED":
+                    logger.warning(f"WebSocket not connected for {self.connection_id}, state: {self.websocket.client_state.name}")
+                    self.is_alive = False
+                    return False
+            except Exception as state_check_error:
+                logger.debug(f"Could not check WebSocket state for {self.connection_id}: {state_check_error}")
+            
             await self.websocket.send_text(message.model_dump_json())
             return True
         except Exception as e:
@@ -111,17 +120,30 @@ class WebSocketManager:
         
         logger.info("WebSocket manager stopped")
     
-    async def connect(self, websocket: WebSocket, connection_id: str) -> WebSocketConnection:
+    async def connect(self, websocket: WebSocket, connection_id: str, skip_accept: bool = False) -> WebSocketConnection:
         """Handle a new WebSocket connection."""
-        await websocket.accept()
+        if not skip_accept:
+            try:
+                await websocket.accept()
+                logger.debug(f"WebSocket accepted for connection: {connection_id}")
+            except Exception as e:
+                logger.error(f"Failed to accept WebSocket for {connection_id}: {e}")
+                raise
         
         connection = WebSocketConnection(websocket, connection_id)
         self.connections[connection_id] = connection
         
         logger.info(f"WebSocket connection established: {connection_id}")
         
+        # Wait a moment to ensure connection is fully ready
+        await asyncio.sleep(0.1)
+        
         # Send initial heartbeat
-        await connection.send_message(HeartbeatMessage())
+        try:
+            await connection.send_message(HeartbeatMessage())
+            logger.debug(f"Sent initial heartbeat to {connection_id}")
+        except Exception as e:
+            logger.error(f"Failed to send initial heartbeat to {connection_id}: {e}")
         
         return connection
     
@@ -148,11 +170,13 @@ class WebSocketManager:
             return
         
         connection = self.connections[connection_id]
+        logger.debug(f"Handling message from {connection_id}: {message_data[:100]}...")
         
         try:
             # Parse JSON message
             data = json.loads(message_data)
             message = MessageFactory.parse_message(data)
+            logger.debug(f"Parsed message type: {message.type} from {connection_id}")
             
             # Update heartbeat
             connection.last_heartbeat = asyncio.get_event_loop().time()
@@ -165,21 +189,20 @@ class WebSocketManager:
             elif isinstance(message, UnsubscribeMessage):
                 await self._handle_unsubscribe(connection, message)
             elif isinstance(message, HeartbeatMessage):
-                # Echo heartbeat back
-                await connection.send_message(HeartbeatMessage())
+                # Don't echo heartbeat back - each side sends its own heartbeats
+                logger.debug(f"Received heartbeat from {connection_id}")
+                # Just update the last heartbeat time (already done above)
             else:
                 logger.warning(f"Unhandled message type: {message.type}")
         
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON from {connection_id}: {e}")
-            await connection.send_message(
-                MessageFactory.create_error("INVALID_JSON", f"Invalid JSON: {e}")
-            )
+            # Skip sending error messages to avoid WebSocket issues
+            logger.debug(f"Skipping error message send to {connection_id}")
         except Exception as e:
             logger.error(f"Error handling message from {connection_id}: {e}")
-            await connection.send_message(
-                MessageFactory.create_error("MESSAGE_ERROR", f"Error processing message: {e}")
-            )
+            # Skip sending error messages to avoid WebSocket issues
+            logger.debug(f"Skipping error message send to {connection_id}")
     
     async def broadcast_status_update(self, telescope_id: str, status: Dict[str, Any], 
                                     changes: Optional[List[str]] = None):
@@ -270,12 +293,167 @@ class WebSocketManager:
     
     async def _execute_telescope_command(self, client: Any, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a command on the telescope client."""
-        # This will be implemented based on the specific SeestarClient interface
-        # For now, return a placeholder response
         logger.info(f"Executing command: {action} with parameters: {parameters}")
         
-        # TODO: Implement actual command execution based on SeestarClient methods
-        return {"status": "executed", "action": action, "parameters": parameters}
+        try:
+            if action == "move":
+                return await self._execute_move_command(client, parameters)
+            elif action == "park":
+                return await self._execute_park_command(client, parameters)
+            elif action == "focus_increment":
+                return await self._execute_focus_command(client, parameters)
+            else:
+                logger.warning(f"Unknown command action: {action}")
+                return {"status": "error", "message": f"Unknown action: {action}"}
+                
+        except Exception as e:
+            logger.error(f"Error executing telescope command {action}: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _execute_move_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute telescope movement command."""
+        direction = parameters.get("direction", "").lower()
+        
+        # Map WebSocket directions to telescope angles (degrees)
+        # Adjusted for 90-degree rotation based on actual telescope behavior
+        direction_angles = {
+            "north": 90,   # Swapped with south
+            "east": 0,     # Correct
+            "south": 270,  # Swapped with north  
+            "west": 180,   # Correct
+            "stop": None
+        }
+        
+        if direction not in direction_angles:
+            return {"status": "error", "message": f"Invalid direction: {direction}"}
+        
+        try:
+            if direction == "stop":
+                # Stop movement by sending 0 percent
+                from smarttel.seestar.commands.parameterized import ScopeSpeedMove, ScopeSpeedMoveParameters
+                command = ScopeSpeedMove(
+                    params=ScopeSpeedMoveParameters(
+                        angle=0,  # Direction doesn't matter for stop
+                        level=1,  # Speed level
+                        dur_sec=1,  # Duration
+                        percent=0  # 0 percent means stop
+                    )
+                )
+            else:
+                # Move in specified direction
+                from smarttel.seestar.commands.parameterized import ScopeSpeedMove, ScopeSpeedMoveParameters
+                command = ScopeSpeedMove(
+                    params=ScopeSpeedMoveParameters(
+                        angle=direction_angles[direction],
+                        level=2,  # Medium speed level
+                        dur_sec=5,  # Move for 5 seconds
+                        percent=100  # 100% speed
+                    )
+                )
+            
+            # Send command to telescope
+            
+            # Start position monitoring task (like in main.py)
+            if direction != "stop":
+                async def _fetch_position():
+                    """Fetch the current position from the scope."""
+                    try:
+                        # Fetch the position after movement has stopped...
+                        await asyncio.sleep(0.25)
+                        await client.update_current_coords()
+                    except Exception as e:
+                        logger.error(f"Error fetching position: {e}")
+                
+                import asyncio
+                asyncio.create_task(_fetch_position())
+            
+            response = await client.send_and_recv(command)
+            
+            if response:
+                return {"status": "success", "action": "move", "direction": direction, "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)}
+            else:
+                return {"status": "success", "action": "move", "direction": direction, "response": "No response"}
+                
+        except Exception as e:
+            logger.error(f"Error executing move command: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _execute_park_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute telescope park command."""
+        try:
+            from smarttel.seestar.commands.simple import ScopePark
+            
+            # Start position monitoring task (like in main.py)
+            async def _position_updater():
+                """Fetch the current position from the scope until it stops moving."""
+                await asyncio.sleep(0.5)
+                while await client.update_current_coords():
+                    await asyncio.sleep(0.5)
+            
+            import asyncio
+            asyncio.create_task(_position_updater())
+            
+            response = await client.send_and_recv(ScopePark())
+            
+            if response:
+                return {"status": "success", "action": "park", "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)}
+            else:
+                return {"status": "success", "action": "park", "response": "No response"}
+                
+        except Exception as e:
+            logger.error(f"Error executing park command: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _execute_focus_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute focuser movement command."""
+        increment = parameters.get("increment", 0)
+        
+        try:
+            # Get current focus position from status (like in main.py)
+            current_position = client.status.focus_position
+            if current_position is None:
+                logger.warning("Current focus position unknown, using increment as absolute position")
+                new_position = abs(increment)  # Fallback to using increment as absolute
+            else:
+                new_position = current_position + increment
+            
+            from smarttel.seestar.commands.parameterized import MoveFocuser, MoveFocuserParameters
+            command = MoveFocuser(
+                params=MoveFocuserParameters(
+                    step=new_position,  # Use absolute position, not increment
+                    ret_step=True
+                )
+            )
+            
+            response = await client.send_and_recv(command)
+            
+            # Update status with new position (like in main.py)
+            if response is not None and hasattr(response, 'result') and response.result is not None:
+                if isinstance(response.result, dict) and 'step' in response.result:
+                    client.status.focus_position = response.result['step']
+            
+            if response:
+                return {
+                    "status": "success", 
+                    "action": "focus_increment", 
+                    "increment": increment,
+                    "new_position": new_position,
+                    "previous_position": current_position,
+                    "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                return {
+                    "status": "success", 
+                    "action": "focus_increment", 
+                    "increment": increment,
+                    "new_position": new_position,
+                    "previous_position": current_position,
+                    "response": "No response"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error executing focus command: {e}")
+            return {"status": "error", "message": str(e)}
     
     async def _handle_subscribe(self, connection: WebSocketConnection, message: SubscribeMessage):
         """Handle subscription request from client."""

@@ -235,15 +235,47 @@ class MessageFactory:
     def parse_message(data: Dict[str, Any]) -> WebSocketMessage:
         """Parse incoming WebSocket message data into appropriate message type."""
         message_type = data.get("type")
+        payload = data.get("payload", {})
         
         if message_type == MessageType.CONTROL_COMMAND:
-            return ControlCommandMessage.model_validate(data)
+            # Extract parameters from payload for control commands
+            action = payload.get("action")
+            parameters = payload.get("parameters", {})
+            response_expected = payload.get("response_expected", True)
+            
+            return ControlCommandMessage(
+                telescope_id=data.get("telescope_id"),
+                action=action,
+                parameters=parameters,
+                response_expected=response_expected,
+                id=data.get("id"),
+                timestamp=data.get("timestamp")
+            )
         elif message_type == MessageType.SUBSCRIBE:
-            return SubscribeMessage.model_validate(data)
+            # Extract subscription parameters from payload
+            subscription_types = payload.get("subscription_types", [SubscriptionType.ALL])
+            
+            return SubscribeMessage(
+                telescope_id=data.get("telescope_id"),
+                subscription_types=subscription_types,
+                id=data.get("id"),
+                timestamp=data.get("timestamp")
+            )
         elif message_type == MessageType.UNSUBSCRIBE:
-            return UnsubscribeMessage.model_validate(data)
+            # Extract unsubscription parameters from payload
+            subscription_types = payload.get("subscription_types", [SubscriptionType.ALL])
+            
+            return UnsubscribeMessage(
+                telescope_id=data.get("telescope_id"),
+                subscription_types=subscription_types,
+                id=data.get("id"),
+                timestamp=data.get("timestamp")
+            )
         elif message_type == MessageType.HEARTBEAT:
-            return HeartbeatMessage.model_validate(data)
+            return HeartbeatMessage(
+                id=data.get("id"),
+                timestamp=data.get("timestamp")
+            )
         else:
             # Default to base WebSocket message
             return WebSocketMessage.model_validate(data)

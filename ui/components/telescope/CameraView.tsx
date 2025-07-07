@@ -783,14 +783,15 @@ export function CameraView() {
       return;
     }
 
-    console.log(`Connecting WebSocket to telescope: ${currentTelescope.name}`);
-    wsConnect(currentTelescope);
+    wsConnect(currentTelescope).catch((error) => {
+      console.error("WebSocket connect failed:", error);
+    });
 
     return () => {
       wsDisconnect();
       setSseConnected(false);
     };
-  }, [currentTelescope, wsConnect, wsDisconnect]);
+  }, [currentTelescope]);
 
   // Handle WebSocket status updates
   useEffect(() => {
@@ -803,8 +804,6 @@ export function CameraView() {
       if (wsStatus.focus_position !== undefined && wsStatus.focus_position !== null) {
         setFocusPosition([wsStatus.focus_position]);
       }
-
-      console.log("Received WebSocket status update:", wsStatus);
     }
   }, [wsStatus, setStreamStatus, setFocusPosition]);
 
@@ -813,7 +812,6 @@ export function CameraView() {
     setSseConnected(wsConnected);
     
     if (wsConnected) {
-      console.log("WebSocket connection opened");
       setReconnectCounter(0);
       
       // If connection was restored and both streams are healthy
@@ -823,12 +821,9 @@ export function CameraView() {
 
         if (timeSinceLastImageChange < 30000) {
           setConnectionLost(false);
-          console.log("WebSocket connection restored - both streams healthy");
         }
       }
     } else {
-      console.log("WebSocket connection lost");
-      
       // Only mark connection as lost after multiple failures
       if (reconnectCounter > 2) {
         setConnectionLost(true);
@@ -909,7 +904,7 @@ export function CameraView() {
                   ) : (
                     <Battery className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
                   )}
-                  <span className="text-gray-300">{Math.round(localStreamStatus?.status?.battery_capacity)}%</span>
+                  <span className="text-gray-300">{Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%</span>
                 </div>
 
                 {/* Stacked Frames Counter */}
@@ -928,14 +923,16 @@ export function CameraView() {
                   <Thermometer
                     className={`w-4 h-4 ${localStreamStatus?.status?.temp < 30 ? "text-blue-400" : "text-orange-400"}`}
                   />
-                  <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1)}°C</span>
+                  <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <HardDrive
-                    className={`w-4 h-4 ${systemStats.diskUsage < 80 ? "text-green-400" : "text-yellow-400"}`}
+                    className={`w-4 h-4 ${(localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100) : systemStats.diskUsage) < 80 ? "text-green-400" : "text-yellow-400"}`}
                   />
-                  <span className="text-gray-300" title={systemStats.freeMB && systemStats.totalMB ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` : undefined}>
-                    {Math.round(systemStats.diskUsage)}%
+                  <span className="text-gray-300" title={localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB ? `${localStreamStatus?.status?.freeMB}MB free of ${localStreamStatus?.status?.totalMB}MB total` : (systemStats.freeMB && systemStats.totalMB ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` : undefined)}>
+                    {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                      ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                      : Math.round(systemStats.diskUsage) || 'N/A'}%
                   </span>
                 </div>
 
