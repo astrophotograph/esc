@@ -18,7 +18,7 @@ export async function GET(
   try {
     const { session_id } = await params
     const backendBaseUrl = getBackendBaseUrl()
-    const streamUrl = `${backendBaseUrl}/api/webrtc/sessions/${session_id}/ice-candidates/stream`
+    const streamUrl = `${backendBaseUrl}/webrtc/sessions/${session_id}/ice-candidates/stream`
     
     console.log(`Starting ICE candidates stream for session ${session_id}`)
     
