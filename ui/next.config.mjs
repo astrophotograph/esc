@@ -13,11 +13,6 @@ const nextConfig = {
   output: 'standalone',
   async rewrites() {
     return [
-      // Status stream endpoints (must come before general telescope endpoints)
-      {
-        source: '/api/:scope/status/stream',
-        destination: 'http://localhost:8000/api/telescopes/:scope/status/stream',
-      },
       // General API proxy - telescopes and other endpoints
       {
         source: '/api/telescopes/:path*',
@@ -26,23 +21,6 @@ const nextConfig = {
       {
         source: '/api/telescopes',
         destination: 'http://localhost:8000/api/telescopes',
-      },
-      // WebRTC endpoints (proxy to backend since we removed catch-all)
-      {
-        source: '/api/webrtc/config',
-        destination: 'http://localhost:8000/api/webrtc/config',
-      },
-      {
-        source: '/api/webrtc/sessions/:path*',
-        destination: 'http://localhost:8000/api/webrtc/sessions/:path*',
-      },
-      {
-        source: '/api/webrtc/sessions',
-        destination: 'http://localhost:8000/api/webrtc/sessions',
-      },
-      {
-        source: '/api/webrtc/test/:path*',
-        destination: 'http://localhost:8000/api/webrtc/test/:path*',
       },
       // Remote controllers
       {
