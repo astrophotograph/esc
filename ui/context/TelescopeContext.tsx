@@ -28,6 +28,7 @@ import type {
 } from "../types/telescope-types"
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
+import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
 
 interface PipOverlaySettings {
   crosshairs: {
@@ -312,41 +313,41 @@ const TelescopeContext = createContext<TelescopeContextType | undefined>(undefin
 export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
-  
+
   // Remote Controller Management State
   const [remoteControllers, setRemoteControllers] = useState<RemoteController[]>([])
   const [isLoadingRemoteControllers, setIsLoadingRemoteControllers] = useState(false)
-  
+
   // Validation function for saved telescope data
   const validateSavedTelescope = (telescope: any): telescope is TelescopeInfo => {
     if (!telescope || typeof telescope !== 'object') {
       console.warn('Invalid telescope data: not an object')
       return false
     }
-    
+
     // Check for required fields
     if (!telescope.name && !telescope.serial_number && !telescope.id) {
       console.warn('Invalid telescope data: missing identifying fields')
       return false
     }
-    
+
     // Validate data types
     if (telescope.name && typeof telescope.name !== 'string') {
       console.warn('Invalid telescope data: name is not a string')
       return false
     }
-    
+
     if (telescope.serial_number && typeof telescope.serial_number !== 'string') {
       console.warn('Invalid telescope data: serial_number is not a string')
       return false
     }
-    
+
     if (telescope.host && typeof telescope.host !== 'string') {
       console.warn('Invalid telescope data: host is not a string')
       return false
     }
-    
-    console.log('Telescope data validation passed:', telescope.name || telescope.id)
+
+    // console.log('Telescope data validation passed:', telescope.name || telescope.id)
     return true
   }
 
@@ -354,12 +355,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     STORAGE_KEYS.CURRENT_TELESCOPE,
     null
   )
-  
+
   // Validated current telescope (ensure saved data is valid)
-  const currentTelescope = rawCurrentTelescope && validateSavedTelescope(rawCurrentTelescope) 
-    ? rawCurrentTelescope 
+  const currentTelescope = rawCurrentTelescope && validateSavedTelescope(rawCurrentTelescope)
+    ? rawCurrentTelescope
     : null
-    
+
   const setCurrentTelescope = (telescope: TelescopeInfo | null) => {
     if (telescope && !validateSavedTelescope(telescope)) {
       console.error('Attempted to save invalid telescope data:', telescope)
@@ -367,8 +368,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
     setRawCurrentTelescope(telescope)
   }
-  
-  
+
+
   const [isLoadingTelescopes, setIsLoadingTelescopes] = useState(false)
   const [telescopeError, setTelescopeError] = useState<string | null>(null)
   const [showTelescopeManagement, setShowTelescopeManagement] = useState(false)
@@ -414,6 +415,16 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([])
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
+
+  // WebSocket hook for telescope control and status
+  const {
+    moveTelescope: wsMoveTelescope,
+    parkTelescope: wsParkTelescope,
+    adjustFocus: wsAdjustFocus,
+  } = useTelescopeWebSocket({
+    autoConnect: false
+  });
+
   const [systemStats, setSystemStats] = useState<SystemStats>({
     battery: 85,
     temperature: 23.5,
@@ -879,14 +890,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           try {
             console.log(`Attempting to restore telescope: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
             console.log(`Available telescopes: ${transformedTelescopes.map(t => `${t.name} (${t.serial_number || 'no-serial'})`).join(', ')}`)
-            
+
             const matchResult = findTelescopeMatch(currentTelescope, transformedTelescopes)
-            
+
             if (matchResult) {
               const { telescope: savedTelescope, confidence } = matchResult
-              
+
               // Only update if the telescope data has meaningfully changed
-              const hasChanged = 
+              const hasChanged =
                 currentTelescope.status !== savedTelescope.status ||
                 currentTelescope.isConnected !== savedTelescope.isConnected ||
                 currentTelescope.host !== savedTelescope.host ||
@@ -921,7 +932,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
               console.warn(`Previous telescope not found: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
               setCurrentTelescope(transformedTelescopes[0])
               console.log(`Auto-selected first available telescope: ${transformedTelescopes[0].name}`)
-              
+
               // Show notification about telescope change
               setTimeout(() => {
                 addStatusAlert({
@@ -1029,7 +1040,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         // If backend doesn't support manual telescopes, fall back to local storage
         if (response.status === 404 || response.status === 405) {
           console.warn('Backend does not support manual telescope management, using local fallback')
-          
+
           const newTelescope: TelescopeInfo = {
             ...telescope,
             id: `manual-${Date.now()}`,
@@ -1079,7 +1090,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         // If backend doesn't support manual telescopes, fall back to local storage
         if (response.status === 404 || response.status === 405) {
           console.warn('Backend does not support manual telescope management, using local fallback')
-          
+
           setTelescopes(prev => prev.filter(t => t.id !== telescopeId))
 
           // If the removed telescope was selected, clear selection
@@ -1259,7 +1270,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }, [rawCurrentTelescope])
 
   const handleTelescopeMove = async (direction: string) => {
-    console.log(`Moving telescope ${direction}`)
+    console.log(`Moving telescope ${direction} via WebSocket`)
 
     if (!currentTelescope) {
       addStatusAlert({
@@ -1271,17 +1282,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/telescopes/${currentTelescope.id}/move`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ direction }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
-      }
+      await wsMoveTelescope(direction)
 
       // Add status alert for telescope movement
       if (direction !== "stop") {
@@ -1298,7 +1299,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         })
       }
     } catch (error) {
-      console.error('Error moving telescope:', error)
+      console.error('Error moving telescope via WebSocket:', error)
       addStatusAlert({
         type: "error",
         title: "Movement Failed",
@@ -1308,7 +1309,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }
 
   const handleTelescopePark = async () => {
-    console.log('Parking telescope')
+    console.log('Parking telescope via WebSocket')
 
     if (!currentTelescope) {
       addStatusAlert({
@@ -1320,17 +1321,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/telescopes/${currentTelescope.id}/park`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
-      }
+      await wsParkTelescope()
 
       addStatusAlert({
         type: "success",
@@ -1338,7 +1329,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         message: "Telescope is moving to park position",
       })
     } catch (error) {
-      console.error('Error parking telescope:', error)
+      console.error('Error parking telescope via WebSocket:', error)
       addStatusAlert({
         type: "error",
         title: "Park Failed",
@@ -1360,17 +1351,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     const increment = direction === "in" ? -10 : 10
 
     try {
-      const response = await fetch(`/api/telescopes/${currentTelescope.id}/focus_inc`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(increment),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
-      }
+      await wsAdjustFocus(direction)
 
       addStatusAlert({
         type: "info",
@@ -1378,7 +1359,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         message: `Moving focus ${direction} by ${Math.abs(increment)} steps`,
       })
     } catch (error) {
-      console.error('Error adjusting focus:', error)
+      console.error('Error adjusting focus via WebSocket:', error)
       addStatusAlert({
         type: "error",
         title: "Focus Adjustment Failed",
@@ -1682,7 +1663,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         temperature: streamStatus.status.temp ?? prev.temperature,
         freeMB: streamStatus.status.freeMB ?? prev.freeMB,
         totalMB: streamStatus.status.totalMB ?? prev.totalMB,
-        diskUsage: streamStatus.status.freeMB && streamStatus.status.totalMB 
+        diskUsage: streamStatus.status.freeMB && streamStatus.status.totalMB
           ? Math.round(((streamStatus.status.totalMB - streamStatus.status.freeMB) / streamStatus.status.totalMB) * 100)
           : prev.diskUsage
       }))

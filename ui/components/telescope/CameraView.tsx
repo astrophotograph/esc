@@ -36,6 +36,7 @@ import { RandomTestPattern } from "./RandomTestPattern"
 import type { ScreenAnnotation } from "../../types/telescope-types"
 import { generateStreamingUrl } from "../../utils/streaming"
 import { WebRTCLiveView } from "./WebRTCLiveView"
+import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 
 export function CameraView() {
   const {
@@ -202,6 +203,17 @@ export function CameraView() {
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // WebSocket hook for real-time telescope status and control
+  const {
+    status: wsStatus,
+    isConnected: wsConnected,
+    lastUpdate: wsLastUpdate,
+    connect: wsConnect,
+    disconnect: wsDisconnect
+  } = useTelescopeWebSocket({
+    autoConnect: false
+  });
 
   // Calculate boundaries for panning
   const calculateBoundaries = () => {
@@ -762,82 +774,74 @@ export function CameraView() {
     }
   }, [liveViewFullscreen, setLiveViewFullscreen])
 
-  // Setup event source for streaming status
+  // Setup WebSocket connection for streaming status
   useEffect(() => {
     if (!currentTelescope) {
       setLocalStreamStatus(null);
       setSseConnected(false);
+      wsDisconnect();
       return;
     }
 
-    const cameraName = currentTelescope.name || currentTelescope.serial_number;
-    const streamUrl = `/api/${encodeURIComponent(cameraName)}/status/stream`;
+    console.log(`Connecting WebSocket to telescope: ${currentTelescope.name}`);
+    wsConnect(currentTelescope);
 
-    console.log(`Connecting to stream: ${streamUrl}`);
-    const eventSource = new EventSource(streamUrl);
+    return () => {
+      wsDisconnect();
+      setSseConnected(false);
+    };
+  }, [currentTelescope, wsConnect, wsDisconnect]);
 
-    eventSource.onopen = () => {
-      console.log("SSE connection opened");
-      setSseConnected(true);
+  // Handle WebSocket status updates
+  useEffect(() => {
+    if (wsStatus) {
+      setLocalStreamStatus({ status: wsStatus });
+      setStreamStatus({ status: wsStatus });
       setLastSSEMessage(Date.now());
-      setReconnectCounter(0); // Reset reconnect counter on successful connection
 
-      // If connection was lost but SSE is back, check if we should restore
-      // Only restore if video stream is also active
+      // Update focus position from WebSocket status if available
+      if (wsStatus.focus_position !== undefined && wsStatus.focus_position !== null) {
+        setFocusPosition([wsStatus.focus_position]);
+      }
+
+      console.log("Received WebSocket status update:", wsStatus);
+    }
+  }, [wsStatus, setStreamStatus, setFocusPosition]);
+
+  // Handle WebSocket connection state
+  useEffect(() => {
+    setSseConnected(wsConnected);
+    
+    if (wsConnected) {
+      console.log("WebSocket connection opened");
+      setReconnectCounter(0);
+      
+      // If connection was restored and both streams are healthy
       if (connectionLost && streamActive) {
         const now = Date.now();
         const timeSinceLastImageChange = now - lastSuccessfulLoad;
 
-        // Only restore if we've had recent image activity (within last 30 seconds)
         if (timeSinceLastImageChange < 30000) {
           setConnectionLost(false);
-          console.log("SSE connection restored - both streams healthy");
+          console.log("WebSocket connection restored - both streams healthy");
         }
       }
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setLocalStreamStatus(data);
-        setStreamStatus(data);
-        setLastSSEMessage(Date.now()); // Update timestamp on every message
-
-        // Update focus position from stream if available
-        if (data?.status?.focus_position !== undefined && data?.status?.focus_position !== null) {
-          setFocusPosition([data.status.focus_position]);
-          // console.log("Updated focus position from stream:", data.status.focus_position);
-        }
-
-        // console.log("Received status update:", data);
-      } catch (error) {
-        console.error("Error parsing stream data:", error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error("EventSource error:", error);
-      setSseConnected(false);
-
+    } else {
+      console.log("WebSocket connection lost");
+      
       // Only mark connection as lost after multiple failures
       if (reconnectCounter > 2) {
-        setConnectionLost(true); // Show test pattern after multiple SSE failures
+        setConnectionLost(true);
       }
+    }
+  }, [wsConnected, connectionLost, streamActive, lastSuccessfulLoad, reconnectCounter]);
 
-      eventSource.close();
-
-      // Automatically trigger reconnection after a delay
-      setTimeout(() => {
-        console.log("Attempting to reconnect to status stream...");
-        setReconnectCounter(prev => prev + 1);
-      }, 5000);
-    };
-
-    return () => {
-      eventSource.close();
-      setSseConnected(false);
-    };
-  }, [reconnectCounter, currentTelescope]);
+  // Update last message timestamp when WebSocket receives data
+  useEffect(() => {
+    if (wsLastUpdate > 0) {
+      setLastSSEMessage(wsLastUpdate);
+    }
+  }, [wsLastUpdate]);
 
   // Zoom in function
   const zoomIn = () => {
