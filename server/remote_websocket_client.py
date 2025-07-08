@@ -79,11 +79,16 @@ class RemoteWebSocketClient:
     @property
     def is_connected(self) -> bool:
         """Check if WebSocket is connected and healthy."""
-        return (
-            self.connection_state == RemoteConnectionState.CONNECTED and
-            self.websocket is not None and
-            not self.websocket.closed
-        )
+        if self.connection_state != RemoteConnectionState.CONNECTED or self.websocket is None:
+            return False
+        
+        # Check WebSocket state - import here to avoid circular imports
+        try:
+            from websockets.protocol import State
+            return self.websocket.state == State.OPEN
+        except ImportError:
+            # Fallback: assume connected if we have a websocket object
+            return True
     
     @property
     def websocket_url(self) -> str:
