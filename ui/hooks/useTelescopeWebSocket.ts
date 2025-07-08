@@ -32,6 +32,14 @@ export interface UseTelescopeWebSocketReturn {
   status: TelescopeStatus | null;
   lastUpdate: number;
   
+  // Health monitoring
+  healthStatus: {
+    timeSinceLastMessage: number;
+    timeSinceLastHeartbeat: number;
+    lastMessageTime: number;
+    lastHeartbeatReceived: number;
+  } | null;
+  
   // Control functions
   moveTelescope: (direction: string) => Promise<any>;
   parkTelescope: () => Promise<any>;
@@ -40,6 +48,7 @@ export interface UseTelescopeWebSocketReturn {
   // Connection management
   connect: (telescope: TelescopeInfo) => Promise<void>;
   disconnect: () => void;
+  forceReconnect: (reason?: string) => void;
   
   // Manual subscription management
   subscribe: (types?: SubscriptionType[]) => Promise<void>;
@@ -64,6 +73,12 @@ export function useTelescopeWebSocket(
   const [lastUpdate, setLastUpdate] = useState(0);
   const [currentTelescope, setCurrentTelescope] = useState<TelescopeInfo | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<{
+    timeSinceLastMessage: number;
+    timeSinceLastHeartbeat: number;
+    lastMessageTime: number;
+    lastHeartbeatReceived: number;
+  } | null>(null);
   
   // Use refs to avoid dependency issues
   const isConnectingRef = useRef(false);
@@ -142,9 +157,27 @@ export function useTelescopeWebSocket(
           wsService.subscribe(subscriptions, currentTelescope.serial_number || currentTelescope.id);
         }
       });
+
+      wsService.on('healthCheckFailed', (reason: string) => {
+        console.warn('WebSocket health check failed:', reason);
+      });
     }
+
+    // Set up health status monitoring
+    const healthCheckInterval = setInterval(() => {
+      if (wsService) {
+        const health = wsService.getHealthStatus();
+        setHealthStatus({
+          timeSinceLastMessage: health.timeSinceLastMessage,
+          timeSinceLastHeartbeat: health.timeSinceLastHeartbeat,
+          lastMessageTime: health.lastMessageTime,
+          lastHeartbeatReceived: health.lastHeartbeatReceived,
+        });
+      }
+    }, 5000); // Update health status every 5 seconds
     
     return () => {
+      clearInterval(healthCheckInterval);
       // Don't disconnect or remove listeners from singleton service
     };
   }, []);
@@ -182,6 +215,13 @@ export function useTelescopeWebSocket(
       
     } catch (error) {
       console.error('Failed to connect WebSocket:', error);
+      
+      // The WebSocketService has built-in retry logic with exponential backoff
+      // If this initial connection fails, the service will automatically retry
+      // We don't need to manually retry here as the service handles it
+      
+      // The service will emit 'connectionStateChanged' events as it retries
+      // so the UI will be updated automatically
     } finally {
       isConnectingRef.current = false;
       setIsConnecting(false);
@@ -198,6 +238,16 @@ export function useTelescopeWebSocket(
     setCurrentTelescope(null);
     currentTelescopeRef.current = null;
     setStatus(null);
+    setHealthStatus(null);
+  }, []);
+
+  // Force reconnect
+  const forceReconnect = useCallback((reason?: string) => {
+    if (!wsServiceRef.current) return;
+    
+    const reconnectReason = reason || 'Manual reconnection requested from UI';
+    console.log(`Force reconnecting WebSocket: ${reconnectReason}`);
+    wsServiceRef.current.forceReconnectManual(reconnectReason);
   }, []);
   
   // Control functions using WebSocket commands
@@ -269,6 +319,9 @@ export function useTelescopeWebSocket(
     status,
     lastUpdate,
     
+    // Health monitoring
+    healthStatus,
+    
     // Control functions
     moveTelescope,
     parkTelescope,
@@ -277,6 +330,7 @@ export function useTelescopeWebSocket(
     // Connection management
     connect,
     disconnect,
+    forceReconnect,
     subscribe,
     unsubscribe,
   };

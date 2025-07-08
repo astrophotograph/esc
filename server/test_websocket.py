@@ -15,6 +15,7 @@ import sys
 import time
 from typing import Optional
 
+import pytest
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidURI
 
@@ -112,6 +113,7 @@ class WebSocketTester:
         print(f"\n⏰ Finished listening after {duration} seconds")
 
 
+@pytest.mark.asyncio
 async def test_server_health():
     """Test if the WebSocket server is responding."""
     import httpx
@@ -129,7 +131,8 @@ async def test_server_health():
         print(f"❌ Health check failed: {e}")
 
 
-async def test_telescope_api(telescope_id: str):
+@pytest.mark.asyncio
+async def test_telescope_api(telescope_id: str = "test_telescope"):
     """Test telescope-related API endpoints."""
     import httpx
     

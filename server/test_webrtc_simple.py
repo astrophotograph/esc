@@ -6,6 +6,7 @@ This bypasses our complex setup to test aiortc basics.
 
 import asyncio
 import logging
+import pytest
 from aiortc import RTCPeerConnection, RTCConfiguration, RTCIceServer
 from dummy_video_track import DummyVideoTrack
 
@@ -13,6 +14,7 @@ from dummy_video_track import DummyVideoTrack
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@pytest.mark.asyncio
 async def test_webrtc_basic():
     """Test basic WebRTC functionality."""
     logger.info("=== Basic WebRTC Test ===")
@@ -93,6 +95,7 @@ async def test_webrtc_basic():
     logger.info("SUCCESS: ICE candidates generated successfully")
     return True
 
+@pytest.mark.asyncio
 async def test_network_interfaces():
     """Test network interface availability."""
     logger.info("=== Network Interface Test ===")

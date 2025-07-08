@@ -5,6 +5,7 @@ Manually test the remote controller registration process to see what fails.
 
 import asyncio
 import logging
+import pytest
 from remote_websocket_client import RemoteController, RemoteWebSocketManager
 
 
@@ -13,6 +14,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 async def test_manual_registration():
     """Manually test the remote controller registration process."""
     

@@ -145,6 +145,7 @@ export class WebSocketService extends EventEmitter {
   private reconnectAttempts = 0
   private reconnectTimeout: NodeJS.Timeout | null = null
   private heartbeatInterval: NodeJS.Timeout | null = null
+  private healthCheckInterval: NodeJS.Timeout | null = null
   private messageQueue: WebSocketMessage[] = []
   private pendingCommands = new Map<string, PendingCommand>()
   private subscriptions = new Set<string>()
@@ -153,6 +154,12 @@ export class WebSocketService extends EventEmitter {
   private telescopeId: string | null = null
   private clientId: string | null = null
   private instanceId: number
+
+  // Health monitoring
+  private lastMessageTime: number = 0
+  private lastHeartbeatReceived: number = 0
+  private healthCheckIntervalMs: number = 10000 // Check health every 10 seconds
+  private messageTimeoutMs: number = 60000 // Force reconnect if no messages for 60 seconds
 
   constructor(config: WebSocketServiceConfig = {}) {
     super()
@@ -211,6 +218,8 @@ export class WebSocketService extends EventEmitter {
         this.ws.onopen = () => {
           this.setConnectionState(ConnectionState.CONNECTED)
           this.reconnectAttempts = 0
+          this.lastMessageTime = Date.now()
+          this.lastHeartbeatReceived = Date.now()
 
           // Small delay to ensure the server-side connection is fully established
           setTimeout(() => {
@@ -218,7 +227,8 @@ export class WebSocketService extends EventEmitter {
             // Start heartbeat after connection is fully established
             setTimeout(() => {
               this.startHeartbeat()
-            }, 1000)  // Wait 1 second before starting heartbeats
+              this.startHealthCheck()
+            }, 1000)  // Wait 1 second before starting heartbeats and health checks
             resolve()
           }, 100)
         }
@@ -239,6 +249,11 @@ export class WebSocketService extends EventEmitter {
           console.error('WebSocket connection error:', error, 'URL:', wsUrl)
           this.setConnectionState(ConnectionState.ERROR)
           reject(new Error(`Failed to connect to WebSocket at ${wsUrl}`))
+          
+          // Trigger reconnect logic on error as well
+          if (this.connectionState !== ConnectionState.DISCONNECTED) {
+            this.handleReconnect()
+          }
         }
 
       } catch (error) {
@@ -367,6 +382,36 @@ export class WebSocketService extends EventEmitter {
   }
 
   /**
+   * Get health status information
+   */
+  getHealthStatus(): {
+    isConnected: boolean
+    lastMessageTime: number
+    lastHeartbeatReceived: number
+    timeSinceLastMessage: number
+    timeSinceLastHeartbeat: number
+    connectionState: ConnectionState
+  } {
+    const now = Date.now()
+    return {
+      isConnected: this.isConnected(),
+      lastMessageTime: this.lastMessageTime,
+      lastHeartbeatReceived: this.lastHeartbeatReceived,
+      timeSinceLastMessage: now - this.lastMessageTime,
+      timeSinceLastHeartbeat: now - this.lastHeartbeatReceived,
+      connectionState: this.connectionState
+    }
+  }
+
+  /**
+   * Manually force reconnection
+   */
+  forceReconnectManual(reason: string = 'Manual reconnection requested'): void {
+    console.log(`Manual WebSocket reconnection triggered: ${reason}`)
+    this.forceReconnect(reason)
+  }
+
+  /**
    * Send a WebSocket message
    */
   private async sendMessage(message: WebSocketMessage): Promise<void> {
@@ -394,6 +439,9 @@ export class WebSocketService extends EventEmitter {
     try {
       const message: WebSocketMessageUnion = JSON.parse(data)
 
+      // Update health monitoring
+      this.lastMessageTime = Date.now()
+
       // Handle command responses
       if (message.type === MessageType.COMMAND_RESPONSE) {
         this.handleCommandResponse(message as CommandResponseMessage)
@@ -402,6 +450,7 @@ export class WebSocketService extends EventEmitter {
 
       // Handle heartbeat
       if (message.type === MessageType.HEARTBEAT) {
+        this.lastHeartbeatReceived = Date.now()
         // Don't echo heartbeat back - this causes a ping-pong loop!
         // The client sends its own heartbeats on a timer
         return
@@ -527,6 +576,80 @@ export class WebSocketService extends EventEmitter {
   }
 
   /**
+   * Start health check monitoring
+   */
+  private startHealthCheck(): void {
+    this.stopHealthCheck()
+
+    this.healthCheckInterval = setInterval(() => {
+      this.performHealthCheck()
+    }, this.healthCheckIntervalMs)
+  }
+
+  /**
+   * Stop health check monitoring
+   */
+  private stopHealthCheck(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+      this.healthCheckInterval = null
+    }
+  }
+
+  /**
+   * Perform health check and force reconnection if needed
+   */
+  private performHealthCheck(): void {
+    if (this.connectionState !== ConnectionState.CONNECTED || !this.ws) {
+      return
+    }
+
+    const now = Date.now()
+    const timeSinceLastMessage = now - this.lastMessageTime
+    const timeSinceLastHeartbeat = now - this.lastHeartbeatReceived
+
+    // Check if we haven't received any messages in the timeout period
+    if (timeSinceLastMessage > this.messageTimeoutMs) {
+      console.warn(`WebSocket health check failed: No messages received for ${timeSinceLastMessage}ms (limit: ${this.messageTimeoutMs}ms)`)
+      this.forceReconnect('No messages received within timeout period')
+      return
+    }
+
+    // Check WebSocket readyState
+    if (this.ws.readyState !== WebSocket.OPEN) {
+      console.warn(`WebSocket health check failed: Connection state is ${this.ws.readyState} (expected ${WebSocket.OPEN})`)
+      this.forceReconnect('WebSocket connection is not in OPEN state')
+      return
+    }
+
+    // Log health status periodically
+    if (this.healthCheckIntervalMs >= 30000) { // Only log if checking every 30+ seconds
+      console.debug(`WebSocket health check passed: Last message ${timeSinceLastMessage}ms ago, last heartbeat ${timeSinceLastHeartbeat}ms ago`)
+    }
+  }
+
+  /**
+   * Force reconnection due to health check failure
+   */
+  private forceReconnect(reason: string): void {
+    console.log(`Forcing WebSocket reconnection: ${reason}`)
+    
+    // Emit health check failure event
+    this.emit('healthCheckFailed', reason)
+    
+    // Close current connection
+    this.cleanup()
+    if (this.ws) {
+      this.ws.close(1000, 'Health check failed')
+      this.ws = null
+    }
+    
+    // Trigger reconnection
+    this.setConnectionState(ConnectionState.RECONNECTING)
+    this.handleReconnect()
+  }
+
+  /**
    * Process queued messages
    */
   private processMessageQueue(): void {
@@ -541,6 +664,7 @@ export class WebSocketService extends EventEmitter {
    */
   private cleanup(): void {
     this.stopHeartbeat()
+    this.stopHealthCheck()
 
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)

@@ -1,6 +1,6 @@
 # Makefile for Telescope Control Application
 
-.PHONY: help dev prod build start stop restart logs clean test lint health
+.PHONY: help dev prod build start stop restart logs clean test test-backend test-frontend test-coverage lint health
 
 # Default target
 help: ## Show this help message
@@ -83,11 +83,24 @@ shell-redis: ## Open Redis CLI
 	docker-compose exec redis redis-cli
 
 # Testing and linting
-test: ## Run tests in UI container
+test: test-frontend test-backend ## Run all tests (frontend and backend)
+	@echo "✅ All tests completed!"
+
+test-frontend: ## Run frontend tests in UI container
 	docker-compose exec ui npm test
 
-test-coverage: ## Run tests with coverage
+test-backend: ## Run backend tests with coverage
+	docker-compose exec server uv run pytest tests/ --cov=. --cov-report=term-missing --cov-report=html
+	@echo "✅ Backend tests completed!"
+
+test-coverage: ## Run all tests with coverage
+	@echo "🧪 Running frontend tests with coverage..."
 	docker-compose exec ui npm run test:coverage
+	@echo "🧪 Running backend tests with coverage..."
+	docker-compose exec server uv run pytest tests/ --cov=. --cov-report=term-missing --cov-report=html
+	@echo "✅ Coverage reports generated!"
+	@echo "Frontend coverage: ui/coverage/"
+	@echo "Backend coverage: server/htmlcov/"
 
 lint: ## Run linting
 	docker-compose exec ui npm run lint

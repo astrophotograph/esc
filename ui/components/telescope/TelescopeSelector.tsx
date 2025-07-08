@@ -96,8 +96,9 @@ export function TelescopeSelector() {
 
   useEffect(() => {
     fetchTelescopes()
-    // Set up periodic refresh every 30 seconds to update telescope status
-    const interval = setInterval(fetchTelescopes, 30000)
+    // Set up periodic refresh every 60 seconds to update telescope status
+    // Reduced frequency to minimize potential switching issues
+    const interval = setInterval(fetchTelescopes, 60000)
     return () => clearInterval(interval)
   }, [])
 

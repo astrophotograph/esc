@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -209,42 +209,27 @@ export function CameraView() {
     status: wsStatus,
     isConnected: wsConnected,
     lastUpdate: wsLastUpdate,
+    healthStatus: wsHealthStatus,
     connect: wsConnect,
-    disconnect: wsDisconnect
+    disconnect: wsDisconnect,
+    forceReconnect: wsForceReconnect
   } = useTelescopeWebSocket({
     autoConnect: false
   });
 
   // Calculate boundaries for panning
   const calculateBoundaries = () => {
-    if (!imageRef.current || !imageContainerRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    if (!imageContainerRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
 
-    const { naturalWidth, naturalHeight } = imageRef.current;
     const container = imageContainerRef.current;
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    // Determine the actual rendered size of the image
-    let renderedWidth, renderedHeight;
-
-    if (isPortrait) {
-      // Portrait image fills height
-      renderedHeight = containerHeight;
-      renderedWidth = (naturalWidth / naturalHeight) * containerHeight;
-    } else {
-      // Landscape image fills width
-      renderedWidth = containerWidth;
-      renderedHeight = (naturalHeight / naturalWidth) * containerWidth;
-    }
-
-    // Calculate the maximum pan distance based on zoom level
-    const scaledWidth = renderedWidth * zoomLevel;
-    const scaledHeight = renderedHeight * zoomLevel;
-
-    // Calculate the maximum pan distance in each direction
-    // The boundaries depend on how much the image extends beyond the container when zoomed
-    const maxPanX = Math.max(0, (scaledWidth - containerWidth) / (2 * zoomLevel));
-    const maxPanY = Math.max(0, (scaledHeight - containerHeight) / (2 * zoomLevel));
+    // For panning, we use a simple calculation based on zoom level
+    // The maximum pan distance is half the container size multiplied by (zoom - 1)
+    // This allows panning when zoomed in, with more pan range at higher zoom levels
+    const maxPanX = (containerWidth / 2) * (zoomLevelRef.current - 1);
+    const maxPanY = (containerHeight / 2) * (zoomLevelRef.current - 1);
 
     return {
       minX: -maxPanX,
@@ -563,34 +548,63 @@ export function CameraView() {
     };
   }, []);
 
-  // Modified panning implementation - handle mouse move
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      // Prevent default behavior
-      e.preventDefault();
+  // Handle mouse move during dragging (attached to document)
+  const handleDocumentMouseMove = useCallback((e: MouseEvent) => {
+    // Use refs to access current values without causing dependencies
+    if (!isDraggingRef.current) return;
 
-      // Calculate the movement delta
-      const dx = e.clientX - dragStart.x;
-      const dy = e.clientY - dragStart.y;
+    // Prevent default behavior
+    e.preventDefault();
 
-      // Transform deltas based on rotation angle
-      const transformedDelta = transformDeltaForRotation(dx, dy);
+    // Get current values from refs
+    const currentDragStart = dragStartRef.current;
+    const currentZoomLevel = zoomLevelRef.current;
+    const currentRotationAngle = rotationAngleRef.current;
 
-      // Update pan position (scale by zoom level to make movement feel natural)
-      setPanPosition(prev => {
-        const newPos = {
-          x: prev.x + transformedDelta.x / zoomLevel,
-          y: prev.y + transformedDelta.y / zoomLevel
-        };
+    // Calculate the movement delta
+    const dx = e.clientX - currentDragStart.x;
+    const dy = e.clientY - currentDragStart.y;
 
-        // Apply constraints to keep image within bounds
-        return constrainPan(newPos.x, newPos.y);
-      });
+    // Transform deltas based on rotation angle
+    const angleRad = (currentRotationAngle * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    const transformedDelta = {
+      x: dx * cos + dy * sin,
+      y: -dx * sin + dy * cos
+    };
 
-      // Update the drag start position for the next move event
-      setDragStart({ x: e.clientX, y: e.clientY });
+    setPanPosition(prev => {
+      // Calculate new position
+      const newPos = {
+        x: prev.x + transformedDelta.x / currentZoomLevel,
+        y: prev.y + transformedDelta.y / currentZoomLevel
+      };
+
+      // Apply constraints to keep image within bounds
+      const boundaries = calculateBoundaries();
+      const constrainedPos = {
+        x: Math.max(boundaries.minX, Math.min(boundaries.maxX, newPos.x)),
+        y: Math.max(boundaries.minY, Math.min(boundaries.maxY, newPos.y))
+      };
+
+      return constrainedPos;
+    });
+
+    // Update the drag start position for the next move event
+    setDragStart({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  // Handle mouse up during dragging (attached to document)
+  const handleDocumentMouseUp = useCallback((e: MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    // Reset cursor style
+    if (imageContainerRef.current) {
+      imageContainerRef.current.style.cursor = 'grab';
     }
-  };
+  }, []);
 
   // Modified touch move handler
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -642,6 +656,29 @@ export function CameraView() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Refs to track current values for event handlers
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const zoomLevelRef = useRef(1);
+  const rotationAngleRef = useRef(0);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  useEffect(() => {
+    dragStartRef.current = dragStart;
+  }, [dragStart]);
+
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    rotationAngleRef.current = rotationAngle;
+  }, [rotationAngle]);
+
   // Reset zoom and pan
   const resetZoomAndPan = () => {
     setZoomLevel(1);
@@ -650,10 +687,12 @@ export function CameraView() {
 
   // Simple panning implementation - handle mouse down
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only enable panning when zoomed in
+    if (zoomLevel <= 1) return;
+
     // Prevent default browser drag behavior
     e.preventDefault();
 
-    // Enable panning at any zoom level
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
 
@@ -663,26 +702,11 @@ export function CameraView() {
     }
   };
 
-  // Simple panning implementation - handle mouse up
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    // Reset cursor style
+  // Handle mouse leave (keep for cursor management)
+  const handleMouseLeave = () => {
+    // Reset cursor style when leaving the container
     if (imageContainerRef.current) {
       imageContainerRef.current.style.cursor = 'grab';
-    }
-  };
-
-  // Simple panning implementation - handle mouse leave
-  const handleMouseLeave = () => {
-    if (isDragging) {
-      setIsDragging(false);
-
-      // Reset cursor style
-      if (imageContainerRef.current) {
-        imageContainerRef.current.style.cursor = 'grab';
-      }
     }
   };
 
@@ -703,6 +727,22 @@ export function CameraView() {
     e.preventDefault();
     setIsDragging(false);
   };
+
+  // Attach document event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleDocumentMouseMove);
+      document.addEventListener('mouseup', handleDocumentMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
+      document.removeEventListener('mouseup', handleDocumentMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
+      document.removeEventListener('mouseup', handleDocumentMouseUp);
+    };
+  }, [isDragging, handleDocumentMouseMove, handleDocumentMouseUp]);
 
   // Modified keyboard navigation handler
   useEffect(() => {
@@ -837,6 +877,20 @@ export function CameraView() {
       setLastSSEMessage(wsLastUpdate);
     }
   }, [wsLastUpdate]);
+
+  // WebSocket health monitoring - automatically reconnect if connection is stale
+  useEffect(() => {
+    if (!currentTelescope || !wsHealthStatus) return;
+
+    const { timeSinceLastMessage } = wsHealthStatus;
+    const HEALTH_CHECK_THRESHOLD = 90000; // 90 seconds - trigger reconnect if no messages for this long
+
+    // Only check if we should be connected (telescope is selected)
+    if (timeSinceLastMessage > HEALTH_CHECK_THRESHOLD) {
+      console.warn(`WebSocket health check: No messages for ${timeSinceLastMessage}ms, forcing reconnection`);
+      wsForceReconnect('No messages received within health check threshold');
+    }
+  }, [wsHealthStatus, currentTelescope, wsForceReconnect]);
 
   // Zoom in function
   const zoomIn = () => {
@@ -1002,8 +1056,6 @@ export function CameraView() {
             <div
               className="w-full h-full cursor-grab"
               onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}

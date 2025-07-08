@@ -877,14 +877,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            // Priority 4: Match by name only (very low confidence)
-            if (saved.name) {
-              const match = telescopes.find(t => t.name === saved.name)
-              if (match) {
-                console.log(`Telescope matched by name only: ${match.name} (low confidence)`)
-                return { telescope: match, confidence: 'very_low' as const }
-              }
-            }
+            // Removed Priority 4: Match by name only - too unreliable and causes random switching
+            // This was causing issues when multiple telescopes have similar names
 
             return null
           }
@@ -910,39 +904,45 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
                 setCurrentTelescope(savedTelescope)
                 console.log(`Updated telescope data: ${savedTelescope.name} (confidence: ${confidence})`)
 
-                // Show notification based on confidence level
-                setTimeout(() => {
-                  if (confidence === 'high' || confidence === 'medium') {
+                // Only show notification on first load or high confidence matches to reduce noise
+                const isFirstConnection = currentTelescope.status !== savedTelescope.status && savedTelescope.status === 'online';
+                
+                if (isFirstConnection && (confidence === 'high' || confidence === 'medium')) {
+                  setTimeout(() => {
                     addStatusAlert({
                       type: 'info',
                       title: 'Welcome Back',
                       message: `Reconnected to ${savedTelescope.name}`
                     })
-                  } else {
-                    addStatusAlert({
-                      type: 'warning',
-                      title: 'Telescope Restored',
-                      message: `Restored connection to ${savedTelescope.name} (please verify)`
-                    })
-                  }
-                }, 1000) // Delay to avoid showing immediately on load
+                  }, 1000) // Delay to avoid showing immediately on load
+                }
               } else {
                 console.log(`Telescope data unchanged: ${savedTelescope.name} (confidence: ${confidence})`)
               }
             } else {
               // Previously selected telescope no longer available
               console.warn(`Previous telescope not found: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
-              setCurrentTelescope(transformedTelescopes[0])
-              console.log(`Auto-selected first available telescope: ${transformedTelescopes[0].name}`)
+              
+              // Don't auto-switch during periodic refresh - only switch on first load or user action
+              // This prevents random switching when telescopes temporarily disappear from API
+              const isInitialLoad = telescopes.length === 0; // First time loading telescopes
+              
+              if (isInitialLoad) {
+                setCurrentTelescope(transformedTelescopes[0])
+                console.log(`Auto-selected first available telescope (initial load): ${transformedTelescopes[0].name}`)
 
-              // Show notification about telescope change
-              setTimeout(() => {
-                addStatusAlert({
-                  type: 'warning',
-                  title: 'Telescope Changed',
-                  message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
-                })
-              }, 1000)
+                // Show notification about telescope change
+                setTimeout(() => {
+                  addStatusAlert({
+                    type: 'warning',
+                    title: 'Telescope Changed',
+                    message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
+                  })
+                }, 1000)
+              } else {
+                // Keep current selection even if telescope temporarily disappears
+                console.log(`Keeping current telescope selection despite temporary unavailability`)
+              }
             }
           } catch (error) {
             console.error('Error during telescope restoration:', error)
