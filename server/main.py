@@ -844,24 +844,24 @@ class Controller:
                     
                     # Register remote controllers with WebSocket manager for each telescope
                     from websocket_router import websocket_manager
-                    for telescope_name, telescope_data in response.json().items():
-                        if telescope_name not in self.remote_telescopes:
-                            telescope_id = telescope_data.get("serial_number") or telescope_name
-                            
-                            # Create RemoteController object for WebSocket management
-                            remote_controller = RemoteController(
-                                host=host,
-                                port=port,
-                                telescope_id=telescope_id,
-                                controller_id=controller_key
-                            )
-                            
-                            # Register with WebSocket manager
-                            success = await websocket_manager.register_remote_controller(remote_controller)
-                            if success:
-                                logging.info(f"Registered remote controller WebSocket for telescope {telescope_id}")
-                            else:
-                                logging.warning(f"Failed to register remote controller WebSocket for telescope {telescope_id}")
+                    for telescope_data in telescopes:  # telescopes is already the parsed JSON list
+                        telescope_name = telescope_data.get("name")
+                        telescope_id = telescope_data.get("serial_number") or telescope_name
+                        
+                        # Create RemoteController object for WebSocket management
+                        remote_controller = RemoteController(
+                            host=host,
+                            port=port,
+                            telescope_id=telescope_id,
+                            controller_id=controller_key
+                        )
+                        
+                        # Register with WebSocket manager
+                        success = await websocket_manager.register_remote_controller(remote_controller)
+                        if success:
+                            logging.info(f"Registered remote controller WebSocket for telescope {telescope_id}")
+                        else:
+                            logging.warning(f"Failed to register remote controller WebSocket for telescope {telescope_id}")
                     
                     # Persist to database if requested
                     if persist:
