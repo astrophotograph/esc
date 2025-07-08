@@ -294,13 +294,9 @@ class WebSocketManager:
         try:
             # Convert to WebSocket message and broadcast to subscribed clients
             if message.get("type") == "status_update":
-                ws_message = MessageFactory.create_status_update(
-                    telescope_id=telescope_id,
-                    status=message.get("payload", {}).get("status", {}),
-                    changes=message.get("payload", {}).get("changes", []),
-                    full_update=message.get("payload", {}).get("full_update", False)
-                )
-                await self.broadcast_status_update(ws_message)
+                status = message.get("payload", {}).get("status", {})
+                changes = message.get("payload", {}).get("changes", [])
+                await self.broadcast_status_update(telescope_id, status, changes)
             else:
                 # Forward other message types as-is
                 ws_message = MessageFactory.parse_message(message)
