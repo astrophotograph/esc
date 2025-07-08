@@ -572,7 +572,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   })
 
   // All-sky camera URLs per telescope
-  const [allskyUrls, setAllskyUrls] = useState<Record<string, string>>({})
+  const [allskyUrls, setAllskyUrls] = usePersistentState<Record<string, string>>(STORAGE_KEYS.UI_STATE + "-allsky-urls", {})
 
   // Show status in PiP
   const [showPipStatus, setShowPipStatus] = useState(true)

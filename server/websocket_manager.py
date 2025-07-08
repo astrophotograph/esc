@@ -19,6 +19,7 @@ from websocket_protocol import (
     StatusUpdateMessage, ControlCommandMessage, CommandResponseMessage,
     HeartbeatMessage, ErrorMessage, SubscribeMessage, UnsubscribeMessage
 )
+from remote_websocket_client import RemoteWebSocketManager, RemoteController
 
 
 class WebSocketConnection:
@@ -90,9 +91,13 @@ class WebSocketManager:
     def __init__(self):
         self.connections: Dict[str, WebSocketConnection] = {}
         self.telescope_clients: Dict[str, Any] = {}  # telescope_id -> SeestarClient
+        self.remote_clients: Dict[str, str] = {}  # telescope_id -> controller_id mapping
         self.heartbeat_interval = 30  # seconds
         self.heartbeat_task: Optional[asyncio.Task] = None
         self._running = False
+        
+        # Initialize remote WebSocket manager
+        self.remote_manager = RemoteWebSocketManager(self._handle_remote_message)
     
     async def start(self):
         """Start the WebSocket manager and background tasks."""
@@ -117,6 +122,9 @@ class WebSocketManager:
         # Close all connections
         for connection in list(self.connections.values()):
             await self.disconnect(connection.connection_id)
+        
+        # Disconnect all remote controllers
+        await self.remote_manager.disconnect_all()
         
         logger.info("WebSocket manager stopped")
     
@@ -239,6 +247,69 @@ class WebSocketManager:
             del self.telescope_clients[telescope_id]
             logger.info(f"Unregistered telescope client: {telescope_id}")
     
+    async def register_remote_controller(self, controller: RemoteController) -> bool:
+        """Register and connect to a remote controller."""
+        try:
+            success = await self.remote_manager.add_remote_controller(controller)
+            if success:
+                self.remote_clients[controller.telescope_id] = controller.controller_id
+                logger.info(f"Registered remote controller {controller.controller_id} for telescope {controller.telescope_id}")
+            return success
+        except Exception as e:
+            logger.error(f"Failed to register remote controller {controller.controller_id}: {e}")
+            return False
+    
+    async def unregister_remote_controller(self, controller_id: str, telescope_id: str = None):
+        """Unregister a remote controller."""
+        try:
+            await self.remote_manager.remove_remote_controller(controller_id)
+            
+            # Remove from mapping (find by controller_id if telescope_id not provided)
+            if telescope_id:
+                self.remote_clients.pop(telescope_id, None)
+            else:
+                # Find telescope_id by controller_id
+                telescope_to_remove = None
+                for tid, cid in self.remote_clients.items():
+                    if cid == controller_id:
+                        telescope_to_remove = tid
+                        break
+                if telescope_to_remove:
+                    self.remote_clients.pop(telescope_to_remove)
+                    
+            logger.info(f"Unregistered remote controller: {controller_id}")
+        except Exception as e:
+            logger.error(f"Failed to unregister remote controller {controller_id}: {e}")
+    
+    def is_telescope_remote(self, telescope_id: str) -> bool:
+        """Check if a telescope is managed by a remote controller."""
+        return telescope_id in self.remote_clients
+    
+    def is_telescope_local(self, telescope_id: str) -> bool:
+        """Check if a telescope is a local SeestarClient."""
+        return telescope_id in self.telescope_clients
+    
+    async def _handle_remote_message(self, telescope_id: str, message: Dict[str, Any]):
+        """Handle messages received from remote controllers."""
+        try:
+            # Convert to WebSocket message and broadcast to subscribed clients
+            if message.get("type") == "status_update":
+                ws_message = MessageFactory.create_status_update(
+                    telescope_id=telescope_id,
+                    status=message.get("payload", {}).get("status", {}),
+                    changes=message.get("payload", {}).get("changes", []),
+                    full_update=message.get("payload", {}).get("full_update", False)
+                )
+                await self.broadcast_status_update(ws_message)
+            else:
+                # Forward other message types as-is
+                ws_message = MessageFactory.parse_message(message)
+                ws_message.telescope_id = telescope_id
+                await self._broadcast_to_subscribers(ws_message, telescope_id, SubscriptionType.ALL)
+                
+        except Exception as e:
+            logger.error(f"Error handling remote message from {telescope_id}: {e}")
+    
     async def _handle_control_command(self, connection: WebSocketConnection, message: ControlCommandMessage):
         """Handle control command from client."""
         telescope_id = message.telescope_id
@@ -250,7 +321,8 @@ class WebSocketManager:
             )
             return
         
-        if telescope_id not in self.telescope_clients:
+        # Check if telescope is available (either local or remote)
+        if not (self.is_telescope_local(telescope_id) or self.is_telescope_remote(telescope_id)):
             await connection.send_message(
                 MessageFactory.create_command_response(
                     telescope_id=telescope_id,
@@ -262,13 +334,17 @@ class WebSocketManager:
             return
         
         try:
-            # Execute command on telescope client
-            client = self.telescope_clients[telescope_id]
             action = command_payload["action"]
             parameters = command_payload.get("parameters", {})
             
-            # Map WebSocket actions to telescope client methods
-            result = await self._execute_telescope_command(client, action, parameters)
+            # Route command to appropriate handler
+            if self.is_telescope_local(telescope_id):
+                # Execute on local telescope client
+                client = self.telescope_clients[telescope_id]
+                result = await self._execute_telescope_command(client, action, parameters)
+            else:
+                # Forward to remote controller
+                result = await self._execute_remote_command(telescope_id, message)
             
             # Send response back to client
             await connection.send_message(
@@ -309,6 +385,34 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error executing telescope command {action}: {e}")
             return {"status": "error", "message": str(e)}
+    
+    async def _execute_remote_command(self, telescope_id: str, message: ControlCommandMessage) -> Dict[str, Any]:
+        """Execute a command on a remote telescope via its controller."""
+        try:
+            # Convert WebSocket message to dict for remote transmission
+            remote_message = {
+                "id": message.id,
+                "type": message.type.value,
+                "telescope_id": telescope_id,
+                "timestamp": message.timestamp,
+                "payload": message.payload
+            }
+            
+            # Send to remote controller and wait for response
+            response = await self.remote_manager.send_to_telescope(telescope_id, remote_message)
+            
+            if response and response.get("type") == "command_response":
+                payload = response.get("payload", {})
+                if payload.get("success"):
+                    return payload.get("result", {"status": "success"})
+                else:
+                    raise Exception(payload.get("error", "Remote command failed"))
+            else:
+                return {"status": "success", "response": "Command sent to remote controller"}
+                
+        except Exception as e:
+            logger.error(f"Error executing remote command on {telescope_id}: {e}")
+            raise
     
     async def _execute_move_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Execute telescope movement command."""

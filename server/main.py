@@ -30,6 +30,7 @@ from smarttel.util.eventbus import EventBus
 from database import TelescopeDatabase
 from webrtc_router import router as webrtc_router
 from websocket_router import router as websocket_router
+from remote_websocket_client import RemoteController
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -841,6 +842,27 @@ class Controller:
                         "telescopes_count": telescope_count
                     }
                     
+                    # Register remote controllers with WebSocket manager for each telescope
+                    from websocket_router import websocket_manager
+                    for telescope_name, telescope_data in response.json().items():
+                        if telescope_name not in self.remote_telescopes:
+                            telescope_id = telescope_data.get("serial_number") or telescope_name
+                            
+                            # Create RemoteController object for WebSocket management
+                            remote_controller = RemoteController(
+                                host=host,
+                                port=port,
+                                telescope_id=telescope_id,
+                                controller_id=controller_key
+                            )
+                            
+                            # Register with WebSocket manager
+                            success = await websocket_manager.register_remote_controller(remote_controller)
+                            if success:
+                                logging.info(f"Registered remote controller WebSocket for telescope {telescope_id}")
+                            else:
+                                logging.warning(f"Failed to register remote controller WebSocket for telescope {telescope_id}")
+                    
                     # Persist to database if requested
                     if persist:
                         await self.db.save_remote_controller(self.remote_controllers[controller_key])
@@ -875,7 +897,12 @@ class Controller:
             if telescope_data.get("remote_controller") == controller_key:
                 telescopes_to_remove.append(telescope_name)
         
+        # Unregister from WebSocket manager
+        from websocket_router import websocket_manager
         for telescope_name in telescopes_to_remove:
+            telescope_data = self.remote_telescopes[telescope_name]
+            telescope_id = telescope_data.get("serial_number") or telescope_name
+            await websocket_manager.unregister_remote_controller(controller_key, telescope_id)
             del self.remote_telescopes[telescope_name]
             logging.info(f"Removed remote telescope {telescope_name}")
         
@@ -1079,6 +1106,59 @@ class Controller:
                                 if isinstance(result, Exception):
                                     logging.error(f"Connection error for {tel.name}: {result}")
                         
+                        # Register telescope with WebSocket manager and set up status updates
+                        if tel.client.is_connected:
+                            from websocket_router import websocket_manager
+                            telescope_id = tel.serial_number or tel.host
+                            websocket_manager.register_telescope_client(telescope_id, tel.client)
+                            
+                            # Set up event listener to forward status updates through WebSocket
+                            async def forward_status_update(event):
+                                try:
+                                    status_dict = tel.client.status.model_dump()
+                                    await websocket_manager.broadcast_status_update(telescope_id, status_dict)
+                                except Exception as e:
+                                    logging.error(f"Error forwarding status update for {telescope_id}: {e}")
+                            
+                            # Subscribe to all events that might update status
+                            # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
+                            # For now, let's set up a periodic status update instead
+                            async def periodic_status_update():
+                                while tel.client.is_connected:
+                                    try:
+                                        # Get status as dict - handle both Pydantic models and plain objects
+                                        if hasattr(tel.client.status, 'model_dump'):
+                                            status_dict = tel.client.status.model_dump()
+                                        elif hasattr(tel.client.status, '__dict__'):
+                                            status_dict = vars(tel.client.status)
+                                        else:
+                                            # For mock status objects, extract attributes manually
+                                            status_dict = {
+                                                attr: getattr(tel.client.status, attr, None)
+                                                for attr in dir(tel.client.status)
+                                                if not attr.startswith('_')
+                                            }
+                                        await websocket_manager.broadcast_status_update(telescope_id, status_dict)
+                                    except Exception as e:
+                                        logging.error(f"Error sending periodic status update for {telescope_id}: {e}")
+                                    await asyncio.sleep(1)  # Send updates every second
+                            
+                            asyncio.create_task(periodic_status_update())
+                            logging.info(f"Registered telescope {telescope_id} with WebSocket manager")
+                            
+                            # Notify WebSocket clients about telescope discovery
+                            telescope_info = {
+                                "id": telescope_id,
+                                "name": tel.name,
+                                "host": tel.host,
+                                "port": tel.port,
+                                "serial_number": tel.serial_number,
+                                "product_model": tel.product_model,
+                                "ssid": tel.ssid,
+                                "connected": True
+                            }
+                            await websocket_manager.broadcast_telescope_discovered(telescope_info)
+                        
                         return tel.name, True
                     except Exception as e:
                         logging.error(f"Failed to connect telescope {tel.name}: {e}")
@@ -1157,6 +1237,59 @@ class Controller:
                             for i, result in enumerate(results):
                                 if isinstance(result, Exception):
                                     logging.error(f"Connection error for {tel.name}: {result}")
+                        
+                        # Register telescope with WebSocket manager and set up status updates
+                        if tel.client.is_connected:
+                            from websocket_router import websocket_manager
+                            telescope_id = tel.serial_number or tel.host
+                            websocket_manager.register_telescope_client(telescope_id, tel.client)
+                            
+                            # Set up event listener to forward status updates through WebSocket
+                            async def forward_status_update(event):
+                                try:
+                                    status_dict = tel.client.status.model_dump()
+                                    await websocket_manager.broadcast_status_update(telescope_id, status_dict)
+                                except Exception as e:
+                                    logging.error(f"Error forwarding status update for {telescope_id}: {e}")
+                            
+                            # Subscribe to all events that might update status
+                            # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
+                            # For now, let's set up a periodic status update instead
+                            async def periodic_status_update():
+                                while tel.client.is_connected:
+                                    try:
+                                        # Get status as dict - handle both Pydantic models and plain objects
+                                        if hasattr(tel.client.status, 'model_dump'):
+                                            status_dict = tel.client.status.model_dump()
+                                        elif hasattr(tel.client.status, '__dict__'):
+                                            status_dict = vars(tel.client.status)
+                                        else:
+                                            # For mock status objects, extract attributes manually
+                                            status_dict = {
+                                                attr: getattr(tel.client.status, attr, None)
+                                                for attr in dir(tel.client.status)
+                                                if not attr.startswith('_')
+                                            }
+                                        await websocket_manager.broadcast_status_update(telescope_id, status_dict)
+                                    except Exception as e:
+                                        logging.error(f"Error sending periodic status update for {telescope_id}: {e}")
+                                    await asyncio.sleep(1)  # Send updates every second
+                            
+                            asyncio.create_task(periodic_status_update())
+                            logging.info(f"Registered telescope {telescope_id} with WebSocket manager")
+                            
+                            # Notify WebSocket clients about telescope discovery
+                            telescope_info = {
+                                "id": telescope_id,
+                                "name": tel.name,
+                                "host": tel.host,
+                                "port": tel.port,
+                                "serial_number": tel.serial_number,
+                                "product_model": tel.product_model,
+                                "ssid": tel.ssid,
+                                "connected": True
+                            }
+                            await websocket_manager.broadcast_telescope_discovered(telescope_info)
                         
                         return tel.name, True
                     except Exception as e:
@@ -1248,6 +1381,11 @@ class Controller:
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
         async def startup_event():
+            # Start WebSocket manager first
+            from websocket_router import websocket_manager
+            await websocket_manager.start()
+            logging.info("WebSocket manager started")
+            
             # Connect to all loaded telescopes after server is fully started
             if self.telescopes:
                 async def delayed_connect():
@@ -1260,6 +1398,11 @@ class Controller:
         # Add shutdown handler for WebRTC cleanup
         @self.app.on_event("shutdown")
         async def shutdown_event():
+            # Stop WebSocket manager
+            from websocket_router import websocket_manager
+            await websocket_manager.stop()
+            logging.info("WebSocket manager stopped")
+            
             from webrtc_router import cleanup_webrtc_service
             await cleanup_webrtc_service()
 
