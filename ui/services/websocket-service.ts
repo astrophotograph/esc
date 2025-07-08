@@ -205,6 +205,7 @@ export class WebSocketService extends EventEmitter {
           wsUrl += `?${params.toString()}`
         }
 
+        console.log('Attempting WebSocket connection to:', wsUrl)
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {
@@ -235,8 +236,9 @@ export class WebSocketService extends EventEmitter {
         }
 
         this.ws.onerror = (error) => {
+          console.error('WebSocket connection error:', error, 'URL:', wsUrl)
           this.setConnectionState(ConnectionState.ERROR)
-          reject(new Error('Failed to connect to WebSocket'))
+          reject(new Error(`Failed to connect to WebSocket at ${wsUrl}`))
         }
 
       } catch (error) {

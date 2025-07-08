@@ -77,10 +77,25 @@ export function useTelescopeWebSocket(
     
     if (!wsServiceRef.current) {
       isNewServiceInstance = true;
+      // Construct WebSocket URL for backend server
+      const getWebSocketBaseUrl = () => {
+        if (process.env.NEXT_PUBLIC_WS_URL) {
+          return process.env.NEXT_PUBLIC_WS_URL;
+        }
+        
+        if (typeof window !== 'undefined') {
+          // In browser, always connect to backend on port 8000
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const hostname = window.location.hostname;
+          return `${protocol}//${hostname}:8000`;
+        }
+        
+        // Fallback for server-side rendering
+        return 'ws://localhost:8000';
+      };
+
       wsServiceRef.current = getWebSocketService({
-        baseUrl: process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? 
-          `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` : 
-          'ws://localhost:8000'),
+        baseUrl: getWebSocketBaseUrl(),
         reconnectAttempts: 5,
         reconnectDelayMs: 1000,
         commandTimeoutMs: 10000
