@@ -160,6 +160,31 @@ async def websocket_health(manager=Depends(get_websocket_manager)):
     }
 
 
+# Debug endpoint for internal state
+@router.get("/ws/debug")
+async def websocket_debug(manager=Depends(get_websocket_manager)):
+    """Debug WebSocket manager internal state."""
+    return {
+        "status": "healthy" if manager._running else "stopped",
+        "active_connections": len(manager.connections),
+        "local_telescopes": list(manager.telescope_clients.keys()),
+        "remote_telescopes": dict(manager.remote_clients),
+        "total_registered": len(manager.telescope_clients) + len(manager.remote_clients),
+        "remote_manager_clients": len(manager.remote_manager.clients) if hasattr(manager, 'remote_manager') else 0,
+        "connection_details": [
+            {
+                "connection_id": conn.connection_id,
+                "subscriptions": {
+                    telescope_id: list(subs) 
+                    for telescope_id, subs in conn.subscriptions.items()
+                },
+                "is_alive": conn.is_alive
+            }
+            for conn in manager.connections.values()
+        ]
+    }
+
+
 # Endpoint to broadcast a test message (for development/testing)
 @router.post("/ws/test/broadcast")
 async def test_broadcast(
