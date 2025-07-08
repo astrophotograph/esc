@@ -31,14 +31,55 @@ async def websocket_endpoint(
     manager=Depends(get_websocket_manager)
 ):
     """
-    WebSocket endpoint for telescope communication.
+    General WebSocket endpoint for telescope communication.
     
     Query parameters:
     - telescope_id: Optional specific telescope to connect to
     - client_id: Optional client identifier for connection tracking
     """
+    await _handle_websocket_connection(websocket, telescope_id, client_id, manager)
+
+
+@router.websocket("/ws/{telescope_id}")
+async def websocket_telescope_endpoint(
+    websocket: WebSocket,
+    telescope_id: str,
+    client_id: Optional[str] = Query(None, description="Client identifier for reconnection"),
+    manager=Depends(get_websocket_manager)
+):
+    """
+    Telescope-specific WebSocket endpoint.
+    
+    Path parameters:
+    - telescope_id: Specific telescope to connect to
+    
+    Query parameters:
+    - client_id: Optional client identifier for connection tracking
+    """
+    await _handle_websocket_connection(websocket, telescope_id, client_id, manager)
+
+
+async def _handle_websocket_connection(
+    websocket: WebSocket,
+    telescope_id: Optional[str],
+    client_id: Optional[str],
+    manager
+):
+    """
+    Handle WebSocket connection for telescope communication.
+    
+    Parameters:
+    - telescope_id: Optional specific telescope to connect to
+    - client_id: Optional client identifier for connection tracking
+    """
     # Generate connection ID
     connection_id = client_id or f"client-{uuid.uuid4().hex[:8]}"
+    
+    # Log the connection attempt with telescope ID
+    if telescope_id:
+        logger.info(f"WebSocket connection attempt for telescope {telescope_id}, client: {connection_id}")
+    else:
+        logger.info(f"WebSocket connection attempt (no telescope specified), client: {connection_id}")
     
     # Accept the WebSocket connection first
     try:
