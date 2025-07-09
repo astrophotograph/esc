@@ -7,19 +7,16 @@ and coordinates between telescope clients and web clients.
 
 import asyncio
 import json
-import logging
 from typing import Dict, List, Set, Optional, Any
-from weakref import WeakSet
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 from loguru import logger
 
-from websocket_protocol import (
-    WebSocketMessage, MessageFactory, MessageType, SubscriptionType,
-    StatusUpdateMessage, ControlCommandMessage, CommandResponseMessage,
-    HeartbeatMessage, ErrorMessage, SubscribeMessage, UnsubscribeMessage
-)
 from remote_websocket_client import RemoteWebSocketManager, RemoteController
+from websocket_protocol import (
+    WebSocketMessage, MessageFactory, SubscriptionType,
+    StatusUpdateMessage, ControlCommandMessage, HeartbeatMessage, SubscribeMessage, UnsubscribeMessage
+)
 
 
 class WebSocketConnection:

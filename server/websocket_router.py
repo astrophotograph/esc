@@ -5,7 +5,6 @@ This module provides the FastAPI WebSocket endpoints and integrates
 with the WebSocket manager for telescope control.
 """
 
-import asyncio
 import uuid
 from typing import Optional
 
@@ -13,7 +12,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from loguru import logger
 
 from websocket_manager import websocket_manager
-
 
 router = APIRouter()
 
