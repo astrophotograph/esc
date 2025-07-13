@@ -3,3 +3,5 @@
 # Database files
 server/telescopes.db
 telescopes.db
+
+ui/coverage
