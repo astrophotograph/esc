@@ -114,6 +114,36 @@ export class TelescopeTestHelpers {
   }
 
   /**
+   * Check if battery indicator has threshold border warning
+   */
+  async checkBatteryThresholdBorder(): Promise<{ hasWarning: boolean, hasCritical: boolean }> {
+    const batteryContainer = this.page.locator('div').filter({ has: this.page.locator('svg[data-lucide="battery"], svg[data-lucide="battery-charging"], svg[data-lucide="battery-full"]') })
+    
+    const hasYellowBorder = await batteryContainer.locator('.border-yellow-500').count() > 0
+    const hasRedBorder = await batteryContainer.locator('.border-red-500').count() > 0
+    
+    return {
+      hasWarning: hasYellowBorder,
+      hasCritical: hasRedBorder
+    }
+  }
+
+  /**
+   * Check if disk usage indicator has threshold border warning
+   */
+  async checkDiskUsageThresholdBorder(): Promise<{ hasWarning: boolean, hasCritical: boolean }> {
+    const diskContainer = this.page.locator('div').filter({ has: this.page.locator('svg[data-lucide="hard-drive"]') })
+    
+    const hasYellowBorder = await diskContainer.locator('.border-yellow-500').count() > 0
+    const hasRedBorder = await diskContainer.locator('.border-red-500').count() > 0
+    
+    return {
+      hasWarning: hasYellowBorder,
+      hasCritical: hasRedBorder
+    }
+  }
+
+  /**
    * Wait for and verify a WebSocket message was sent (by checking console logs)
    */
   async waitForWebSocketMessage(messageType: string, timeout: number = 5000): Promise<void> {

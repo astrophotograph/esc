@@ -267,4 +267,138 @@ test.describe('Celestial Search Dialog', () => {
     // Dialog should close
     await expect(page.locator('[role="dialog"]')).not.toBeVisible()
   })
+
+  test('should show confirmation dialog when trying to goto during Stack stage', async ({ page }) => {
+    // Mock telescope status with Stack stage
+    await page.addInitScript(() => {
+      window.mockStreamStatus = {
+        status: {
+          stage: 'Stack',
+          battery_capacity: 75
+        }
+      }
+    })
+    
+    await page.reload()
+    await testHelpers.waitForAppReady()
+    
+    await testHelpers.openCelestialSearchDialog()
+    
+    // Wait for objects and select the first one
+    await page.waitForTimeout(1000)
+    const firstObject = page.locator('[role="option"]').first()
+    await firstObject.click()
+    
+    // Click Goto button
+    const gotoButton = page.locator('button:has-text("Goto"):not(:has-text("Image"))')
+    await gotoButton.click()
+    
+    // Should show confirmation dialog instead of closing
+    await expect(page.locator('[role="dialog"]')).toBeVisible() // Main dialog still open
+    await expect(page.locator('text="Stop Current Imaging Session?"')).toBeVisible()
+    await expect(page.locator('text="Stop & Goto"')).toBeVisible()
+  })
+
+  test('should proceed with goto after confirming stop imaging', async ({ page }) => {
+    // Mock telescope status with Stack stage
+    await page.addInitScript(() => {
+      window.mockStreamStatus = {
+        status: {
+          stage: 'Stack',
+          battery_capacity: 75
+        }
+      }
+    })
+    
+    await page.reload()
+    await testHelpers.waitForAppReady()
+    
+    await testHelpers.openCelestialSearchDialog()
+    
+    // Wait for objects and select the first one
+    await page.waitForTimeout(1000)
+    const firstObject = page.locator('[role="option"]').first()
+    await firstObject.click()
+    
+    // Click Goto button
+    const gotoButton = page.locator('button:has-text("Goto"):not(:has-text("Image"))')
+    await gotoButton.click()
+    
+    // Confirm stop imaging
+    await page.locator('text="Stop & Goto"').click()
+    
+    // Should proceed with goto and show success toast
+    await expect(page.locator('[data-sonner-toast]')).toBeVisible()
+    await expect(page.locator('text=/Navigating telescope to/')).toBeVisible()
+    
+    // Main dialog should close
+    await expect(page.locator('[role="dialog"]')).not.toBeVisible()
+  })
+
+  test('should cancel goto when canceling stop imaging confirmation', async ({ page }) => {
+    // Mock telescope status with Stack stage
+    await page.addInitScript(() => {
+      window.mockStreamStatus = {
+        status: {
+          stage: 'Stack',
+          battery_capacity: 75
+        }
+      }
+    })
+    
+    await page.reload()
+    await testHelpers.waitForAppReady()
+    
+    await testHelpers.openCelestialSearchDialog()
+    
+    // Wait for objects and select the first one
+    await page.waitForTimeout(1000)
+    const firstObject = page.locator('[role="option"]').first()
+    await firstObject.click()
+    
+    // Click Goto button
+    const gotoButton = page.locator('button:has-text("Goto"):not(:has-text("Image"))')
+    await gotoButton.click()
+    
+    // Cancel stop imaging
+    await page.locator('text="Cancel"').last().click()
+    
+    // Should stay in the main dialog without proceeding
+    await expect(page.locator('[role="dialog"]')).toBeVisible()
+    await expect(page.locator('text="Stop Current Imaging Session?"')).not.toBeVisible()
+    
+    // No toast should appear
+    await expect(page.locator('[data-sonner-toast]')).not.toBeVisible()
+  })
+
+  test('should show different confirmation text for Goto & Image during Stack stage', async ({ page }) => {
+    // Mock telescope status with Stack stage
+    await page.addInitScript(() => {
+      window.mockStreamStatus = {
+        status: {
+          stage: 'Stack',
+          battery_capacity: 75
+        }
+      }
+    })
+    
+    await page.reload()
+    await testHelpers.waitForAppReady()
+    
+    await testHelpers.openCelestialSearchDialog()
+    
+    // Wait for objects and select the first one
+    await page.waitForTimeout(1000)
+    const firstObject = page.locator('[role="option"]').first()
+    await firstObject.click()
+    
+    // Click Goto & Image button
+    const gotoImageButton = page.locator('button:has-text("Goto & Image")')
+    await gotoImageButton.click()
+    
+    // Should show confirmation dialog with imaging-specific text
+    await expect(page.locator('text="Stop Current Imaging Session?"')).toBeVisible()
+    await expect(page.locator('text="Stop & Goto with Imaging"')).toBeVisible()
+    await expect(page.locator('text="Imaging will then start on the new target"')).toBeVisible()
+  })
 })

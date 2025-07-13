@@ -13,6 +13,16 @@ import {
 } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
@@ -29,11 +39,13 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { celestialObjects, handleTargetSelect, currentTelescope } = useTelescopeContext()
+  const { celestialObjects, handleTargetSelect, currentTelescope, streamStatus } = useTelescopeContext()
   const { sendGotoMessage, isConnected, connect } = useTelescopeWebSocket({ autoConnect: false })
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
   const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
+  const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
+  const [pendingGotoAction, setPendingGotoAction] = useState<{ startImaging: boolean } | null>(null)
 
   useEffect(() => {
     // Get objects with real-time calculations for planets, sun, moon
@@ -53,6 +65,8 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     if (!open) {
       setSelectedObject(null)
       setIsPerformingAction(false)
+      setShowStopImagingConfirm(false)
+      setPendingGotoAction(null)
     }
   }, [open])
 
@@ -94,6 +108,23 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   }
 
   const handleGoto = async (startImaging: boolean = false) => {
+    if (!selectedObject) return
+    
+    // Check if currently imaging (stage is "Stack")
+    const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
+    
+    if (isCurrentlyImaging) {
+      // Store the pending action and show confirmation dialog
+      setPendingGotoAction({ startImaging })
+      setShowStopImagingConfirm(true)
+      return
+    }
+    
+    // Proceed with goto if not imaging
+    await executeGoto(startImaging)
+  }
+
+  const executeGoto = async (startImaging: boolean = false) => {
     if (!selectedObject) return
     
     setIsPerformingAction(true)
@@ -198,7 +229,24 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     setSelectedObject(null)
   }
 
+  const handleConfirmStopImaging = async () => {
+    setShowStopImagingConfirm(false)
+    
+    if (pendingGotoAction) {
+      // TODO: Add stop imaging command here if needed
+      // For now, just proceed with the goto
+      await executeGoto(pendingGotoAction.startImaging)
+      setPendingGotoAction(null)
+    }
+  }
+
+  const handleCancelStopImaging = () => {
+    setShowStopImagingConfirm(false)
+    setPendingGotoAction(null)
+  }
+
   return (
+    <>
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput 
         placeholder="Search celestial objects above horizon..." 
@@ -341,5 +389,27 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         </div>
       </div>
     </CommandDialog>
+
+    {/* Stop Imaging Confirmation Dialog */}
+    <AlertDialog open={showStopImagingConfirm} onOpenChange={setShowStopImagingConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Stop Current Imaging Session?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The telescope is currently imaging another target. Going to {selectedObject?.name} will stop the current imaging session.
+            {pendingGotoAction?.startImaging && " Imaging will then start on the new target."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelStopImaging}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmStopImaging}>
+            {pendingGotoAction?.startImaging ? "Stop & Goto with Imaging" : "Stop & Goto"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

@@ -40,6 +40,26 @@ import { WebRTCLiveView } from "./WebRTCLiveView"
 import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 
 export function CameraView() {
+  // Helper function to get threshold border classes
+  const getThresholdBorderClass = (value: number, warningThreshold: number, criticalThreshold: number) => {
+    if (value >= criticalThreshold) {
+      return "border-2 border-red-500 rounded-md px-1"
+    } else if (value >= warningThreshold) {
+      return "border-2 border-yellow-500 rounded-md px-1"
+    }
+    return ""
+  }
+
+  // Helper function to get battery threshold border classes
+  const getBatteryThresholdBorderClass = (batteryLevel: number) => {
+    if (batteryLevel <= 10) {
+      return "border-2 border-red-500 rounded-md px-1"
+    } else if (batteryLevel <= 20) {
+      return "border-2 border-yellow-500 rounded-md px-1"
+    }
+    return ""
+  }
+
   const {
     isControlsCollapsed,
     selectedTarget,
@@ -952,7 +972,7 @@ export function CameraView() {
             <div className="flex items-center gap-4">
               {/* System Status Indicators */}
               <div className="flex items-center gap-3 text-sm">
-                <div className="flex items-center gap-1">
+                <div className={`flex items-center gap-1 ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
                   {localStreamStatus?.status?.charger_status === "Charging" ? (
                     <BatteryCharging className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
                   ) : localStreamStatus?.status?.charger_status === "Full" ? (
@@ -981,9 +1001,22 @@ export function CameraView() {
                   />
                   <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className={`flex items-center gap-1 ${getThresholdBorderClass(
+                  localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                    ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                    : systemStats.diskUsage || 0,
+                  80, // warning threshold at 80%
+                  90  // critical threshold at 90%
+                )}`}>
                   <HardDrive
-                    className={`w-4 h-4 ${(localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100) : systemStats.diskUsage) < 80 ? "text-green-400" : "text-yellow-400"}`}
+                    className={`w-4 h-4 ${(() => {
+                      const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                        ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                        : systemStats.diskUsage || 0
+                      if (diskUsage >= 90) return "text-red-400"
+                      if (diskUsage >= 80) return "text-yellow-400"
+                      return "text-green-400"
+                    })()}`}
                   />
                   <span className="text-gray-300" title={localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB ? `${localStreamStatus?.status?.freeMB}MB free of ${localStreamStatus?.status?.totalMB}MB total` : (systemStats.freeMB && systemStats.totalMB ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` : undefined)}>
                     {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
