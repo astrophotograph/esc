@@ -15,14 +15,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTelescope } from "@/components/telescope/TelescopeProvider"
-import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
+import { useTelescopeContext } from "../../context/TelescopeContext"
 import {useTheme} from "next-themes"
 import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
 
 export function Header() {
   const { theme: _theme, setTheme: _setTheme } = useTheme()
   const { showPiP, setShowPiP } = useTelescope()
-  const { enableSceneryMode, isConnected } = useTelescopeWebSocket({ autoConnect: false })
+  const { handleSceneryMode } = useTelescopeContext()
   
   const [sceneryMode, setSceneryMode] = useState(false)
   
@@ -30,15 +30,11 @@ export function Header() {
     const newSceneryMode = !sceneryMode
     setSceneryMode(newSceneryMode)
     
-    // Send WebSocket message to backend
+    // Send scenery mode command through context
     try {
-      if (isConnected) {
-        console.log('Sending scenery mode message:', { mode: "scenery" })
-        await enableSceneryMode()
-        console.log('Scenery mode message sent successfully')
-      } else {
-        console.warn('WebSocket not connected, scenery mode message not sent')
-      }
+      console.log('Sending scenery mode message:', { mode: "scenery" })
+      await handleSceneryMode()
+      console.log('Scenery mode message sent successfully')
     } catch (error) {
       console.error('Failed to send scenery mode message:', error)
       // Revert the state if sending failed
@@ -79,9 +75,8 @@ export function Header() {
             variant={sceneryMode ? "default" : "outline"}
             size="sm"
             onClick={handleSceneryToggle}
-            disabled={!isConnected}
             className="flex items-center gap-2"
-            title={!isConnected ? "WebSocket not connected" : "Toggle Scenery Mode"}
+            title="Toggle Scenery Mode"
           >
             <Mountain className="w-4 h-4" />
             Scenery

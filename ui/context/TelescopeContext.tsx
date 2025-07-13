@@ -267,6 +267,8 @@ interface TelescopeContextType {
   handleTelescopeMove: (direction: string) => void
   handleTelescopePark: () => void
   handleFocusAdjust: (direction: "in" | "out") => void
+  handleGotoTarget: (targetName: string, ra: number, dec: number, startImaging?: boolean, targetType?: string, magnitude?: number, description?: string) => Promise<void>
+  handleSceneryMode: () => Promise<void>
   handleTargetSelect: (target: CelestialObject) => void
   saveObservation: () => void
   deleteObservation: (id: string) => void
@@ -421,8 +423,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     moveTelescope: wsMoveTelescope,
     parkTelescope: wsParkTelescope,
     adjustFocus: wsAdjustFocus,
+    sendGotoMessage: wsSendGotoMessage,
+    enableSceneryMode: wsEnableSceneryMode,
     isConnected: wsIsConnected,
     connectionState: wsConnectionState,
+    connect: wsConnect,
+    disconnect: wsDisconnect,
   } = useTelescopeWebSocket({
     autoConnect: false
   });
@@ -1271,6 +1277,31 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [rawCurrentTelescope])
 
+  // Manage WebSocket connection based on current telescope
+  useEffect(() => {
+    const connectToTelescope = async () => {
+      if (currentTelescope && !wsIsConnected) {
+        try {
+          console.log('🔌 Connecting to WebSocket for telescope:', currentTelescope.name)
+          await wsConnect(currentTelescope)
+          console.log('✅ WebSocket connected successfully')
+        } catch (error) {
+          console.error('❌ Failed to connect WebSocket:', error)
+          addStatusAlert({
+            type: 'error',
+            title: 'Connection Failed',
+            message: `Failed to connect to ${currentTelescope.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          })
+        }
+      } else if (!currentTelescope && wsIsConnected) {
+        console.log('🔌 Disconnecting WebSocket (no telescope selected)')
+        wsDisconnect()
+      }
+    }
+
+    connectToTelescope()
+  }, [currentTelescope, wsIsConnected, wsConnect, wsDisconnect])
+
   const handleTelescopeMove = async (direction: string) => {
     if (!currentTelescope) {
       addStatusAlert({
@@ -1389,6 +1420,88 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         type: "error",
         title: "Focus Adjustment Failed",
         message: `Failed to adjust focus: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
+  }
+
+  const handleGotoTarget = async (
+    targetName: string, 
+    ra: number, 
+    dec: number, 
+    startImaging: boolean = false,
+    targetType?: string,
+    magnitude?: number,
+    description?: string
+  ) => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before sending goto command",
+      })
+      return
+    }
+
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot send goto command - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
+    try {
+      await wsSendGotoMessage(targetName, ra, dec, startImaging, targetType, magnitude, description, currentTelescope)
+
+      addStatusAlert({
+        type: "success",
+        title: startImaging ? "Goto & Imaging Started" : "Goto Command Sent",
+        message: `Telescope navigating to ${targetName}${startImaging ? ' and starting imaging' : ''}`,
+      })
+    } catch (error) {
+      console.error('Error sending goto command via WebSocket:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Goto Command Failed",
+        message: `Failed to send goto command: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
+  }
+
+  const handleSceneryMode = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before enabling scenery mode",
+      })
+      return
+    }
+
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot enable scenery mode - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
+    try {
+      await wsEnableSceneryMode(currentTelescope)
+
+      addStatusAlert({
+        type: "success",
+        title: "Scenery Mode Enabled",
+        message: "Telescope switched to scenery viewing mode",
+      })
+    } catch (error) {
+      console.error('Error enabling scenery mode via WebSocket:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Scenery Mode Failed",
+        message: `Failed to enable scenery mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     }
   }
@@ -2120,6 +2233,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     handleTelescopeMove,
     handleTelescopePark,
     handleFocusAdjust,
+    handleGotoTarget,
+    handleSceneryMode,
     handleTargetSelect,
     saveObservation,
     deleteObservation,

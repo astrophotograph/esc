@@ -39,8 +39,7 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { celestialObjects, handleTargetSelect, currentTelescope, streamStatus } = useTelescopeContext()
-  const { sendGotoMessage, isConnected, connect } = useTelescopeWebSocket({ autoConnect: false })
+  const { celestialObjects, handleTargetSelect, currentTelescope, streamStatus, handleGotoTarget } = useTelescopeContext()
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
   const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
@@ -69,16 +68,6 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       setPendingGotoAction(null)
     }
   }, [open])
-
-  // Establish WebSocket connection when dialog opens and telescope is available
-  useEffect(() => {
-    if (open && currentTelescope && !isConnected) {
-      console.log('🔌 Attempting to connect to WebSocket for telescope:', currentTelescope.name)
-      connect(currentTelescope).catch((error) => {
-        console.error('❌ Failed to connect to WebSocket:', error)
-      })
-    }
-  }, [open, currentTelescope, isConnected, connect])
 
   // Group objects by type
   const groupedObjects = visibleObjects.reduce((groups, obj) => {
@@ -146,72 +135,49 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       // Select the target in the context
       handleTargetSelect(celestialObject)
       
-      // Send goto message to server
-      console.log(`WebSocket connection status: ${isConnected ? 'CONNECTED' : 'DISCONNECTED'}`)
-      if (isConnected) {
-        console.log(`Sending goto message for ${selectedObject.name} with imaging=${startImaging}`)
-        console.log('Message details:', {
-          target_name: selectedObject.name,
-          coordinates: { ra: selectedObject.ra, dec: selectedObject.dec },
-          start_imaging: startImaging,
-          target_type: selectedObject.type,
-          magnitude: selectedObject.magnitude,
-          description: selectedObject.description
-        })
-        
-        try {
-          await sendGotoMessage(
-            selectedObject.name,
-            selectedObject.ra,
-            selectedObject.dec,
-            startImaging,
-            selectedObject.type,
-            selectedObject.magnitude,
-            selectedObject.description
-          )
-          console.log(`✅ Goto message sent successfully for ${selectedObject.name}`)
-          
-          // Show success toast
-          toast.success(
-            startImaging 
-              ? `Navigating to ${selectedObject.name} and starting imaging` 
-              : `Navigating telescope to ${selectedObject.name}`,
-            {
-              description: `${selectedObject.type.charAt(0).toUpperCase() + selectedObject.type.slice(1)} • Magnitude ${selectedObject.magnitude} • Altitude ${selectedObject.altitude.toFixed(1)}°`,
-              duration: 4000,
-            }
-          )
-        } catch (msgError) {
-          console.error('❌ Failed to send goto message:', msgError)
-          
-          // Show error toast
-          toast.error("Failed to send goto command", {
-            description: `Could not navigate to ${selectedObject.name}. Please check your connection.`,
-            duration: 5000,
-          })
-          throw msgError
+      console.log(`Sending goto message for ${selectedObject.name} with imaging=${startImaging}`)
+      console.log('Message details:', {
+        target_name: selectedObject.name,
+        coordinates: { ra: selectedObject.ra, dec: selectedObject.dec },
+        start_imaging: startImaging,
+        target_type: selectedObject.type,
+        magnitude: selectedObject.magnitude,
+        description: selectedObject.description
+      })
+      
+      // Use the context function to handle goto
+      await handleGotoTarget(
+        selectedObject.name,
+        selectedObject.ra,
+        selectedObject.dec,
+        startImaging,
+        selectedObject.type,
+        selectedObject.magnitude,
+        selectedObject.description
+      )
+      
+      console.log(`✅ Goto message sent successfully for ${selectedObject.name}`)
+      
+      // Show success toast
+      toast.success(
+        startImaging 
+          ? `Navigating to ${selectedObject.name} and starting imaging` 
+          : `Navigating telescope to ${selectedObject.name}`,
+        {
+          description: `${selectedObject.type.charAt(0).toUpperCase() + selectedObject.type.slice(1)} • Magnitude ${selectedObject.magnitude} • Altitude ${selectedObject.altitude.toFixed(1)}°`,
+          duration: 4000,
         }
-      } else {
-        console.warn('⚠️ WebSocket not connected, goto message not sent')
-        
-        // Show warning toast for no connection
-        toast.warning("Telescope not connected", {
-          description: "Unable to send goto command. Please ensure telescope is connected.",
-          duration: 5000,
-        })
-      }
+      )
       
       onOpenChange(false)
     } catch (error) {
       console.error('Failed to send goto message:', error)
       
-      // Show generic error toast if not already shown
-      if (isConnected) {
-        toast.error("Unexpected error occurred", {
-          description: "Failed to process goto command. Please try again.",
-          duration: 5000,
-        })
-      }
+      // Show error toast
+      toast.error("Failed to send goto command", {
+        description: `Could not navigate to ${selectedObject.name}. Please check your connection.`,
+        duration: 5000,
+      })
       
       // Still close the dialog even if command fails
       onOpenChange(false)
@@ -354,9 +320,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 variant="outline"
                 size="sm"
                 onClick={() => handleGoto(false)}
-                disabled={isPerformingAction || !isConnected}
+                disabled={isPerformingAction}
                 className="flex-1"
-                title={!isConnected ? 'WebSocket not connected' : 'Navigate telescope to selected object'}
+                title='Navigate telescope to selected object'
               >
                 <Navigation className="w-4 h-4 mr-1" />
                 Goto
@@ -365,9 +331,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 variant="default"
                 size="sm"
                 onClick={handleGotoAndImage}
-                disabled={isPerformingAction || !isConnected}
+                disabled={isPerformingAction}
                 className="flex-1"
-                title={!isConnected ? 'WebSocket not connected' : 'Navigate telescope and start imaging'}
+                title='Navigate telescope and start imaging'
               >
                 <Camera className="w-4 h-4 mr-1" />
                 Goto & Image
