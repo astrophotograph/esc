@@ -168,6 +168,20 @@ export class TelescopeTestHelpers {
     const shortcutHint = this.page.locator('kbd:has-text("⌘K")')
     await expect(shortcutHint).toBeVisible()
   }
+
+  /**
+   * Wait for and verify a toast notification appears
+   */
+  async waitForToast(type: 'success' | 'error' | 'warning', messagePattern: string | RegExp, timeout: number = 5000): Promise<void> {
+    await this.page.waitForSelector('[data-sonner-toast]', { timeout })
+    await expect(this.page.locator('[data-sonner-toast]')).toBeVisible()
+    
+    if (typeof messagePattern === 'string') {
+      await expect(this.page.locator(`text=${messagePattern}`)).toBeVisible()
+    } else {
+      await expect(this.page.locator(`text=${messagePattern}`)).toBeVisible()
+    }
+  }
 }
 
 /**

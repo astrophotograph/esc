@@ -107,6 +107,10 @@ test.describe('Celestial Search Dialog', () => {
     // Dialog should close
     await expect(page.locator('[role="dialog"]')).not.toBeVisible()
     
+    // Verify success toast appears
+    await expect(page.locator('[data-sonner-toast]')).toBeVisible()
+    await expect(page.locator('text=/Navigating telescope to/')).toBeVisible()
+    
     // Verify goto message was sent (check console logs)
     const gotoMessage = consoleMessages.find(msg => 
       msg.includes('goto') && msg.includes('message')
@@ -136,6 +140,10 @@ test.describe('Celestial Search Dialog', () => {
     
     // Dialog should close
     await expect(page.locator('[role="dialog"]')).not.toBeVisible()
+    
+    // Verify success toast appears with imaging message
+    await expect(page.locator('[data-sonner-toast]')).toBeVisible()
+    await expect(page.locator('text=/and starting imaging/')).toBeVisible()
     
     // Verify goto message with imaging=true was sent
     const gotoImageMessage = consoleMessages.find(msg => 
@@ -225,6 +233,29 @@ test.describe('Celestial Search Dialog', () => {
     // Goto buttons should be disabled due to no connection
     await expect(page.locator('button:has-text("Goto"):not(:has-text("Image"))')).toBeDisabled()
     await expect(page.locator('button:has-text("Goto & Image")')).toBeDisabled()
+  })
+
+  test('should show warning toast when WebSocket is disconnected', async ({ page }) => {
+    // Mock failed WebSocket connection
+    await mockWS.mockWebSocketFailure()
+    
+    await page.goto('/')
+    await testHelpers.waitForAppReady()
+    
+    await testHelpers.openCelestialSearchDialog()
+    
+    // Wait for objects and select the first one
+    await page.waitForTimeout(1000)
+    const firstObject = page.locator('[role="option"]').first()
+    await firstObject.click()
+    
+    // Force click the disabled button to trigger the warning
+    const gotoButton = page.locator('button:has-text("Goto"):not(:has-text("Image"))')
+    await gotoButton.click({ force: true })
+    
+    // Should show warning toast
+    await expect(page.locator('[data-sonner-toast]')).toBeVisible()
+    await expect(page.locator('text=/Telescope not connected/')).toBeVisible()
   })
 
   test('should close dialog when clicked outside', async ({ page }) => {

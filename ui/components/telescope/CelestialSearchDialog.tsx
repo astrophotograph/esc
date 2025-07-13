@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Search, MapPin, Clock, Navigation, Camera } from "lucide-react"
+import { toast } from "sonner"
 import {
   CommandDialog,
   CommandEmpty,
@@ -138,17 +139,49 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
             selectedObject.description
           )
           console.log(`✅ Goto message sent successfully for ${selectedObject.name}`)
+          
+          // Show success toast
+          toast.success(
+            startImaging 
+              ? `Navigating to ${selectedObject.name} and starting imaging` 
+              : `Navigating telescope to ${selectedObject.name}`,
+            {
+              description: `${selectedObject.type.charAt(0).toUpperCase() + selectedObject.type.slice(1)} • Magnitude ${selectedObject.magnitude} • Altitude ${selectedObject.altitude.toFixed(1)}°`,
+              duration: 4000,
+            }
+          )
         } catch (msgError) {
           console.error('❌ Failed to send goto message:', msgError)
+          
+          // Show error toast
+          toast.error("Failed to send goto command", {
+            description: `Could not navigate to ${selectedObject.name}. Please check your connection.`,
+            duration: 5000,
+          })
           throw msgError
         }
       } else {
         console.warn('⚠️ WebSocket not connected, goto message not sent')
+        
+        // Show warning toast for no connection
+        toast.warning("Telescope not connected", {
+          description: "Unable to send goto command. Please ensure telescope is connected.",
+          duration: 5000,
+        })
       }
       
       onOpenChange(false)
     } catch (error) {
       console.error('Failed to send goto message:', error)
+      
+      // Show generic error toast if not already shown
+      if (isConnected) {
+        toast.error("Unexpected error occurred", {
+          description: "Failed to process goto command. Please try again.",
+          duration: 5000,
+        })
+      }
+      
       // Still close the dialog even if command fails
       onOpenChange(false)
     } finally {
