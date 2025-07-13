@@ -1,0 +1,103 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    services:
+      # Backend service for full E2E testing
+      backend:
+        image: python:3.11
+        ports:
+          - 8000:8000
+        env:
+          PYTHONUNBUFFERED: 1
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+        cache-dependency-path: ui/pnpm-lock.yaml
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Install Python dependencies
+      run: |
+        cd server
+        uv sync
+
+    - name: Start backend server
+      run: |
+        cd server
+        uv run python main.py server --host 0.0.0.0 --port 8000 &
+        # Wait for server to start
+        sleep 10
+      env:
+        PYTHONUNBUFFERED: 1
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install frontend dependencies
+      run: |
+        cd ui
+        pnpm install
+
+    - name: Install Playwright browsers
+      run: |
+        cd ui
+        pnpm exec playwright install --with-deps
+
+    - name: Build frontend
+      run: |
+        cd ui
+        pnpm run build
+
+    - name: Start frontend server
+      run: |
+        cd ui
+        pnpm start &
+        # Wait for frontend to start
+        sleep 10
+      env:
+        NODE_ENV: production
+
+    - name: Run Playwright tests
+      run: |
+        cd ui
+        pnpm run test:e2e
+      env:
+        CI: true
+
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: ui/playwright-report/
+        retention-days: 30
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-results
+        path: ui/test-results/
+        retention-days: 30
