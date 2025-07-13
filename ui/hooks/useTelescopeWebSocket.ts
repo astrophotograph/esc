@@ -294,6 +294,102 @@ export function useTelescopeWebSocket(
       targetTelescope.serial_number || targetTelescope.id
     );
   }, [currentTelescope]);
+
+  const gotoTarget = useCallback(async (targetName: string, ra: number, dec: number, telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
+      throw new Error('WebSocket not connected or no telescope selected');
+    }
+    
+    return await wsServiceRef.current.sendCommand(
+      CommandAction.GOTO,
+      { 
+        target_name: targetName,
+        is_j2000: true,
+        ra: ra,
+        dec: dec 
+      },
+      targetTelescope.serial_number || targetTelescope.id
+    );
+  }, [currentTelescope]);
+
+  const startImaging = useCallback(async (telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
+      throw new Error('WebSocket not connected or no telescope selected');
+    }
+    
+    return await wsServiceRef.current.sendCommand(
+      CommandAction.START_IMAGING,
+      {},
+      targetTelescope.serial_number || targetTelescope.id
+    );
+  }, [currentTelescope]);
+
+  const stopImaging = useCallback(async (telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
+      throw new Error('WebSocket not connected or no telescope selected');
+    }
+    
+    return await wsServiceRef.current.sendCommand(
+      CommandAction.STOP_IMAGING,
+      {},
+      targetTelescope.serial_number || targetTelescope.id
+    );
+  }, [currentTelescope]);
+
+  const enableSceneryMode = useCallback(async (telescope?: TelescopeInfo) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
+      throw new Error('WebSocket not connected or no telescope selected');
+    }
+    
+    return await wsServiceRef.current.sendCommand(
+      CommandAction.SCENERY,
+      { mode: "scenery" },
+      targetTelescope.serial_number || targetTelescope.id
+    );
+  }, [currentTelescope]);
+
+  const sendGotoMessage = useCallback(async (
+    targetName: string, 
+    ra: number, 
+    dec: number, 
+    startImaging: boolean = false,
+    targetType?: string,
+    magnitude?: number,
+    description?: string,
+    telescope?: TelescopeInfo
+  ) => {
+    const targetTelescope = telescope || currentTelescope;
+    
+    if (!wsServiceRef.current || !targetTelescope) {
+      throw new Error('WebSocket not connected or no telescope selected');
+    }
+    
+    const gotoMessage = {
+      target_name: targetName,
+      coordinates: {
+        ra: ra,
+        dec: dec
+      },
+      start_imaging: startImaging,
+      target_type: targetType,
+      magnitude: magnitude,
+      description: description
+    };
+    
+    return await wsServiceRef.current.sendCommand(
+      CommandAction.GOTO,
+      gotoMessage,
+      targetTelescope.serial_number || targetTelescope.id
+    );
+  }, [currentTelescope]);
   
   // Manual subscription management
   const subscribe = useCallback(async (types: SubscriptionType[] = subscriptions) => {
@@ -326,6 +422,11 @@ export function useTelescopeWebSocket(
     moveTelescope,
     parkTelescope,
     adjustFocus,
+    gotoTarget,
+    startImaging,
+    stopImaging,
+    enableSceneryMode,
+    sendGotoMessage,
     
     // Connection management
     connect,

@@ -371,6 +371,10 @@ class WebSocketManager:
                 return await self._execute_park_command(client, parameters)
             elif action == "focus_increment":
                 return await self._execute_focus_command(client, parameters)
+            elif action == "goto":
+                return await self._execute_goto_command(client, parameters)
+            elif action == "scenery":
+                return await self._execute_scenery_command(client, parameters)
             else:
                 logger.warning(f"Unknown command action: {action}")
                 return {"status": "error", "message": f"Unknown action: {action}"}
@@ -550,6 +554,74 @@ class WebSocketManager:
                 
         except Exception as e:
             logger.error(f"Error executing focus command: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _execute_goto_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute goto command - stub handler that logs the target information."""
+        try:
+            target_name = parameters.get("target_name", "unknown")
+            coordinates = parameters.get("coordinates", {})
+            ra = coordinates.get("ra", 0)
+            dec = coordinates.get("dec", 0)
+            start_imaging = parameters.get("start_imaging", False)
+            target_type = parameters.get("target_type", "unknown")
+            magnitude = parameters.get("magnitude", "unknown")
+            description = parameters.get("description", "")
+            
+            logger.info(f"Goto command received for target: {target_name}")
+            logger.info(f"Coordinates: RA={ra}, Dec={dec}")
+            logger.info(f"Target type: {target_type}, Magnitude: {magnitude}")
+            logger.info(f"Start imaging: {start_imaging}")
+            logger.info(f"Description: {description}")
+            logger.info(f"Full message parameters: {parameters}")
+            
+            # For now, this is just a stub that logs the message
+            # In the future, this could:
+            # - Send actual goto command to telescope with coordinates
+            # - Validate coordinates are within telescope limits
+            # - Start imaging sequence if start_imaging is True
+            # - Track goto progress and completion
+            # - Handle goto errors and retries
+            
+            imaging_message = " and start imaging" if start_imaging else ""
+            
+            return {
+                "status": "success",
+                "action": "goto",
+                "target_name": target_name,
+                "coordinates": coordinates,
+                "start_imaging": start_imaging,
+                "message": f"Goto command for '{target_name}' logged successfully{imaging_message}"
+            }
+                
+        except Exception as e:
+            logger.error(f"Error executing goto command: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_scenery_command(self, client: Any, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute scenery mode command - stub handler that logs the message."""
+        mode = parameters.get("mode", "unknown")
+        
+        try:
+            logger.info(f"Scenery mode command received: mode={mode}, parameters={parameters}")
+            logger.info(f"Message payload: {{'mode': '{mode}'}}")
+            
+            # For now, this is just a stub that logs the message
+            # In the future, this could:
+            # - Switch telescope to wide-field mode
+            # - Adjust exposure settings for scenery photography
+            # - Enable different tracking modes
+            # - Configure image stacking parameters
+            
+            return {
+                "status": "success", 
+                "action": "scenery", 
+                "mode": mode,
+                "message": f"Scenery mode '{mode}' logged successfully"
+            }
+                
+        except Exception as e:
+            logger.error(f"Error executing scenery command: {e}")
             return {"status": "error", "message": str(e)}
     
     async def _handle_subscribe(self, connection: WebSocketConnection, message: SubscribeMessage):

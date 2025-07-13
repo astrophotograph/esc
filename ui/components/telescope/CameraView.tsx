@@ -24,7 +24,8 @@ import {
   Settings,
   Filter,
   Expand,
-  Minimize
+  Minimize,
+  Search
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { useTelescopeContext } from "../../context/TelescopeContext"
@@ -69,6 +70,7 @@ export function CameraView() {
     isImaging,
     liveViewFullscreen,
     setLiveViewFullscreen,
+    setShowCelestialSearch,
   } = useTelescopeContext()
 
   // Sample annotations for demonstration
@@ -1009,6 +1011,15 @@ export function CameraView() {
               </div>
 
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCelestialSearch(true)}
+                  className="border-gray-600 text-white hover:bg-gray-700"
+                  title="Search Celestial Objects (⌘K)"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

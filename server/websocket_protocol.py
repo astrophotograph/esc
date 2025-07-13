@@ -43,6 +43,7 @@ class CommandAction(str, Enum):
     STOP_IMAGING = "stop_imaging"
     SET_GAIN = "set_gain"
     SET_EXPOSURE = "set_exposure"
+    SCENERY = "scenery"
 
 
 class SubscriptionType(str, Enum):

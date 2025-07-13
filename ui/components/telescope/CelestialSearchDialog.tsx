@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Search, MapPin, Star, Moon, Sun, Telescope, Clock } from "lucide-react"
+import { Search, MapPin, Clock, Navigation, Camera } from "lucide-react"
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,7 +11,9 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useTelescopeContext } from "../../context/TelescopeContext"
+import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
 import { 
   filterVisibleObjects, 
@@ -26,8 +28,11 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { celestialObjects, handleTargetSelect } = useTelescopeContext()
+  const { celestialObjects, handleTargetSelect, currentTelescope } = useTelescopeContext()
+  const { sendGotoMessage, isConnected, connect } = useTelescopeWebSocket({ autoConnect: false })
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
+  const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
+  const [isPerformingAction, setIsPerformingAction] = useState(false)
 
   useEffect(() => {
     // Get objects with real-time calculations for planets, sun, moon
@@ -41,6 +46,24 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     
     setVisibleObjects(filtered)
   }, [celestialObjects])
+
+  // Reset selected object when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedObject(null)
+      setIsPerformingAction(false)
+    }
+  }, [open])
+
+  // Establish WebSocket connection when dialog opens and telescope is available
+  useEffect(() => {
+    if (open && currentTelescope && !isConnected) {
+      console.log('🔌 Attempting to connect to WebSocket for telescope:', currentTelescope.name)
+      connect(currentTelescope).catch((error) => {
+        console.error('❌ Failed to connect to WebSocket:', error)
+      })
+    }
+  }, [open, currentTelescope, isConnected, connect])
 
   // Group objects by type
   const groupedObjects = visibleObjects.reduce((groups, obj) => {
@@ -64,35 +87,82 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     }
   }
 
-  const _getGroupIcon = (type: string) => {
-    switch (type) {
-      case 'planet': return <Sun className="w-4 h-4" />
-      case 'moon': return <Moon className="w-4 h-4" />
-      case 'galaxy': return <Star className="w-4 h-4" />
-      case 'nebula': return <Star className="w-4 h-4" />
-      case 'cluster': return <Star className="w-4 h-4" />
-      case 'double-star': return <Star className="w-4 h-4" />
-      default: return <Telescope className="w-4 h-4" />
+
+  const handleSelect = (obj: CelestialObjectWithHorizon) => {
+    setSelectedObject(obj)
+  }
+
+  const handleGoto = async (startImaging: boolean = false) => {
+    if (!selectedObject) return
+    
+    setIsPerformingAction(true)
+    try {
+      // Convert to CelestialObject type for context first
+      const celestialObject = {
+        id: selectedObject.id,
+        name: selectedObject.name,
+        type: selectedObject.type as "galaxy" | "nebula" | "cluster" | "planet" | "moon" | "double-star",
+        magnitude: selectedObject.magnitude,
+        ra: selectedObject.ra,
+        dec: selectedObject.dec,
+        bestSeenIn: selectedObject.bestSeenIn,
+        description: selectedObject.description,
+        optimalMoonPhase: selectedObject.optimalMoonPhase as "new" | "crescent" | "quarter" | "gibbous" | "full" | "any",
+        isCurrentlyVisible: selectedObject.isCurrentlyVisible
+      }
+      
+      // Select the target in the context
+      handleTargetSelect(celestialObject)
+      
+      // Send goto message to server
+      console.log(`WebSocket connection status: ${isConnected ? 'CONNECTED' : 'DISCONNECTED'}`)
+      if (isConnected) {
+        console.log(`Sending goto message for ${selectedObject.name} with imaging=${startImaging}`)
+        console.log('Message details:', {
+          target_name: selectedObject.name,
+          coordinates: { ra: selectedObject.ra, dec: selectedObject.dec },
+          start_imaging: startImaging,
+          target_type: selectedObject.type,
+          magnitude: selectedObject.magnitude,
+          description: selectedObject.description
+        })
+        
+        try {
+          await sendGotoMessage(
+            selectedObject.name,
+            selectedObject.ra,
+            selectedObject.dec,
+            startImaging,
+            selectedObject.type,
+            selectedObject.magnitude,
+            selectedObject.description
+          )
+          console.log(`✅ Goto message sent successfully for ${selectedObject.name}`)
+        } catch (msgError) {
+          console.error('❌ Failed to send goto message:', msgError)
+          throw msgError
+        }
+      } else {
+        console.warn('⚠️ WebSocket not connected, goto message not sent')
+      }
+      
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Failed to send goto message:', error)
+      // Still close the dialog even if command fails
+      onOpenChange(false)
+    } finally {
+      setIsPerformingAction(false)
     }
   }
 
-  const handleSelect = (obj: CelestialObjectWithHorizon) => {
-    // Convert back to CelestialObject type for context
-    const celestialObject = {
-      id: obj.id,
-      name: obj.name,
-      type: obj.type as "galaxy" | "nebula" | "cluster" | "planet" | "moon" | "double-star",
-      magnitude: obj.magnitude,
-      ra: obj.ra,
-      dec: obj.dec,
-      bestSeenIn: obj.bestSeenIn,
-      description: obj.description,
-      optimalMoonPhase: obj.optimalMoonPhase as "new" | "crescent" | "quarter" | "gibbous" | "full" | "any",
-      isCurrentlyVisible: obj.isCurrentlyVisible
-    }
-    
-    handleTargetSelect(celestialObject)
-    onOpenChange(false)
+  const handleGotoAndImage = async () => {
+    // Call handleGoto with startImaging=true
+    await handleGoto(true)
+  }
+
+  const handleCancel = () => {
+    setSelectedObject(null)
   }
 
   return (
@@ -122,7 +192,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                   key={obj.id}
                   value={`${obj.name} ${obj.type} ${obj.description}`}
                   onSelect={() => handleSelect(obj)}
-                  className="flex items-center justify-between p-3 cursor-pointer"
+                  className={`flex items-center justify-between p-3 cursor-pointer ${
+                    selectedObject?.id === obj.id ? 'bg-blue-600/20 border-blue-400 border' : ''
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
@@ -170,6 +242,59 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
           )
         })}
       </CommandList>
+      
+      {/* Action Buttons - shown when an object is selected */}
+      {selectedObject && (
+        <div className="border-t p-4 bg-muted/50">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20">
+                {getObjectTypeIcon(selectedObject.type)}
+              </div>
+              <div>
+                <span className="font-medium text-sm">{selectedObject.name}</span>
+                <div className="text-xs text-muted-foreground">
+                  {selectedObject.description}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={isPerformingAction}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGoto(false)}
+                disabled={isPerformingAction || !isConnected}
+                className="flex-1"
+                title={!isConnected ? 'WebSocket not connected' : 'Navigate telescope to selected object'}
+              >
+                <Navigation className="w-4 h-4 mr-1" />
+                Goto
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleGotoAndImage}
+                disabled={isPerformingAction || !isConnected}
+                className="flex-1"
+                title={!isConnected ? 'WebSocket not connected' : 'Navigate telescope and start imaging'}
+              >
+                <Camera className="w-4 h-4 mr-1" />
+                Goto & Image
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="border-t p-3 text-xs text-muted-foreground">
         <div className="flex items-center justify-between">

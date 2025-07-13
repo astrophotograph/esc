@@ -1,6 +1,7 @@
 "use client"
 
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User } from "lucide-react"
+import { useState } from "react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,12 +15,36 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTelescope } from "@/components/telescope/TelescopeProvider"
+import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import {useTheme} from "next-themes"
 import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
 
 export function Header() {
   const { theme: _theme, setTheme: _setTheme } = useTheme()
   const { showPiP, setShowPiP } = useTelescope()
+  const { enableSceneryMode, isConnected } = useTelescopeWebSocket({ autoConnect: false })
+  
+  const [sceneryMode, setSceneryMode] = useState(false)
+  
+  const handleSceneryToggle = async () => {
+    const newSceneryMode = !sceneryMode
+    setSceneryMode(newSceneryMode)
+    
+    // Send WebSocket message to backend
+    try {
+      if (isConnected) {
+        console.log('Sending scenery mode message:', { mode: "scenery" })
+        await enableSceneryMode()
+        console.log('Scenery mode message sent successfully')
+      } else {
+        console.warn('WebSocket not connected, scenery mode message not sent')
+      }
+    } catch (error) {
+      console.error('Failed to send scenery mode message:', error)
+      // Revert the state if sending failed
+      setSceneryMode(!newSceneryMode)
+    }
+  }
 
   return (
     <div className="border-b">
@@ -47,6 +72,19 @@ export function Header() {
           >
             <Camera className="w-4 h-4" />
             PiP
+          </Button>
+
+          {/* Scenery Mode Button */}
+          <Button
+            variant={sceneryMode ? "default" : "outline"}
+            size="sm"
+            onClick={handleSceneryToggle}
+            disabled={!isConnected}
+            className="flex items-center gap-2"
+            title={!isConnected ? "WebSocket not connected" : "Toggle Scenery Mode"}
+          >
+            <Mountain className="w-4 h-4" />
+            Scenery
           </Button>
 
           <DropdownMenu>
