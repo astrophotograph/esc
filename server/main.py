@@ -1118,6 +1118,7 @@ class Controller:
                                                 "type": annotation.type,
                                                 "pixelx": annotation.pixelx,
                                                 "pixely": annotation.pixely,
+                                                "radius": annotation.radius,
                                                 "name": annotation.name,
                                                 "names": annotation.names
                                             })
