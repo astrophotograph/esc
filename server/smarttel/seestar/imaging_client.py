@@ -193,7 +193,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             data = data.model_dump_json()
         await self.connection.write(data)
 
-    async def get_next_image(self):
+    async def get_next_image(self, camera_id: int):
         last_image: ScopeImage = ScopeImage(width=1080, height=1920, image=None)
 
         self.status.is_fetching_images = True
@@ -201,7 +201,8 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             while self.is_connected:
                 if self.client_mode == 'Streaming':
                     # If we're streaming, just run RTSP client, which runs as a background thread...
-                    with RtspClient(rtsp_server_uri=f"rtsp://{self.host}:4554/stream") as rtsp_client:
+                    rtsp_port = 4554 + camera_id
+                    with RtspClient(rtsp_server_uri=f"rtsp://{self.host}:{rtsp_port}/stream") as rtsp_client:
                         # Run RTSP client until it's closed
                         await rtsp_client.finish_opening()
                         while rtsp_client.is_opened():

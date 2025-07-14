@@ -460,7 +460,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 media_type="text/event-stream"
             )
 
-        async def get_next_image():
+        async def get_next_image(camera_id: int = 0):
             """Get the next image from the Seestar imaging server."""
             if not self.imaging.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
@@ -468,7 +468,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             star_processors = [GraxpertStretch()]
             yield b"\r\n--frame\r\n"
 
-            async for image in self.imaging.get_next_image():
+            async for image in self.imaging.get_next_image(camera_id):
                 is_streaming = self.imaging.client_mode == 'Streaming'
 
                 if image is not None and image.image is not None:
@@ -488,11 +488,11 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     delay = 0.001 if is_streaming else 0.1
                     await asyncio.sleep(delay)
 
-        @router.get("/stream")
-        async def stream_image():
+        @router.get("/stream/{camera_id:int}")
+        async def stream_image(camera_id: int = 0):
             """Stream images from the Seestar imaging server."""
             return StreamingResponse(
-                get_next_image(),
+                get_next_image(camera_id),
                 media_type="multipart/x-mixed-replace; boundary=frame"
             )
 

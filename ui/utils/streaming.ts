@@ -13,20 +13,20 @@ export interface TelescopeInfo {
 
 /**
  * Generate a streaming URL for a telescope and stream type
- * 
+ *
  * @param telescope - Telescope information object
  * @param streamType - Type of stream to access
  * @returns Relative URL for the streaming endpoint
  */
 export function generateStreamingUrl(telescope: TelescopeInfo | null, streamType: StreamType = 'video'): string {
   const scope = getTelescopeScope(telescope);
-  return `/api/${scope}/stream?type=${streamType}`;
+  return `/api/${scope}/stream/0?type=${streamType}`;
 }
 
 /**
  * Extract telescope scope identifier from telescope info
- * 
- * @param telescope - Telescope information object  
+ *
+ * @param telescope - Telescope information object
  * @returns Scope identifier for API endpoints
  */
 export function getTelescopeScope(telescope: TelescopeInfo | null): string {
@@ -38,19 +38,19 @@ export function getTelescopeScope(telescope: TelescopeInfo | null): string {
   if (telescope.serial_number) {
     return sanitizeScope(telescope.serial_number);
   }
-  
+
   if (telescope.host) {
     // Extract base host, handling both "host:port" and "host" formats
-    const baseHost = telescope.host.includes(':') 
-      ? telescope.host.split(':')[0] 
+    const baseHost = telescope.host.includes(':')
+      ? telescope.host.split(':')[0]
       : telescope.host;
     return sanitizeScope(baseHost);
   }
-  
+
   if (telescope.name) {
     return sanitizeScope(telescope.name);
   }
-  
+
   if (telescope.id) {
     return sanitizeScope(telescope.id);
   }
@@ -60,7 +60,7 @@ export function getTelescopeScope(telescope: TelescopeInfo | null): string {
 
 /**
  * Sanitize a string to be safe for use as a URL scope
- * 
+ *
  * @param input - Raw string input
  * @returns Sanitized scope string
  */
