@@ -298,6 +298,16 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         mode = pydash.get(data, "mode", "unknown")
         state = pydash.get(data, "state", "unknown")
 
+        annotate_result = pydash.get(data, "Stack.Annotate.result", None)
+
+        if annotate_result is not None:
+            annotation = AnnotateEvent(
+                Timestamp=datetime.now().isoformat(),
+                result=annotate_result,
+            )
+            self.status.annotate = annotate_result
+            self.event_bus.emit("Annotate", annotation)
+
         # Update client mode
         new_client_mode = None
         if state != 'cancel':

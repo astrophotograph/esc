@@ -1133,7 +1133,7 @@ class Controller:
                                     logging.error(f"Error forwarding annotation event for {telescope_id}: {e}")
                             
                             # Subscribe to annotation events
-                            tel.client.event_bus.subscribe("Annotate", forward_annotation_event)
+                            tel.event_bus.subscribe("Annotate", forward_annotation_event)
                             
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
@@ -1293,7 +1293,7 @@ class Controller:
                                     logging.error(f"Error forwarding annotation event for {telescope_id}: {e}")
                             
                             # Subscribe to annotation events
-                            tel.client.event_bus.subscribe("Annotate", forward_annotation_event)
+                            tel.event_bus.subscribe("Annotate", forward_annotation_event)
                             
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
