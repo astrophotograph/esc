@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain } from "lucide-react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,8 +18,10 @@ import { useTelescope } from "@/components/telescope/TelescopeProvider"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import {useTheme} from "next-themes"
 import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
+import { useRouter } from "next/navigation"
 
 export function Header() {
+  const router = useRouter()
   const { theme: _theme, setTheme: _setTheme } = useTheme()
   const { showPiP, setShowPiP } = useTelescope()
   const { handleSceneryMode } = useTelescopeContext()
@@ -80,6 +82,18 @@ export function Header() {
           >
             <Mountain className="w-4 h-4" />
             Scenery
+          </Button>
+
+          {/* Messages Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/messages')}
+            className="flex items-center gap-2"
+            title="View Telescope Messages"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Messages
           </Button>
 
           <DropdownMenu>
