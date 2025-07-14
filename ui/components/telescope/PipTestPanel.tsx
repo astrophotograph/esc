@@ -154,7 +154,7 @@ export function PipTestPanel() {
 
           <div className="space-y-2">
             <Label>PiP Size</Label>
-            <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large") => setPipSize(value)}>
+            <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large" | "extra-large") => setPipSize(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select size" />
               </SelectTrigger>
@@ -162,6 +162,7 @@ export function PipTestPanel() {
                 <SelectItem value="small">Small</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="large">Large</SelectItem>
+                <SelectItem value="extra-large">Extra Large</SelectItem>
               </SelectContent>
             </Select>
           </div>

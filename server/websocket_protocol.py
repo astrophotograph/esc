@@ -20,6 +20,7 @@ class MessageType(str, Enum):
     STATUS_UPDATE = "status_update"
     TELESCOPE_DISCOVERED = "telescope_discovered"
     TELESCOPE_LOST = "telescope_lost"
+    ANNOTATION_EVENT = "annotation_event"
     
     # Control commands
     CONTROL_COMMAND = "control_command"
@@ -148,6 +149,22 @@ class TelescopeLostMessage(WebSocketMessage):
         super().__init__(
             telescope_id=telescope_id,
             payload={"reason": reason},
+            **data
+        )
+
+
+class AnnotationEventMessage(WebSocketMessage):
+    """Notification when annotation events are received from telescope."""
+    type: MessageType = MessageType.ANNOTATION_EVENT
+    
+    def __init__(self, telescope_id: str, annotations: List[Dict[str, Any]], image_size: List[int], image_id: int, **data):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "annotations": annotations,
+                "image_size": image_size,
+                "image_id": image_id
+            },
             **data
         )
 

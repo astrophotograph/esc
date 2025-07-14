@@ -233,8 +233,8 @@ interface TelescopeContextType {
   setShowPiP: (show: boolean) => void
   pipPosition: { x: number; y: number }
   setPipPosition: (position: { x: number; y: number }) => void
-  pipSize: "small" | "medium" | "large"
-  setPipSize: (size: "small" | "medium" | "large") => void
+  pipSize: "small" | "medium" | "large" | "extra-large"
+  setPipSize: (size: "small" | "medium" | "large" | "extra-large") => void
   pipCamera: "allsky" | "guide" | "finder"
   setPipCamera: (camera: "allsky" | "guide" | "finder") => void
   pipMinimized: boolean
@@ -595,7 +595,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Picture-in-Picture state
   const [showPiP, setShowPiP] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-pip", false)
   const [pipPosition, setPipPosition] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-position", { x: 20, y: 20 })
-  const [pipSize, setPipSize] = usePersistentState<"small" | "medium" | "large">(STORAGE_KEYS.UI_STATE + "-pip-size", "medium")
+  const [pipSize, setPipSize] = usePersistentState<"small" | "medium" | "large" | "extra-large">(STORAGE_KEYS.UI_STATE + "-pip-size", "medium")
   const [pipCamera, setPipCamera] = usePersistentState<"allsky" | "guide" | "finder">(STORAGE_KEYS.UI_STATE + "-pip-camera", "allsky")
   const [pipMinimized, setPipMinimized] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-minimized", false)
   const [pipFullscreen, setPipFullscreen] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-fullscreen", false)

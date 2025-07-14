@@ -16,7 +16,8 @@ from remote_websocket_client import RemoteWebSocketManager, RemoteController
 from smarttel.seestar.commands.parameterized import IscopeStartView, IscopeStartViewParams
 from websocket_protocol import (
     WebSocketMessage, MessageFactory, SubscriptionType,
-    StatusUpdateMessage, ControlCommandMessage, HeartbeatMessage, SubscribeMessage, UnsubscribeMessage
+    StatusUpdateMessage, ControlCommandMessage, HeartbeatMessage, SubscribeMessage, UnsubscribeMessage,
+    AnnotationEventMessage
 )
 
 
@@ -233,6 +234,21 @@ class WebSocketManager:
         
         for connection in self.connections.values():
             await connection.send_message(message)
+    
+    async def broadcast_annotation_event(self, telescope_id: str, annotations: List[Dict[str, Any]], 
+                                       image_size: List[int], image_id: int):
+        """Broadcast annotation events to all subscribed clients."""
+        message = AnnotationEventMessage(
+            telescope_id=telescope_id,
+            annotations=annotations,
+            image_size=image_size,
+            image_id=image_id
+        )
+        
+        # Send to all subscribed connections
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                await connection.send_message(message)
     
     def register_telescope_client(self, telescope_id: str, client: Any):
         """Register a telescope client for command execution."""

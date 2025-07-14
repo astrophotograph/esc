@@ -43,6 +43,7 @@ export function PictureInPictureOverlay() {
     small: { width: 200, height: 150 },
     medium: { width: 320, height: 240 },
     large: { width: 480, height: 360 },
+    "extra-large": { width: 640, height: 480 },
   }
 
   const currentSize = pipFullscreen 
@@ -161,18 +162,25 @@ export function PictureInPictureOverlay() {
     >
       {/* Header */}
       <div
-        className={`flex items-center justify-between p-1 bg-gray-700 ${
+        className={`flex items-center justify-between p-1 bg-gray-700 min-w-0 ${
           pipFullscreen ? "rounded-none cursor-default" : "rounded-t-lg cursor-grab"
         }`}
         onMouseDown={pipFullscreen ? undefined : handleMouseDown}
       >
-        <div className="flex items-center gap-2">
-          <Camera className="w-4 h-4 text-gray-400" />
-          <span className="text-sm text-gray-300 font-medium">
-            {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)} Camera
-          </span>
-          {!pipMinimized && (
-            <div className="flex items-center gap-1 ml-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Camera className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          {(pipSize === "large" || pipSize === "extra-large") && (
+            <span className="text-sm text-gray-300 font-medium truncate">
+              {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)} Camera
+            </span>
+          )}
+          {pipSize === "medium" && (
+            <span className="text-xs text-gray-300 font-medium truncate">
+              {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)}
+            </span>
+          )}
+          {!pipMinimized && (pipSize === "large" || pipSize === "extra-large") && (
+            <div className="flex items-center gap-1 ml-2 flex-shrink-0">
               {pipOverlaySettings.crosshairs.enabled && (
                 <div className="w-2 h-2 bg-red-400 rounded-full" title="Crosshairs Active" />
               )}
@@ -189,54 +197,65 @@ export function PictureInPictureOverlay() {
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {!pipMinimized && (
             <>
-              {/* Camera Selector */}
-              <Select value={pipCamera} onValueChange={(value: "allsky" | "guide" | "finder") => setPipCamera(value)}>
-                <SelectTrigger className="h-6 w-20 text-xs bg-gray-600 border-gray-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-700 border-gray-600">
-                  <SelectItem value="allsky">All-Sky</SelectItem>
-                  <SelectItem value="guide">Guide</SelectItem>
-                  <SelectItem value="finder">Finder</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Camera Selector - show for medium and larger */}
+              {(pipSize === "medium" || pipSize === "large" || pipSize === "extra-large") && (
+                <Select value={pipCamera} onValueChange={(value: "allsky" | "guide" | "finder") => setPipCamera(value)}>
+                  <SelectTrigger className={`h-6 text-xs bg-gray-600 border-gray-500 ${
+                    pipSize === "medium" ? "w-14" : "w-20"
+                  }`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectItem value="allsky">All-Sky</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                    <SelectItem value="finder">Finder</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
 
-              {/* Size Selector */}
-              <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large") => setPipSize(value)}>
-                <SelectTrigger className="h-6 w-16 text-xs bg-gray-600 border-gray-500">
+              {/* Size Selector - always available but compact for smaller sizes */}
+              <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large" | "extra-large") => setPipSize(value)}>
+                <SelectTrigger className={`h-6 text-xs bg-gray-600 border-gray-500 ${
+                  pipSize === "small" ? "w-12" : pipSize === "medium" ? "w-14" : "w-16"
+                }`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-700 border-gray-600">
                   <SelectItem value="small">S</SelectItem>
                   <SelectItem value="medium">M</SelectItem>
                   <SelectItem value="large">L</SelectItem>
+                  <SelectItem value="extra-large">XL</SelectItem>
                 </SelectContent>
               </Select>
 
-              {/* Status Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPipStatus(!showPipStatus)}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                title={showPipStatus ? "Hide Status" : "Show Status"}
-              >
-                {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-              </Button>
+              {/* Status Toggle - only show for large and extra-large */}
+              {(pipSize === "large" || pipSize === "extra-large") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPipStatus(!showPipStatus)}
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                  title={showPipStatus ? "Hide Status" : "Show Status"}
+                >
+                  {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                </Button>
+              )}
 
-              {/* Settings Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPipOverlayControls(true)}
-                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                title="Overlay Settings"
-              >
-                <Settings className="h-3 w-3" />
-              </Button>
+              {/* Settings Button - only show for extra-large to save space */}
+              {pipSize === "extra-large" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPipOverlayControls(true)}
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                  title="Overlay Settings"
+                >
+                  <Settings className="h-3 w-3" />
+                </Button>
+              )}
             </>
           )}
 

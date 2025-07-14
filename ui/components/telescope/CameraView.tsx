@@ -28,6 +28,12 @@ import {
   Search
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { StatsPanel } from "./panels/StatsPanel"
 import { LogPanel } from "./panels/LogPanel"
@@ -939,10 +945,11 @@ export function CameraView() {
   const targetName = selectedTarget?.name || localStreamStatus?.status?.target_name;
 
   return (
-    <div className={liveViewFullscreen ?
-      "fixed inset-0 z-50 bg-gray-800" :
-      `transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`
-    }>
+    <TooltipProvider>
+      <div className={liveViewFullscreen ?
+        "fixed inset-0 z-50 bg-gray-800" :
+        `transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`
+      }>
       <Card className={liveViewFullscreen ?
         "bg-gray-800 border-none h-full rounded-none" :
         "bg-gray-800 border-gray-700"
@@ -972,75 +979,178 @@ export function CameraView() {
             <div className="flex items-center gap-4">
               {/* System Status Indicators */}
               <div className="flex items-center gap-3 text-sm">
-                <div className={`flex items-center gap-1 ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
-                  {localStreamStatus?.status?.charger_status === "Charging" ? (
-                    <BatteryCharging className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
-                  ) : localStreamStatus?.status?.charger_status === "Full" ? (
-                    <BatteryFull className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Battery className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
-                  )}
-                  <span className="text-gray-300">{Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%</span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`flex items-center gap-1 cursor-default ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
+                      {localStreamStatus?.status?.charger_status === "Charging" ? (
+                        <BatteryCharging className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
+                      ) : localStreamStatus?.status?.charger_status === "Full" ? (
+                        <BatteryFull className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <Battery className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
+                      )}
+                      <span className="text-gray-300">{Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Battery Level: {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
+                      {localStreamStatus?.status?.charger_status === "Charging" && " (Charging)"}
+                      {localStreamStatus?.status?.charger_status === "Full" && " (Full)"}
+                      <br />
+                      {localStreamStatus?.status?.battery_capacity <= 10 && "Critical: Very low battery"}
+                      {localStreamStatus?.status?.battery_capacity > 10 && localStreamStatus?.status?.battery_capacity <= 20 && "Warning: Low battery"}
+                      {localStreamStatus?.status?.battery_capacity > 20 && "Battery level is healthy"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Stacked Frames Counter */}
-                <div className="flex items-center gap-1">
-                  <Layers className={`w-4 h-4 ${stackedFrames > 0 ? "text-blue-400" : "text-gray-400"}`} />
-                  <span className="text-gray-300">{stackedFrames}</span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <Layers className={`w-4 h-4 ${stackedFrames > 0 ? "text-blue-400" : "text-gray-400"}`} />
+                      <span className="text-gray-300">{stackedFrames}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Stacked Frames: {stackedFrames}
+                      <br />
+                      {stackedFrames === 0 && "No frames have been stacked yet"}
+                      {stackedFrames > 0 && `${stackedFrames} frames successfully combined for better image quality`}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Dropped Frames Counter */}
-                <div className="flex items-center gap-1">
-                  <XCircle className={`w-4 h-4 ${droppedFrames > 0 ? "text-red-400" : "text-gray-400"}`} />
-                  <span className="text-gray-300">{droppedFrames}</span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <XCircle className={`w-4 h-4 ${droppedFrames > 0 ? "text-red-400" : "text-gray-400"}`} />
+                      <span className="text-gray-300">{droppedFrames}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Dropped Frames: {droppedFrames}
+                      <br />
+                      {droppedFrames === 0 && "No frames have been dropped - connection is stable"}
+                      {droppedFrames > 0 && droppedFrames <= 5 && "Minor frame drops - connection may be slightly unstable"}
+                      {droppedFrames > 5 && "Significant frame drops - check network connection"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
 
-                <div className="flex items-center gap-1">
-                  <Thermometer
-                    className={`w-4 h-4 ${localStreamStatus?.status?.temp < 30 ? "text-blue-400" : "text-orange-400"}`}
-                  />
-                  <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
-                </div>
-                <div className={`flex items-center gap-1 ${getThresholdBorderClass(
-                  localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
-                    ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
-                    : systemStats.diskUsage || 0,
-                  80, // warning threshold at 80%
-                  90  // critical threshold at 90%
-                )}`}>
-                  <HardDrive
-                    className={`w-4 h-4 ${(() => {
-                      const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <Thermometer
+                        className={`w-4 h-4 ${localStreamStatus?.status?.temp < 30 ? "text-blue-400" : "text-orange-400"}`}
+                      />
+                      <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Telescope Temperature: {localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C
+                      <br />
+                      {localStreamStatus?.status?.temp < 30 && "Normal operating temperature"}
+                      {localStreamStatus?.status?.temp >= 30 && localStreamStatus?.status?.temp < 40 && "Elevated temperature - monitor performance"}
+                      {localStreamStatus?.status?.temp >= 40 && "High temperature - consider cooling"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`flex items-center gap-1 cursor-default ${getThresholdBorderClass(
+                      localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
                         ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
-                        : systemStats.diskUsage || 0
-                      if (diskUsage >= 90) return "text-red-400"
-                      if (diskUsage >= 80) return "text-yellow-400"
-                      return "text-green-400"
-                    })()}`}
-                  />
-                  <span className="text-gray-300" title={localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB ? `${localStreamStatus?.status?.freeMB}MB free of ${localStreamStatus?.status?.totalMB}MB total` : (systemStats.freeMB && systemStats.totalMB ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` : undefined)}>
-                    {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
-                      ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
-                      : Math.round(systemStats.diskUsage) || 'N/A'}%
-                  </span>
-                </div>
+                        : systemStats.diskUsage || 0,
+                      80, // warning threshold at 80%
+                      90  // critical threshold at 90%
+                    )}`}>
+                      <HardDrive
+                        className={`w-4 h-4 ${(() => {
+                          const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                            ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                            : systemStats.diskUsage || 0
+                          if (diskUsage >= 90) return "text-red-400"
+                          if (diskUsage >= 80) return "text-yellow-400"
+                          return "text-green-400"
+                        })()}`}
+                      />
+                      <span className="text-gray-300">
+                        {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                          ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                          : Math.round(systemStats.diskUsage) || 'N/A'}%
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Disk Usage: {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                        ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                        : Math.round(systemStats.diskUsage) || 'N/A'}%
+                      <br />
+                      {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                        ? `${localStreamStatus?.status?.freeMB}MB free of ${localStreamStatus?.status?.totalMB}MB total`
+                        : systemStats.freeMB && systemStats.totalMB 
+                          ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` 
+                          : "Disk space information unavailable"}
+                      <br />
+                      {(() => {
+                        const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                          ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
+                          : systemStats.diskUsage || 0
+                        if (diskUsage >= 90) return "Critical: Very low disk space - consider freeing space"
+                        if (diskUsage >= 80) return "Warning: Low disk space available"
+                        return "Disk space is healthy"
+                      })()}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Gain */}
-                <div className="flex items-center gap-1">
-                  <Settings className="w-4 h-4 text-purple-400" />
-                  <span className="text-gray-300">{localStreamStatus?.status?.gain ?? 'N/A'}</span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <Settings className="w-4 h-4 text-purple-400" />
+                      <span className="text-gray-300">{localStreamStatus?.status?.gain ?? 'N/A'}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Camera Gain: {localStreamStatus?.status?.gain ?? 'N/A'}
+                      <br />
+                      Controls image sensor sensitivity - higher values increase brightness but may add noise
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* LP Filter Status */}
-                <div className="flex items-center gap-1">
-                  <Filter
-                    className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? "text-amber-400" : "text-gray-400"}`}
-                    title="Light Pollution Filter"
-                  />
-                  <span className="text-gray-300">
-                    {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}
-                  </span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <Filter
+                        className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? "text-amber-400" : "text-gray-400"}`}
+                      />
+                      <span className="text-gray-300">
+                        {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Light Pollution Filter: {localStreamStatus?.status?.lp_filter ? 'Enabled' : 'Disabled'}
+                      <br />
+                      {localStreamStatus?.status?.lp_filter 
+                        ? "Filter is active - reducing light pollution effects for better deep sky imaging"
+                        : "Filter is disabled - suitable for planetary or lunar observation"
+                      }
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1229,6 +1339,7 @@ export function CameraView() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

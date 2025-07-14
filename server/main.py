@@ -544,6 +544,7 @@ class MockSeestarClient:
     def __init__(self):
         self.is_connected = False
         self._status = None
+        self.event_bus = EventBus()
         
     async def connect(self):
         """Mock connect method."""
@@ -1106,6 +1107,34 @@ class Controller:
                                 except Exception as e:
                                     logging.error(f"Error forwarding status update for {telescope_id}: {e}")
                             
+                            # Set up annotation event listener to forward annotation events
+                            async def forward_annotation_event(annotation_event):
+                                try:
+                                    if annotation_event.result and annotation_event.result.annotations:
+                                        # Transform telescope annotation format to frontend format
+                                        annotations = []
+                                        for annotation in annotation_event.result.annotations:
+                                            annotations.append({
+                                                "type": annotation.type,
+                                                "pixelx": annotation.pixelx,
+                                                "pixely": annotation.pixely,
+                                                "name": annotation.name,
+                                                "names": annotation.names
+                                            })
+                                        
+                                        await websocket_manager.broadcast_annotation_event(
+                                            telescope_id,
+                                            annotations,
+                                            annotation_event.result.image_size,
+                                            annotation_event.result.image_id
+                                        )
+                                        logging.info(f"Forwarded annotation event for {telescope_id}: {len(annotations)} annotations")
+                                except Exception as e:
+                                    logging.error(f"Error forwarding annotation event for {telescope_id}: {e}")
+                            
+                            # Subscribe to annotation events
+                            tel.client.event_bus.subscribe("Annotate", forward_annotation_event)
+                            
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
                             # For now, let's set up a periodic status update instead
@@ -1237,6 +1266,34 @@ class Controller:
                                     await websocket_manager.broadcast_status_update(telescope_id, status_dict)
                                 except Exception as e:
                                     logging.error(f"Error forwarding status update for {telescope_id}: {e}")
+                            
+                            # Set up annotation event listener to forward annotation events
+                            async def forward_annotation_event(annotation_event):
+                                try:
+                                    if annotation_event.result and annotation_event.result.annotations:
+                                        # Transform telescope annotation format to frontend format
+                                        annotations = []
+                                        for annotation in annotation_event.result.annotations:
+                                            annotations.append({
+                                                "type": annotation.type,
+                                                "pixelx": annotation.pixelx,
+                                                "pixely": annotation.pixely,
+                                                "name": annotation.name,
+                                                "names": annotation.names
+                                            })
+                                        
+                                        await websocket_manager.broadcast_annotation_event(
+                                            telescope_id,
+                                            annotations,
+                                            annotation_event.result.image_size,
+                                            annotation_event.result.image_id
+                                        )
+                                        logging.info(f"Forwarded annotation event for {telescope_id}: {len(annotations)} annotations")
+                                except Exception as e:
+                                    logging.error(f"Error forwarding annotation event for {telescope_id}: {e}")
+                            
+                            # Subscribe to annotation events
+                            tel.client.event_bus.subscribe("Annotate", forward_annotation_event)
                             
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events

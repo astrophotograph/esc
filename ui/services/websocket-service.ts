@@ -13,6 +13,7 @@ export enum MessageType {
   STATUS_UPDATE = 'status_update',
   TELESCOPE_DISCOVERED = 'telescope_discovered',
   TELESCOPE_LOST = 'telescope_lost',
+  ANNOTATION_EVENT = 'annotation_event',
   CONTROL_COMMAND = 'control_command',
   COMMAND_RESPONSE = 'command_response',
   HEARTBEAT = 'heartbeat',

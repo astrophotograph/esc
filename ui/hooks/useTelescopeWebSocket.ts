@@ -152,6 +152,19 @@ export function useTelescopeWebSocket(
       
       wsService.on(MessageType.STATUS_UPDATE, statusListener);
       
+      // Listen for annotation events and log them to console
+      const annotationListener = (message: any) => {
+        console.log('📍 Annotation Event Received:', {
+          telescope_id: message.telescope_id,
+          annotations: message.payload.annotations,
+          image_size: message.payload.image_size,
+          image_id: message.payload.image_id,
+          timestamp: new Date(message.timestamp).toISOString()
+        });
+      };
+      
+      wsService.on(MessageType.ANNOTATION_EVENT, annotationListener);
+      
       wsService.on('reconnected', () => {
         if (currentTelescope) {
           wsService.subscribe(subscriptions, currentTelescope.serial_number || currentTelescope.id);

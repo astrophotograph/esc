@@ -24,6 +24,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {Badge} from "@/components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {useTelescopeContext} from "@/context/TelescopeContext"
 import type {TelescopeInfo} from "@/types/telescope-types"
 
@@ -39,6 +45,21 @@ const getStatusIcon = (status: TelescopeInfo["status"]) => {
       return <AlertTriangle className="w-4 h-4 text-yellow-500"/>
     default:
       return <WifiOff className="w-4 h-4 text-gray-500"/>
+  }
+}
+
+const getStatusTooltip = (status: TelescopeInfo["status"]) => {
+  switch (status) {
+    case "online":
+      return "Telescope is connected and ready for observations"
+    case "offline":
+      return "Telescope is not responding or disconnected"
+    case "maintenance":
+      return "Telescope is in maintenance mode - limited functionality"
+    case "error":
+      return "Telescope has encountered an error and needs attention"
+    default:
+      return "Telescope status unknown"
   }
 }
 
@@ -170,8 +191,9 @@ export function TelescopeSelector() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
+    <TooltipProvider>
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
@@ -185,9 +207,25 @@ export function TelescopeSelector() {
               {currentTelescope && (
                 <div className="flex items-center gap-1 ml-auto">
                   {currentTelescope.is_remote && (
-                    <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope"/>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Cloud className="w-3 h-3 text-blue-400"/>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Remote telescope - accessed via cloud connection</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
-                  {getStatusIcon(currentTelescope.status)}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-flex">
+                        {getStatusIcon(currentTelescope.status)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{getStatusTooltip(currentTelescope.status)}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               )}
             </div>
@@ -232,9 +270,25 @@ export function TelescopeSelector() {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-white">{getTelescopeDisplayName(telescope)}</span>
                     {telescope.is_remote && (
-                      <Cloud className="w-3 h-3 text-blue-400" title="Remote telescope"/>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Cloud className="w-3 h-3 text-blue-400"/>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Remote telescope - accessed via cloud connection</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
-                    {getStatusIcon(telescope.status)}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="inline-flex">
+                          {getStatusIcon(telescope.status)}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{getStatusTooltip(telescope.status)}</p>
+                      </TooltipContent>
+                    </Tooltip>
                     {currentTelescope?.id === telescope.id && (
                       <Badge variant="secondary" className="text-xs bg-blue-600 text-white">
                         Active
@@ -294,27 +348,47 @@ export function TelescopeSelector() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Status indicator */}
-      {currentTelescope && (
-        <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
-            <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
+        {/* Status indicator */}
+        {currentTelescope && (
+          <div className="flex items-center gap-2 text-xs">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 cursor-default">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
+                  <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{getStatusTooltip(currentTelescope.status)}</p>
+              </TooltipContent>
+            </Tooltip>
+            {connectionType !== 'disconnected' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 cursor-default">
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      connectionType === 'webrtc' ? 'bg-green-400' : 'bg-yellow-400'
+                    }`}/>
+                    <span className={`text-xs font-medium ${
+                      connectionType === 'webrtc' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+                    }`}>
+                      {connectionType === 'webrtc' ? 'WebRTC' : 'MJPEG'}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {connectionType === 'webrtc' 
+                      ? 'High-quality WebRTC live video stream with low latency'
+                      : 'MJPEG fallback stream - lower quality but more compatible'
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
-          {connectionType !== 'disconnected' && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                connectionType === 'webrtc' ? 'bg-green-400' : 'bg-yellow-400'
-              }`}/>
-              <span className={`text-xs font-medium ${
-                connectionType === 'webrtc' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-              }`}>
-                {connectionType === 'webrtc' ? 'WebRTC' : 'MJPEG'}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </TooltipProvider>
   )
 }
