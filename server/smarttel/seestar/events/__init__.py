@@ -290,6 +290,7 @@ class Annotation(BaseModel):
     type: str = ""  # star
     pixelx: float = 0.0
     pixely: float = 0.0
+    radius: float = 0.0
     name: str = ""
     names: list[str] = []
 

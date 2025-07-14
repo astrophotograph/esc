@@ -30,6 +30,15 @@ import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
 import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
 
+export interface Annotation {
+  type: string;
+  pixelx: number;
+  pixely: number;
+  radius: number;
+  name: string;
+  names: string[];
+}
+
 interface PipOverlaySettings {
   crosshairs: {
     enabled: boolean
@@ -261,6 +270,8 @@ interface TelescopeContextType {
     setAnnotationSettings: (settings: AnnotationSettings) => void
     showAnnotations: boolean
     setShowAnnotations: (show: boolean) => void
+    currentAnnotations: Annotation[]
+    setCurrentAnnotations: (annotations: Annotation[]) => void
 
   // Functions
   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
@@ -2025,7 +2036,42 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const [showAnnotations, setShowAnnotations] = useState(true)
+  const [showAnnotations, setShowAnnotations] = useState(false)
+  const [currentAnnotations, setCurrentAnnotations] = useState<Annotation[]>([
+    // Test annotations for development
+    {
+      "type": "sh2",
+      "pixelx": 923.287,
+      "pixely": 1084.06,
+      "radius": 15.5,
+      "name": "",
+      "names": [
+        "SH2-162"
+      ]
+    },
+    {
+      "type": "ngc",
+      "pixelx": 909.73,
+      "pixely": 1063.47,
+      "radius": 12.0,
+      "name": "",
+      "names": [
+        "NGC 7635",
+        "C 11 / Bubble Nebula"
+      ]
+    },
+    {
+      "type": "ngc",
+      "pixelx": 107.54,
+      "pixely": 581.549,
+      "radius": 8.75,
+      "name": "",
+      "names": [
+        "NGC 7654",
+        "M 52"
+      ]
+    }
+  ])
   const [annotationSettings, setAnnotationSettings] = useState<AnnotationSettings>({
     enabled: true,
     showLabels: true,
@@ -2227,6 +2273,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setAnnotationSettings,
     showAnnotations,
     setShowAnnotations,
+    currentAnnotations,
+    setCurrentAnnotations,
 
     // Functions
     addStatusAlert,

@@ -21,6 +21,14 @@ export interface TelescopeStatus {
 export interface UseTelescopeWebSocketOptions {
   autoConnect?: boolean;
   subscriptions?: SubscriptionType[];
+  onAnnotationsReceived?: (annotations: Array<{
+    type: string;
+    pixelx: number;
+    pixely: number;
+    radius: number;
+    name: string;
+    names: string[];
+  }>) => void;
 }
 
 export interface UseTelescopeWebSocketReturn {
@@ -60,7 +68,8 @@ export function useTelescopeWebSocket(
 ): UseTelescopeWebSocketReturn {
   const {
     autoConnect = true,
-    subscriptions = [SubscriptionType.ALL]
+    subscriptions = [SubscriptionType.ALL],
+    onAnnotationsReceived
   } = options;
   
   // WebSocket service instance (persistent across renders) - using singleton
@@ -161,6 +170,11 @@ export function useTelescopeWebSocket(
           image_id: message.payload.image_id,
           timestamp: new Date(message.timestamp).toISOString()
         });
+        
+        // Call the callback if provided
+        if (onAnnotationsReceived && message.payload.annotations) {
+          onAnnotationsReceived(message.payload.annotations);
+        }
       };
       
       wsService.on(MessageType.ANNOTATION_EVENT, annotationListener);

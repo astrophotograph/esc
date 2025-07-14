@@ -38,7 +38,7 @@ import { useTelescopeContext } from "../../context/TelescopeContext"
 import { StatsPanel } from "./panels/StatsPanel"
 import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
-import { AnnotationLayer } from "./AnnotationLayer"
+import { AnnotationOverlay } from "./AnnotationOverlay"
 import { RandomTestPattern } from "./RandomTestPattern"
 import type { ScreenAnnotation } from "../../types/telescope-types"
 import { generateStreamingUrl } from "../../utils/streaming"
@@ -85,6 +85,8 @@ export function CameraView() {
     imageStats: _imageStats,
     showAnnotations: _showAnnotations,
     setShowAnnotations: _setShowAnnotations,
+    currentAnnotations,
+    setCurrentAnnotations,
     annotationSettings,
     handleTargetSelect,
     celestialObjects,
@@ -242,7 +244,8 @@ export function CameraView() {
     disconnect: wsDisconnect,
     forceReconnect: wsForceReconnect
   } = useTelescopeWebSocket({
-    autoConnect: false
+    autoConnect: false,
+    onAnnotationsReceived: setCurrentAnnotations
   });
 
   // Calculate boundaries for panning
@@ -543,7 +546,7 @@ export function CameraView() {
     }
   };
 
-  // Update container dimensions on resize
+  // Update container dimensions on resize and initial mount
   useEffect(() => {
     const handleResize = () => {
       if (imageContainerRef.current) {
@@ -554,6 +557,9 @@ export function CameraView() {
       }
     };
 
+    // Measure container dimensions immediately on mount
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -1173,6 +1179,19 @@ export function CameraView() {
                   {showStreamStatus ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </Button>
                 <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => _setShowAnnotations(!_showAnnotations)}
+                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"}`}
+                  title={_showAnnotations ? "Hide Annotations (Ctrl+A)" : "Show Annotations (Ctrl+A)"}
+                >
+                  <Crosshair className={`h-4 w-4 ${_showAnnotations ? "" : "opacity-50"}`} />
+                  {/* Indicator dot when annotations are available */}
+                  {currentAnnotations.length > 0 && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                  )}
+                </Button>
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
@@ -1262,6 +1281,21 @@ export function CameraView() {
                 onConnectionStateChange={setConnectionType}
               />
             </div>
+
+            {/* Annotation Overlay */}
+            <AnnotationOverlay
+              annotations={currentAnnotations}
+              visible={_showAnnotations}
+              containerWidth={containerDimensions.width || 800}
+              containerHeight={containerDimensions.height || 600}
+              imageWidth={imageDimensions.width || 800}
+              imageHeight={imageDimensions.height || 600}
+              zoom={zoomLevel}
+              rotation={rotationAngle * Math.PI / 180} // Convert degrees to radians
+              offsetX={panPosition.x}
+              offsetY={panPosition.y}
+              isPortrait={isPortrait}
+            />
 
             {/* Status Stream Overlay */}
             {localStreamStatus && showStreamStatus && (
