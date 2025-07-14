@@ -235,17 +235,55 @@ export function AnnotationOverlay({
             }}
           >
             {/* Circle based on radius */}
-            {annotation.radius > 0 && (
-              <div 
-                className="absolute border-2 border-yellow-400 opacity-80 rounded-full"
-                style={{
-                  width: `${Math.max(annotation.radius * 2 * zoom, 4)}px`,
-                  height: `${Math.max(annotation.radius * 2 * zoom, 4)}px`,
-                  left: `${-Math.max(annotation.radius * zoom, 2)}px`,
-                  top: `${-Math.max(annotation.radius * zoom, 2)}px`,
-                }}
-              />
-            )}
+            {annotation.radius > 0 && (() => {
+              // Calculate the scale factor between actual image and displayed image
+              let scaleRatio = 1;
+              
+              // Get real image dimensions for scaling
+              let realImageWidth = imageWidth;
+              let realImageHeight = imageHeight;
+              
+              if ((imageWidth === 0 || imageHeight === 0 || (imageWidth === 800 && imageHeight === 600)) && isClient) {
+                const videoElement = document.querySelector('video') as HTMLVideoElement;
+                const imageElement = document.querySelector('img[alt="Telescope view"]') as HTMLImageElement;
+                
+                if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+                  realImageWidth = videoElement.videoWidth;
+                  realImageHeight = videoElement.videoHeight;
+                } else if (imageElement && imageElement.naturalWidth && imageElement.naturalHeight) {
+                  realImageWidth = imageElement.naturalWidth;
+                  realImageHeight = imageElement.naturalHeight;
+                }
+              }
+              
+              // Calculate scale ratio based on the smaller dimension to match object-fit: contain behavior
+              if (realImageWidth > 0 && realImageHeight > 0) {
+                const realAspect = realImageWidth / realImageHeight;
+                const displayAspect = actualImageSize.width / actualImageSize.height;
+                
+                if (realAspect > displayAspect) {
+                  // Image is wider - scale based on width
+                  scaleRatio = actualImageSize.width / realImageWidth;
+                } else {
+                  // Image is taller - scale based on height  
+                  scaleRatio = actualImageSize.height / realImageHeight;
+                }
+              }
+              
+              const scaledRadius = annotation.radius * scaleRatio;
+              
+              return (
+                <div 
+                  className="absolute border-2 border-yellow-400 opacity-80 rounded-full"
+                  style={{
+                    width: `${Math.max(scaledRadius * 2, 4)}px`,
+                    height: `${Math.max(scaledRadius * 2, 4)}px`,
+                    left: `${-Math.max(scaledRadius, 2)}px`,
+                    top: `${-Math.max(scaledRadius, 2)}px`,
+                  }}
+                />
+              );
+            })()}
             
             {/* Crosshair marker */}
             <div className="relative">
@@ -285,7 +323,10 @@ export function AnnotationOverlay({
             {displayName && (
               <div
                 className="absolute top-3 left-1/2 transform -translate-x-1/2 pointer-events-auto"
-                style={{ minWidth: 'max-content' }}
+                style={{ 
+                  minWidth: 'max-content',
+                  transform: `translateX(-50%) rotate(${-rotation * 180 / Math.PI}deg)`
+                }}
               >
                 <Badge 
                   variant="secondary" 
