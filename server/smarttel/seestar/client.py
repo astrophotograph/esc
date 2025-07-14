@@ -4,9 +4,8 @@ import itertools
 import json
 import re
 from datetime import datetime
-from numbers import Number
 from pathlib import Path
-from typing import TypeVar, Literal
+from typing import TypeVar, Literal, Any
 
 import pydash
 from loguru import logger as logging
@@ -26,7 +25,7 @@ from smarttel.seestar.events import (
     EventTypes,
     PiStatusEvent,
     AnnotateResult,
-    AnnotateEvent,
+    AnnotateEvent, InternalEvent,
 )
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
@@ -103,6 +102,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
+    client_mode: Literal['ContinuousExposure', 'Stack', 'Streaming'] | None = None
 
     # Pattern monitoring configuration
     pattern_file_path: str = "/mnt/sfro/roof/building-6/RoofStatusFile.txt"
@@ -115,13 +115,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     write_timeout: float = 10.0
 
     def __init__(
-        self,
-        host: str,
-        port: int,
-        event_bus: EventBus,
-        connection_timeout: float = 10.0,
-        read_timeout: float = 30.0,
-        write_timeout: float = 10.0,
+            self,
+            host: str,
+            port: int,
+            event_bus: EventBus,
+            connection_timeout: float = 10.0,
+            read_timeout: float = 30.0,
+            write_timeout: float = 10.0,
     ):
         super().__init__(
             host=host,
@@ -214,14 +214,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 # Check if file has been modified or grown
                 if (
-                    last_modified_time is None
-                    or current_modified_time > last_modified_time
-                    or current_size > last_file_size
+                        last_modified_time is None
+                        or current_modified_time > last_modified_time
+                        or current_size > last_file_size
                 ):
                     # Read the file content
                     try:
                         with open(
-                            file_path, "r", encoding="utf-8", errors="ignore"
+                                file_path, "r", encoding="utf-8", errors="ignore"
                         ) as f:
                             content = f.read()
 
@@ -287,16 +287,50 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 self.status.totalMB = response.result.get("totalMB")
             await asyncio.sleep(30)
 
+    def _process_view(self, data: dict[str, Any] | None):
+        if not data:
+            return
+
+        self.status.target_name = pydash.get(data, "target_name", "unknown")
+        self.status.gain = pydash.get(data, "gain", 0)
+
+        stage = pydash.get(data, "stage", "unknown")
+        mode = pydash.get(data, "mode", "unknown")
+        state = pydash.get(data, "state", "unknown")
+
+        # Update client mode
+        new_client_mode = None
+        if state != 'cancel':
+            if stage == 'ContinuousExposure':
+                new_client_mode = 'ContinuousExposure'
+            elif stage == 'RTSP':
+                new_client_mode = 'Streaming'
+            elif stage == 'Stack':
+                new_client_mode = 'Stacking'
+
+        if self.client_mode != new_client_mode:
+            # client mode is changing, so let's make appropriate changes
+            logging.warning(f"Client mode changing from {self.client_mode} to {new_client_mode}")
+            self.event_bus.emit("ClientModeChanged",
+                                InternalEvent(
+                                    Timestamp=datetime.now().isoformat(),
+                                    params={
+                                        "existing": self.client_mode,
+                                        "new_mode": new_client_mode
+                                    }
+                                ))
+            pass
+
+        self.client_mode = new_client_mode
+        self.status.stage = stage
+
     def _process_view_state(self, response: CommandResponse):
         """Process view state."""
         logging.trace(f"Processing view state from {self}: {response}")
         if response.result is not None:
             # print(f"view state: {response.result}")
-            self.status.target_name = pydash.get(
-                response.result, "View.target_name", "unknown"
-            )
-            self.status.gain = pydash.get(response.result, "View.gain", 0)
-            self.status.stage = pydash.get(response.result, "View.stage", "unknown")
+            view = response.result["View"]
+            self._process_view(view)
         else:
             logging.error(f"Error while processing view state from {self}: {response}")
 
@@ -399,7 +433,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.trace(f"Handling event from {self}: {event_str}")
+        logging.debug(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -437,6 +471,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     wheel_event = parser.event
                     if wheel_event.state == "complete":
                         self.status.lp_filter = wheel_event.position == 2
+                case "View":
+                    self._process_view(parser.event.dict())
                 # Todo: include Exposure, Stacked
                 # case _:
                 #    logging.debug(f"Unhandled event: {parser}")

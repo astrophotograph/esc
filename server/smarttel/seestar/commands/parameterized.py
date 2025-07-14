@@ -17,10 +17,15 @@ class IscopeStartStack(BaseCommand):
     method: Literal["iscope_start_stack"] = "iscope_start_stack"
     params: dict[str, Any] | None = None # restart boolean
 
+class IscopeStartViewParams(BaseModel):
+    """Parameters for the IscopeStartView command."""
+    mode: Literal['scenery', 'solar_sys', 'star'] | None = None
+    target_name: str | None = None
+
 class IscopeStartView(BaseCommand):
     """Start the view from the Seestar."""
     method: Literal["iscope_start_view"] = "iscope_start_view"
-    params: dict[str, Any] | None = None
+    params: IscopeStartViewParams | None = None
 
 class IscopeStopView(BaseCommand):
     """Stop the view from the Seestar."""

@@ -13,6 +13,7 @@ from fastapi import WebSocket
 from loguru import logger
 
 from remote_websocket_client import RemoteWebSocketManager, RemoteController
+from smarttel.seestar.commands.parameterized import IscopeStartView, IscopeStartViewParams
 from websocket_protocol import (
     WebSocketMessage, MessageFactory, SubscriptionType,
     StatusUpdateMessage, ControlCommandMessage, HeartbeatMessage, SubscribeMessage, UnsubscribeMessage
@@ -574,7 +575,15 @@ class WebSocketManager:
             logger.info(f"Start imaging: {start_imaging}")
             logger.info(f"Description: {description}")
             logger.info(f"Full message parameters: {parameters}")
-            
+
+            #command = IscopeStartView(
+            #    params=IscopeStartViewParams(
+            #        mode='scenery'
+            #    )
+            #)
+
+            #response = await client.send_and_recv(command)
+
             # For now, this is just a stub that logs the message
             # In the future, this could:
             # - Send actual goto command to telescope with coordinates
@@ -605,14 +614,15 @@ class WebSocketManager:
         try:
             logger.info(f"Scenery mode command received: mode={mode}, parameters={parameters}")
             logger.info(f"Message payload: {{'mode': '{mode}'}}")
-            
-            # For now, this is just a stub that logs the message
-            # In the future, this could:
-            # - Switch telescope to wide-field mode
-            # - Adjust exposure settings for scenery photography
-            # - Enable different tracking modes
-            # - Configure image stacking parameters
-            
+
+            command = IscopeStartView(
+                params=IscopeStartViewParams(
+                    mode='scenery'
+                )
+            )
+
+            response = await client.send_and_recv(command)
+
             return {
                 "status": "success", 
                 "action": "scenery", 

@@ -470,18 +470,19 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             # await self.imaging.start_streaming()
             yield b"\r\n--frame\r\n"
 
-            is_streaming = False
-            if self.client.status.stage == "ContinuousExposure":
-                await self.imaging.start_streaming()
-                is_streaming = True
+            #is_streaming = False
+            #match self.client.status.stage:
+            #    case "ContinuousExposure":
+            #        await self.imaging.start_streaming()
+            #        is_streaming = True
 
             async for image in self.imaging.get_next_image():
-                if is_streaming and self.client.status.stage != "ContinuousExposure":
-                    await self.imaging.stop_streaming()
-                    is_streaming = False
-                if not is_streaming and self.client.status.stage == "ContinuousExposure":
-                    await self.imaging.start_streaming()
-                    is_streaming = True
+                #if is_streaming and self.client.status.stage != "ContinuousExposure":
+                #    await self.imaging.stop_streaming()
+                #    is_streaming = False
+                #if not is_streaming and self.client.status.stage == "ContinuousExposure":
+                #    await self.imaging.start_streaming()
+                #    is_streaming = True
 
                 if image is not None and image.image is not None:
                     img = image.image

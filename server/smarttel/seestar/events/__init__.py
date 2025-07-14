@@ -316,6 +316,11 @@ class SaveImageEvent(BaseEvent):
     filename: str = ""
     fullname: str = ""
 
+class InternalEvent(BaseEvent):
+    """Internal event."""
+    Event: Literal["Internal"] = "Internal"
+    params: dict[str, Any] = {}
+
 
 EventTypes = Annotated[AlertEvent
                        | AnnotateEvent

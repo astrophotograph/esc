@@ -1,6 +1,6 @@
 import asyncio
 import collections
-from typing import TypeVar, Literal
+from typing import TypeVar, Literal, Any
 
 from loguru import logger as logging
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from smarttel.seestar.commands.imaging import (
 )
 from smarttel.seestar.commands.simple import TestConnection
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent
+from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent, InternalEvent
 from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
 from smarttel.util.eventbus import EventBus
 
@@ -91,6 +91,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         )
 
         self.event_bus.add_listener("Stack", self._handle_stack_event)
+        self.event_bus.add_listener("ClientModeChanged", self._handle_client_mode)
         self.connection = SeestarConnection(
             host=host,
             port=port,
@@ -205,6 +206,20 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             # Only grab the frame if we're streaming in client!
             logging.trace("Grabbing frame")
             await self.send(GetStackedImage(id=23))
+
+    async def _handle_client_mode(self, event: BaseEvent):
+        if isinstance(event, InternalEvent):
+            params = event.params
+            existing = params.get('existing')
+            new_mode = params.get('new_mode')
+
+            if existing == 'ContinuousExposure':
+                await self.stop_streaming()
+
+            match new_mode:
+                case 'ContinuousExposure':
+                    await self.start_streaming()
+
 
     async def start_streaming(self):
         """Start streaming from the Seestar."""
