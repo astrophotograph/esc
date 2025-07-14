@@ -2,6 +2,7 @@ import asyncio
 import collections
 from typing import TypeVar, Literal, Any
 
+import numpy as np
 from loguru import logger as logging
 from pydantic import BaseModel
 
@@ -14,6 +15,7 @@ from smarttel.seestar.commands.simple import TestConnection
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent, InternalEvent
 from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
+from smarttel.seestar.rtspclient import RtspClient
 from smarttel.util.eventbus import EventBus
 
 U = TypeVar("U")
@@ -66,6 +68,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     event_bus: EventBus | None = None
     binary_protocol: BinaryProtocol = BinaryProtocol()
     image: ScopeImage | None = None
+    client_mode: Literal['ContinuousExposure', 'Stack', 'Streaming'] | None = None
 
     # Timeout configuration
     connection_timeout: float = 10.0
@@ -191,14 +194,41 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         await self.connection.write(data)
 
     async def get_next_image(self):
-        last_image: ScopeImage | None = None
+        last_image: ScopeImage = ScopeImage(width=1080, height=1920, image=None)
 
         self.status.is_fetching_images = True
-        while self.is_connected:
-            if self.image is not None and self.image != last_image:
-                last_image = self.image
-                yield self.image
-            await asyncio.sleep(0.01)
+        try:
+            while self.is_connected:
+                if self.client_mode == 'Streaming':
+                    # If we're streaming, just run RTSP client, which runs as a background thread...
+                    with RtspClient(rtsp_server_uri=f"rtsp://{self.host}:4554/stream") as rtsp_client:
+                        # Run RTSP client until it's closed
+                        await rtsp_client.finish_opening()
+                        while rtsp_client.is_opened():
+                            image = ScopeImage(width=1080, height=1920, image=rtsp_client.read())
+
+                            if image is not None:
+                                changed = not np.array_equal(self.image.image, last_image.image)
+                                last_image = image
+
+                                if changed:
+                                    yield image
+                            await asyncio.sleep(0)
+                    continue
+
+                if self.image is not None:
+                    # Optional[npt.NDArray]
+                    changed = not np.array_equal(self.image.image, last_image.image)
+                    last_image = self.image
+
+                    if changed:
+                        yield self.image
+                await asyncio.sleep(0.01)
+        except Exception as e:
+            logging.error(f"Unexpected error in imaging reader task for {self}: {e}")
+            import traceback
+            traceback.print_exc()
+
         self.status.is_fetching_images = False
 
     async def _handle_stack_event(self, event: BaseEvent):
@@ -215,10 +245,17 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
             if existing == 'ContinuousExposure':
                 await self.stop_streaming()
+            if existing == 'Streaming':
+                await self.stop_rtsp()
 
             match new_mode:
                 case 'ContinuousExposure':
                     await self.start_streaming()
+                case 'Streaming':
+                    await self.start_rtsp()
+                # For Stacking and None we don't need to do anything
+
+            self.client_mode = new_mode
 
 
     async def start_streaming(self):
@@ -243,6 +280,14 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
         response = await self.send(StopStreaming())
         self.status.is_streaming = False
+
+    async def start_rtsp(self):
+        """Start RTSP streams from Seestar."""
+        pass
+
+    async def stop_rtsp(self):
+        """Stop RTSP streams from Seestar."""
+        pass
 
     def __str__(self):
         return f"{self.host}:{self.port}"

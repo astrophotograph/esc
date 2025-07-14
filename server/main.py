@@ -432,7 +432,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             font = cv2.FONT_HERSHEY_COMPLEX
             BOUNDARY = b"\r\n--frame\r\n"
 
-            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-5]
+            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
 
             w = width or 1080
             h = height or 1920
@@ -466,48 +466,33 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
 
             star_processors = [GraxpertStretch()]
-            # await self.client.send(IscopeStartView(params={"mode": "star"}))
-            # await self.imaging.start_streaming()
             yield b"\r\n--frame\r\n"
 
-            #is_streaming = False
-            #match self.client.status.stage:
-            #    case "ContinuousExposure":
-            #        await self.imaging.start_streaming()
-            #        is_streaming = True
-
             async for image in self.imaging.get_next_image():
-                #if is_streaming and self.client.status.stage != "ContinuousExposure":
-                #    await self.imaging.stop_streaming()
-                #    is_streaming = False
-                #if not is_streaming and self.client.status.stage == "ContinuousExposure":
-                #    await self.imaging.start_streaming()
-                #    is_streaming = True
+                is_streaming = self.imaging.client_mode == 'Streaming'
 
                 if image is not None and image.image is not None:
                     img = image.image
-                    for processor in star_processors:
-                        img = processor.process(img)
+                    if not is_streaming:
+                        # We don't want to run processors when in streaming mode!
+                        for processor in star_processors:
+                            img = processor.process(img)
                     frame = build_frame_bytes(img, image.width, image.height)
                     yield frame
-                    yield frame
+
+                    if not is_streaming:
+                        # We send an extra frame if not streaming to deal with some browser's buffering issues!
+                        yield frame
                 else:
                     # yield b"\r\ndata: empty!\r\n"
-                    await asyncio.sleep(0.1)
-            # await self.imaging.stop_streaming()
-            # while True:
-            #     image = await self.imaging.get_next_image()
-            #     if image and image.image:
-            #         frame = build_frame_bytes(image.image, image.width, image.height)
-            #         yield frame
-            #         yield frame
+                    delay = 0.001 if is_streaming else 0.1
+                    await asyncio.sleep(delay)
 
         @router.get("/stream")
         async def stream_image():
             """Stream images from the Seestar imaging server."""
             return StreamingResponse(
                 get_next_image(),
-                # media_type="text/event-stream"
                 media_type="multipart/x-mixed-replace; boundary=frame"
             )
 

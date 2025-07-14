@@ -433,7 +433,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.debug(f"Handling event from {self}: {event_str}")
+        logging.trace(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
