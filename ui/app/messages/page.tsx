@@ -25,6 +25,48 @@ interface MessagesResponse {
 }
 
 interface ParsedMessage {
+  message_type: 'command' | 'response' | 'event' | 'unknown';
+  parse_success: boolean;
+  raw_message: string;
+  timestamp: string;
+  // Command fields
+  command_id?: number;
+  method?: string;
+  params?: any;
+  // Response fields
+  response_id?: number;
+  jsonrpc?: string;
+  code?: number;
+  result?: any;
+  error?: any;
+  timestamp_telescope?: string;
+  // Event fields
+  event_type?: string;
+  event_data?: any;
+}
+
+interface EnhancedTelescopeMessage extends TelescopeMessage {
+  parsed?: ParsedMessage;
+}
+
+interface MessageAnalytics {
+  total_messages: number;
+  sent_count: number;
+  received_count: number;
+  commands: Record<string, number>;
+  events: Record<string, number>;
+  responses: Record<string, number>;
+  parse_errors: number;
+  most_common_commands: [string, number][];
+  most_common_events: [string, number][];
+  time_range?: {
+    earliest: string;
+    latest: string;
+    duration_messages: number;
+  };
+}
+
+interface ParsedMessage {
   id?: number;
   method?: string;
   Event?: string;
@@ -48,10 +90,14 @@ export default function MessagesPage() {
   const [autoScroll, setAutoScroll] = useState(true);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const [expandedJsonPaths, setExpandedJsonPaths] = useState<Set<string>>(new Set());
+  const [rawJsonView, setRawJsonView] = useState<Set<string>>(new Set());
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [customMinutes, setCustomMinutes] = useState<string>('5');
   const [isPaused, setIsPaused] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [analytics, setAnalytics] = useState<MessageAnalytics | null>(null);
+  const [useParsedMessages, setUseParsedMessages] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch available telescopes
@@ -83,7 +129,8 @@ export default function MessagesPage() {
     setError('');
     
     try {
-      const response = await fetch(`/api/telescopes/${selectedTelescope}/messages`);
+      const endpoint = useParsedMessages ? 'messages/parsed' : 'messages';
+      const response = await fetch(`/api/telescopes/${selectedTelescope}/${endpoint}`);
       if (response.ok) {
         const data: MessagesResponse = await response.json();
         setMessages(data.messages || []);
@@ -100,12 +147,30 @@ export default function MessagesPage() {
     }
   };
 
+  // Fetch analytics for selected telescope
+  const fetchAnalytics = async () => {
+    if (!selectedTelescope) return;
+    
+    try {
+      const response = await fetch(`/api/telescopes/${selectedTelescope}/messages/analytics`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+    }
+  };
+
   // Fetch messages when telescope selection changes
   useEffect(() => {
     if (selectedTelescope) {
       fetchMessages();
+      if (showAnalytics) {
+        fetchAnalytics();
+      }
     }
-  }, [selectedTelescope]);
+  }, [selectedTelescope, useParsedMessages]);
 
   // Auto-refresh every 5 seconds (when not paused)
   useEffect(() => {
@@ -130,6 +195,7 @@ export default function MessagesPage() {
   useEffect(() => {
     setExpandedMessages(new Set());
     setExpandedJsonPaths(new Set());
+    setRawJsonView(new Set());
   }, [selectedTelescope]);
 
   const formatTimestamp = (timestamp: string) => {
@@ -156,19 +222,38 @@ export default function MessagesPage() {
     }
   };
 
-  const getMessageType = (parsed: ParsedMessage): string => {
-    if (parsed.Event) return `Event: ${parsed.Event}`;
-    if (parsed.method) return `Command: ${parsed.method}`;
-    if (parsed.result !== undefined || parsed.error !== undefined) return `Response`;
+  const getMessageType = (msg: TelescopeMessage, parsed?: ParsedMessage): string => {
+    if (parsed) {
+      if (parsed.message_type === 'event') return `Event: ${parsed.event_type}`;
+      if (parsed.message_type === 'command') return `Command: ${parsed.method}`;
+      if (parsed.message_type === 'response') return `Response`;
+      return 'Unknown';
+    }
+    // Fallback to original parsing
+    try {
+      const data = JSON.parse(msg.message);
+      if (data.Event) return `Event: ${data.Event}`;
+      if (data.method) return `Command: ${data.method}`;
+      if (data.result !== undefined || data.error !== undefined) return `Response`;
+    } catch {}
     return 'Unknown';
   };
 
-  const getMessageSummary = (parsed: ParsedMessage): string => {
-    if (parsed.Event) return parsed.Event;
-    if (parsed.method) return parsed.method;
-    if (parsed.result !== undefined) return `Response (ID: ${parsed.id})`;
-    if (parsed.error !== undefined) return `Error (ID: ${parsed.id})`;
-    return parsed.raw.length > 50 ? parsed.raw.substring(0, 50) + '...' : parsed.raw;
+  const getMessageSummary = (msg: TelescopeMessage, parsed?: ParsedMessage): string => {
+    if (parsed) {
+      if (parsed.message_type === 'event') return parsed.event_type || 'Unknown Event';
+      if (parsed.message_type === 'command') return parsed.method || 'Unknown Command';
+      if (parsed.message_type === 'response') return `Response (ID: ${parsed.response_id})`;
+    }
+    // Fallback to original parsing
+    try {
+      const data = JSON.parse(msg.message);
+      if (data.Event) return data.Event;
+      if (data.method) return data.method;
+      if (data.result !== undefined) return `Response (ID: ${data.id})`;
+      if (data.error !== undefined) return `Error (ID: ${data.id})`;
+    } catch {}
+    return msg.message.length > 50 ? msg.message.substring(0, 50) + '...' : msg.message;
   };
 
   const parseJsonSafely = (message: string) => {
@@ -255,6 +340,112 @@ export default function MessagesPage() {
       newExpanded.add(path);
     }
     setExpandedJsonPaths(newExpanded);
+  };
+
+  const expandAllJson = (basePath: string) => {
+    // Find all possible paths in the JSON structure and add them
+    const findAllPaths = (obj: any, currentPath: string = '', paths: Set<string> = new Set()): Set<string> => {
+      if (typeof obj === 'object' && obj !== null) {
+        if (Array.isArray(obj)) {
+          // Add the array itself to expandable paths
+          if (currentPath) {
+            paths.add(currentPath);
+          }
+          obj.forEach((item, index) => {
+            const itemPath = currentPath ? `${currentPath}[${index}]` : `[${index}]`;
+            if (typeof item === 'object' && item !== null) {
+              paths.add(itemPath);
+              findAllPaths(item, itemPath, paths);
+            }
+          });
+        } else {
+          // Add the object itself to expandable paths
+          if (currentPath) {
+            paths.add(currentPath);
+          }
+          Object.keys(obj).forEach(key => {
+            const keyPath = currentPath ? `${currentPath}.${key}` : key;
+            if (typeof obj[key] === 'object' && obj[key] !== null) {
+              paths.add(keyPath);
+              findAllPaths(obj[key], keyPath, paths);
+            }
+          });
+        }
+      }
+      return paths;
+    };
+
+    // Find the message from the basePath
+    let messageData = null;
+    
+    // Extract message ID from basePath (req-xxx, res-xxx, msg-xxx)
+    const messageIdMatch = basePath.match(/^(req|res|msg)-(.*?)$/);
+    if (messageIdMatch) {
+      const [, type, id] = messageIdMatch;
+      
+      if (type === 'req' || type === 'res') {
+        // For pairs, find the message data differently
+        const filteredMessages = filterMessages(messages);
+        const pairs = createMessagePairs(filteredMessages);
+        
+        for (const item of pairs) {
+          if ('request' in item) {
+            const pairId = generatePairId(item as MessagePair);
+            if (pairId === id) {
+              if (type === 'req') {
+                messageData = item.request.message;
+              } else if (type === 'res' && item.response) {
+                messageData = item.response.message;
+              }
+              break;
+            }
+          }
+        }
+      } else {
+        // For standalone messages
+        const message = messages.find(msg => generateMessageId(msg, 0) === basePath.replace(/^msg-/, ''));
+        if (message) {
+          messageData = message.message;
+        }
+      }
+    }
+
+    if (messageData) {
+      try {
+        const data = parseJsonSafely(messageData);
+        const allPaths = findAllPaths(data);
+        
+        // Prefix all paths with the basePath
+        const prefixedPaths = new Set([...allPaths].map(path => `${basePath}.${path}`));
+        
+        console.log('Expanding paths:', [...prefixedPaths]);
+        setExpandedJsonPaths(new Set([...expandedJsonPaths, ...prefixedPaths]));
+      } catch (error) {
+        console.error('Failed to parse JSON for expand all:', error);
+      }
+    }
+  };
+
+  const collapseAllJson = (basePath: string) => {
+    // Remove all paths that start with this base path
+    const newExpanded = new Set([...expandedJsonPaths].filter(path => !path.startsWith(basePath)));
+    console.log('Collapsing paths for:', basePath, 'Remaining paths:', [...newExpanded]);
+    setExpandedJsonPaths(newExpanded);
+  };
+
+  const toggleRawJsonView = (messageId: string) => {
+    const newRawView = new Set(rawJsonView);
+    if (newRawView.has(messageId)) {
+      newRawView.delete(messageId);
+    } else {
+      newRawView.add(messageId);
+    }
+    setRawJsonView(newRawView);
+  };
+
+  const handleCopyJson = (messageId: string) => {
+    console.log(`JSON copied for message: ${messageId}`);
+    // Optional: Show a toast notification or other feedback
   };
 
   // Filter messages based on type and time
@@ -480,6 +671,51 @@ export default function MessagesPage() {
         </CardContent>
       </Card>
 
+      {/* Analytics Display */}
+      {showAnalytics && analytics && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Message Analytics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold">Overview</h4>
+                <p className="text-sm">Total: {analytics.total_messages}</p>
+                <p className="text-sm">Sent: {analytics.sent_count}</p>
+                <p className="text-sm">Received: {analytics.received_count}</p>
+                {analytics.parse_errors > 0 && (
+                  <p className="text-sm text-red-600">Parse Errors: {analytics.parse_errors}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold">Top Commands</h4>
+                {analytics.most_common_commands.slice(0, 5).map(([cmd, count]) => (
+                  <p key={cmd} className="text-sm">{cmd}: {count}</p>
+                ))}
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold">Top Events</h4>
+                {analytics.most_common_events.slice(0, 5).map(([event, count]) => (
+                  <p key={event} className="text-sm">{event}: {count}</p>
+                ))}
+              </div>
+              
+              {analytics.time_range && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Time Range</h4>
+                  <p className="text-xs">From: {new Date(analytics.time_range.earliest).toLocaleString()}</p>
+                  <p className="text-xs">To: {new Date(analytics.time_range.latest).toLocaleString()}</p>
+                  <p className="text-sm">Duration: {analytics.time_range.duration_messages} messages</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Messages Display */}
       <Card className="h-[70vh]">
         <CardHeader className="pb-2">
@@ -490,9 +726,31 @@ export default function MessagesPage() {
                 <span className="text-sm text-orange-600 font-normal">(Paused)</span>
               )}
             </CardTitle>
-            <Badge variant="secondary">
-              {filterMessages(messages).length} of {messages.length} messages
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {filterMessages(messages).length} of {messages.length} messages
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowAnalytics(!showAnalytics);
+                  if (!showAnalytics && selectedTelescope) {
+                    fetchAnalytics();
+                  }
+                }}
+              >
+                {showAnalytics ? 'Hide' : 'Show'} Analytics
+              </Button>
+              <Button
+                variant={useParsedMessages ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUseParsedMessages(!useParsedMessages)}
+                title="Use enhanced parsing"
+              >
+                Enhanced
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -561,15 +819,15 @@ export default function MessagesPage() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-xs">
-                                  {getMessageType(pair.request.parsed)}
+                                  {getMessageType(pair.request, (pair.request as any).parsed)}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 <div className="space-y-1">
-                                  <div>{getMessageSummary(pair.request.parsed)}</div>
+                                  <div>{getMessageSummary(pair.request, (pair.request as any).parsed)}</div>
                                   {pair.response && (
                                     <div className="text-gray-600 text-sm">
-                                      → {getMessageSummary(pair.response.parsed)}
+                                      → {getMessageSummary(pair.response, (pair.response as any).parsed)}
                                     </div>
                                   )}
                                 </div>
@@ -605,6 +863,12 @@ export default function MessagesPage() {
                                           expandedPaths={expandedJsonPaths}
                                           onToggleExpansion={toggleJsonExpansion}
                                           basePath={`req-${pairId}`}
+                                          showControls={true}
+                                          onExpandAll={() => expandAllJson(`req-${pairId}`)}
+                                          onCollapseAll={() => collapseAllJson(`req-${pairId}`)}
+                                          onToggleRawView={() => toggleRawJsonView(`req-${pairId}`)}
+                                          isRawView={rawJsonView.has(`req-${pairId}`)}
+                                          onCopyJson={() => handleCopyJson(`req-${pairId}`)}
                                         />
                                       </div>
                                     </div>
@@ -619,6 +883,12 @@ export default function MessagesPage() {
                                             expandedPaths={expandedJsonPaths}
                                             onToggleExpansion={toggleJsonExpansion}
                                             basePath={`res-${pairId}`}
+                                            showControls={true}
+                                            onExpandAll={() => expandAllJson(`res-${pairId}`)}
+                                            onCollapseAll={() => collapseAllJson(`res-${pairId}`)}
+                                            onToggleRawView={() => toggleRawJsonView(`res-${pairId}`)}
+                                            isRawView={rawJsonView.has(`res-${pairId}`)}
+                                            onCopyJson={() => handleCopyJson(`res-${pairId}`)}
                                           />
                                         </div>
                                       </div>
@@ -651,11 +921,11 @@ export default function MessagesPage() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-xs">
-                                  {getMessageType(parsed)}
+                                  {getMessageType(msg, (msg as any).parsed)}
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                {getMessageSummary(parsed)}
+                                {getMessageSummary(msg, (msg as any).parsed)}
                               </TableCell>
                               <TableCell>
                                 <Collapsible>
@@ -685,6 +955,12 @@ export default function MessagesPage() {
                                       expandedPaths={expandedJsonPaths}
                                       onToggleExpansion={toggleJsonExpansion}
                                       basePath={`msg-${msgId}`}
+                                      showControls={true}
+                                      onExpandAll={() => expandAllJson(`msg-${msgId}`)}
+                                      onCollapseAll={() => collapseAllJson(`msg-${msgId}`)}
+                                      onToggleRawView={() => toggleRawJsonView(`msg-${msgId}`)}
+                                      isRawView={rawJsonView.has(`msg-${msgId}`)}
+                                      onCopyJson={() => handleCopyJson(`msg-${msgId}`)}
                                     />
                                   </div>
                                 </TableCell>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Expand, Minimize, Code, Eye, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface JsonTreeProps {
@@ -11,12 +11,32 @@ interface JsonTreeProps {
   expandedPaths?: Set<string>;
   onToggleExpansion?: (path: string) => void;
   basePath?: string;
+  showControls?: boolean;
+  onExpandAll?: () => void;
+  onCollapseAll?: () => void;
+  onToggleRawView?: () => void;
+  isRawView?: boolean;
+  onCopyJson?: () => void;
 }
 
-const JsonTree = ({ data, level = 0, name, expandedPaths, onToggleExpansion, basePath = '' }: JsonTreeProps) => {
+const JsonTree = ({ 
+  data, 
+  level = 0, 
+  name, 
+  expandedPaths, 
+  onToggleExpansion, 
+  basePath = '',
+  showControls = false,
+  onExpandAll,
+  onCollapseAll,
+  onToggleRawView,
+  isRawView = false,
+  onCopyJson
+}: JsonTreeProps) => {
   const currentPath = basePath + (name ? `.${name}` : '');
   const isExpandedExternal = expandedPaths?.has(currentPath) ?? false;
   const [isExpandedInternal, setIsExpandedInternal] = useState(level < 2);
+  const [copySuccess, setCopySuccess] = useState(false);
   const isExpanded = expandedPaths ? isExpandedExternal : isExpandedInternal;
   
   const indent = level * 16;
@@ -86,6 +106,7 @@ const JsonTree = ({ data, level = 0, name, expandedPaths, onToggleExpansion, bas
                       expandedPaths={expandedPaths}
                       onToggleExpansion={onToggleExpansion}
                       basePath={`${currentPath}[${index}]`}
+                      showControls={false}
                     />
                   </div>
                 </div>
@@ -136,6 +157,7 @@ const JsonTree = ({ data, level = 0, name, expandedPaths, onToggleExpansion, bas
                       expandedPaths={expandedPaths}
                       onToggleExpansion={onToggleExpansion}
                       basePath={currentPath}
+                      showControls={false}
                     />
                   </div>
                 </div>
@@ -149,8 +171,102 @@ const JsonTree = ({ data, level = 0, name, expandedPaths, onToggleExpansion, bas
     return <span className="text-gray-600">{String(value)}</span>;
   };
   
+  const handleCopyJson = async () => {
+    try {
+      const jsonText = JSON.stringify(data, null, 2);
+      await navigator.clipboard.writeText(jsonText);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+      if (onCopyJson) {
+        onCopyJson();
+      }
+    } catch (err) {
+      console.error('Failed to copy JSON:', err);
+    }
+  };
+
+  // If this is the root level and we're showing raw view, display raw JSON
+  if (level === 0 && isRawView) {
+    return (
+      <div className="font-mono text-xs">
+        {showControls && (
+          <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onToggleRawView}
+              className="h-6 text-xs"
+              title="Switch to tree view"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Tree View
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyJson}
+              className="h-6 text-xs"
+              title="Copy JSON to clipboard"
+            >
+              {copySuccess ? (
+                <>
+                  <Check className="h-3 w-3 mr-1 text-green-600" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3 mr-1" />
+                  Copy
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        <pre className="whitespace-pre-wrap text-gray-800 bg-gray-50 p-2 rounded text-xs overflow-auto max-h-96">
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginLeft: `${indent}px` }} className="font-mono text-xs">
+      {/* Controls at root level */}
+      {level === 0 && showControls && (
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExpandAll}
+            className="h-6 text-xs"
+            title="Expand all nested objects"
+          >
+            <Expand className="h-3 w-3 mr-1" />
+            Expand All
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCollapseAll}
+            className="h-6 text-xs"
+            title="Collapse all nested objects"
+          >
+            <Minimize className="h-3 w-3 mr-1" />
+            Collapse All
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleRawView}
+            className="h-6 text-xs"
+            title="View raw JSON"
+          >
+            <Code className="h-3 w-3 mr-1" />
+            Raw JSON
+          </Button>
+        </div>
+      )}
+      
       {name && (
         <span className="text-blue-800 font-medium mr-2">"{name}":</span>
       )}

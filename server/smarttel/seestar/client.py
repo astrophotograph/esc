@@ -5,13 +5,18 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import TypeVar, Literal, Any
+from typing import TypeVar, Literal, Any, Dict
 
 import pydash
 from loguru import logger as logging
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
+from smarttel.seestar.commands.responses import (
+    TelescopeMessageParser, 
+    MessageAnalytics,
+    EnhancedCommandResponse
+)
 from smarttel.seestar.commands.simple import (
     GetTime,
     GetDeviceState,
@@ -25,12 +30,21 @@ from smarttel.seestar.events import (
     EventTypes,
     PiStatusEvent,
     AnnotateResult,
-    AnnotateEvent, InternalEvent,
+    AnnotateEvent,
+    InternalEvent,
 )
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
 
 U = TypeVar("U")
+
+
+class TelescopeMessage(BaseModel):
+    """A message sent or received by the telescope."""
+
+    timestamp: str
+    direction: Literal["sent", "received"]
+    message: str
 
 
 class SeestarStatus(BaseModel):
@@ -102,7 +116,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    client_mode: Literal['ContinuousExposure', 'Stack', 'Streaming'] | None = None
+    client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
+    message_history: collections.deque = collections.deque(maxlen=5000)
 
     # Pattern monitoring configuration
     pattern_file_path: str = "/mnt/sfro/roof/building-6/RoofStatusFile.txt"
@@ -115,13 +130,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     write_timeout: float = 10.0
 
     def __init__(
-            self,
-            host: str,
-            port: int,
-            event_bus: EventBus,
-            connection_timeout: float = 10.0,
-            read_timeout: float = 30.0,
-            write_timeout: float = 10.0,
+        self,
+        host: str,
+        port: int,
+        event_bus: EventBus,
+        connection_timeout: float = 10.0,
+        read_timeout: float = 30.0,
+        write_timeout: float = 10.0,
     ):
         super().__init__(
             host=host,
@@ -155,6 +170,15 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 response_str = await self.connection.read()
                 if response_str is not None:
+                    # Log received message
+                    self.message_history.append(
+                        TelescopeMessage(
+                            timestamp=datetime.now().isoformat(),
+                            direction="received",
+                            message=response_str,
+                        )
+                    )
+
                     # Parse and handle the response
                     if "Event" in response_str:
                         # Handle events
@@ -214,14 +238,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 # Check if file has been modified or grown
                 if (
-                        last_modified_time is None
-                        or current_modified_time > last_modified_time
-                        or current_size > last_file_size
+                    last_modified_time is None
+                    or current_modified_time > last_modified_time
+                    or current_size > last_file_size
                 ):
                     # Read the file content
                     try:
                         with open(
-                                file_path, "r", encoding="utf-8", errors="ignore"
+                            file_path, "r", encoding="utf-8", errors="ignore"
                         ) as f:
                             content = f.read()
 
@@ -310,25 +334,26 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         # Update client mode
         new_client_mode = None
-        if state != 'cancel':
-            if stage == 'ContinuousExposure':
-                new_client_mode = 'ContinuousExposure'
-            elif stage == 'RTSP':
-                new_client_mode = 'Streaming'
-            elif stage == 'Stack':
-                new_client_mode = 'Stacking'
+        if state != "cancel":
+            if stage == "ContinuousExposure":
+                new_client_mode = "ContinuousExposure"
+            elif stage == "RTSP":
+                new_client_mode = "Streaming"
+            elif stage == "Stack":
+                new_client_mode = "Stacking"
 
         if self.client_mode != new_client_mode:
             # client mode is changing, so let's make appropriate changes
-            logging.warning(f"Client mode changing from {self.client_mode} to {new_client_mode}")
-            self.event_bus.emit("ClientModeChanged",
-                                InternalEvent(
-                                    Timestamp=datetime.now().isoformat(),
-                                    params={
-                                        "existing": self.client_mode,
-                                        "new_mode": new_client_mode
-                                    }
-                                ))
+            logging.warning(
+                f"Client mode changing from {self.client_mode} to {new_client_mode}"
+            )
+            self.event_bus.emit(
+                "ClientModeChanged",
+                InternalEvent(
+                    Timestamp=datetime.now().isoformat(),
+                    params={"existing": self.client_mode, "new_mode": new_client_mode},
+                ),
+            )
             pass
 
         self.client_mode = new_client_mode
@@ -439,6 +464,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             if data.id is None:
                 data.id = next(self.counter)
             data = data.model_dump_json()
+
+        # Log sent message
+        self.message_history.append(
+            TelescopeMessage(
+                timestamp=datetime.now().isoformat(), direction="sent", message=data
+            )
+        )
+
         await self.connection.write(data)
 
     async def _handle_event(self, event_str: str):
@@ -555,6 +588,57 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     #     except Exception as e:
     #         logging.error(f"Error while receiving data from {self}: {response} {e}")
     #         raise e
+
+    def get_message_history(self) -> list[Dict[str, Any]]:
+        """Get message history as a list of dictionaries."""
+        return [msg.model_dump() for msg in self.message_history]
+    
+    def get_parsed_message_history(self) -> list[Dict[str, Any]]:
+        """Get message history with parsed message analysis."""
+        parsed_messages = []
+        for msg in self.message_history:
+            msg_dict = msg.model_dump()
+            # Add parsed analysis
+            parsed = TelescopeMessageParser.parse_message(
+                msg.message, 
+                msg.timestamp
+            )
+            msg_dict['parsed'] = parsed.model_dump()
+            parsed_messages.append(msg_dict)
+        return parsed_messages
+    
+    def get_message_analytics(self) -> Dict[str, Any]:
+        """Get analytics for the message history."""
+        messages = self.get_message_history()
+        return MessageAnalytics.analyze_message_history(messages)
+    
+    def get_recent_commands(self, limit: int = 10) -> list[Dict[str, Any]]:
+        """Get recent command messages with parsing."""
+        commands = []
+        for msg in reversed(self.message_history):
+            if msg.direction == "sent":
+                parsed = TelescopeMessageParser.parse_message(msg.message, msg.timestamp)
+                if hasattr(parsed, 'method'):
+                    cmd_dict = msg.model_dump()
+                    cmd_dict['parsed'] = parsed.model_dump()
+                    commands.append(cmd_dict)
+                    if len(commands) >= limit:
+                        break
+        return list(reversed(commands))
+    
+    def get_recent_events(self, limit: int = 10) -> list[Dict[str, Any]]:
+        """Get recent event messages with parsing."""
+        events = []
+        for msg in reversed(self.message_history):
+            if msg.direction == "received":
+                parsed = TelescopeMessageParser.parse_message(msg.message, msg.timestamp)
+                if hasattr(parsed, 'event_type'):
+                    event_dict = msg.model_dump()
+                    event_dict['parsed'] = parsed.model_dump()
+                    events.append(event_dict)
+                    if len(events) >= limit:
+                        break
+        return list(reversed(events))
 
     def __str__(self):
         return f"{self.host}:{self.port}"
