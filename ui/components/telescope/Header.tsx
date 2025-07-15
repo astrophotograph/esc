@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare } from "lucide-react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +24,7 @@ export function Header() {
   const router = useRouter()
   const { theme: _theme, setTheme: _setTheme } = useTheme()
   const { showPiP, setShowPiP } = useTelescope()
-  const { handleSceneryMode } = useTelescopeContext()
+  const { handleSceneryMode, setShowDocumentation } = useTelescopeContext()
   
   const [sceneryMode, setSceneryMode] = useState(false)
   
@@ -94,6 +94,18 @@ export function Header() {
           >
             <MessageSquare className="w-4 h-4" />
             Messages
+          </Button>
+
+          {/* Help/Documentation Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDocumentation(true)}
+            className="flex items-center gap-2"
+            title="Open Documentation (F1)"
+          >
+            <HelpCircle className="w-4 h-4" />
+            Help
           </Button>
 
           <DropdownMenu>
