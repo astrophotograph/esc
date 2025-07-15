@@ -97,6 +97,8 @@ export function CameraView() {
     setStarmapFullscreen,
     starmapMinimized,
     setStarmapMinimized,
+    starmapPosition,
+    setStarmapPosition,
     annotationSettings,
     handleTargetSelect,
     celestialObjects,
@@ -1313,6 +1315,8 @@ export function CameraView() {
               onFullscreenChange={setStarmapFullscreen}
               minimized={starmapMinimized}
               onMinimizedChange={setStarmapMinimized}
+              position={starmapPosition}
+              onPositionChange={setStarmapPosition}
             />
 
             {/* Annotation Overlay */}

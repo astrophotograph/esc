@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { X, Map, Minimize2, Maximize2, Expand, Minimize } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,6 +16,8 @@ interface StarmapWindowProps {
   onFullscreenChange: (fullscreen: boolean) => void
   minimized: boolean
   onMinimizedChange: (minimized: boolean) => void
+  position: { x: number; y: number }
+  onPositionChange: (position: { x: number; y: number }) => void
   className?: string
 }
 
@@ -30,6 +32,8 @@ export function StarmapWindow({
   onFullscreenChange, 
   minimized, 
   onMinimizedChange, 
+  position, 
+  onPositionChange, 
   className = "" 
 }: StarmapWindowProps) {
   const [starmapImage, setStarmapImage] = useState<string | null>(null)
@@ -37,6 +41,9 @@ export function StarmapWindow({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   const [lastCoordinates, setLastCoordinates] = useState<{ ra: number | null, dec: number | null }>({ ra: null, dec: null })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const starmapRef = useRef<HTMLDivElement>(null)
 
   // Size configurations
   const sizeConfig = {
@@ -49,6 +56,69 @@ export function StarmapWindow({
   const currentSize = fullscreen 
     ? { width: window.innerWidth, height: window.innerHeight, imageWidth: 800, imageHeight: 600 } 
     : sizeConfig[size]
+
+  // Handle dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (fullscreen || minimized) return
+
+    setIsDragging(true)
+    const rect = starmapRef.current?.getBoundingClientRect()
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      })
+    }
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return
+
+    const newX = e.clientX - dragOffset.x
+    const newY = e.clientY - dragOffset.y
+
+    // Keep within viewport bounds
+    const maxX = window.innerWidth - currentSize.width
+    const maxY = window.innerHeight - currentSize.height
+
+    onPositionChange({
+      x: Math.max(0, Math.min(maxX, newX)),
+      y: Math.max(0, Math.min(maxY, newY)),
+    })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+      }
+    }
+  }, [isDragging, dragOffset])
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && fullscreen) {
+        onFullscreenChange(false)
+      }
+    }
+
+    if (fullscreen) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [fullscreen, onFullscreenChange])
 
   useEffect(() => {
     // Only fetch starmap when RA and Dec are not zero/null and window is visible
@@ -108,14 +178,26 @@ export function StarmapWindow({
 
   return (
     <div 
+      ref={starmapRef}
       className={`${fullscreen 
         ? "fixed inset-0 z-50 bg-black/95 backdrop-blur-sm" 
-        : "absolute bottom-4 left-4 bg-black/90 backdrop-blur-sm rounded-lg border border-gray-600"
+        : "fixed bg-black/90 backdrop-blur-sm rounded-lg border border-gray-600"
       } ${className}`}
-      style={fullscreen ? {} : { width: currentSize.width }}
+      style={fullscreen ? {} : { 
+        left: position.x, 
+        top: position.y, 
+        width: minimized ? 200 : currentSize.width,
+        height: minimized ? 40 : currentSize.height + 40, // +40 for header
+        cursor: isDragging ? "grabbing" : "grab",
+      }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-600">
+      <div 
+        className={`flex items-center justify-between p-3 border-b border-gray-600 min-w-0 ${
+          fullscreen ? "rounded-none cursor-default" : "rounded-t-lg cursor-grab"
+        }`}
+        onMouseDown={fullscreen ? undefined : handleMouseDown}
+      >
         <h3 className="font-semibold text-blue-400 flex items-center gap-2">
           <Map className="w-4 h-4" />
           Star Map
@@ -178,7 +260,7 @@ export function StarmapWindow({
 
       {/* Content */}
       {!minimized && (
-        <div className={`p-3 ${fullscreen ? 'h-full flex flex-col' : ''}`}>
+        <div className={`p-3 ${fullscreen ? 'h-full flex flex-col rounded-none' : 'rounded-b-lg'}`}>
           {ra === null || dec === null || (ra === 0 && dec === 0) ? (
             <div className="text-center text-gray-400 py-4">
               <Map className="w-8 h-8 mx-auto mb-2 opacity-50" />
