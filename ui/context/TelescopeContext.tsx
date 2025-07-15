@@ -272,6 +272,14 @@ interface TelescopeContextType {
     setShowAnnotations: (show: boolean) => void
     currentAnnotations: Annotation[]
     setCurrentAnnotations: (annotations: Annotation[]) => void
+    showStarmap: boolean
+    setShowStarmap: (show: boolean) => void
+    starmapSize: "small" | "medium" | "large" | "extra-large"
+    setStarmapSize: (size: "small" | "medium" | "large" | "extra-large") => void
+    starmapFullscreen: boolean
+    setStarmapFullscreen: (fullscreen: boolean) => void
+    starmapMinimized: boolean
+    setStarmapMinimized: (minimized: boolean) => void
 
   // Functions
   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
@@ -923,7 +931,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
                 // Only show notification on first load or high confidence matches to reduce noise
                 const isFirstConnection = currentTelescope.status !== savedTelescope.status && savedTelescope.status === 'online';
-                
+
                 if (isFirstConnection && (confidence === 'high' || confidence === 'medium')) {
                   setTimeout(() => {
                     addStatusAlert({
@@ -939,11 +947,11 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
             } else {
               // Previously selected telescope no longer available
               console.warn(`Previous telescope not found: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
-              
+
               // Don't auto-switch during periodic refresh - only switch on first load or user action
               // This prevents random switching when telescopes temporarily disappear from API
               const isInitialLoad = telescopes.length === 0; // First time loading telescopes
-              
+
               if (isInitialLoad) {
                 setCurrentTelescope(transformedTelescopes[0])
                 console.log(`Auto-selected first available telescope (initial load): ${transformedTelescopes[0].name}`)
@@ -1436,9 +1444,9 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }
 
   const handleGotoTarget = async (
-    targetName: string, 
-    ra: number, 
-    dec: number, 
+    targetName: string,
+    ra: number,
+    dec: number,
     startImaging: boolean = false,
     targetType?: string,
     magnitude?: number,
@@ -2053,7 +2061,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       "type": "ngc",
       "pixelx": 909.73,
       "pixely": 1063.47,
-      "radius": 12.0,
+      "radius": 120.0,
       "name": "",
       "names": [
         "NGC 7635",
@@ -2072,6 +2080,10 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       ]
     }
   ])
+  const [showStarmap, setShowStarmap] = useState(false)
+  const [starmapSize, setStarmapSize] = useState<"small" | "medium" | "large" | "extra-large">("medium")
+  const [starmapFullscreen, setStarmapFullscreen] = useState(false)
+  const [starmapMinimized, setStarmapMinimized] = useState(false)
   const [annotationSettings, setAnnotationSettings] = useState<AnnotationSettings>({
     enabled: true,
     showLabels: true,
@@ -2275,6 +2287,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setShowAnnotations,
     currentAnnotations,
     setCurrentAnnotations,
+    showStarmap,
+    setShowStarmap,
+    starmapSize,
+    setStarmapSize,
+    starmapFullscreen,
+    setStarmapFullscreen,
+    starmapMinimized,
+    setStarmapMinimized,
 
     // Functions
     addStatusAlert,

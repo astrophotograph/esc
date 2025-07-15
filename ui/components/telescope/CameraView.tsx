@@ -25,7 +25,8 @@ import {
   Filter,
   Expand,
   Minimize,
-  Search
+  Search,
+  Map
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -39,6 +40,7 @@ import { StatsPanel } from "./panels/StatsPanel"
 import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
 import { AnnotationOverlay } from "./AnnotationOverlay"
+import { StarmapWindow } from "./StarmapOverlay"
 import { RandomTestPattern } from "./RandomTestPattern"
 import type { ScreenAnnotation } from "../../types/telescope-types"
 import { generateStreamingUrl } from "../../utils/streaming"
@@ -87,6 +89,14 @@ export function CameraView() {
     setShowAnnotations: _setShowAnnotations,
     currentAnnotations,
     setCurrentAnnotations,
+    showStarmap,
+    setShowStarmap,
+    starmapSize,
+    setStarmapSize,
+    starmapFullscreen,
+    setStarmapFullscreen,
+    starmapMinimized,
+    setStarmapMinimized,
     annotationSettings,
     handleTargetSelect,
     celestialObjects,
@@ -1192,6 +1202,15 @@ export function CameraView() {
                   )}
                 </Button>
                 <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowStarmap(!showStarmap)}
+                  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}
+                  title={showStarmap ? "Hide Star Map" : "Show Star Map"}
+                >
+                  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />
+                </Button>
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
@@ -1281,6 +1300,20 @@ export function CameraView() {
                 onConnectionStateChange={setConnectionType}
               />
             </div>
+
+            {/* Starmap Window */}
+            <StarmapWindow
+              ra={localStreamStatus?.status?.ra}
+              dec={localStreamStatus?.status?.dec}
+              visible={showStarmap}
+              onClose={() => setShowStarmap(false)}
+              size={starmapSize}
+              onSizeChange={setStarmapSize}
+              fullscreen={starmapFullscreen}
+              onFullscreenChange={setStarmapFullscreen}
+              minimized={starmapMinimized}
+              onMinimizedChange={setStarmapMinimized}
+            />
 
             {/* Annotation Overlay */}
             <AnnotationOverlay
