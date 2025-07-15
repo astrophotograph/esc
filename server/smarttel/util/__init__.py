@@ -1,10 +1,12 @@
 """Utilities for the project."""
+
 import asyncio
 from typing import NamedTuple
 
 
 class RaDecTuple(NamedTuple):
     """Ra Dec tuple."""
+
     ra: float
     dec: float
 

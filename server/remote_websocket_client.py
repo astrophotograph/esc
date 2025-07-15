@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class RemoteConnectionState(Enum):
     """Connection states for remote WebSocket client."""
+
     DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -30,6 +31,7 @@ class RemoteConnectionState(Enum):
 @dataclass
 class RemoteController:
     """Remote controller configuration."""
+
     host: str
     port: int
     telescope_id: str
@@ -44,7 +46,7 @@ class RemoteController:
 class RemoteWebSocketClient:
     """
     WebSocket client for connecting to remote telescope controllers.
-    
+
     This class handles:
     - WebSocket connection to remote controllers
     - Message forwarding between frontend and remote controller
@@ -53,9 +55,9 @@ class RemoteWebSocketClient:
     """
 
     def __init__(
-            self,
-            controller: RemoteController,
-            message_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None
+        self,
+        controller: RemoteController,
+        message_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None,
     ):
         self.controller = controller
         self.message_handler = message_handler
@@ -80,17 +82,23 @@ class RemoteWebSocketClient:
         # Subscription tracking for restoration after reconnect
         self.active_subscriptions: Dict[str, list] = {}
 
-        logger.info(f"Initialized remote WebSocket client for {controller.host}:{controller.port}")
+        logger.info(
+            f"Initialized remote WebSocket client for {controller.host}:{controller.port}"
+        )
 
     @property
     def is_connected(self) -> bool:
         """Check if WebSocket is connected and healthy."""
-        if self.connection_state != RemoteConnectionState.CONNECTED or self.websocket is None:
+        if (
+            self.connection_state != RemoteConnectionState.CONNECTED
+            or self.websocket is None
+        ):
             return False
 
         # Check WebSocket state - import here to avoid circular imports
         try:
             from websockets.protocol import State
+
             return self.websocket.state == State.OPEN
         except ImportError:
             # Fallback: assume connected if we have a websocket object
@@ -105,7 +113,7 @@ class RemoteWebSocketClient:
     async def connect(self) -> bool:
         """
         Connect to the remote controller WebSocket.
-        
+
         Returns:
             bool: True if connection successful, False otherwise
         """
@@ -125,7 +133,7 @@ class RemoteWebSocketClient:
                 self.websocket_url,
                 ping_interval=self.controller.heartbeat_interval,
                 ping_timeout=10,
-                close_timeout=10
+                close_timeout=10,
             )
 
             self.connection_state = RemoteConnectionState.CONNECTED
@@ -141,11 +149,15 @@ class RemoteWebSocketClient:
             # Restore subscriptions if any
             await self._restore_subscriptions()
 
-            logger.info(f"Successfully connected to remote controller {self.controller.host}:{self.controller.port}")
+            logger.info(
+                f"Successfully connected to remote controller {self.controller.host}:{self.controller.port}"
+            )
             return True
 
         except (ConnectionRefusedError, InvalidURI, OSError) as e:
-            logger.warning(f"Failed to connect to remote controller {self.controller.host}:{self.controller.port}: {e}")
+            logger.warning(
+                f"Failed to connect to remote controller {self.controller.host}:{self.controller.port}: {e}"
+            )
             self.connection_state = RemoteConnectionState.ERROR
             await self._schedule_reconnect()
             return False
@@ -157,7 +169,9 @@ class RemoteWebSocketClient:
 
     async def disconnect(self):
         """Disconnect from remote controller."""
-        logger.info(f"Disconnecting from remote controller {self.controller.host}:{self.controller.port}")
+        logger.info(
+            f"Disconnecting from remote controller {self.controller.host}:{self.controller.port}"
+        )
 
         # Cancel reconnection attempts
         if self.reconnect_task:
@@ -193,10 +207,10 @@ class RemoteWebSocketClient:
     async def send_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Send a message to the remote controller.
-        
+
         Args:
             message: Message to send
-            
+
         Returns:
             Response message if expecting a response, None otherwise
         """
@@ -208,7 +222,9 @@ class RemoteWebSocketClient:
             await self.websocket.send(message_str)
 
             # If this is a command that expects a response, wait for it
-            if message.get("type") == "control_command" and message.get("payload", {}).get("response_expected"):
+            if message.get("type") == "control_command" and message.get(
+                "payload", {}
+            ).get("response_expected"):
                 message_id = message.get("id")
                 if message_id:
                     # Create future for response
@@ -220,7 +236,9 @@ class RemoteWebSocketClient:
                         response = await asyncio.wait_for(future, timeout=10.0)
                         return response
                     except asyncio.TimeoutError:
-                        logger.warning(f"Timeout waiting for response to message {message_id}")
+                        logger.warning(
+                            f"Timeout waiting for response to message {message_id}"
+                        )
                         self.pending_messages.pop(message_id, None)
                         raise
 
@@ -234,7 +252,9 @@ class RemoteWebSocketClient:
             logger.error(f"Error sending message to remote controller: {e}")
             raise
 
-    async def send_subscription(self, subscription_types: list, telescope_id: str = None):
+    async def send_subscription(
+        self, subscription_types: list, telescope_id: str = None
+    ):
         """Send subscription message to remote controller."""
         target_telescope_id = telescope_id or self.controller.telescope_id
 
@@ -245,8 +265,8 @@ class RemoteWebSocketClient:
             "timestamp": int(asyncio.get_event_loop().time() * 1000),
             "payload": {
                 "subscription_types": subscription_types,
-                "all_telescopes": False
-            }
+                "all_telescopes": False,
+            },
         }
 
         await self.send_message(subscription_message)
@@ -257,7 +277,9 @@ class RemoteWebSocketClient:
 
     def force_reconnect(self, reason: str = "Manual reconnection requested"):
         """Force reconnection (public method for external use)."""
-        logger.info(f"Forcing reconnection for {self.controller.host}:{self.controller.port}: {reason}")
+        logger.info(
+            f"Forcing reconnection for {self.controller.host}:{self.controller.port}: {reason}"
+        )
 
         # Create task to handle disconnection asynchronously
         asyncio.create_task(self._handle_disconnection())
@@ -273,7 +295,7 @@ class RemoteWebSocketClient:
             "last_heartbeat": self.last_heartbeat,
             "time_since_last_message": current_time - self.last_message_time,
             "time_since_last_heartbeat": current_time - self.last_heartbeat,
-            "active_subscriptions": dict(self.active_subscriptions)
+            "active_subscriptions": dict(self.active_subscriptions),
         }
 
     async def _message_listener(self):
@@ -342,7 +364,10 @@ class RemoteWebSocketClient:
 
                 # Check if we've received a recent heartbeat
                 current_time = asyncio.get_event_loop().time()
-                if current_time - self.last_heartbeat > self.controller.heartbeat_interval * 2:
+                if (
+                    current_time - self.last_heartbeat
+                    > self.controller.heartbeat_interval * 2
+                ):
                     logger.warning("Heartbeat timeout from remote controller")
                     await self._handle_disconnection()
                     break
@@ -357,7 +382,9 @@ class RemoteWebSocketClient:
         if self.connection_state == RemoteConnectionState.DISCONNECTED:
             return
 
-        logger.warning(f"Remote controller connection lost: {self.controller.host}:{self.controller.port}")
+        logger.warning(
+            f"Remote controller connection lost: {self.controller.host}:{self.controller.port}"
+        )
         self.connection_state = RemoteConnectionState.ERROR
 
         # Clean up
@@ -382,20 +409,32 @@ class RemoteWebSocketClient:
     async def _schedule_reconnect(self):
         """Schedule reconnection attempt."""
         # Check if we've hit max reconnect attempts (unless unlimited retries)
-        if self.controller.max_reconnect_attempts > 0 and self.reconnect_attempts >= self.controller.max_reconnect_attempts:
-            logger.error(f"Max reconnection attempts reached for {self.controller.host}:{self.controller.port}")
+        if (
+            self.controller.max_reconnect_attempts > 0
+            and self.reconnect_attempts >= self.controller.max_reconnect_attempts
+        ):
+            logger.error(
+                f"Max reconnection attempts reached for {self.controller.host}:{self.controller.port}"
+            )
             self.connection_state = RemoteConnectionState.ERROR
             return
 
         self.reconnect_attempts += 1
         # Cap exponential backoff at 60 seconds max
-        delay = min(self.controller.reconnect_delay * (2 ** min(self.reconnect_attempts - 1, 5)), 60.0)
+        delay = min(
+            self.controller.reconnect_delay
+            * (2 ** min(self.reconnect_attempts - 1, 5)),
+            60.0,
+        )
 
         if self.controller.max_reconnect_attempts < 0:
-            logger.info(f"Scheduling reconnection attempt {self.reconnect_attempts} (unlimited) in {delay}s")
+            logger.info(
+                f"Scheduling reconnection attempt {self.reconnect_attempts} (unlimited) in {delay}s"
+            )
         else:
             logger.info(
-                f"Scheduling reconnection attempt {self.reconnect_attempts}/{self.controller.max_reconnect_attempts} in {delay}s")
+                f"Scheduling reconnection attempt {self.reconnect_attempts}/{self.controller.max_reconnect_attempts} in {delay}s"
+            )
 
         self.connection_state = RemoteConnectionState.RECONNECTING
         self.reconnect_task = asyncio.create_task(self._reconnect_after_delay(delay))
@@ -433,12 +472,14 @@ class RemoteWebSocketClient:
                 # Check if we haven't received any messages within the timeout period
                 if time_since_last_message > self.controller.message_timeout:
                     logger.warning(
-                        f"Health check failed: No messages received for {time_since_last_message:.1f}s (limit: {self.controller.message_timeout}s)")
+                        f"Health check failed: No messages received for {time_since_last_message:.1f}s (limit: {self.controller.message_timeout}s)"
+                    )
                     await self._handle_disconnection()
                     break
                 else:
                     logger.debug(
-                        f"Health check passed for {self.controller.host}:{self.controller.port} - last message {time_since_last_message:.1f}s ago")
+                        f"Health check passed for {self.controller.host}:{self.controller.port} - last message {time_since_last_message:.1f}s ago"
+                    )
 
         except asyncio.CancelledError:
             pass
@@ -450,20 +491,28 @@ class RemoteWebSocketClient:
         if not self.active_subscriptions:
             return
 
-        logger.info(f"Restoring {len(self.active_subscriptions)} subscriptions after reconnection")
+        logger.info(
+            f"Restoring {len(self.active_subscriptions)} subscriptions after reconnection"
+        )
 
         for telescope_id, subscription_types in self.active_subscriptions.items():
             try:
                 await self.send_subscription(subscription_types, telescope_id)
-                logger.debug(f"Restored subscription for telescope {telescope_id}: {subscription_types}")
+                logger.debug(
+                    f"Restored subscription for telescope {telescope_id}: {subscription_types}"
+                )
             except Exception as e:
-                logger.error(f"Failed to restore subscription for telescope {telescope_id}: {e}")
+                logger.error(
+                    f"Failed to restore subscription for telescope {telescope_id}: {e}"
+                )
 
 
 class RemoteWebSocketManager:
     """Manager for multiple remote WebSocket connections."""
 
-    def __init__(self, message_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None):
+    def __init__(
+        self, message_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None
+    ):
         self.clients: Dict[str, RemoteWebSocketClient] = {}
         self.message_handler = message_handler
 
@@ -488,13 +537,17 @@ class RemoteWebSocketManager:
             client = self.clients.pop(controller_id)
             await client.disconnect()
 
-    async def send_to_telescope(self, telescope_id: str, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def send_to_telescope(
+        self, telescope_id: str, message: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Send message to telescope via appropriate remote controller."""
         for client in self.clients.values():
             if client.controller.telescope_id == telescope_id and client.is_connected:
                 return await client.send_message(message)
 
-        raise ConnectionError(f"No connected remote controller for telescope {telescope_id}")
+        raise ConnectionError(
+            f"No connected remote controller for telescope {telescope_id}"
+        )
 
     def get_telescope_connection_status(self, telescope_id: str) -> str:
         """Get connection status for a telescope."""
@@ -511,7 +564,9 @@ class RemoteWebSocketManager:
             await asyncio.gather(*disconnect_tasks, return_exceptions=True)
         self.clients.clear()
 
-    def force_reconnect_telescope(self, telescope_id: str, reason: str = "Manual reconnection requested"):
+    def force_reconnect_telescope(
+        self, telescope_id: str, reason: str = "Manual reconnection requested"
+    ):
         """Force reconnection for a specific telescope."""
         for client in self.clients.values():
             if client.controller.telescope_id == telescope_id:

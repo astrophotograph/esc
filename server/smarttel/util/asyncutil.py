@@ -5,8 +5,10 @@ import asyncio
 from pydantic import BaseModel
 from typing import Any, Awaitable, Callable, Coroutine, Optional
 
+
 class ResettableDelay(BaseModel):
     """Resettable delay."""
+
     delay: float
     reset_event: asyncio.Event
 

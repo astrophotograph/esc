@@ -1,1 +1,1 @@
-""" Seestar commands."""
+"""Seestar commands."""

@@ -1,4 +1,5 @@
 """OpenCV Backend RTSP Client"""
+
 import asyncio
 from threading import Thread, RLock
 from typing import Any, Optional
@@ -60,7 +61,7 @@ class RtspClient:
         """return true if stream is opened and being read, else ensure closed"""
         try:
             return (
-                    (self._stream is not None) and self._stream.isOpened() and self._bg_run
+                (self._stream is not None) and self._stream.isOpened() and self._bg_run
             )
         except:
             self._close()
@@ -95,6 +96,7 @@ class RtspClient:
                     logging.info("Stream opened.")
                     return
             await asyncio.sleep(0.1)
+
 
 # def preview(self):
 #     """ Blocking function. Opens OpenCV window to display stream. """

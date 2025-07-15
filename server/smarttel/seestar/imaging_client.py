@@ -13,7 +13,13 @@ from smarttel.seestar.commands.imaging import (
 )
 from smarttel.seestar.commands.simple import TestConnection
 from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import EventTypes, AnnotateResult, BaseEvent, StackEvent, InternalEvent
+from smarttel.seestar.events import (
+    EventTypes,
+    AnnotateResult,
+    BaseEvent,
+    StackEvent,
+    InternalEvent,
+)
 from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
 from smarttel.seestar.rtspclient import RtspClient
 from smarttel.util.eventbus import EventBus
@@ -68,7 +74,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     event_bus: EventBus | None = None
     binary_protocol: BinaryProtocol = BinaryProtocol()
     image: ScopeImage | None = None
-    client_mode: Literal['ContinuousExposure', 'Stack', 'Streaming'] | None = None
+    client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
 
     # Timeout configuration
     connection_timeout: float = 10.0
@@ -199,17 +205,23 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         self.status.is_fetching_images = True
         try:
             while self.is_connected:
-                if self.client_mode == 'Streaming':
+                if self.client_mode == "Streaming":
                     # If we're streaming, just run RTSP client, which runs as a background thread...
                     rtsp_port = 4554 + camera_id
-                    with RtspClient(rtsp_server_uri=f"rtsp://{self.host}:{rtsp_port}/stream") as rtsp_client:
+                    with RtspClient(
+                        rtsp_server_uri=f"rtsp://{self.host}:{rtsp_port}/stream"
+                    ) as rtsp_client:
                         # Run RTSP client until it's closed
                         await rtsp_client.finish_opening()
                         while rtsp_client.is_opened():
-                            image = ScopeImage(width=1080, height=1920, image=rtsp_client.read())
+                            image = ScopeImage(
+                                width=1080, height=1920, image=rtsp_client.read()
+                            )
 
                             if image is not None:
-                                changed = not np.array_equal(self.image.image, last_image.image)
+                                changed = not np.array_equal(
+                                    self.image.image, last_image.image
+                                )
                                 last_image = image
 
                                 if changed:
@@ -228,6 +240,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         except Exception as e:
             logging.error(f"Unexpected error in imaging reader task for {self}: {e}")
             import traceback
+
             traceback.print_exc()
 
         self.status.is_fetching_images = False
@@ -241,23 +254,22 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     async def _handle_client_mode(self, event: BaseEvent):
         if isinstance(event, InternalEvent):
             params = event.params
-            existing = params.get('existing')
-            new_mode = params.get('new_mode')
+            existing = params.get("existing")
+            new_mode = params.get("new_mode")
 
-            if existing == 'ContinuousExposure':
+            if existing == "ContinuousExposure":
                 await self.stop_streaming()
-            if existing == 'Streaming':
+            if existing == "Streaming":
                 await self.stop_rtsp()
 
             match new_mode:
-                case 'ContinuousExposure':
+                case "ContinuousExposure":
                     await self.start_streaming()
-                case 'Streaming':
+                case "Streaming":
                     await self.start_rtsp()
                 # For Stacking and None we don't need to do anything
 
             self.client_mode = new_mode
-
 
     async def start_streaming(self):
         """Start streaming from the Seestar."""

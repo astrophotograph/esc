@@ -8,11 +8,13 @@ from pathlib import Path
 class VideoPanoramaGenerator:
     """Generate panoramas from video files."""
 
-    def __init__(self, 
-                 feature_detector: str = 'SIFT',
-                 max_features: int = 1000,
-                 good_match_percent: float = 0.15,
-                 frame_skip: int = 5):
+    def __init__(
+        self,
+        feature_detector: str = "SIFT",
+        max_features: int = 1000,
+        good_match_percent: float = 0.15,
+        frame_skip: int = 5,
+    ):
         """
         Initialize the panorama generator.
 
@@ -27,13 +29,13 @@ class VideoPanoramaGenerator:
         self.frame_skip = frame_skip
 
         # Initialize feature detector
-        if feature_detector == 'SIFT':
+        if feature_detector == "SIFT":
             self.detector = cv2.SIFT_create(nfeatures=max_features)
             self.matcher = cv2.BFMatcher()
-        elif feature_detector == 'ORB':
+        elif feature_detector == "ORB":
             self.detector = cv2.ORB_create(nfeatures=max_features)
             self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        elif feature_detector == 'AKAZE':
+        elif feature_detector == "AKAZE":
             self.detector = cv2.AKAZE_create()
             self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         else:
@@ -41,7 +43,9 @@ class VideoPanoramaGenerator:
 
         self.feature_detector_type = feature_detector
 
-    def extract_frames(self, video_path: str, max_frames: Optional[int] = None) -> List[np.ndarray]:
+    def extract_frames(
+        self, video_path: str, max_frames: Optional[int] = None
+    ) -> List[np.ndarray]:
         """
         Extract frames from video file.
 
@@ -82,7 +86,9 @@ class VideoPanoramaGenerator:
         logging.info(f"Extracted {len(frames)} frames from video")
         return frames
 
-    def detect_and_match_features(self, img1: np.ndarray, img2: np.ndarray) -> Tuple[List[cv2.KeyPoint], List[cv2.KeyPoint], List[cv2.DMatch]]:
+    def detect_and_match_features(
+        self, img1: np.ndarray, img2: np.ndarray
+    ) -> Tuple[List[cv2.KeyPoint], List[cv2.KeyPoint], List[cv2.DMatch]]:
         """
         Detect and match features between two images.
 
@@ -105,7 +111,7 @@ class VideoPanoramaGenerator:
             return [], [], []
 
         # Match features
-        if self.feature_detector_type == 'SIFT':
+        if self.feature_detector_type == "SIFT":
             matches = self.matcher.knnMatch(des1, des2, k=2)
             # Apply ratio test
             good_matches = []
@@ -124,7 +130,12 @@ class VideoPanoramaGenerator:
 
         return kp1, kp2, good_matches
 
-    def find_homography(self, kp1: List[cv2.KeyPoint], kp2: List[cv2.KeyPoint], matches: List[cv2.DMatch]) -> Optional[np.ndarray]:
+    def find_homography(
+        self,
+        kp1: List[cv2.KeyPoint],
+        kp2: List[cv2.KeyPoint],
+        matches: List[cv2.DMatch],
+    ) -> Optional[np.ndarray]:
         """
         Find homography matrix between two sets of keypoints.
 
@@ -144,13 +155,15 @@ class VideoPanoramaGenerator:
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
         # Find homography using RANSAC
-        homography, mask = cv2.findHomography(src_pts, dst_pts, 
-                                            cv2.RANSAC, 
-                                            ransacReprojThreshold=5.0)
+        homography, mask = cv2.findHomography(
+            src_pts, dst_pts, cv2.RANSAC, ransacReprojThreshold=5.0
+        )
 
         return homography
 
-    def warp_and_stitch(self, img1: np.ndarray, img2: np.ndarray, homography: np.ndarray) -> np.ndarray:
+    def warp_and_stitch(
+        self, img1: np.ndarray, img2: np.ndarray, homography: np.ndarray
+    ) -> np.ndarray:
         """
         Warp and stitch two images using homography.
 
@@ -172,10 +185,13 @@ class VideoPanoramaGenerator:
         transformed_corners = cv2.perspectiveTransform(corners2, homography)
 
         # Find bounding box of stitched image
-        all_corners = np.concatenate([
-            np.float32([[0, 0], [0, h1], [w1, h1], [w1, 0]]).reshape(-1, 1, 2),
-            transformed_corners
-        ], axis=0)
+        all_corners = np.concatenate(
+            [
+                np.float32([[0, 0], [0, h1], [w1, h1], [w1, 0]]).reshape(-1, 1, 2),
+                transformed_corners,
+            ],
+            axis=0,
+        )
 
         [x_min, y_min] = np.int32(all_corners.min(axis=0).ravel() - 0.5)
         [x_max, y_max] = np.int32(all_corners.max(axis=0).ravel() + 0.5)
@@ -186,13 +202,15 @@ class VideoPanoramaGenerator:
         # Warp second image
         result_width = x_max - x_min
         result_height = y_max - y_min
-        warped_img2 = cv2.warpPerspective(img2, translation @ homography, (result_width, result_height))
+        warped_img2 = cv2.warpPerspective(
+            img2, translation @ homography, (result_width, result_height)
+        )
 
         # Create result image
         result = np.zeros((result_height, result_width, 3), dtype=np.uint8)
 
         # Place first image
-        result[-y_min:-y_min + h1, -x_min:-x_min + w1] = img1
+        result[-y_min : -y_min + h1, -x_min : -x_min + w1] = img1
 
         # Blend with warped second image
         mask = (warped_img2 > 0).any(axis=2)
@@ -200,7 +218,12 @@ class VideoPanoramaGenerator:
 
         return result
 
-    def create_panorama(self, video_path: str, output_path: Optional[str] = None, max_frames: Optional[int] = None) -> np.ndarray:
+    def create_panorama(
+        self,
+        video_path: str,
+        output_path: Optional[str] = None,
+        max_frames: Optional[int] = None,
+    ) -> np.ndarray:
         """
         Create panorama from video file.
 
@@ -225,7 +248,7 @@ class VideoPanoramaGenerator:
 
         # Process each subsequent frame
         for i, frame in enumerate(frames[1:], 1):
-            logging.info(f"Processing frame {i}/{len(frames)-1}")
+            logging.info(f"Processing frame {i}/{len(frames) - 1}")
 
             # Detect and match features
             kp1, kp2, matches = self.detect_and_match_features(panorama, frame)
@@ -256,7 +279,9 @@ class VideoPanoramaGenerator:
 
         return panorama
 
-    def create_panorama_from_images(self, image_paths: List[str], output_path: Optional[str] = None) -> np.ndarray:
+    def create_panorama_from_images(
+        self, image_paths: List[str], output_path: Optional[str] = None
+    ) -> np.ndarray:
         """
         Create panorama from a list of image files.
 
@@ -289,7 +314,7 @@ class VideoPanoramaGenerator:
 
         # Process each subsequent image
         for i, image in enumerate(images[1:], 1):
-            logging.info(f"Processing image {i}/{len(images)-1}")
+            logging.info(f"Processing image {i}/{len(images) - 1}")
 
             # Detect and match features
             kp1, kp2, matches = self.detect_and_match_features(panorama, image)

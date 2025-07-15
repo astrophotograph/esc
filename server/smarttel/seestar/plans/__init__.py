@@ -7,6 +7,7 @@ from smarttel.util import RaDecTuple
 
 class PlanItem(BaseModel):
     """Plan item."""
+
     target_ra_dec: RaDecTuple = [0, 0]
     target_name: str = ""
     lp_filter: bool = False
@@ -20,6 +21,7 @@ class PlanItem(BaseModel):
 
 class Plan(BaseModel):
     """Plan."""
+
     update_time_seestar: str = ""
     plan_name: str = ""
-    items: list[PlanItem] = Field(default=[], alias='list')
+    items: list[PlanItem] = Field(default=[], alias="list")

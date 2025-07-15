@@ -3,6 +3,7 @@ import datetime
 import inspect
 import json
 import logging as orig_logging
+import tempfile
 from typing import Optional, AsyncGenerator
 
 import click
@@ -16,6 +17,8 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from loguru import logger as logging
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
+from starplot import _, ObjectStyle, MarkerStyle, ColorStr, MarkerSymbolEnum, MapPlot, Projection
+from starplot.styles import PlotStyle, extensions
 
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.seestar.client import SeestarClient
@@ -2904,6 +2907,94 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
     app = FastAPI(
         title="Seestar API", description="API for controlling Seestar devices"
     )
+
+    # Add starmap endpoint to main API
+    @app.get("/api/starmap")
+    async def get_star_map(ra: float, dec: float, width: int = 800, height: int = 600):
+        """Generate a star map centered on the given RA and Dec coordinates with a red marker."""
+        try:
+            import base64
+
+            style = PlotStyle().extend(
+                # extensions.BLUE_LIGHT,
+                extensions.BLUE_GOLD,
+                extensions.MAP,
+                {
+                    "legend": {
+                        "location": "lower right",  # show legend inside map
+                        "num_columns": 3,
+                        "background_alpha": 1,
+                    },
+                },
+            )
+
+            # Create the star map with observer location (lat/lon) and center on RA/Dec
+            padding = 7
+            p = MapPlot(
+                projection=Projection.MERCATOR,
+                ra_min=ra - padding,
+                ra_max=ra + padding,
+                dec_min=dec - padding,
+                dec_max=dec + padding,
+                style=style,
+                resolution=3600,
+                autoscale=True,
+            )
+            
+            # Add stars and constellation lines
+            p.gridlines()
+            p.constellations()
+            p.constellation_borders()
+            p.stars(
+                where=[_.magnitude < 8], bayer_labels=True, flamsteed_labels=True
+            )  # include Bayer and Flamsteed labels with the stars
+
+            p.galaxies(where=[_.magnitude < 12.5], true_size=True)
+            p.nebula(where=[(_.magnitude < 10) | (_.magnitude.isnull())])
+            p.open_clusters(
+                where=[(_.magnitude < 9) | (_.magnitude.isnull())], where_labels=[False]
+            )
+
+            p.milky_way()
+            p.ecliptic()
+
+            p.legend()  # add a legend
+
+            p.constellation_labels()  # Plot the constellation labels last for best placement
+
+            # Add a red marker at the specified RA/Dec coordinates
+            p.marker(
+                ra=ra,
+                dec=dec,
+                style=ObjectStyle(
+                    marker=MarkerStyle(
+                        symbol=MarkerSymbolEnum.PLUS,
+                        color=ColorStr("red"),
+                        size=8,
+                        edge_color=ColorStr("white"),
+                        edge_width=1,
+                    )
+                )
+            )
+
+            with tempfile.NamedTemporaryFile(delete_on_close=False) as temp_file:
+                p.export(temp_file.name, format='png')
+                temp_file.seek(0)
+
+                # Convert to base64 for JSON response
+                img_base64 = base64.b64encode(temp_file.read()).decode()
+            
+            return {
+                "ra": ra,
+                "dec": dec,
+                "width": width,
+                "height": height,
+                "image": f"data:image/png;base64,{img_base64}"
+            }
+            
+        except Exception as e:
+            logging.error(f"Error generating star map: {e}")
+            raise HTTPException(status_code=500, detail=f"Error generating star map: {str(e)}")
 
     controller = Controller(app, service_port=server_port, discover=not no_discovery)
 

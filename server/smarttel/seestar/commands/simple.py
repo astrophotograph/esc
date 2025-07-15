@@ -1,146 +1,180 @@
 """Simple commands without parameters."""
+
 from typing import Literal, NamedTuple, List, Optional
 
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import BaseCommand
 
+
 class GetDiskVolume(BaseCommand):
     """Get the disk volume from the Seestar."""
+
     method: Literal["get_disk_volume"] = "get_disk_volume"
+
 
 class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
+
     method: Literal["scope_park"] = "scope_park"
+
 
 class TestConnection(BaseCommand):
     """Test the connection to the Seestar."""
+
     method: Literal["test_connection"] = "test_connection"
+
 
 class GetAnnotatedResult(BaseCommand):  # xxx is there an issue?
     """Get the annotated result from the Seestar."""
+
     method: Literal["get_annotated_result"] = "get_annotated_result"
 
 
 class GetCameraInfo(BaseCommand):
     """Get the camera info from the Seestar."""
+
     method: Literal["get_camera_info"] = "get_camera_info"
 
 
 class GetCameraState(BaseCommand):
     """Get the camera state from the Seestar."""
+
     method: Literal["get_camera_state"] = "get_camera_state"
 
 
 class GetDeviceState(BaseCommand):
     """Get the device state from the Seestar."""
+
     method: Literal["get_device_state"] = "get_device_state"
 
 
 class GetDiskVolume(BaseCommand):
     """Get the disk volume from the Seestar."""
+
     method: Literal["get_disk_volume"] = "get_disk_volume"
 
 
 class GetFocuserPosition(BaseCommand):
     """Get the focuser position from the Seestar."""
+
     method: Literal["get_focuser_position"] = "get_focuser_position"
 
 
 class GetLastSolveResult(BaseCommand):
     """Get the last solve result from the Seestar."""
+
     method: Literal["get_last_solve_result"] = "get_last_solve_result"
 
 
 class GetSetting(BaseCommand):
     """Get the settings from the Seestar."""
+
     method: Literal["get_setting"] = "get_setting"
 
 
 class GetSolveResult(BaseCommand):
     """Get the solve result from the Seestar."""
+
     method: Literal["get_solve_result"] = "get_solve_result"
 
 
 class GetStackSetting(BaseCommand):
     """Get the stack setting from the Seestar."""
+
     method: Literal["get_stack_setting"] = "get_stack_setting"
 
 
 class GetStackInfo(BaseCommand):
     """Get the stack info from the Seestar."""
+
     method: Literal["get_stack_info"] = "get_stack_info"
 
 
 class GetTime(BaseCommand):
     """Get the current time from the Seestar."""
+
     method: Literal["pi_get_time"] = "pi_get_time"
 
 
 class GetUserLocation(BaseCommand):
     """Get the user location from the Seestar."""
+
     method: Literal["get_user_location"] = "get_user_location"
 
 
 class GetViewState(BaseCommand):
     """Get the view state from the Seestar."""
+
     method: Literal["get_view_state"] = "get_view_state"
 
 
 class GetWheelPosition(BaseCommand):
     """Get the wheel position from the Seestar."""
+
     method: Literal["get_wheel_position"] = "get_wheel_position"
 
 
 class GetWheelSetting(BaseCommand):
     """Get the wheel setting from the Seestar."""
+
     method: Literal["get_wheel_setting"] = "get_wheel_setting"
 
 
 class GetWheelState(BaseCommand):
     """Get the wheel state from the Seestar."""
+
     method: Literal["get_wheel_state"] = "get_wheel_state"
 
 
 class ScopeGetEquCoord(BaseCommand):
     """Get the equatorial coordinates from the Seestar."""
+
     method: Literal["scope_get_equ_coord"] = "scope_get_equ_coord"
 
 
 class ScopeGetRaDecCoord(BaseCommand):
     """Get the right ascension and declination from the Seestar."""
+
     method: Literal["scope_get_ra_dec"] = "scope_get_ra_dec"
 
 
 class ScopeGetHorizCoord(BaseCommand):
     """Get the right ascension and declination from the Seestar."""
+
     method: Literal["scope_get_horiz_coord"] = "scope_get_horiz_coord"
 
 
 class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
+
     method: Literal["scope_park"] = "scope_park"
 
 
 class StartAutoFocus(BaseCommand):
     """Start the auto focus from the Seestar."""
+
     method: Literal["start_auto_focuse"] = "start_auto_focuse"
 
 
 class StopAutoFocus(BaseCommand):
     """Stop the auto focus from the Seestar."""
+
     method: Literal["stop_auto_focuse"] = "stop_auto_focuse"
 
 
 class StartSolve(BaseCommand):
     """Start the solve from the Seestar."""
+
     method: Literal["start_solve"] = "start_solve"
 
 
 #############################
 
+
 class GetTimeResponse(BaseModel):
     """Response from PiGetTime."""
+
     year: int
     mon: int
     day: int
@@ -152,12 +186,14 @@ class GetTimeResponse(BaseModel):
 
 class ChipSize(NamedTuple):
     """Size of the chip."""
+
     width: int
     height: int
 
 
 class GetCameraInfoResponse(BaseModel):
     """Response from GetCameraInfo."""
+
     chip_size: ChipSize
     bins: tuple[int, int]
     pixel_size_um: float
@@ -171,6 +207,7 @@ class GetCameraInfoResponse(BaseModel):
 
 class GetCameraStateResponse(BaseModel):
     """Response from GetCameraState."""
+
     state: str
     name: str
     path: str
@@ -178,12 +215,14 @@ class GetCameraStateResponse(BaseModel):
 
 class GetDiskVolumeResponse(BaseModel):
     """Response from GetDiskVolume."""
+
     totalMB: int
     freeMB: int
 
 
 class DeviceInfo(BaseModel):
     """Device information section."""
+
     name: str
     firmware_ver_int: int
     firmware_ver_string: str
@@ -194,17 +233,19 @@ class DeviceInfo(BaseModel):
     user_product_model: str
     focal_len: int
     fnumber: int
-    can_star_mode_sel_cam: Optional[bool] | None = None # Newer field
+    can_star_mode_sel_cam: Optional[bool] | None = None  # Newer field
 
 
 class ExpMs(BaseModel):
     """Exposure time settings."""
+
     stack_l: int
     continuous: int
 
 
 class StackDither(BaseModel):
     """Stack dither settings."""
+
     pix: int
     interval: int
     enable: bool
@@ -212,6 +253,7 @@ class StackDither(BaseModel):
 
 class MosaicSettings(BaseModel):
     """Mosaic settings."""
+
     scale: int
     angle: int
     estimated_hours: float
@@ -221,6 +263,7 @@ class MosaicSettings(BaseModel):
 
 class StackSettings(BaseModel):
     """Stack settings."""
+
     dbe: bool
     star_correction: bool
     cont_capt: bool
@@ -228,6 +271,7 @@ class StackSettings(BaseModel):
 
 class SecondCameraSettings(BaseModel):
     """Second camera settings."""
+
     wide_cross_offset: List[int]
     ae_bri_percent: int
     manual_exp: bool
@@ -240,6 +284,7 @@ class SecondCameraSettings(BaseModel):
 
 class DeviceSettings(BaseModel):
     """Device settings section."""
+
     temp_unit: str
     beep_volume: str
     lang: str
@@ -278,6 +323,7 @@ class DeviceSettings(BaseModel):
 
 class CameraInfo(BaseModel):
     """Camera information."""
+
     chip_size: List[int]
     pixel_size_um: float
     debayer_pattern: str
@@ -286,6 +332,7 @@ class CameraInfo(BaseModel):
 
 class FocuserInfo(BaseModel):
     """Focuser information."""
+
     state: str
     max_step: int
     step: int
@@ -293,6 +340,7 @@ class FocuserInfo(BaseModel):
 
 class ApInfo(BaseModel):
     """Access Point information."""
+
     ssid: str
     passwd: str
     is_5g: bool
@@ -300,6 +348,7 @@ class ApInfo(BaseModel):
 
 class StationInfo(BaseModel):
     """Station/WiFi information."""
+
     server: bool
     freq: Optional[int] | None = None  # ??
     ip: Optional[str] | None = None  # ??
@@ -312,6 +361,7 @@ class StationInfo(BaseModel):
 
 class StorageVolume(BaseModel):
     """Storage volume information."""
+
     name: str
     state: str
     total_mb: int
@@ -325,6 +375,7 @@ class StorageVolume(BaseModel):
 
 class StorageInfo(BaseModel):
     """Storage information."""
+
     is_typec_connected: bool
     connected_storage: List[str]
     storage_volume: List[StorageVolume]
@@ -333,6 +384,7 @@ class StorageInfo(BaseModel):
 
 class SensorData(BaseModel):
     """Sensor data."""
+
     x: float
     y: float
     z: float
@@ -340,35 +392,41 @@ class SensorData(BaseModel):
 
 class BalanceSensorData(SensorData):
     """Balance sensor data."""
+
     angle: float
 
 
 class CompassSensorData(SensorData):
     """Compass sensor data."""
+
     direction: float
     cali: int
 
 
 class SensorInfo(BaseModel):
     """Sensor information base."""
+
     code: int
     data: SensorData
 
 
 class BalanceSensorInfo(BaseModel):
     """Balance sensor information."""
+
     code: int
     data: BalanceSensorData
 
 
 class CompassSensorInfo(BaseModel):
     """Compass sensor information."""
+
     code: int
     data: CompassSensorData
 
 
 class MountInfo(BaseModel):
     """Mount information."""
+
     move_type: str
     close: bool
     tracking: bool
@@ -377,6 +435,7 @@ class MountInfo(BaseModel):
 
 class PiStatusInfo(BaseModel):
     """Pi status information."""
+
     is_overtemp: bool
     temp: float
     charger_status: str
@@ -390,6 +449,7 @@ class PiStatusInfo(BaseModel):
 
 class GetDeviceStateResponse(BaseModel):
     """Response from GetDeviceState."""
+
     device: DeviceInfo
     setting: DeviceSettings
     location_lon_lat: List[float]
