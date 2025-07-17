@@ -864,62 +864,67 @@ class WebSocketManager:
     async def _execute_set_image_enhancement_command(
         self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute set image enhancement command - configures image enhancement on the client."""
+        """Execute set image enhancement command - configures enhancement settings."""
         try:
-            # Extract enhancement parameters
-            enabled = parameters.get("enabled", False)
-            stretch_params = parameters.get("stretch", {})
-            upscale_params = parameters.get("upscale", {})
+            logger.info(f"Setting image enhancement parameters: {parameters}")
             
-            # Store enhancement settings on the client instance
+            # Store settings on client
             if not hasattr(client, "image_enhancement_settings"):
                 client.image_enhancement_settings = {}
             
-            client.image_enhancement_settings = {
-                "enabled": enabled,
-                "stretch": stretch_params,
-                "upscale": upscale_params
-            }
+            # Update stored settings with new parameters
+            client.image_enhancement_settings.update(parameters)
             
-            # Apply settings to the image processor if available
+            # Configure stretch parameters if image_processor exists
             if hasattr(client, "image_processor") and client.image_processor:
-                # Configure stretch parameters
-                if stretch_params.get("enabled", False):
-                    # The GraxpertStretch uses string-based stretch parameters
-                    # Convert numerical values to appropriate stretch parameter string
-                    target_bg = stretch_params.get("targetBg", 0.25)
-                    stretch_factor = stretch_params.get("stretchFactor", 0.15)
-                    
-                    # Create stretch parameter string (e.g., "15% Bg, 3 sigma")
-                    bg_percent = int(target_bg * 100)
-                    sigma_value = int(stretch_factor * 20)  # Approximate conversion
-                    stretch_param = f"{bg_percent}% Bg, {sigma_value} sigma"
-                    
+                # Configure GraxpertStretch with stretch parameter
+                stretch_param = parameters.get("stretch_parameter", "15% Bg, 3 sigma")
+                if hasattr(client.image_processor, "set_stretch_parameter"):
                     client.image_processor.set_stretch_parameter(stretch_param)
-                
-                # Configure upscaling
-                if hasattr(client.image_processor, "set_upscaling_enabled"):
-                    client.image_processor.set_upscaling_enabled(upscale_params.get("enabled", False))
-                    if upscale_params.get("enabled", False):
-                        scale_factor = upscale_params.get("factor", 2)
-                        client.image_processor.set_upscaling_params(
-                            enabled=True,
-                            scale_factor=float(scale_factor)
-                        )
+                    logger.info(f"Set image processor stretch parameter: {stretch_param}")
             
-            # Apply settings to the enhancement processor if available
+            # Configure enhancement processor if it exists
             if hasattr(client, "enhancement_processor") and client.enhancement_processor:
-                client.enhancement_processor.upscaling_enabled = upscale_params.get("enabled", False)
-                if upscale_params.get("enabled", False):
-                    client.enhancement_processor.scale_factor = float(upscale_params.get("factor", 2))
+                # Update enhancement processor settings
+                if "upscaling_enabled" in parameters:
+                    client.enhancement_processor.upscaling_enabled = parameters["upscaling_enabled"]
+                if "scale_factor" in parameters:
+                    client.enhancement_processor.scale_factor = parameters["scale_factor"]
+                if "upscaling_method" in parameters:
+                    client.enhancement_processor.upscaling_method = parameters["upscaling_method"]
+                if "sharpening_enabled" in parameters:
+                    client.enhancement_processor.sharpening_enabled = parameters["sharpening_enabled"]
+                if "sharpening_method" in parameters:
+                    client.enhancement_processor.sharpening_method = parameters["sharpening_method"]
+                if "sharpening_strength" in parameters:
+                    client.enhancement_processor.sharpening_strength = parameters["sharpening_strength"]
+                if "invert_enabled" in parameters:
+                    client.enhancement_processor.invert_enabled = parameters["invert_enabled"]
+                
+                logger.info(f"Updated enhancement processor settings")
             
-            logger.info(f"Image enhancement settings updated: enabled={enabled}, stretch={stretch_params}, upscale={upscale_params}")
-            
-            return {
-                "status": "success",
-                "action": "set_image_enhancement",
-                "settings": client.image_enhancement_settings
+            # Return frontend-compatible format with all current settings
+            settings = {
+                "upscaling_enabled": client.image_enhancement_settings.get("upscaling_enabled", False),
+                "scale_factor": client.image_enhancement_settings.get("scale_factor", 2.0),
+                "upscaling_method": client.image_enhancement_settings.get("upscaling_method", "bicubic"),
+                "available_upscaling_methods": ["bicubic", "lanczos"],
+                "sharpening_enabled": client.image_enhancement_settings.get("sharpening_enabled", False),
+                "sharpening_method": client.image_enhancement_settings.get("sharpening_method", "unsharp_mask"),
+                "sharpening_strength": client.image_enhancement_settings.get("sharpening_strength", 1.0),
+                "available_sharpening_methods": ["none", "unsharp_mask", "laplacian", "high_pass"],
+                "invert_enabled": client.image_enhancement_settings.get("invert_enabled", False),
+                "stretch_parameter": client.image_enhancement_settings.get("stretch_parameter", "15% Bg, 3 sigma"),
+                "available_stretch_parameters": [
+                    "No Stretch",
+                    "10% Bg, 3 sigma",
+                    "15% Bg, 3 sigma",
+                    "20% Bg, 3 sigma",
+                    "30% Bg, 2 sigma"
+                ]
             }
+            
+            return settings
             
         except Exception as e:
             logger.error(f"Error executing set image enhancement command: {e}")
@@ -930,60 +935,51 @@ class WebSocketManager:
     ) -> Dict[str, Any]:
         """Execute get image enhancement command - retrieves current enhancement settings."""
         try:
-            # Initialize default settings
-            default_settings = {
-                "enabled": False,
-                "stretch": {
-                    "enabled": False,
-                    "targetBg": 0.25,
-                    "stretchFactor": 0.15,
-                    "gamma": 1.0
-                },
-                "upscale": {
-                    "enabled": False,
-                    "factor": 2
-                }
+            # Try to get settings from client instance first
+            stored_settings = getattr(client, "image_enhancement_settings", {})
+            
+            # Return frontend-compatible format
+            settings = {
+                "upscaling_enabled": stored_settings.get("upscaling_enabled", False),
+                "scale_factor": stored_settings.get("scale_factor", 2.0),
+                "upscaling_method": stored_settings.get("upscaling_method", "bicubic"),
+                "available_upscaling_methods": ["bicubic", "lanczos"],
+                "sharpening_enabled": stored_settings.get("sharpening_enabled", False),
+                "sharpening_method": stored_settings.get("sharpening_method", "unsharp_mask"),
+                "sharpening_strength": stored_settings.get("sharpening_strength", 1.0),
+                "available_sharpening_methods": ["none", "unsharp_mask", "laplacian", "high_pass"],
+                "invert_enabled": stored_settings.get("invert_enabled", False),
+                "stretch_parameter": stored_settings.get("stretch_parameter", "15% Bg, 3 sigma"),
+                "available_stretch_parameters": [
+                    "No Stretch",
+                    "10% Bg, 3 sigma",
+                    "15% Bg, 3 sigma",
+                    "20% Bg, 3 sigma",
+                    "30% Bg, 2 sigma"
+                ]
             }
             
-            # Try to get settings from client instance first
-            settings = getattr(client, "image_enhancement_settings", None)
-            
-            if settings is None:
-                # Try to derive settings from the processors
-                settings = default_settings.copy()
-                
-                # Check if image processor has stretch settings
-                if hasattr(client, "image_processor") and client.image_processor:
-                    if hasattr(client.image_processor, "get_stretch_parameter"):
-                        stretch_param = client.image_processor.get_stretch_parameter()
-                        # Parse stretch parameter string to extract values
-                        # E.g., "25% Bg, 3 sigma" -> targetBg=0.25, stretchFactor=0.15
-                        try:
-                            if isinstance(stretch_param, str) and "%" in stretch_param:
-                                bg_match = stretch_param.split("%")[0].strip()
-                                bg_percent = float(bg_match) / 100.0
-                                settings["stretch"]["targetBg"] = bg_percent
-                                settings["stretch"]["enabled"] = True
-                        except:
-                            pass
-                
+            # Try to derive current settings from processors if not stored
+            if not stored_settings:
                 # Check enhancement processor for upscaling settings
                 if hasattr(client, "enhancement_processor") and client.enhancement_processor:
                     if hasattr(client.enhancement_processor, "upscaling_enabled"):
-                        settings["upscale"]["enabled"] = client.enhancement_processor.upscaling_enabled
+                        settings["upscaling_enabled"] = client.enhancement_processor.upscaling_enabled
                     if hasattr(client.enhancement_processor, "scale_factor"):
-                        settings["upscale"]["factor"] = client.enhancement_processor.scale_factor
-                
-                # Store the derived settings back to client
-                client.image_enhancement_settings = settings
+                        settings["scale_factor"] = client.enhancement_processor.scale_factor
+                    if hasattr(client.enhancement_processor, "upscaling_method"):
+                        settings["upscaling_method"] = client.enhancement_processor.upscaling_method
+                    if hasattr(client.enhancement_processor, "sharpening_enabled"):
+                        settings["sharpening_enabled"] = client.enhancement_processor.sharpening_enabled
+                    if hasattr(client.enhancement_processor, "sharpening_method"):
+                        settings["sharpening_method"] = client.enhancement_processor.sharpening_method
+                    if hasattr(client.enhancement_processor, "sharpening_strength"):
+                        settings["sharpening_strength"] = client.enhancement_processor.sharpening_strength
+                    if hasattr(client.enhancement_processor, "invert_enabled"):
+                        settings["invert_enabled"] = client.enhancement_processor.invert_enabled
             
             logger.info(f"Retrieved image enhancement settings: {settings}")
-            
-            return {
-                "status": "success",
-                "action": "get_image_enhancement",
-                "settings": settings
-            }
+            return settings
             
         except Exception as e:
             logger.error(f"Error executing get image enhancement command: {e}")

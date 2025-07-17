@@ -12,6 +12,8 @@ from av import VideoFrame
 from loguru import logger
 
 from smarttel.seestar.imaging_client import SeestarImagingClient
+from smarttel.imaging.graxpert_stretch import GraxpertStretch
+from smarttel.imaging.upscaler import ImageEnhancementProcessor
 
 
 class TelescopeVideoTrack(VideoStreamTrack):
@@ -19,7 +21,9 @@ class TelescopeVideoTrack(VideoStreamTrack):
 
     kind = "video"  # Explicitly set track kind
 
-    def __init__(self, imaging_client: SeestarImagingClient, target_fps: int = 30):
+    def __init__(self, imaging_client: SeestarImagingClient, target_fps: int = 30, 
+                 image_processor: Optional[GraxpertStretch] = None,
+                 enhancement_processor: Optional[ImageEnhancementProcessor] = None):
         super().__init__()
         self.imaging_client = imaging_client
         self.target_fps = target_fps
@@ -29,6 +33,10 @@ class TelescopeVideoTrack(VideoStreamTrack):
         self.frame_count = 0
         self.start_time = datetime.now()
         self._started = False
+        
+        # Image processors for enhancement
+        self.image_processor = image_processor
+        self.enhancement_processor = enhancement_processor
 
         # Video dimensions (landscape orientation)
         self.width = 1280
@@ -39,15 +47,34 @@ class TelescopeVideoTrack(VideoStreamTrack):
         )
 
     def _process_telescope_image(self, image: np.ndarray) -> np.ndarray:
-        """Process telescope image for WebRTC streaming."""
+        """Process telescope image for WebRTC streaming with enhancement pipeline."""
         try:
+            # Start with the original image
+            processed_img = image
+            
+            # Apply image processor (GraxpertStretch) if available
+            if self.image_processor is not None:
+                try:
+                    processed_img = self.image_processor.process(processed_img)
+                    logger.debug("Applied image processor (GraxpertStretch)")
+                except Exception as e:
+                    logger.warning(f"Error applying image processor: {e}")
+            
+            # Apply enhancement processor if available
+            if self.enhancement_processor is not None:
+                try:
+                    processed_img = self.enhancement_processor.process(processed_img)
+                    logger.debug("Applied enhancement processor")
+                except Exception as e:
+                    logger.warning(f"Error applying enhancement processor: {e}")
+            
             # Convert from 16-bit to 8-bit
             # Telescope images are 16-bit, but WebRTC needs 8-bit
-            if image.dtype == np.uint16:
+            if processed_img.dtype == np.uint16:
                 # Scale to 8-bit range
-                img_8bit = cv2.convertScaleAbs(image, alpha=(255.0 / 65535.0))
+                img_8bit = cv2.convertScaleAbs(processed_img, alpha=(255.0 / 65535.0))
             else:
-                img_8bit = image
+                img_8bit = processed_img
 
             # Resize to target dimensions
             # Original telescope images are 1080x1920 (portrait)
@@ -184,10 +211,14 @@ class StackedImageVideoTrack(TelescopeVideoTrack):
     """Video track specifically for stacked images with periodic updates."""
 
     def __init__(
-        self, imaging_client: SeestarImagingClient, update_interval: float = 5.0
+        self, imaging_client: SeestarImagingClient, update_interval: float = 5.0,
+        image_processor: Optional[GraxpertStretch] = None,
+        enhancement_processor: Optional[ImageEnhancementProcessor] = None
     ):
         # Stacked images update less frequently, so lower FPS
-        super().__init__(imaging_client, target_fps=5)
+        super().__init__(imaging_client, target_fps=5, 
+                         image_processor=image_processor, 
+                         enhancement_processor=enhancement_processor)
         self.update_interval = update_interval
         self.last_update = 0
         self.update_task: Optional[asyncio.Task] = None

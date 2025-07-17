@@ -422,11 +422,26 @@ class WebRTCService:
                     f"Imaging streaming started successfully for {telescope_name}"
                 )
 
+        # Get image processors from the telescope instance
+        image_processor = getattr(telescope, 'image_processor', None)
+        enhancement_processor = getattr(telescope, 'enhancement_processor', None)
+        
+        logger.info(f"Image processor available: {image_processor is not None}")
+        logger.info(f"Enhancement processor available: {enhancement_processor is not None}")
+        
         # Create appropriate video track based on stream type
         if stream_type == "stacked":
-            track = StackedImageVideoTrack(imaging_client)
+            track = StackedImageVideoTrack(
+                imaging_client, 
+                image_processor=image_processor, 
+                enhancement_processor=enhancement_processor
+            )
         else:
-            track = TelescopeVideoTrack(imaging_client)
+            track = TelescopeVideoTrack(
+                imaging_client, 
+                image_processor=image_processor, 
+                enhancement_processor=enhancement_processor
+            )
 
         logger.info(f"Created {type(track).__name__} for telescope {telescope_name}")
         return track
