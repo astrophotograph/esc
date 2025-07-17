@@ -13,9 +13,9 @@ from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.responses import (
-    TelescopeMessageParser, 
+    TelescopeMessageParser,
     MessageAnalytics,
-    EnhancedCommandResponse
+    EnhancedCommandResponse,
 )
 from smarttel.seestar.commands.simple import (
     GetTime,
@@ -605,49 +605,50 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     def get_message_history(self) -> list[Dict[str, Any]]:
         """Get message history as a list of dictionaries."""
         return [msg.model_dump() for msg in self.message_history]
-    
+
     def get_parsed_message_history(self) -> list[Dict[str, Any]]:
         """Get message history with parsed message analysis."""
         parsed_messages = []
         for msg in self.message_history:
             msg_dict = msg.model_dump()
             # Add parsed analysis
-            parsed = TelescopeMessageParser.parse_message(
-                msg.message, 
-                msg.timestamp
-            )
-            msg_dict['parsed'] = parsed.model_dump()
+            parsed = TelescopeMessageParser.parse_message(msg.message, msg.timestamp)
+            msg_dict["parsed"] = parsed.model_dump()
             parsed_messages.append(msg_dict)
         return parsed_messages
-    
+
     def get_message_analytics(self) -> Dict[str, Any]:
         """Get analytics for the message history."""
         messages = self.get_message_history()
         return MessageAnalytics.analyze_message_history(messages)
-    
+
     def get_recent_commands(self, limit: int = 10) -> list[Dict[str, Any]]:
         """Get recent command messages with parsing."""
         commands = []
         for msg in reversed(self.message_history):
             if msg.direction == "sent":
-                parsed = TelescopeMessageParser.parse_message(msg.message, msg.timestamp)
-                if hasattr(parsed, 'method'):
+                parsed = TelescopeMessageParser.parse_message(
+                    msg.message, msg.timestamp
+                )
+                if hasattr(parsed, "method"):
                     cmd_dict = msg.model_dump()
-                    cmd_dict['parsed'] = parsed.model_dump()
+                    cmd_dict["parsed"] = parsed.model_dump()
                     commands.append(cmd_dict)
                     if len(commands) >= limit:
                         break
         return list(reversed(commands))
-    
+
     def get_recent_events(self, limit: int = 10) -> list[Dict[str, Any]]:
         """Get recent event messages with parsing."""
         events = []
         for msg in reversed(self.message_history):
             if msg.direction == "received":
-                parsed = TelescopeMessageParser.parse_message(msg.message, msg.timestamp)
-                if hasattr(parsed, 'event_type'):
+                parsed = TelescopeMessageParser.parse_message(
+                    msg.message, msg.timestamp
+                )
+                if hasattr(parsed, "event_type"):
                     event_dict = msg.model_dump()
-                    event_dict['parsed'] = parsed.model_dump()
+                    event_dict["parsed"] = parsed.model_dump()
                     events.append(event_dict)
                     if len(events) >= limit:
                         break

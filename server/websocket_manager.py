@@ -740,16 +740,16 @@ class WebSocketManager:
             #         req: MessageParams = {"method": "set_sequence_setting", "params": [{"group_name": name}]}
             #         return self.send_message_param_sync(req)
             #
-            #result = self.send_message_param_sync(
+            # result = self.send_message_param_sync(
             #    {"method": "iscope_start_stack", "params": {"restart": params["restart"]}}
-            #)
+            # )
             # ALP changes gain _after_ stacking starts!?
-            #if "gain" in params:
-            #stack_gain = params["gain"]
-            #result = self.send_message_param_sync(
+            # if "gain" in params:
+            # stack_gain = params["gain"]
+            # result = self.send_message_param_sync(
             #    {"method": "set_control_value", "params": ["gain", stack_gain]}
-            #)
-            #self.logger.info(result)
+            # )
+            # self.logger.info(result)
 
             # response = await client.send_and_recv(command)
 

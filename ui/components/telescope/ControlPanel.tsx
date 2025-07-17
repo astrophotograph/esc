@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TelescopeControls } from "./panels/TelescopeControls"
 import { EnvironmentPanel } from "./panels/EnvironmentPanel"
+import { ImageControls } from "./panels/ImageControls"
 import { TabIndicator } from "./TabIndicator"
 import { ScrollableTabs } from "./ScrollableTabs"
 import { useTelescopeContext } from "../../context/TelescopeContext"
@@ -209,6 +210,7 @@ export function ControlPanel() {
           <>
             <TabsContent value="telescope" className="space-y-4 mt-4">
               <TelescopeControls />
+              <ImageControls />
             </TabsContent>
 
             <TabsContent value="environment" className="space-y-4 mt-4">
