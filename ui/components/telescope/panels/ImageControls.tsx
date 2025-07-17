@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Settings, Zap } from "lucide-react"
 import { useTelescopeContext } from "../../../context/TelescopeContext"
 import { useState, useEffect } from "react"
+import { getWebSocketService, CommandAction } from "../../../services/websocket-service"
 
 interface UpscalingSettings {
   enabled: boolean
@@ -41,15 +42,28 @@ export function ImageControls() {
     if (!currentTelescope) return
     
     try {
-      // Use Next.js API proxy and clean telescope host (remove port if present)
-      const telescopeHost = currentTelescope.host.split(':')[0]
-      const response = await fetch(`/api/${telescopeHost}/upscaling`)
-      if (response.ok) {
-        const data = await response.json()
-        setUpscalingSettings(data)
+      console.log("Fetching upscaling settings via WebSocket for telescope:", currentTelescope.name)
+      const wsService = getWebSocketService()
+      
+      // Use the same enhancement command to get upscaling settings
+      const result = await wsService.sendCommand(
+        CommandAction.GET_IMAGE_ENHANCEMENT,
+        {},
+        currentTelescope.name
+      )
+      
+      // Map enhancement settings to upscaling settings format with safe defaults
+      const upscalingData = {
+        enabled: result?.upscaling_enabled ?? false,
+        scale_factor: result?.scale_factor ?? 2.0,
+        method: result?.upscaling_method ?? "bicubic",
+        available_methods: result?.available_upscaling_methods ?? ["bicubic", "lanczos"]
       }
+      
+      setUpscalingSettings(upscalingData)
     } catch (error) {
       console.error("Failed to fetch upscaling settings:", error)
+      // Keep default settings on error
     }
   }
 
@@ -60,24 +74,31 @@ export function ImageControls() {
     try {
       const updatedSettings = { ...upscalingSettings, ...newSettings }
       
-      // Use Next.js API proxy and clean telescope host (remove port if present)
-      const telescopeHost = currentTelescope.host.split(':')[0]
-      const response = await fetch(`/api/${telescopeHost}/upscaling`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          enabled: updatedSettings.enabled,
-          scale_factor: updatedSettings.scale_factor,
-          method: updatedSettings.method,
-        }),
-      })
+      console.log("Updating upscaling settings via WebSocket:", updatedSettings)
+      const wsService = getWebSocketService()
       
-      if (response.ok) {
-        const data = await response.json()
-        setUpscalingSettings(data)
+      // Send only upscaling-related settings
+      const payload = {
+        upscaling_enabled: updatedSettings.enabled,
+        scale_factor: updatedSettings.scale_factor,
+        upscaling_method: updatedSettings.method,
       }
+      
+      const result = await wsService.sendCommand(
+        CommandAction.SET_IMAGE_ENHANCEMENT,
+        payload,
+        currentTelescope.name
+      )
+      
+      // Map result back to upscaling settings format with safe defaults
+      const upscalingData = {
+        enabled: result?.upscaling_enabled ?? updatedSettings.enabled,
+        scale_factor: result?.scale_factor ?? updatedSettings.scale_factor,
+        method: result?.upscaling_method ?? updatedSettings.method,
+        available_methods: result?.available_upscaling_methods ?? upscalingSettings.available_methods
+      }
+      
+      setUpscalingSettings(upscalingData)
     } catch (error) {
       console.error("Failed to update upscaling settings:", error)
     } finally {
@@ -170,7 +191,7 @@ export function ImageControls() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-700 border-gray-600">
-                    {upscalingSettings.available_methods.map((method) => (
+                    {(upscalingSettings.available_methods || []).map((method) => (
                       <SelectItem key={method} value={method} className="text-white hover:bg-gray-600">
                         {method.charAt(0).toUpperCase() + method.slice(1)}
                       </SelectItem>

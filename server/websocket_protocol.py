@@ -47,6 +47,8 @@ class CommandAction(str, Enum):
     SET_GAIN = "set_gain"
     SET_EXPOSURE = "set_exposure"
     SCENERY = "scenery"
+    SET_IMAGE_ENHANCEMENT = "set_image_enhancement"
+    GET_IMAGE_ENHANCEMENT = "get_image_enhancement"
 
 
 class SubscriptionType(str, Enum):

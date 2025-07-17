@@ -21,6 +21,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { useTelescopeContext } from "../../context/TelescopeContext"
+import { getWebSocketService, CommandAction } from "../../services/websocket-service"
 
 interface ImageEnhancementSettings {
   upscaling_enabled: boolean
@@ -83,27 +84,42 @@ export function ImageEnhancementOverlay({
     if (!currentTelescope) return
     
     try {
-      // Use Next.js API proxy instead of direct backend call
-      // Extract just the host part (remove port if present)
-      const telescopeHost = currentTelescope.host.split(':')[0]
-      const apiUrl = `/api/${telescopeHost}/enhancement`
-      console.log("Fetching enhancement settings from Next.js API:", apiUrl)
-      console.log("Telescope host (cleaned):", telescopeHost)
+      console.log("Fetching enhancement settings via WebSocket for telescope:", currentTelescope.name)
+      const wsService = getWebSocketService()
       
-      const response = await fetch(apiUrl)
-      console.log("Response status:", response.status, response.statusText)
+      const result = await wsService.sendCommand(
+        CommandAction.GET_IMAGE_ENHANCEMENT,
+        {},
+        currentTelescope.name
+      )
       
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Received enhancement settings:", data)
-        setSettings(data)
-      } else {
-        console.error("Failed to fetch enhancement settings - response not ok:", response.status, response.statusText)
-        const errorText = await response.text()
-        console.error("Error response body:", errorText)
+      console.log("Received enhancement settings:", result)
+      
+      // Ensure arrays exist with defaults
+      const safeResult = {
+        upscaling_enabled: result?.upscaling_enabled ?? false,
+        scale_factor: result?.scale_factor ?? 2.0,
+        upscaling_method: result?.upscaling_method ?? "bicubic",
+        available_upscaling_methods: result?.available_upscaling_methods ?? ["bicubic", "lanczos"],
+        sharpening_enabled: result?.sharpening_enabled ?? false,
+        sharpening_method: result?.sharpening_method ?? "unsharp_mask",
+        sharpening_strength: result?.sharpening_strength ?? 1.0,
+        available_sharpening_methods: result?.available_sharpening_methods ?? ["none", "unsharp_mask", "laplacian", "high_pass"],
+        invert_enabled: result?.invert_enabled ?? false,
+        stretch_parameter: result?.stretch_parameter ?? "15% Bg, 3 sigma",
+        available_stretch_parameters: result?.available_stretch_parameters ?? [
+          "No Stretch", 
+          "10% Bg, 3 sigma", 
+          "15% Bg, 3 sigma", 
+          "20% Bg, 3 sigma", 
+          "30% Bg, 2 sigma"
+        ]
       }
+      
+      setSettings(safeResult)
     } catch (error) {
       console.error("Failed to fetch enhancement settings:", error)
+      // Keep default settings on error - don't clear the UI
     }
   }
 
@@ -127,34 +143,17 @@ export function ImageEnhancementOverlay({
         stretch_parameter: updatedSettings.stretch_parameter,
       }
       
-      console.log("Sending payload:", payload)
+      console.log("Sending payload via WebSocket:", payload)
       
-      // Use Next.js API proxy instead of direct backend call
-      // Extract just the host part (remove port if present)
-      const telescopeHost = currentTelescope.host.split(':')[0]
-      const apiUrl = `/api/${telescopeHost}/enhancement`
-      console.log("Updating enhancement settings via Next.js API:", apiUrl)
-      console.log("Telescope host (cleaned):", telescopeHost)
+      const wsService = getWebSocketService()
+      const result = await wsService.sendCommand(
+        CommandAction.SET_IMAGE_ENHANCEMENT,
+        payload,
+        currentTelescope.name
+      )
       
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-      
-      console.log("Update response status:", response.status, response.statusText)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Received updated settings:", data)
-        setSettings(data)
-      } else {
-        console.error("Failed to update enhancement settings - response not ok:", response.status)
-        const errorText = await response.text()
-        console.error("Error response body:", errorText)
-      }
+      console.log("Received updated settings:", result)
+      setSettings(result)
     } catch (error) {
       console.error("Failed to update enhancement settings:", error)
     } finally {
@@ -269,7 +268,7 @@ export function ImageEnhancementOverlay({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
-                        {settings.available_upscaling_methods.map((method) => (
+                        {(settings.available_upscaling_methods || []).map((method) => (
                           <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
                             {method.charAt(0).toUpperCase() + method.slice(1)}
                           </SelectItem>
@@ -326,7 +325,7 @@ export function ImageEnhancementOverlay({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
-                        {settings.available_sharpening_methods.map((method) => (
+                        {(settings.available_sharpening_methods || []).map((method) => (
                           <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
                             {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </SelectItem>
@@ -356,7 +355,7 @@ export function ImageEnhancementOverlay({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
-                  {settings.available_stretch_parameters.map((param) => (
+                  {(settings.available_stretch_parameters || []).map((param) => (
                     <SelectItem key={param} value={param} className="text-white hover:bg-gray-700">
                       {param}
                     </SelectItem>

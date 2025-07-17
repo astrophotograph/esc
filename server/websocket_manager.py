@@ -375,6 +375,17 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error handling remote message from {telescope_id}: {e}")
 
+    async def _broadcast_to_subscribers(
+        self,
+        message: WebSocketMessage,
+        telescope_id: str,
+        subscription_type: SubscriptionType,
+    ):
+        """Broadcast a message to all connections subscribed to the given telescope and type."""
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, subscription_type):
+                await connection.send_message(message)
+
     async def _handle_control_command(
         self, connection: WebSocketConnection, message: ControlCommandMessage
     ):
@@ -461,6 +472,10 @@ class WebSocketManager:
                 return await self._execute_goto_command(client, parameters)
             elif action == "scenery":
                 return await self._execute_scenery_command(client, parameters)
+            elif action == "set_image_enhancement":
+                return await self._execute_set_image_enhancement_command(client, parameters)
+            elif action == "get_image_enhancement":
+                return await self._execute_get_image_enhancement_command(client, parameters)
             else:
                 logger.warning(f"Unknown command action: {action}")
                 return {"status": "error", "message": f"Unknown action: {action}"}
@@ -845,6 +860,134 @@ class WebSocketManager:
                 connection.remove_subscription(tid, subscription_types)
         elif telescope_id:
             connection.remove_subscription(telescope_id, subscription_types)
+
+    async def _execute_set_image_enhancement_command(
+        self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute set image enhancement command - configures image enhancement on the client."""
+        try:
+            # Extract enhancement parameters
+            enabled = parameters.get("enabled", False)
+            stretch_params = parameters.get("stretch", {})
+            upscale_params = parameters.get("upscale", {})
+            
+            # Store enhancement settings on the client instance
+            if not hasattr(client, "image_enhancement_settings"):
+                client.image_enhancement_settings = {}
+            
+            client.image_enhancement_settings = {
+                "enabled": enabled,
+                "stretch": stretch_params,
+                "upscale": upscale_params
+            }
+            
+            # Apply settings to the image processor if available
+            if hasattr(client, "image_processor") and client.image_processor:
+                # Configure stretch parameters
+                if stretch_params.get("enabled", False):
+                    # The GraxpertStretch uses string-based stretch parameters
+                    # Convert numerical values to appropriate stretch parameter string
+                    target_bg = stretch_params.get("targetBg", 0.25)
+                    stretch_factor = stretch_params.get("stretchFactor", 0.15)
+                    
+                    # Create stretch parameter string (e.g., "15% Bg, 3 sigma")
+                    bg_percent = int(target_bg * 100)
+                    sigma_value = int(stretch_factor * 20)  # Approximate conversion
+                    stretch_param = f"{bg_percent}% Bg, {sigma_value} sigma"
+                    
+                    client.image_processor.set_stretch_parameter(stretch_param)
+                
+                # Configure upscaling
+                if hasattr(client.image_processor, "set_upscaling_enabled"):
+                    client.image_processor.set_upscaling_enabled(upscale_params.get("enabled", False))
+                    if upscale_params.get("enabled", False):
+                        scale_factor = upscale_params.get("factor", 2)
+                        client.image_processor.set_upscaling_params(
+                            enabled=True,
+                            scale_factor=float(scale_factor)
+                        )
+            
+            # Apply settings to the enhancement processor if available
+            if hasattr(client, "enhancement_processor") and client.enhancement_processor:
+                client.enhancement_processor.upscaling_enabled = upscale_params.get("enabled", False)
+                if upscale_params.get("enabled", False):
+                    client.enhancement_processor.scale_factor = float(upscale_params.get("factor", 2))
+            
+            logger.info(f"Image enhancement settings updated: enabled={enabled}, stretch={stretch_params}, upscale={upscale_params}")
+            
+            return {
+                "status": "success",
+                "action": "set_image_enhancement",
+                "settings": client.image_enhancement_settings
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing set image enhancement command: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _execute_get_image_enhancement_command(
+        self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute get image enhancement command - retrieves current enhancement settings."""
+        try:
+            # Initialize default settings
+            default_settings = {
+                "enabled": False,
+                "stretch": {
+                    "enabled": False,
+                    "targetBg": 0.25,
+                    "stretchFactor": 0.15,
+                    "gamma": 1.0
+                },
+                "upscale": {
+                    "enabled": False,
+                    "factor": 2
+                }
+            }
+            
+            # Try to get settings from client instance first
+            settings = getattr(client, "image_enhancement_settings", None)
+            
+            if settings is None:
+                # Try to derive settings from the processors
+                settings = default_settings.copy()
+                
+                # Check if image processor has stretch settings
+                if hasattr(client, "image_processor") and client.image_processor:
+                    if hasattr(client.image_processor, "get_stretch_parameter"):
+                        stretch_param = client.image_processor.get_stretch_parameter()
+                        # Parse stretch parameter string to extract values
+                        # E.g., "25% Bg, 3 sigma" -> targetBg=0.25, stretchFactor=0.15
+                        try:
+                            if isinstance(stretch_param, str) and "%" in stretch_param:
+                                bg_match = stretch_param.split("%")[0].strip()
+                                bg_percent = float(bg_match) / 100.0
+                                settings["stretch"]["targetBg"] = bg_percent
+                                settings["stretch"]["enabled"] = True
+                        except:
+                            pass
+                
+                # Check enhancement processor for upscaling settings
+                if hasattr(client, "enhancement_processor") and client.enhancement_processor:
+                    if hasattr(client.enhancement_processor, "upscaling_enabled"):
+                        settings["upscale"]["enabled"] = client.enhancement_processor.upscaling_enabled
+                    if hasattr(client.enhancement_processor, "scale_factor"):
+                        settings["upscale"]["factor"] = client.enhancement_processor.scale_factor
+                
+                # Store the derived settings back to client
+                client.image_enhancement_settings = settings
+            
+            logger.info(f"Retrieved image enhancement settings: {settings}")
+            
+            return {
+                "status": "success",
+                "action": "get_image_enhancement",
+                "settings": settings
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing get image enhancement command: {e}")
+            return {"status": "error", "message": str(e)}
 
     async def _heartbeat_loop(self):
         """Background task to send heartbeats and check connection health."""

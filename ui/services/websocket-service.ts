@@ -32,7 +32,9 @@ export enum CommandAction {
   STOP_IMAGING = 'stop_imaging',
   SET_GAIN = 'set_gain',
   SET_EXPOSURE = 'set_exposure',
-  SCENERY = 'scenery'
+  SCENERY = 'scenery',
+  SET_IMAGE_ENHANCEMENT = 'set_image_enhancement',
+  GET_IMAGE_ENHANCEMENT = 'get_image_enhancement'
 }
 
 export enum SubscriptionType {

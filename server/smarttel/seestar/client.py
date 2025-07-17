@@ -118,6 +118,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     text_protocol: TextProtocol = TextProtocol()
     client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
     message_history: collections.deque = collections.deque(maxlen=5000)
+    
+    # Image enhancement settings
+    image_enhancement_settings: Dict[str, Any] = {}
 
     # Pattern monitoring configuration
     pattern_file_path: str = "/mnt/sfro/roof/building-6/RoofStatusFile.txt"
