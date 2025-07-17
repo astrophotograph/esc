@@ -83,8 +83,11 @@ export function ImageEnhancementOverlay({
     if (!currentTelescope) return
     
     try {
-      console.log("Fetching enhancement settings from:", `http://localhost:8000/api/${currentTelescope.host}/enhancement`)
-      const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/enhancement`)
+      // Use Next.js API proxy instead of direct backend call
+      const apiUrl = `/api/${currentTelescope.host}/enhancement`
+      console.log("Fetching enhancement settings from Next.js API:", apiUrl)
+      
+      const response = await fetch(apiUrl)
       console.log("Response status:", response.status, response.statusText)
       
       if (response.ok) {
@@ -123,7 +126,11 @@ export function ImageEnhancementOverlay({
       
       console.log("Sending payload:", payload)
       
-      const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/enhancement`, {
+      // Use Next.js API proxy instead of direct backend call
+      const apiUrl = `/api/${currentTelescope.host}/enhancement`
+      console.log("Updating enhancement settings via Next.js API:", apiUrl)
+      
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
