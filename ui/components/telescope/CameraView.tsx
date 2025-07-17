@@ -971,7 +971,8 @@ export function CameraView() {
       <Card className={liveViewFullscreen ?
         "bg-gray-800 border-none h-full rounded-none" :
         "bg-gray-800 border-gray-700"
-      }>
+      }
+      data-tour="camera-view">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-white flex items-center gap-2">

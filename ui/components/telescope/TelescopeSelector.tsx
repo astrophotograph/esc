@@ -198,6 +198,7 @@ export function TelescopeSelector() {
           <Button
             variant="outline"
             className="flex items-center gap-2 min-w-[220px] justify-between border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+            data-tour="telescope-selector"
           >
             <div className="flex items-center gap-2 flex-1">
               <TelescopeIcon className="w-4 h-4"/>

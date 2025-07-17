@@ -105,7 +105,7 @@ export function ControlPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="control-panel">
       <Tabs defaultValue={isImaging ? "imaging" : "telescope"} className="w-full">
         <ScrollableTabs className="bg-gray-800 border-gray-700 rounded-md">
           <TabsList className="flex bg-transparent border-0 p-1">
@@ -138,6 +138,7 @@ export function ControlPanel() {
                 <TabsTrigger
                   value="telescope"
                   className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                  data-tour="telescope-controls-tab"
                 >
                   <Settings className="w-4 h-4" />
                   Telescope
@@ -146,6 +147,7 @@ export function ControlPanel() {
                 <TabsTrigger
                   value="environment"
                   className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                  data-tour="environment-tab"
                 >
                   <Cloud className="w-4 h-4" />
                   Environment
@@ -157,6 +159,7 @@ export function ControlPanel() {
               <TabsTrigger
                 value="imaging"
                 className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                data-tour="imaging-metrics-tab"
               >
                 <BarChart3 className="w-4 h-4" />
                 Quality Metrics

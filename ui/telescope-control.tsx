@@ -21,10 +21,14 @@ import { DataManagementSettings } from "./components/telescope/modals/DataManage
 import { EquipmentManager } from "./components/telescope/modals/EquipmentManager"
 import { CelestialSearchDialog } from "./components/telescope/CelestialSearchDialog"
 import { TelescopeManagementModal } from "./components/telescope/modals/TelescopeManagementModal"
+import { Button } from "./components/ui/button"
+import { Calendar as CalendarIcon, Settings, Search } from "lucide-react"
+import { AppTour } from "./components/telescope/AppTour"
 
 function TelescopeControlContent() {
   const {
     showPlanningPanel,
+    setShowPlanningPanel,
     showNotificationSettings,
     showNotificationHistory,
     showKeyboardHelp,
@@ -70,6 +74,37 @@ function TelescopeControlContent() {
       <div className="p-2">
         <div className="max-w-7xl mx-auto">
           <Header />
+
+          {/* Quick Actions Bar */}
+          <div className="my-4 flex gap-2" data-tour="quick-actions">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPlanningPanel(true)}
+              className="flex items-center gap-2"
+            >
+              <CalendarIcon className="w-4 h-4" />
+              Planning
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEquipmentManager(true)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Equipment
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCelestialSearch(true)}
+              className="flex items-center gap-2"
+            >
+              <Search className="w-4 h-4" />
+              Celestial Search
+            </Button>
+          </div>
 
         <div className={`grid gap-6 ${isControlsCollapsed ? "grid-cols-1" : "lg:grid-cols-4"}`}>
           <div className={`${isControlsCollapsed ? "col-span-1" : "lg:col-span-3"}`}>
@@ -123,6 +158,9 @@ function TelescopeControlContent() {
         
         {/* PiP Overlay Controls - moved outside max-width container */}
         <PipOverlayControls />
+        
+        {/* App Tour */}
+        <AppTour />
       </div>
     </div>
   )

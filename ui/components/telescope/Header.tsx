@@ -49,6 +49,19 @@ export function Header() {
       <div className="flex h-16 items-center px-4">
         <TelescopeSelector />
         <div className="ml-auto flex items-center space-x-4">
+          {/* Notification Bell */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            data-tour="notification-bell"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
+              3
+            </span>
+          </Button>
           {/*<Button*/}
           {/*  variant="outline"*/}
           {/*  size="sm"*/}
@@ -67,6 +80,7 @@ export function Header() {
             onClick={() => setShowPiP(!showPiP)}
             className="flex items-center gap-2"
             title="Toggle Picture-in-Picture View (Ctrl+I)"
+            data-tour="pip-toggle"
           >
             <Camera className="w-4 h-4" />
             PiP
@@ -79,6 +93,7 @@ export function Header() {
             onClick={handleSceneryToggle}
             className="flex items-center gap-2"
             title="Toggle Scenery Mode"
+            data-tour="scenery-mode"
           >
             <Mountain className="w-4 h-4" />
             Scenery
@@ -110,7 +125,7 @@ export function Header() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-tour="user-menu">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/avatars/01.png" alt="Avatar" />
                   <AvatarFallback>OM</AvatarFallback>
@@ -135,6 +150,12 @@ export function Header() {
                   <Cog6Tooth className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                   <DropdownMenuShortcut>F10</DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  window.dispatchEvent(new CustomEvent('restart-tour'))
+                }}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Start Tour</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
