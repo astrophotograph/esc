@@ -84,8 +84,11 @@ export function ImageEnhancementOverlay({
     
     try {
       // Use Next.js API proxy instead of direct backend call
-      const apiUrl = `/api/${currentTelescope.host}/enhancement`
+      // Extract just the host part (remove port if present)
+      const telescopeHost = currentTelescope.host.split(':')[0]
+      const apiUrl = `/api/${telescopeHost}/enhancement`
       console.log("Fetching enhancement settings from Next.js API:", apiUrl)
+      console.log("Telescope host (cleaned):", telescopeHost)
       
       const response = await fetch(apiUrl)
       console.log("Response status:", response.status, response.statusText)
@@ -127,8 +130,11 @@ export function ImageEnhancementOverlay({
       console.log("Sending payload:", payload)
       
       // Use Next.js API proxy instead of direct backend call
-      const apiUrl = `/api/${currentTelescope.host}/enhancement`
+      // Extract just the host part (remove port if present)
+      const telescopeHost = currentTelescope.host.split(':')[0]
+      const apiUrl = `/api/${telescopeHost}/enhancement`
       console.log("Updating enhancement settings via Next.js API:", apiUrl)
+      console.log("Telescope host (cleaned):", telescopeHost)
       
       const response = await fetch(apiUrl, {
         method: "POST",

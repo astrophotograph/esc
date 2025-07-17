@@ -41,7 +41,9 @@ export function ImageControls() {
     if (!currentTelescope) return
     
     try {
-      const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/upscaling`)
+      // Use Next.js API proxy and clean telescope host (remove port if present)
+      const telescopeHost = currentTelescope.host.split(':')[0]
+      const response = await fetch(`/api/${telescopeHost}/upscaling`)
       if (response.ok) {
         const data = await response.json()
         setUpscalingSettings(data)
@@ -58,7 +60,9 @@ export function ImageControls() {
     try {
       const updatedSettings = { ...upscalingSettings, ...newSettings }
       
-      const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/upscaling`, {
+      // Use Next.js API proxy and clean telescope host (remove port if present)
+      const telescopeHost = currentTelescope.host.split(':')[0]
+      const response = await fetch(`/api/${telescopeHost}/upscaling`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
