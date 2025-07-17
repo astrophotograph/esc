@@ -1,0 +1,110 @@
+{
+  "pip": {
+    "defaultSize": "medium",
+    "defaultCamera": "allsky",
+    "position": {
+      "x": 20,
+      "y": 20
+    },
+    "showStatusByDefault": false,
+    "overlaySettings": {
+      "crosshairs": {
+        "enabled": false,
+        "color": "#ff0000",
+        "thickness": 2,
+        "style": "simple"
+      },
+      "grid": {
+        "enabled": false,
+        "color": "#00ff00",
+        "spacing": 50,
+        "opacity": 0.5,
+        "style": "lines"
+      },
+      "measurements": {
+        "enabled": false,
+        "color": "#ffff00",
+        "showScale": true,
+        "showCoordinates": true,
+        "unit": "arcmin"
+      },
+      "compass": {
+        "enabled": false,
+        "color": "#00ffff",
+        "showCardinals": true,
+        "showDegrees": false
+      }
+    },
+    "autoShow": false,
+    "minimizedByDefault": true
+  },
+  "subframeSaving": {
+    "enabled": true,
+    "directory": "./captures",
+    "fileFormat": "jpg",
+    "quality": 90,
+    "compression": 6,
+    "saveMetadata": true,
+    "filenamePattern": "capture_%Y%m%d_%H%M%S",
+    "autoSave": false,
+    "saveInterval": 30,
+    "maxFiles": 1000
+  },
+  "camera": {
+    "defaultExposure": 1,
+    "defaultGain": 80,
+    "defaultBrightness": 0,
+    "defaultContrast": 100,
+    "autoExposure": false,
+    "videoQuality": "high",
+    "preferredConnection": "auto",
+    "frameRate": 30
+  },
+  "telescope": {
+    "defaultMoveSpeed": 2,
+    "gotoTimeout": 120,
+    "trackingEnabled": true,
+    "parkOnDisconnect": false,
+    "coordinateFormat": "hours",
+    "slewRateLimit": 8,
+    "focusStepSize": 10
+  },
+  "ui": {
+    "theme": "dark",
+    "compactMode": false,
+    "showTooltips": true,
+    "animationsEnabled": true,
+    "defaultPanelLayout": "expanded",
+    "showStatusAlerts": true,
+    "alertTimeout": 5,
+    "language": "en"
+  },
+  "session": {
+    "autoStartSession": false,
+    "defaultLocation": "",
+    "defaultEquipmentSet": "",
+    "autoSaveInterval": 5,
+    "backupRetentionDays": 30,
+    "exportFormat": "json",
+    "includeImages": false
+  },
+  "notifications": {
+    "enableBrowserNotifications": true,
+    "enableSounds": true,
+    "alertTypes": {
+      "connectionLost": true,
+      "gotoComplete": true,
+      "lowBattery": true,
+      "weatherAlerts": true,
+      "maintenanceReminders": true
+    },
+    "soundVolume": 50,
+    "quietHours": {
+      "enabled": false,
+      "startTime": "22:00",
+      "endTime": "06:00"
+    }
+  },
+  "version": "1.0.0",
+  "lastModified": "2025-07-15T03:53:50.963Z"
+}

@@ -125,7 +125,8 @@ Press `?` or `Ctrl+/` at any time to display the in-app keyboard shortcut help.
 | `F6` | Toggle PIP window |
 | `F7` | Toggle starmap |
 | `F8` | Toggle annotations |
-| `F9` | Settings |
+| `F9` | (Reserved) |
+| `F10` | Open settings |
 
 ## Planning
 

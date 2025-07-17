@@ -160,6 +160,8 @@ interface TelescopeContextType {
   setShowKeyboardHelp: (show: boolean) => void
   showDocumentation: boolean
   setShowDocumentation: (show: boolean) => void
+  showConfiguration: boolean
+  setShowConfiguration: (show: boolean) => void
   showPlanningPanel: boolean
   setShowPlanningPanel: (show: boolean) => void
   searchQuery: string
@@ -423,6 +425,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showStatsPanel, setShowStatsPanel] = useState(false)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [showDocumentation, setShowDocumentation] = useState(false)
+  const [showConfiguration, setShowConfiguration] = useState(false)
   const [showPlanningPanel, setShowPlanningPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeSession, setActiveSession] = useState<Session | null>(null)
@@ -1955,11 +1958,16 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         preventDefault()
         setShowDocumentation(!showDocumentation)
         break
+      case "f10":
+        preventDefault()
+        setShowConfiguration(!showConfiguration)
+        break
       case "escape":
         preventDefault()
         // Close any open modals
         if (showKeyboardHelp) setShowKeyboardHelp(false)
         else if (showDocumentation) setShowDocumentation(false)
+        else if (showConfiguration) setShowConfiguration(false)
         else if (showPlanningPanel) setShowPlanningPanel(false)
         else if (showNotificationSettings) setShowNotificationSettings(false)
         else if (showNotificationHistory) setShowNotificationHistory(false)
@@ -2187,6 +2195,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setShowKeyboardHelp,
     showDocumentation,
     setShowDocumentation,
+    showConfiguration,
+    setShowConfiguration,
     showPlanningPanel,
     setShowPlanningPanel,
     searchQuery,

@@ -12,6 +12,7 @@ import { NotificationSettings as NotificationSettingsModal } from "./components/
 import { NotificationHistory as NotificationHistoryModal } from "./components/telescope/modals/NotificationHistory"
 import { KeyboardHelp as KeyboardHelpModal } from "./components/telescope/modals/KeyboardHelp"
 import { DocumentationViewer } from "./components/telescope/modals/DocumentationViewer"
+import { ConfigurationPage } from "./components/telescope/modals/ConfigurationPage"
 import { DataPersistenceManager } from "./components/telescope/DataPersistenceManager"
 import { useTelescopeContext } from "./context/TelescopeContext"
 import { PictureInPictureOverlay } from "./components/telescope/PictureInPictureOverlay"
@@ -30,6 +31,8 @@ function TelescopeControlContent() {
     setShowKeyboardHelp,
     showDocumentation,
     setShowDocumentation,
+    showConfiguration,
+    setShowConfiguration,
     showLocationManager,
     setShowLocationManager,
     isControlsCollapsed,
@@ -104,6 +107,12 @@ function TelescopeControlContent() {
         <DocumentationViewer 
           open={showDocumentation} 
           onOpenChange={setShowDocumentation} 
+        />
+
+        {/* Configuration Page */}
+        <ConfigurationPage 
+          open={showConfiguration} 
+          onOpenChange={setShowConfiguration} 
         />
 
         <DataPersistenceManager />

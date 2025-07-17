@@ -24,14 +24,14 @@ export function Header() {
   const router = useRouter()
   const { theme: _theme, setTheme: _setTheme } = useTheme()
   const { showPiP, setShowPiP } = useTelescope()
-  const { handleSceneryMode, setShowDocumentation } = useTelescopeContext()
-  
+  const { handleSceneryMode, setShowDocumentation, setShowConfiguration } = useTelescopeContext()
+
   const [sceneryMode, setSceneryMode] = useState(false)
-  
+
   const handleSceneryToggle = async () => {
     const newSceneryMode = !sceneryMode
     setSceneryMode(newSceneryMode)
-    
+
     // Send scenery mode command through context
     try {
       console.log('Sending scenery mode message:', { mode: "scenery" })
@@ -97,16 +97,16 @@ export function Header() {
           </Button>
 
           {/* Help/Documentation Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDocumentation(true)}
-            className="flex items-center gap-2"
-            title="Open Documentation (F1)"
-          >
-            <HelpCircle className="w-4 h-4" />
-            Help
-          </Button>
+          {/*<Button*/}
+          {/*  variant="outline"*/}
+          {/*  size="sm"*/}
+          {/*  onClick={() => setShowDocumentation(true)}*/}
+          {/*  className="flex items-center gap-2"*/}
+          {/*  title="Open Documentation (F1)"*/}
+          {/*>*/}
+          {/*  <HelpCircle className="w-4 h-4" />*/}
+          {/*  Help*/}
+          {/*</Button>*/}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -131,10 +131,10 @@ export function Header() {
                   <span>Notifications</span>
                   <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowConfiguration(true)}>
                   <Cog6Tooth className="mr-2 h-4 w-4" />
                   <span>Settings</span>
-                  <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+                  <DropdownMenuShortcut>F10</DropdownMenuShortcut>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
