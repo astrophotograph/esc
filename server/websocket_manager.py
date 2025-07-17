@@ -726,6 +726,30 @@ class WebSocketManager:
             #        mode='scenery'
             #    )
             # )
+            #             "method": "iscope_start_view",
+            #             "params": {
+            #                 "mode": "star",
+            #                 "target_ra_dec": [in_ra, in_dec],
+            #                 "target_name": target_name,
+            #                 "lp_filter": False,
+            #             },
+            # Watches AutoGoto events.
+            #         self.send_message_param_sync(
+            #             {"method": "set_setting", "params": {"stack_lenhance": is_use_LP_filter}}
+            #         )
+            #         req: MessageParams = {"method": "set_sequence_setting", "params": [{"group_name": name}]}
+            #         return self.send_message_param_sync(req)
+            #
+            #result = self.send_message_param_sync(
+            #    {"method": "iscope_start_stack", "params": {"restart": params["restart"]}}
+            #)
+            # ALP changes gain _after_ stacking starts!?
+            #if "gain" in params:
+            #stack_gain = params["gain"]
+            #result = self.send_message_param_sync(
+            #    {"method": "set_control_value", "params": ["gain", stack_gain]}
+            #)
+            #self.logger.info(result)
 
             # response = await client.send_and_recv(command)
 

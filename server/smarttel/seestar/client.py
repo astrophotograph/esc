@@ -395,6 +395,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 f"Error while processing focuser position from {self}: {response}"
             )
 
+    def _process_current_coords(self, response: CommandResponse):
+        """Process current coordinates."""
+        logging.trace(f"Processing current coordinates from {self}: {response}")
+        if response.result is not None:
+            equ_coord = response.result
+            self.status.ra = 15.0 * float(equ_coord.get("ra"))
+            self.status.dec = float(equ_coord.get("dec"))
+
     async def connect(self):
         await self.connection.open()
         self.is_connected = True
@@ -422,6 +430,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.trace(f"Received GetFocuserPosition: {response}")
 
         self._process_focuser_position(response)
+
+        # Get initial coordinates
+        response = await self.send_and_recv(ScopeGetEquCoord())
+        logging.trace(f"Received ScopeGetEquCoord: {response}")
+        self._process_current_coords(response)
 
         logging.info(f"Connected to {self}")
 

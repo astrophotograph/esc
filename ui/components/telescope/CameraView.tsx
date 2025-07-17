@@ -571,7 +571,7 @@ export function CameraView() {
 
     // Measure container dimensions immediately on mount
     handleResize();
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -896,10 +896,10 @@ export function CameraView() {
   // Handle WebSocket connection state
   useEffect(() => {
     setSseConnected(wsConnected);
-    
+
     if (wsConnected) {
       setReconnectCounter(0);
-      
+
       // If connection was restored and both streams are healthy
       if (connectionLost && streamActive) {
         const now = Date.now();
@@ -1099,7 +1099,7 @@ export function CameraView() {
                         })()}`}
                       />
                       <span className="text-gray-300">
-                        {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                        {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB
                           ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
                           : Math.round(systemStats.diskUsage) || 'N/A'}%
                       </span>
@@ -1107,18 +1107,18 @@ export function CameraView() {
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>
-                      Disk Usage: {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                      Disk Usage: {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB
                         ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
                         : Math.round(systemStats.diskUsage) || 'N/A'}%
                       <br />
-                      {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                      {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB
                         ? `${localStreamStatus?.status?.freeMB}MB free of ${localStreamStatus?.status?.totalMB}MB total`
-                        : systemStats.freeMB && systemStats.totalMB 
-                          ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total` 
+                        : systemStats.freeMB && systemStats.totalMB
+                          ? `${systemStats.freeMB}MB free of ${systemStats.totalMB}MB total`
                           : "Disk space information unavailable"}
                       <br />
                       {(() => {
-                        const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB 
+                        const diskUsage = localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB
                           ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
                           : systemStats.diskUsage || 0
                         if (diskUsage >= 90) return "Critical: Very low disk space - consider freeing space"
@@ -1162,7 +1162,7 @@ export function CameraView() {
                     <p>
                       Light Pollution Filter: {localStreamStatus?.status?.lp_filter ? 'Enabled' : 'Disabled'}
                       <br />
-                      {localStreamStatus?.status?.lp_filter 
+                      {localStreamStatus?.status?.lp_filter
                         ? "Filter is active - reducing light pollution effects for better deep sky imaging"
                         : "Filter is disabled - suitable for planetary or lunar observation"
                       }
@@ -1203,15 +1203,15 @@ export function CameraView() {
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowStarmap(!showStarmap)}
-                  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}
-                  title={showStarmap ? "Hide Star Map" : "Show Star Map"}
-                >
-                  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />
-                </Button>
+                {/*<Button*/}
+                {/*  variant="ghost"*/}
+                {/*  size="sm"*/}
+                {/*  onClick={() => setShowStarmap(!showStarmap)}*/}
+                {/*  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}*/}
+                {/*  title={showStarmap ? "Hide Star Map" : "Show Star Map"}*/}
+                {/*>*/}
+                {/*  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />*/}
+                {/*</Button>*/}
                 <Button
                   variant="outline"
                   size="sm"
