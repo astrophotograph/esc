@@ -1,0 +1,105 @@
+# Page snapshot
+
+```yaml
+- button "Seestar S30 - cfcf05c4":
+  - img
+  - text: Seestar S30 - cfcf05c4
+  - img
+  - img
+- text: Online MJPEG
+- button "PiP":
+  - img
+  - text: PiP
+- button "Scenery" [disabled]:
+  - img
+  - text: Scenery
+- button "OM"
+- img
+- text: Live View
+- img
+- text: N/A%
+- img
+- text: "0"
+- img
+- text: "0"
+- img
+- text: N/A°C
+- img
+- text: 67%
+- img
+- text: N/A
+- img "Light Pollution Filter"
+- text: "OFF"
+- button "Search Celestial Objects (⌘K)":
+  - img
+- button "Hide Stream Status":
+  - img
+- button:
+  - img
+- button "Enter Fullscreen":
+  - img
+- button:
+  - img
+- img "Telescope view"
+- text: Loading MJPEG stream...
+- button "Zoom In":
+  - img
+- slider
+- button "Zoom Out":
+  - img
+- button "Reset View":
+  - img
+- tablist:
+  - tab "Telescope" [selected]:
+    - img
+    - text: Telescope
+  - tab "Environment":
+    - img
+    - text: Environment
+- tabpanel "Telescope":
+  - img
+  - text: Telescope Controls
+  - heading "Current Position" [level=4]
+  - text: RA:N/A Dec:N/A RA (deg):N/A Dec (deg):N/A
+  - heading "Movement & Tracking" [level=4]
+  - button:
+    - img
+  - button:
+    - img
+  - button:
+    - img
+  - button:
+    - img
+  - button:
+    - img
+  - text: Tracking
+  - switch [checked]
+  - button "Park Telescope":
+    - img
+    - text: Park Telescope
+  - heading "Focus Control" [level=4]:
+    - img
+    - text: Focus Control
+  - text: Position 5000
+  - slider
+  - button "Focus In"
+  - button "Focus Out"
+  - heading "Image Settings" [level=4]
+  - text: Exposure 1s
+  - slider
+  - text: Gain 50
+  - slider
+  - text: Brightness 0
+  - slider
+  - text: Contrast 100%
+  - slider
+  - button "Start Imaging":
+    - img
+    - text: Start Imaging
+- button "Open issues overlay":
+  - img
+  - text: 1 Issue
+- button "Collapse issues badge":
+  - img
+- alert
+```

@@ -178,7 +178,7 @@ class ImageEnhancementSettingsRequest(BaseModel):
     sharpening_method: SharpeningMethod = Field(default=SharpeningMethod.UNSHARP_MASK, description="Sharpening method")
     sharpening_strength: float = Field(default=1.0, ge=0.0, le=2.0, description="Sharpening strength (0.0-2.0)")
     invert_enabled: bool = Field(default=False, description="Whether image inversion is enabled")
-    stretch_parameter: StretchParameter = Field(default="15% Bg, 3 sigma", description="GraXpert stretch parameter")
+    stretch_parameter: str = Field(default="15% Bg, 3 sigma", description="GraXpert stretch parameter")
 
 
 class ImageEnhancementSettingsResponse(BaseModel):
@@ -774,6 +774,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             """Update comprehensive image enhancement settings."""
             from smarttel.imaging.upscaler import ImageUpscaler
             
+            logging.info(f"Received enhancement settings update: {settings}")
+            
             # Update enhancement processor settings
             self.enhancement_processor.set_upscaling_params(
                 enabled=settings.upscaling_enabled,
@@ -788,6 +790,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             )
             
             self.enhancement_processor.set_invert_enabled(settings.invert_enabled)
+            
+            logging.info(f"Updated enhancement processor settings: {self.enhancement_processor.get_enhancement_settings()}")
             
             # Update stretch parameter on the original image processor
             # Note: This would require modifying the GraxpertStretch class to support dynamic stretch parameters

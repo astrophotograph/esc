@@ -73,6 +73,8 @@ export function ImageEnhancementOverlay({
 
   useEffect(() => {
     if (currentTelescope && isVisible) {
+      console.log("Current telescope:", currentTelescope)
+      console.log("Should fetch settings for visible overlay")
       fetchSettings()
     }
   }, [currentTelescope, isVisible])
@@ -81,10 +83,18 @@ export function ImageEnhancementOverlay({
     if (!currentTelescope) return
     
     try {
+      console.log("Fetching enhancement settings from:", `http://localhost:8000/api/${currentTelescope.host}/enhancement`)
       const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/enhancement`)
+      console.log("Response status:", response.status, response.statusText)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log("Received enhancement settings:", data)
         setSettings(data)
+      } else {
+        console.error("Failed to fetch enhancement settings - response not ok:", response.status, response.statusText)
+        const errorText = await response.text()
+        console.error("Error response body:", errorText)
       }
     } catch (error) {
       console.error("Failed to fetch enhancement settings:", error)
@@ -94,30 +104,43 @@ export function ImageEnhancementOverlay({
   const updateSettings = async (newSettings: Partial<ImageEnhancementSettings>) => {
     if (!currentTelescope || isLoading) return
     
+    console.log("Updating settings with:", newSettings)
     setIsLoading(true)
     try {
       const updatedSettings = { ...settings, ...newSettings }
+      console.log("Full settings payload:", updatedSettings)
+      
+      const payload = {
+        upscaling_enabled: updatedSettings.upscaling_enabled,
+        scale_factor: updatedSettings.scale_factor,
+        upscaling_method: updatedSettings.upscaling_method,
+        sharpening_enabled: updatedSettings.sharpening_enabled,
+        sharpening_method: updatedSettings.sharpening_method,
+        sharpening_strength: updatedSettings.sharpening_strength,
+        invert_enabled: updatedSettings.invert_enabled,
+        stretch_parameter: updatedSettings.stretch_parameter,
+      }
+      
+      console.log("Sending payload:", payload)
       
       const response = await fetch(`http://localhost:8000/api/${currentTelescope.host}/enhancement`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          upscaling_enabled: updatedSettings.upscaling_enabled,
-          scale_factor: updatedSettings.scale_factor,
-          upscaling_method: updatedSettings.upscaling_method,
-          sharpening_enabled: updatedSettings.sharpening_enabled,
-          sharpening_method: updatedSettings.sharpening_method,
-          sharpening_strength: updatedSettings.sharpening_strength,
-          invert_enabled: updatedSettings.invert_enabled,
-          stretch_parameter: updatedSettings.stretch_parameter,
-        }),
+        body: JSON.stringify(payload),
       })
+      
+      console.log("Update response status:", response.status, response.statusText)
       
       if (response.ok) {
         const data = await response.json()
+        console.log("Received updated settings:", data)
         setSettings(data)
+      } else {
+        console.error("Failed to update enhancement settings - response not ok:", response.status)
+        const errorText = await response.text()
+        console.error("Error response body:", errorText)
       }
     } catch (error) {
       console.error("Failed to update enhancement settings:", error)

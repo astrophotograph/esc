@@ -1,0 +1,1797 @@
+{
+  "config": {
+    "configFile": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/playwright.config.ts",
+    "rootDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 5
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 5,
+    "webServer": {
+      "command": "pnpm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "celestial-search.spec.ts",
+      "file": "celestial-search.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Celestial Search Dialog",
+          "file": "celestial-search.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should open celestial search dialog with Search button",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 37069,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:03.415Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-dcc02-h-dialog-with-Search-button-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-dcc02-h-dialog-with-Search-button-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-dcc02-h-dialog-with-Search-button-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-dcc02-h-dialog-with-Search-button-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-fd64249fab5f16a175af",
+              "file": "celestial-search.spec.ts",
+              "line": 20,
+              "column": 7
+            },
+            {
+              "title": "should open celestial search dialog with Cmd-K keyboard shortcut",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 35996,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:03.429Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-277f8-ith-Cmd-K-keyboard-shortcut-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-277f8-ith-Cmd-K-keyboard-shortcut-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-277f8-ith-Cmd-K-keyboard-shortcut-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-277f8-ith-Cmd-K-keyboard-shortcut-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-d18299255da856ae9096",
+              "file": "celestial-search.spec.ts",
+              "line": 29,
+              "column": 7
+            },
+            {
+              "title": "should display celestial objects above horizon",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 36551,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:03.283Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-55f13-stial-objects-above-horizon-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-55f13-stial-objects-above-horizon-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-55f13-stial-objects-above-horizon-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-55f13-stial-objects-above-horizon-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-28f184a256e235106bfb",
+              "file": "celestial-search.spec.ts",
+              "line": 37,
+              "column": 7
+            },
+            {
+              "title": "should search and filter celestial objects",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 36931,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:03.389Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-8b06d-nd-filter-celestial-objects-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-8b06d-nd-filter-celestial-objects-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-8b06d-nd-filter-celestial-objects-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-8b06d-nd-filter-celestial-objects-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-6b2e9bed73dd5c4c635f",
+              "file": "celestial-search.spec.ts",
+              "line": 51,
+              "column": 7
+            },
+            {
+              "title": "should select object and show action buttons",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 36373,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:03.386Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-50d38-ect-and-show-action-buttons-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-50d38-ect-and-show-action-buttons-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-50d38-ect-and-show-action-buttons-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-50d38-ect-and-show-action-buttons-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-0af28f4a5854a4537ef6",
+              "file": "celestial-search.spec.ts",
+              "line": 68,
+              "column": 7
+            },
+            {
+              "title": "should send goto message when Goto button is clicked",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 4,
+                      "status": "timedOut",
+                      "duration": 53895,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                          "column": 8,
+                          "line": 8
+                        },
+                        "snippet": "\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                            "column": 8,
+                            "line": 8
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8\u001b[22m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:47.215Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-b230c-when-Goto-button-is-clicked-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-b230c-when-Goto-button-is-clicked-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-b230c-when-Goto-button-is-clicked-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-b230c-when-Goto-button-is-clicked-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                        "column": 8,
+                        "line": 8
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-7e244b69f5c727db3133",
+              "file": "celestial-search.spec.ts",
+              "line": 87,
+              "column": 7
+            },
+            {
+              "title": "should send goto and image message when Goto & Image button is clicked",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 52684,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                          "column": 8,
+                          "line": 8
+                        },
+                        "snippet": "\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                            "column": 8,
+                            "line": 8
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8\u001b[22m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:47.552Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-f0211-oto-Image-button-is-clicked-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-f0211-oto-Image-button-is-clicked-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-f0211-oto-Image-button-is-clicked-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-f0211-oto-Image-button-is-clicked-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                        "column": 8,
+                        "line": 8
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-07d20df57b48b786990e",
+              "file": "celestial-search.spec.ts",
+              "line": 117,
+              "column": 7
+            },
+            {
+              "title": "should cancel and close dialog",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 52779,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                          "column": 8,
+                          "line": 8
+                        },
+                        "snippet": "\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                            "column": 8,
+                            "line": 8
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8\u001b[22m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:47.748Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-54bdc-uld-cancel-and-close-dialog-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-54bdc-uld-cancel-and-close-dialog-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-54bdc-uld-cancel-and-close-dialog-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-54bdc-uld-cancel-and-close-dialog-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                        "column": 8,
+                        "line": 8
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-ae092968692acd3ffc37",
+              "file": "celestial-search.spec.ts",
+              "line": 147,
+              "column": 7
+            },
+            {
+              "title": "should show object details with type, magnitude, and altitude",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 3,
+                      "status": "timedOut",
+                      "duration": 52780,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                          "column": 8,
+                          "line": 8
+                        },
+                        "snippet": "\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                            "column": 8,
+                            "line": 8
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8\u001b[22m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:47.842Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-3163a-type-magnitude-and-altitude-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-3163a-type-magnitude-and-altitude-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-3163a-type-magnitude-and-altitude-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-3163a-type-magnitude-and-altitude-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                        "column": 8,
+                        "line": 8
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-a138666343d0aef8057a",
+              "file": "celestial-search.spec.ts",
+              "line": 162,
+              "column": 7
+            },
+            {
+              "title": "should group objects by type",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 52929,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                          "column": 8,
+                          "line": 8
+                        },
+                        "snippet": "\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                            "column": 8,
+                            "line": 8
+                          },
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n\u001b[0m \u001b[90m  6 |\u001b[39m   \u001b[36mlet\u001b[39m mockWS\u001b[33m:\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m\n \u001b[90m  7 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m     testHelpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mTelescopeTestHelpers\u001b[39m(page)\n \u001b[90m 10 |\u001b[39m     mockWS \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mMockWebSocketHelpers\u001b[39m(page)\n \u001b[90m 11 |\u001b[39m     \u001b[0m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:8:8\u001b[22m"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:19:47.951Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-730a4-hould-group-objects-by-type-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-730a4-hould-group-objects-by-type-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-730a4-hould-group-objects-by-type-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-730a4-hould-group-objects-by-type-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts",
+                        "column": 8,
+                        "line": 8
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-caf35ca06ae276eb9356",
+              "file": "celestial-search.spec.ts",
+              "line": 183,
+              "column": 7
+            },
+            {
+              "title": "should disable buttons when WebSocket is not connected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 25794,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:20:43.572Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-18a9e--WebSocket-is-not-connected-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-18a9e--WebSocket-is-not-connected-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-18a9e--WebSocket-is-not-connected-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-18a9e--WebSocket-is-not-connected-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-33c69c68da8d2ea5b70c",
+              "file": "celestial-search.spec.ts",
+              "line": 211,
+              "column": 7
+            },
+            {
+              "title": "should close dialog when clicked outside",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 25384,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/celestial-search.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:20:44.276Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-c8db1-dialog-when-clicked-outside-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-c8db1-dialog-when-clicked-outside-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-c8db1-dialog-when-clicked-outside-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/celestial-search-Celestial-c8db1-dialog-when-clicked-outside-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1e0344edc71a0493c363-344d696e5e65ed812c72",
+              "file": "celestial-search.spec.ts",
+              "line": 230,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "scenery-mode.spec.ts",
+      "file": "scenery-mode.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Scenery Mode",
+          "file": "scenery-mode.spec.ts",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should display scenery mode button near PIP button",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 25424,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:20:44.408Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--723a3-mode-button-near-PIP-button-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--723a3-mode-button-near-PIP-button-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--723a3-mode-button-near-PIP-button-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--723a3-mode-button-near-PIP-button-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-2cc88903c4f01f30efd1",
+              "file": "scenery-mode.spec.ts",
+              "line": 20,
+              "column": 7
+            },
+            {
+              "title": "should toggle scenery mode when button is clicked",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 25978,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:20:44.468Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--71a5b-mode-when-button-is-clicked-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--71a5b-mode-when-button-is-clicked-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--71a5b-mode-when-button-is-clicked-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--71a5b-mode-when-button-is-clicked-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-23e2f71ab83025c9ed47",
+              "file": "scenery-mode.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "should send correct scenery mode message format",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 25368,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:20:44.528Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--aff7d-scenery-mode-message-format-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--aff7d-scenery-mode-message-format-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--aff7d-scenery-mode-message-format-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--aff7d-scenery-mode-message-format-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-a101beff939212f9e077",
+              "file": "scenery-mode.spec.ts",
+              "line": 54,
+              "column": 7
+            },
+            {
+              "title": "should handle scenery mode when WebSocket is disconnected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 29767,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:21:14.151Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--892e6-n-WebSocket-is-disconnected-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--892e6-n-WebSocket-is-disconnected-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--892e6-n-WebSocket-is-disconnected-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--892e6-n-WebSocket-is-disconnected-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-87c06e0e5f7a5a98ccc1",
+              "file": "scenery-mode.spec.ts",
+              "line": 74,
+              "column": 7
+            },
+            {
+              "title": "should have correct button styling and icon",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 29693,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:21:14.175Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--d9b17-ect-button-styling-and-icon-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--d9b17-ect-button-styling-and-icon-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--d9b17-ect-button-styling-and-icon-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--d9b17-ect-button-styling-and-icon-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-d4277b4b4e98f6d544bc",
+              "file": "scenery-mode.spec.ts",
+              "line": 92,
+              "column": 7
+            },
+            {
+              "title": "should maintain button state across interactions",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 31062,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:21:14.494Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--fa4cf-n-state-across-interactions-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--fa4cf-n-state-across-interactions-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--fa4cf-n-state-across-interactions-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--fa4cf-n-state-across-interactions-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-f2aec2377a463b384b1d",
+              "file": "scenery-mode.spec.ts",
+              "line": 101,
+              "column": 7
+            },
+            {
+              "title": "should work independently of other UI elements",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 4,
+                      "status": "failed",
+                      "duration": 30349,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:21:14.569Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--50e31-dently-of-other-UI-elements-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--50e31-dently-of-other-UI-elements-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--50e31-dently-of-other-UI-elements-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--50e31-dently-of-other-UI-elements-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-0f67d5da42e9021693b8",
+              "file": "scenery-mode.spec.ts",
+              "line": 115,
+              "column": 7
+            },
+            {
+              "title": "should log appropriate message on server side (mock verification)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 31003,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\n    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23",
+                        "location": {
+                          "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                          "column": 21,
+                          "line": 15
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                            "column": 21,
+                            "line": 15
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"telescope-control\"]') to be visible\u001b[22m\n\n\n\u001b[90m   at \u001b[39mtest-utils.ts:15\n\n\u001b[0m \u001b[90m 13 |\u001b[39m   \u001b[36masync\u001b[39m waitForAppReady()\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[36mvoid\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 14 |\u001b[39m     \u001b[90m// Wait for the main telescope control page to load\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"telescope-control\"]'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\n \u001b[90m    |\u001b[39m                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m     \n \u001b[90m 17 |\u001b[39m     \u001b[90m// Wait for any loading spinners to disappear\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mpage\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'[data-testid=\"loading\"]'\u001b[39m\u001b[33m,\u001b[39m { state\u001b[33m:\u001b[39m \u001b[32m'detached'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at TelescopeTestHelpers.waitForAppReady (/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts:15:21)\u001b[22m\n\u001b[2m    at /Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/scenery-mode.spec.ts:17:23\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-13T22:21:15.007Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--6f4c3-ver-side-mock-verification--chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--6f4c3-ver-side-mock-verification--chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--6f4c3-ver-side-mock-verification--chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/test-results/scenery-mode-Scenery-Mode--6f4c3-ver-side-mock-verification--chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/erewhon/Projects/erewhon/alp-experimental/main/ui/e2e/test-utils.ts",
+                        "column": 21,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1d5ee721e3bed0e0a0cb-80d626316ef610179b20",
+              "file": "scenery-mode.spec.ts",
+              "line": 130,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-07-13T22:19:02.151Z",
+    "duration": 164619.624,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 20,
+    "flaky": 0
+  }
+}
