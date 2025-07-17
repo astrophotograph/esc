@@ -918,10 +918,20 @@ class WebSocketManager:
                         telescope.enhancement_processor.sharpening_method = parameters["sharpening_method"]
                     if "sharpening_strength" in parameters:
                         telescope.enhancement_processor.sharpening_strength = parameters["sharpening_strength"]
+                    if "denoise_enabled" in parameters:
+                        telescope.enhancement_processor.denoise_enabled = parameters["denoise_enabled"]
+                    if "denoise_method" in parameters:
+                        telescope.enhancement_processor.denoise_method = parameters["denoise_method"]
+                    if "denoise_strength" in parameters:
+                        telescope.enhancement_processor.denoise_strength = parameters["denoise_strength"]
                     if "invert_enabled" in parameters:
                         telescope.enhancement_processor.invert_enabled = parameters["invert_enabled"]
                     
                     logger.info(f"Updated enhancement processor settings")
+                    
+                    # Trigger instant processing of cached image
+                    if hasattr(telescope, "imaging") and telescope.imaging:
+                        telescope.imaging.trigger_enhancement_settings_changed()
                 else:
                     logger.warning("Could not find enhancement processor on telescope")
             else:
@@ -932,11 +942,15 @@ class WebSocketManager:
                 "upscaling_enabled": client.image_enhancement_settings.get("upscaling_enabled", False),
                 "scale_factor": client.image_enhancement_settings.get("scale_factor", 2.0),
                 "upscaling_method": client.image_enhancement_settings.get("upscaling_method", "bicubic"),
-                "available_upscaling_methods": ["bicubic", "lanczos"],
+                "available_upscaling_methods": ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan", "real_esrgan", "waifu2x"],
                 "sharpening_enabled": client.image_enhancement_settings.get("sharpening_enabled", False),
                 "sharpening_method": client.image_enhancement_settings.get("sharpening_method", "unsharp_mask"),
                 "sharpening_strength": client.image_enhancement_settings.get("sharpening_strength", 1.0),
                 "available_sharpening_methods": ["none", "unsharp_mask", "laplacian", "high_pass"],
+                "denoise_enabled": client.image_enhancement_settings.get("denoise_enabled", False),
+                "denoise_method": client.image_enhancement_settings.get("denoise_method", "tv_chambolle"),
+                "denoise_strength": client.image_enhancement_settings.get("denoise_strength", 1.0),
+                "available_denoise_methods": ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
                 "invert_enabled": client.image_enhancement_settings.get("invert_enabled", False),
                 "stretch_parameter": client.image_enhancement_settings.get("stretch_parameter", "15% Bg, 3 sigma"),
                 "available_stretch_parameters": [

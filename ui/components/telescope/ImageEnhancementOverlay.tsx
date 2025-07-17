@@ -18,7 +18,8 @@ import {
   X,
   ChevronUp,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Filter
 } from "lucide-react"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { getWebSocketService, CommandAction } from "../../services/websocket-service"
@@ -32,6 +33,10 @@ interface ImageEnhancementSettings {
   sharpening_method: string
   sharpening_strength: number
   available_sharpening_methods: string[]
+  denoise_enabled: boolean
+  denoise_method: string
+  denoise_strength: number
+  available_denoise_methods: string[]
   invert_enabled: boolean
   stretch_parameter: string
   available_stretch_parameters: string[]
@@ -58,6 +63,10 @@ export function ImageEnhancementOverlay({
     sharpening_method: "unsharp_mask",
     sharpening_strength: 1.0,
     available_sharpening_methods: ["none", "unsharp_mask", "laplacian", "high_pass"],
+    denoise_enabled: false,
+    denoise_method: "tv_chambolle",
+    denoise_strength: 1.0,
+    available_denoise_methods: ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
     invert_enabled: false,
     stretch_parameter: "15% Bg, 3 sigma",
     available_stretch_parameters: [
@@ -105,6 +114,10 @@ export function ImageEnhancementOverlay({
         sharpening_method: result?.sharpening_method ?? "unsharp_mask",
         sharpening_strength: result?.sharpening_strength ?? 1.0,
         available_sharpening_methods: result?.available_sharpening_methods ?? ["none", "unsharp_mask", "laplacian", "high_pass"],
+        denoise_enabled: result?.denoise_enabled ?? false,
+        denoise_method: result?.denoise_method ?? "tv_chambolle",
+        denoise_strength: result?.denoise_strength ?? 1.0,
+        available_denoise_methods: result?.available_denoise_methods ?? ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
         invert_enabled: result?.invert_enabled ?? false,
         stretch_parameter: result?.stretch_parameter ?? "15% Bg, 3 sigma",
         available_stretch_parameters: result?.available_stretch_parameters ?? [
@@ -139,6 +152,9 @@ export function ImageEnhancementOverlay({
         sharpening_enabled: updatedSettings.sharpening_enabled,
         sharpening_method: updatedSettings.sharpening_method,
         sharpening_strength: updatedSettings.sharpening_strength,
+        denoise_enabled: updatedSettings.denoise_enabled,
+        denoise_method: updatedSettings.denoise_method,
+        denoise_strength: updatedSettings.denoise_strength,
         invert_enabled: updatedSettings.invert_enabled,
         stretch_parameter: updatedSettings.stretch_parameter,
       }
@@ -169,6 +185,9 @@ export function ImageEnhancementOverlay({
       sharpening_enabled: false,
       sharpening_method: "unsharp_mask",
       sharpening_strength: 1.0,
+      denoise_enabled: false,
+      denoise_method: "tv_chambolle",
+      denoise_strength: 1.0,
       invert_enabled: false,
       stretch_parameter: "15% Bg, 3 sigma",
     })
@@ -178,6 +197,7 @@ export function ImageEnhancementOverlay({
     let count = 0
     if (settings.upscaling_enabled) count++
     if (settings.sharpening_enabled) count++
+    if (settings.denoise_enabled) count++
     if (settings.invert_enabled) count++
     if (settings.stretch_parameter !== "No Stretch") count++
     return count
@@ -326,6 +346,63 @@ export function ImageEnhancementOverlay({
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-600">
                         {(settings.available_sharpening_methods || []).map((method) => (
+                          <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
+                            {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator className="bg-gray-700" />
+
+            {/* Denoising */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-purple-400" />
+                  <Label className="text-gray-300">Denoising</Label>
+                </div>
+                <Switch
+                  checked={settings.denoise_enabled}
+                  onCheckedChange={(enabled) => updateSettings({ denoise_enabled: enabled })}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {settings.denoise_enabled && (
+                <div className="pl-6 space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Strength</span>
+                      <span className="text-white">{settings.denoise_strength.toFixed(1)}</span>
+                    </div>
+                    <Slider
+                      value={[settings.denoise_strength]}
+                      onValueChange={([value]) => updateSettings({ denoise_strength: value })}
+                      min={0.0}
+                      max={2.0}
+                      step={0.1}
+                      className="w-full"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-gray-400 text-sm">Method</Label>
+                    <Select
+                      value={settings.denoise_method}
+                      onValueChange={(method) => updateSettings({ denoise_method: method })}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        {(settings.available_denoise_methods || []).map((method) => (
                           <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
                             {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                           </SelectItem>
