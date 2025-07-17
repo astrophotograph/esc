@@ -13,6 +13,7 @@ from fastapi import WebSocket
 from loguru import logger
 
 from remote_websocket_client import RemoteWebSocketManager, RemoteController
+from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.parameterized import (
     IscopeStartView,
     IscopeStartViewParams,
@@ -117,7 +118,7 @@ class WebSocketConnection:
 class WebSocketManager:
     """Manages all WebSocket connections and message routing."""
 
-    def __init__(self):
+    def __init__(self, telescope_getter=None):
         self.connections: Dict[str, WebSocketConnection] = {}
         self.telescope_clients: Dict[str, Any] = {}  # telescope_id -> SeestarClient
         self.remote_clients: Dict[
@@ -126,6 +127,7 @@ class WebSocketManager:
         self.heartbeat_interval = 30  # seconds
         self.heartbeat_task: Optional[asyncio.Task] = None
         self._running = False
+        self.telescope_getter = telescope_getter  # Function to get telescope by ID
 
         # Initialize remote WebSocket manager
         self.remote_manager = RemoteWebSocketManager(self._handle_remote_message)
@@ -875,33 +877,55 @@ class WebSocketManager:
             # Update stored settings with new parameters
             client.image_enhancement_settings.update(parameters)
             
-            # Configure stretch parameters if image_processor exists
-            if hasattr(client, "image_processor") and client.image_processor:
-                # Configure GraxpertStretch with stretch parameter
-                stretch_param = parameters.get("stretch_parameter", "15% Bg, 3 sigma")
-                if hasattr(client.image_processor, "set_stretch_parameter"):
-                    client.image_processor.set_stretch_parameter(stretch_param)
-                    logger.info(f"Set image processor stretch parameter: {stretch_param}")
+            # Find the telescope object that owns this client
+            telescope = None
+            if self.telescope_getter:
+                # Find telescope by looking up which one has this client
+                for telescope_id, stored_client in self.telescope_clients.items():
+                    if stored_client == client:
+                        telescope = self.telescope_getter(telescope_id)
+                        if telescope:
+                            logger.info(f"Successfully found telescope object: {telescope.name}")
+                        else:
+                            logger.error(f"telescope_getter returned None for telescope_id: {telescope_id}")
+                        break
+                else:
+                    logger.error(f"No matching client found in telescope_clients registry")
             
-            # Configure enhancement processor if it exists
-            if hasattr(client, "enhancement_processor") and client.enhancement_processor:
-                # Update enhancement processor settings
-                if "upscaling_enabled" in parameters:
-                    client.enhancement_processor.upscaling_enabled = parameters["upscaling_enabled"]
-                if "scale_factor" in parameters:
-                    client.enhancement_processor.scale_factor = parameters["scale_factor"]
-                if "upscaling_method" in parameters:
-                    client.enhancement_processor.upscaling_method = parameters["upscaling_method"]
-                if "sharpening_enabled" in parameters:
-                    client.enhancement_processor.sharpening_enabled = parameters["sharpening_enabled"]
-                if "sharpening_method" in parameters:
-                    client.enhancement_processor.sharpening_method = parameters["sharpening_method"]
-                if "sharpening_strength" in parameters:
-                    client.enhancement_processor.sharpening_strength = parameters["sharpening_strength"]
-                if "invert_enabled" in parameters:
-                    client.enhancement_processor.invert_enabled = parameters["invert_enabled"]
+            if telescope:
+                logger.info(f"Found telescope object, configuring processors")
                 
-                logger.info(f"Updated enhancement processor settings")
+                # Configure stretch parameters if image_processor exists
+                if hasattr(telescope, "image_processor") and telescope.image_processor:
+                    # Configure GraxpertStretch with stretch parameter
+                    stretch_param = parameters.get("stretch_parameter", "15% Bg, 3 sigma")
+                    if hasattr(telescope.image_processor, "set_stretch_parameter"):
+                        telescope.image_processor.set_stretch_parameter(stretch_param)
+                        logger.info(f"Set image processor stretch parameter: {stretch_param}")
+                
+                # Configure enhancement processor if it exists
+                if hasattr(telescope, "enhancement_processor") and telescope.enhancement_processor:
+                    # Update enhancement processor settings
+                    if "upscaling_enabled" in parameters:
+                        telescope.enhancement_processor.upscaling_enabled = parameters["upscaling_enabled"]
+                    if "scale_factor" in parameters:
+                        telescope.enhancement_processor.scale_factor = parameters["scale_factor"]
+                    if "upscaling_method" in parameters:
+                        telescope.enhancement_processor.upscaling_method = parameters["upscaling_method"]
+                    if "sharpening_enabled" in parameters:
+                        telescope.enhancement_processor.sharpening_enabled = parameters["sharpening_enabled"]
+                    if "sharpening_method" in parameters:
+                        telescope.enhancement_processor.sharpening_method = parameters["sharpening_method"]
+                    if "sharpening_strength" in parameters:
+                        telescope.enhancement_processor.sharpening_strength = parameters["sharpening_strength"]
+                    if "invert_enabled" in parameters:
+                        telescope.enhancement_processor.invert_enabled = parameters["invert_enabled"]
+                    
+                    logger.info(f"Updated enhancement processor settings")
+                else:
+                    logger.warning("Could not find enhancement processor on telescope")
+            else:
+                logger.warning("Could not find telescope object - processors not configured")
             
             # Return frontend-compatible format with all current settings
             settings = {
@@ -961,22 +985,32 @@ class WebSocketManager:
             
             # Try to derive current settings from processors if not stored
             if not stored_settings:
-                # Check enhancement processor for upscaling settings
-                if hasattr(client, "enhancement_processor") and client.enhancement_processor:
-                    if hasattr(client.enhancement_processor, "upscaling_enabled"):
-                        settings["upscaling_enabled"] = client.enhancement_processor.upscaling_enabled
-                    if hasattr(client.enhancement_processor, "scale_factor"):
-                        settings["scale_factor"] = client.enhancement_processor.scale_factor
-                    if hasattr(client.enhancement_processor, "upscaling_method"):
-                        settings["upscaling_method"] = client.enhancement_processor.upscaling_method
-                    if hasattr(client.enhancement_processor, "sharpening_enabled"):
-                        settings["sharpening_enabled"] = client.enhancement_processor.sharpening_enabled
-                    if hasattr(client.enhancement_processor, "sharpening_method"):
-                        settings["sharpening_method"] = client.enhancement_processor.sharpening_method
-                    if hasattr(client.enhancement_processor, "sharpening_strength"):
-                        settings["sharpening_strength"] = client.enhancement_processor.sharpening_strength
-                    if hasattr(client.enhancement_processor, "invert_enabled"):
-                        settings["invert_enabled"] = client.enhancement_processor.invert_enabled
+                # Find the telescope object that owns this client
+                telescope = None
+                if self.telescope_getter:
+                    # Find telescope by looking up which one has this client
+                    for telescope_id, stored_client in self.telescope_clients.items():
+                        if stored_client == client:
+                            telescope = self.telescope_getter(telescope_id)
+                            break
+                
+                if telescope:
+                    # Check enhancement processor for upscaling settings
+                    if hasattr(telescope, "enhancement_processor") and telescope.enhancement_processor:
+                        if hasattr(telescope.enhancement_processor, "upscaling_enabled"):
+                            settings["upscaling_enabled"] = telescope.enhancement_processor.upscaling_enabled
+                        if hasattr(telescope.enhancement_processor, "scale_factor"):
+                            settings["scale_factor"] = telescope.enhancement_processor.scale_factor
+                        if hasattr(telescope.enhancement_processor, "upscaling_method"):
+                            settings["upscaling_method"] = telescope.enhancement_processor.upscaling_method
+                        if hasattr(telescope.enhancement_processor, "sharpening_enabled"):
+                            settings["sharpening_enabled"] = telescope.enhancement_processor.sharpening_enabled
+                        if hasattr(telescope.enhancement_processor, "sharpening_method"):
+                            settings["sharpening_method"] = telescope.enhancement_processor.sharpening_method
+                        if hasattr(telescope.enhancement_processor, "sharpening_strength"):
+                            settings["sharpening_strength"] = telescope.enhancement_processor.sharpening_strength
+                        if hasattr(telescope.enhancement_processor, "invert_enabled"):
+                            settings["invert_enabled"] = telescope.enhancement_processor.invert_enabled
             
             logger.info(f"Retrieved image enhancement settings: {settings}")
             return settings
@@ -1021,5 +1055,20 @@ class WebSocketManager:
                 await asyncio.sleep(5)  # Wait before retrying
 
 
-# Global WebSocket manager instance
-websocket_manager = WebSocketManager()
+# Global WebSocket manager instance (initialized later)
+_websocket_manager = None
+
+
+def get_websocket_manager():
+    """Get the global WebSocket manager instance."""
+    global _websocket_manager
+    if _websocket_manager is None:
+        _websocket_manager = WebSocketManager()
+    return _websocket_manager
+
+
+def initialize_websocket_manager(telescope_getter=None):
+    """Initialize the WebSocket manager with a telescope getter function."""
+    global _websocket_manager
+    _websocket_manager = WebSocketManager(telescope_getter=telescope_getter)
+    return _websocket_manager

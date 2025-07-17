@@ -11,14 +11,32 @@ from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from loguru import logger
 
-from websocket_manager import websocket_manager
+from websocket_manager import get_websocket_manager
+
+# Export the global websocket_manager for compatibility with main.py imports
+def get_websocket_manager_global():
+    """Get the global WebSocket manager instance for direct access."""
+    return get_websocket_manager()
+
+# Lazy import property for compatibility
+class WebSocketManagerProxy:
+    def __getattr__(self, name):
+        return getattr(get_websocket_manager(), name)
+    
+    def __getitem__(self, name):
+        return getattr(get_websocket_manager(), name)
+    
+    def __setattr__(self, name, value):
+        return setattr(get_websocket_manager(), name, value)
+
+websocket_manager = WebSocketManagerProxy()
 
 router = APIRouter()
 
 
-async def get_websocket_manager():
+async def get_websocket_manager_dependency():
     """Dependency to get the WebSocket manager."""
-    return websocket_manager
+    return get_websocket_manager()
 
 
 @router.websocket("/ws")
@@ -30,7 +48,7 @@ async def websocket_endpoint(
     client_id: Optional[str] = Query(
         None, description="Client identifier for reconnection"
     ),
-    manager=Depends(get_websocket_manager),
+    manager=Depends(get_websocket_manager_dependency),
 ):
     """
     General WebSocket endpoint for telescope communication.
@@ -49,7 +67,7 @@ async def websocket_telescope_endpoint(
     client_id: Optional[str] = Query(
         None, description="Client identifier for reconnection"
     ),
-    manager=Depends(get_websocket_manager),
+    manager=Depends(get_websocket_manager_dependency),
 ):
     """
     Telescope-specific WebSocket endpoint.
@@ -149,7 +167,7 @@ async def _handle_websocket_connection(
 
 # Health check endpoint for WebSocket status
 @router.get("/ws/health")
-async def websocket_health(manager=Depends(get_websocket_manager)):
+async def websocket_health(manager=Depends(get_websocket_manager_dependency)):
     """Get WebSocket manager health status."""
     return {
         "status": "healthy" if manager._running else "stopped",
@@ -169,9 +187,13 @@ async def websocket_health(manager=Depends(get_websocket_manager)):
     }
 
 
+# Global websocket_manager instance to be imported by main.py
+websocket_manager = get_websocket_manager()
+
+
 # Debug endpoint for internal state
 @router.get("/ws/debug")
-async def websocket_debug(manager=Depends(get_websocket_manager)):
+async def websocket_debug(manager=Depends(get_websocket_manager_dependency)):
     """Debug WebSocket manager internal state."""
     return {
         "status": "healthy" if manager._running else "stopped",
@@ -200,7 +222,7 @@ async def websocket_debug(manager=Depends(get_websocket_manager)):
 # Endpoint to broadcast a test message (for development/testing)
 @router.post("/ws/test/broadcast")
 async def test_broadcast(
-    telescope_id: str, message: str, manager=Depends(get_websocket_manager)
+    telescope_id: str, message: str, manager=Depends(get_websocket_manager_dependency)
 ):
     """Send a test message to all connections subscribed to a telescope."""
     test_status = {"test_message": message, "timestamp": "2024-01-01T00:00:00Z"}

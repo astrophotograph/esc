@@ -1213,7 +1213,8 @@ class Controller:
                     }
 
                     # Register remote controllers with WebSocket manager for each telescope
-                    from websocket_router import websocket_manager
+                    from websocket_manager import get_websocket_manager
+                    websocket_manager = get_websocket_manager()
 
                     for (
                         telescope_data
@@ -1288,7 +1289,8 @@ class Controller:
                 telescopes_to_remove.append(telescope_name)
 
         # Unregister from WebSocket manager
-        from websocket_router import websocket_manager
+        from websocket_manager import get_websocket_manager
+        websocket_manager = get_websocket_manager()
 
         for telescope_name in telescopes_to_remove:
             telescope_data = self.remote_telescopes[telescope_name]
@@ -1554,7 +1556,8 @@ class Controller:
 
                         # Register telescope with WebSocket manager and set up status updates
                         if tel.client.is_connected:
-                            from websocket_router import websocket_manager
+                            from websocket_manager import get_websocket_manager
+                            websocket_manager = get_websocket_manager()
 
                             telescope_id = tel.serial_number or tel.host
                             websocket_manager.register_telescope_client(
@@ -1766,7 +1769,8 @@ class Controller:
 
                         # Register telescope with WebSocket manager and set up status updates
                         if tel.client.is_connected:
-                            from websocket_router import websocket_manager
+                            from websocket_manager import get_websocket_manager
+                            websocket_manager = get_websocket_manager()
 
                             telescope_id = tel.serial_number or tel.host
                             websocket_manager.register_telescope_client(
@@ -1968,6 +1972,36 @@ class Controller:
 
         initialize_webrtc_service(get_telescope)
 
+        # Initialize WebSocket manager with telescope getter
+        def get_telescope_by_id(telescope_id: str):
+            """Get telescope by ID for WebSocket manager."""
+            # First try to find by serial number
+            for telescope in self.telescopes.values():
+                if telescope.serial_number == telescope_id:
+                    return telescope
+            
+            # Then try to find by host name
+            telescope = self.telescopes.get(telescope_id)
+            if telescope:
+                return telescope
+            
+            # Finally try to find by name
+            for telescope in self.telescopes.values():
+                if telescope.name == telescope_id:
+                    return telescope
+            
+            logging.error(
+                f"WebSocket telescope lookup for '{telescope_id}': not found"
+            )
+            logging.info(f"Available telescopes: {list(self.telescopes.keys())}")
+            # Debug: show telescope details
+            for key, telescope in self.telescopes.items():
+                logging.info(f"  Available telescope: key='{key}', name='{telescope.name}', serial='{telescope.serial_number}', host='{telescope.host}'")
+            return None
+
+        from websocket_manager import initialize_websocket_manager
+        initialize_websocket_manager(get_telescope_by_id)
+
         # Add WebRTC router
         self.app.include_router(webrtc_router)
 
@@ -1978,7 +2012,8 @@ class Controller:
         @self.app.on_event("startup")
         async def startup_event():
             # Start WebSocket manager first
-            from websocket_router import websocket_manager
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
 
             await websocket_manager.start()
             logging.info("WebSocket manager started")
@@ -2000,7 +2035,8 @@ class Controller:
         @self.app.on_event("shutdown")
         async def shutdown_event():
             # Stop WebSocket manager
-            from websocket_router import websocket_manager
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
 
             await websocket_manager.stop()
             logging.info("WebSocket manager stopped")
