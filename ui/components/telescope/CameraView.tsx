@@ -26,7 +26,8 @@ import {
   Expand,
   Minimize,
   Search,
-  Map
+  Map,
+  Sparkles
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -46,6 +47,7 @@ import type { ScreenAnnotation } from "../../types/telescope-types"
 import { generateStreamingUrl } from "../../utils/streaming"
 import { WebRTCLiveView } from "./WebRTCLiveView"
 import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
+import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -234,6 +236,7 @@ export function CameraView() {
   const [retryCount, setRetryCount] = useState(0);
   const [lastErrorTime, setLastErrorTime] = useState<number>(0);
   const [connectionLost, setConnectionLost] = useState(false);
+  const [showImageEnhancement, setShowImageEnhancement] = useState(false);
   const [lastSuccessfulLoad, setLastSuccessfulLoad] = useState<number>(Date.now());
   const [lastImageData, setLastImageData] = useState<string>('');
   const [streamActive, setStreamActive] = useState(false);
@@ -1398,6 +1401,18 @@ export function CameraView() {
               >
                 <Maximize className="w-4 h-4" />
               </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowImageEnhancement(!showImageEnhancement)}
+                className={`border-gray-600 text-white hover:bg-gray-700 w-8 h-8 p-0 mt-2 ${
+                  showImageEnhancement ? 'bg-purple-600 border-purple-500' : ''
+                }`}
+                title="Image Enhancement"
+              >
+                <Sparkles className="w-4 h-4" />
+              </Button>
             </div>
 
             {/* Imaging Panel - shown when imaging is active */}
@@ -1408,6 +1423,13 @@ export function CameraView() {
 
             {/* Observation Log Panel - hidden when imaging */}
             {_showLogPanel && !isImaging && <LogPanel />}
+
+            {/* Image Enhancement Overlay */}
+            <ImageEnhancementOverlay
+              isVisible={showImageEnhancement}
+              onToggle={() => setShowImageEnhancement(!showImageEnhancement)}
+              onClose={() => setShowImageEnhancement(false)}
+            />
           </div>
         </CardContent>
       </Card>

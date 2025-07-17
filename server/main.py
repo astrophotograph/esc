@@ -17,10 +17,20 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from loguru import logger as logging
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
-from starplot import _, ObjectStyle, MarkerStyle, ColorStr, MarkerSymbolEnum, MapPlot, Projection
+from starplot import (
+    _,
+    ObjectStyle,
+    MarkerStyle,
+    ColorStr,
+    MarkerSymbolEnum,
+    MapPlot,
+    Projection,
+)
 from starplot.styles import PlotStyle, extensions
 
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
+from smarttel.imaging.upscaler import UpscalingMethod, SharpeningMethod, ImageEnhancementProcessor
+from smarttel.imaging.stretch import StretchParameter
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import discover_seestars
@@ -158,6 +168,57 @@ class RemoteControllerResponse(BaseModel):
     telescopes_count: int = 0
 
 
+class ImageEnhancementSettingsRequest(BaseModel):
+    """Request model for updating comprehensive image enhancement settings."""
+    
+    upscaling_enabled: bool = Field(default=False, description="Whether upscaling is enabled")
+    scale_factor: float = Field(default=2.0, ge=1.0, le=4.0, description="Upscaling factor (1.0-4.0)")
+    upscaling_method: UpscalingMethod = Field(default=UpscalingMethod.BICUBIC, description="Upscaling method")
+    sharpening_enabled: bool = Field(default=False, description="Whether sharpening is enabled")
+    sharpening_method: SharpeningMethod = Field(default=SharpeningMethod.UNSHARP_MASK, description="Sharpening method")
+    sharpening_strength: float = Field(default=1.0, ge=0.0, le=2.0, description="Sharpening strength (0.0-2.0)")
+    invert_enabled: bool = Field(default=False, description="Whether image inversion is enabled")
+    stretch_parameter: StretchParameter = Field(default="15% Bg, 3 sigma", description="GraXpert stretch parameter")
+
+
+class ImageEnhancementSettingsResponse(BaseModel):
+    """Response model for comprehensive image enhancement settings."""
+    
+    upscaling_enabled: bool
+    scale_factor: float
+    upscaling_method: str
+    available_upscaling_methods: list[str]
+    sharpening_enabled: bool
+    sharpening_method: str
+    sharpening_strength: float
+    available_sharpening_methods: list[str]
+    invert_enabled: bool
+    stretch_parameter: str
+    available_stretch_parameters: list[str]
+
+
+# Backward compatibility models
+class UpscalingSettingsRequest(BaseModel):
+    """Request model for updating upscaling settings."""
+
+    enabled: bool = Field(..., description="Whether upscaling is enabled")
+    scale_factor: float = Field(
+        default=2.0, ge=1.0, le=4.0, description="Upscaling factor (1.0-4.0)"
+    )
+    method: UpscalingMethod = Field(
+        default=UpscalingMethod.BICUBIC, description="Upscaling method"
+    )
+
+
+class UpscalingSettingsResponse(BaseModel):
+    """Response model for upscaling settings."""
+
+    enabled: bool
+    scale_factor: float
+    method: str
+    available_methods: list[str]
+
+
 class Telescope(BaseModel, arbitrary_types_allowed=True):
     """Telescope."""
 
@@ -173,6 +234,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
     client: SeestarClient | None = None
     imaging: SeestarImagingClient | None = None
     _location: Optional[str] = None
+    image_processor: GraxpertStretch | None = None
+    enhancement_processor: ImageEnhancementProcessor | None = None
 
     @property
     def name(self):
@@ -257,6 +320,12 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         self.imaging = SeestarImagingClient(
             self.host, self.imaging_port, self.event_bus
         )
+
+        # Create shared image processor for upscaling
+        self.image_processor = GraxpertStretch()
+        
+        # Create comprehensive enhancement processor
+        self.enhancement_processor = ImageEnhancementProcessor()
 
         async def startup():
             """Connect to the Seestar on startup."""
@@ -485,7 +554,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 if hasattr(self.client, "get_parsed_message_history"):
                     return {"messages": self.client.get_parsed_message_history()}
                 else:
-                    return {"messages": [], "error": "Parsed message history not available"}
+                    return {
+                        "messages": [],
+                        "error": "Parsed message history not available",
+                    }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
@@ -597,7 +669,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             if not self.imaging.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
 
-            star_processors = [GraxpertStretch()]
+            # Use the shared image processor instance
+            star_processors = [self.image_processor]
             yield b"\r\n--frame\r\n"
 
             async for image in self.imaging.get_next_image(camera_id):
@@ -609,6 +682,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         # We don't want to run processors when in streaming mode!
                         for processor in star_processors:
                             img = processor.process(img)
+                        # Apply comprehensive enhancements
+                        img = self.enhancement_processor.process(img)
                     frame = build_frame_bytes(img, image.width, image.height)
                     yield frame
 
@@ -619,6 +694,127 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     # yield b"\r\ndata: empty!\r\n"
                     delay = 0.001 if is_streaming else 0.1
                     await asyncio.sleep(delay)
+
+        @router.get("/upscaling", response_model=UpscalingSettingsResponse)
+        async def get_upscaling_settings():
+            """Get current upscaling settings."""
+            from smarttel.imaging.upscaler import ImageUpscaler
+
+            upscaler = ImageUpscaler()
+            available_methods = [
+                method.value for method in upscaler.get_available_methods()
+            ]
+
+            return UpscalingSettingsResponse(
+                enabled=self.image_processor.upscaling_processor.enabled,
+                scale_factor=self.image_processor.upscaling_processor.scale_factor,
+                method=self.image_processor.upscaling_processor.method.value,
+                available_methods=available_methods,
+            )
+
+        @router.post("/upscaling", response_model=UpscalingSettingsResponse)
+        async def update_upscaling_settings(settings: UpscalingSettingsRequest):
+            """Update upscaling settings."""
+            from smarttel.imaging.upscaler import ImageUpscaler
+
+            # Update the image processor's upscaling settings
+            self.image_processor.set_upscaling_params(
+                enabled=settings.enabled,
+                scale_factor=settings.scale_factor,
+                method=settings.method,
+            )
+
+            upscaler = ImageUpscaler()
+            available_methods = [
+                method.value for method in upscaler.get_available_methods()
+            ]
+
+            logging.info(
+                f"Updated upscaling settings: enabled={settings.enabled}, scale_factor={settings.scale_factor}, method={settings.method}"
+            )
+
+            return UpscalingSettingsResponse(
+                enabled=settings.enabled,
+                scale_factor=settings.scale_factor,
+                method=settings.method.value,
+                available_methods=available_methods,
+            )
+
+        @router.get("/enhancement", response_model=ImageEnhancementSettingsResponse)
+        async def get_enhancement_settings():
+            """Get current comprehensive image enhancement settings."""
+            from smarttel.imaging.upscaler import ImageUpscaler
+            
+            upscaler = ImageUpscaler()
+            available_upscaling_methods = [method.value for method in upscaler.get_available_methods()]
+            available_sharpening_methods = [method.value for method in SharpeningMethod]
+            available_stretch_parameters = [
+                "No Stretch", "10% Bg, 3 sigma", "15% Bg, 3 sigma", 
+                "20% Bg, 3 sigma", "30% Bg, 2 sigma"
+            ]
+            
+            settings = self.enhancement_processor.get_enhancement_settings()
+            
+            return ImageEnhancementSettingsResponse(
+                upscaling_enabled=settings["upscaling_enabled"],
+                scale_factor=settings["scale_factor"],
+                upscaling_method=settings["upscaling_method"],
+                available_upscaling_methods=available_upscaling_methods,
+                sharpening_enabled=settings["sharpening_enabled"],
+                sharpening_method=settings["sharpening_method"],
+                sharpening_strength=settings["sharpening_strength"],
+                available_sharpening_methods=available_sharpening_methods,
+                invert_enabled=settings["invert_enabled"],
+                stretch_parameter="15% Bg, 3 sigma",  # Get from image processor
+                available_stretch_parameters=available_stretch_parameters
+            )
+
+        @router.post("/enhancement", response_model=ImageEnhancementSettingsResponse)
+        async def update_enhancement_settings(settings: ImageEnhancementSettingsRequest):
+            """Update comprehensive image enhancement settings."""
+            from smarttel.imaging.upscaler import ImageUpscaler
+            
+            # Update enhancement processor settings
+            self.enhancement_processor.set_upscaling_params(
+                enabled=settings.upscaling_enabled,
+                scale_factor=settings.scale_factor,
+                method=settings.upscaling_method
+            )
+            
+            self.enhancement_processor.set_sharpening_params(
+                enabled=settings.sharpening_enabled,
+                method=settings.sharpening_method,
+                strength=settings.sharpening_strength
+            )
+            
+            self.enhancement_processor.set_invert_enabled(settings.invert_enabled)
+            
+            # Update stretch parameter on the original image processor
+            # Note: This would require modifying the GraxpertStretch class to support dynamic stretch parameters
+            
+            upscaler = ImageUpscaler()
+            available_upscaling_methods = [method.value for method in upscaler.get_available_methods()]
+            available_sharpening_methods = [method.value for method in SharpeningMethod]
+            available_stretch_parameters = [
+                "No Stretch", "10% Bg, 3 sigma", "15% Bg, 3 sigma", 
+                "20% Bg, 3 sigma", "30% Bg, 2 sigma"
+            ]
+            
+            logging.info(f"Updated enhancement settings: {settings}")
+            
+            return ImageEnhancementSettingsResponse(
+                upscaling_enabled=settings.upscaling_enabled,
+                scale_factor=settings.scale_factor,
+                upscaling_method=settings.upscaling_method.value,
+                available_upscaling_methods=available_upscaling_methods,
+                sharpening_enabled=settings.sharpening_enabled,
+                sharpening_method=settings.sharpening_method.value,
+                sharpening_strength=settings.sharpening_strength,
+                available_sharpening_methods=available_sharpening_methods,
+                invert_enabled=settings.invert_enabled,
+                stretch_parameter=settings.stretch_parameter,
+                available_stretch_parameters=available_stretch_parameters
+            )
 
         @router.get("/stream/{camera_id:int}")
         async def stream_image(camera_id: int = 0):
@@ -645,6 +841,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             self.imaging = SeestarImagingClient(
                 self.host, self.imaging_port, self.event_bus
             )
+        if not hasattr(self, "image_processor") or not self.image_processor:
+            self.image_processor = GraxpertStretch()
+        if not hasattr(self, "enhancement_processor") or not self.enhancement_processor:
+            self.enhancement_processor = ImageEnhancementProcessor()
 
 
 class MockImagingClient:
@@ -2940,7 +3140,7 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
                 resolution=3600,
                 autoscale=True,
             )
-            
+
             # Add stars and constellation lines
             p.gridlines()
             p.constellations()
@@ -2974,27 +3174,29 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
                         edge_color=ColorStr("white"),
                         edge_width=1,
                     )
-                )
+                ),
             )
 
             with tempfile.NamedTemporaryFile(delete_on_close=False) as temp_file:
-                p.export(temp_file.name, format='png')
+                p.export(temp_file.name, format="png")
                 temp_file.seek(0)
 
                 # Convert to base64 for JSON response
                 img_base64 = base64.b64encode(temp_file.read()).decode()
-            
+
             return {
                 "ra": ra,
                 "dec": dec,
                 "width": width,
                 "height": height,
-                "image": f"data:image/png;base64,{img_base64}"
+                "image": f"data:image/png;base64,{img_base64}",
             }
-            
+
         except Exception as e:
             logging.error(f"Error generating star map: {e}")
-            raise HTTPException(status_code=500, detail=f"Error generating star map: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Error generating star map: {str(e)}"
+            )
 
     controller = Controller(app, service_port=server_port, discover=not no_discovery)
 
