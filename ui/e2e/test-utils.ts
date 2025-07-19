@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test'
 
 /**
- * Test utilities for the ALP Experimental telescope application
+ * Test utilities for the Experimental Scope Creep telescope application
  */
 
 export class TelescopeTestHelpers {

@@ -1207,15 +1207,15 @@ export function CameraView() {
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                   )}
                 </Button>
-                {/*<Button*/}
-                {/*  variant="ghost"*/}
-                {/*  size="sm"*/}
-                {/*  onClick={() => setShowStarmap(!showStarmap)}*/}
-                {/*  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}*/}
-                {/*  title={showStarmap ? "Hide Star Map" : "Show Star Map"}*/}
-                {/*>*/}
-                {/*  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />*/}
-                {/*</Button>*/}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowStarmap(!showStarmap)}
+                  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}
+                  title={showStarmap ? "Hide Star Map" : "Show Star Map"}
+                >
+                  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

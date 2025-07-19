@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle } from "lucide-react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle, ImageIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -99,6 +99,18 @@ export function Header() {
             Scenery
           </Button>
 
+          {/* Image Processing Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/processing')}
+            className="flex items-center gap-2"
+            title="Image Processing"
+          >
+            <ImageIcon className="w-4 h-4" />
+            Processing
+          </Button>
+
           {/* Messages Button */}
           <Button
             variant="outline"
@@ -112,16 +124,16 @@ export function Header() {
           </Button>
 
           {/* Help/Documentation Button */}
-          {/*<Button*/}
-          {/*  variant="outline"*/}
-          {/*  size="sm"*/}
-          {/*  onClick={() => setShowDocumentation(true)}*/}
-          {/*  className="flex items-center gap-2"*/}
-          {/*  title="Open Documentation (F1)"*/}
-          {/*>*/}
-          {/*  <HelpCircle className="w-4 h-4" />*/}
-          {/*  Help*/}
-          {/*</Button>*/}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDocumentation(true)}
+            className="flex items-center gap-2"
+            title="Open Documentation (F1)"
+          >
+            <HelpCircle className="w-4 h-4" />
+            Help
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

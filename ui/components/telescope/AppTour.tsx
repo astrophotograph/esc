@@ -16,7 +16,7 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     target: "body",
-    title: "Welcome to ALP Experimental!",
+    title: "Welcome to Experimental Scope Creep!",
     content: "This tour will guide you through the main features of the telescope control application.",
     placement: "bottom",
   },

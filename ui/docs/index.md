@@ -1,6 +1,6 @@
-# ALP Experimental User Manual
+# Experimental Scope Creep User Manual
 
-Welcome to the ALP Experimental telescope control application. This comprehensive guide will help you get started and make the most of all available features.
+Welcome to the Experimental Scope Creep telescope control application. This comprehensive guide will help you get started and make the most of all available features.
 
 ## Table of Contents
 
@@ -113,4 +113,4 @@ For additional support or to report issues:
 
 ---
 
-*This documentation is for ALP Experimental version 1.0*
+*This documentation is for Experimental Scope Creep version 1.0*

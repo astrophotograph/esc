@@ -4,8 +4,8 @@ import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
-  title: 'ALP Experimental',
-  description: 'ALP Experimental',
+  title: 'ESC',
+  description: 'Experimental Scope Creep',
 }
 
 export default function RootLayout({

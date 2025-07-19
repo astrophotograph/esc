@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-Quick answers to common questions about ALP Experimental.
+Quick answers to common questions about Experimental Scope Creep.
 
 ## General Questions
 
@@ -18,7 +18,7 @@ The application uses the Seestar native protocol for optimal performance and fea
 
 ### Can I use this with my existing telescope setup?
 
-ALP Experimental is specifically designed for Seestar smart telescopes. For traditional telescopes:
+Experimental Scope Creep is specifically designed for Seestar smart telescopes. For traditional telescopes:
 - Consider ASCOM-compatible software
 - Check for INDI drivers
 - Look into SkySafari or Stellarium

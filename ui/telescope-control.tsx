@@ -67,7 +67,7 @@ function TelescopeControlContent() {
       {/* Draggable title bar for Electron only */}
       {isElectron && (
         <div className="h-8 bg-gray-800 flex items-center justify-center px-4 electron-drag">
-          <span className="text-sm text-gray-400">ALP Experimental</span>
+          <span className="text-sm text-gray-400">Experimental Scope Creep</span>
         </div>
       )}
 

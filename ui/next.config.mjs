@@ -31,6 +31,11 @@ const nextConfig = {
         source: '/api/remote-controllers',
         destination: 'http://localhost:8000/api/remote-controllers',
       },
+      // Image processing endpoints
+      {
+        source: '/processed/:path*',
+        destination: 'http://localhost:8000/api/processing/processed/:path*',
+      },
     ]
   },
 }

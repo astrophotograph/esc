@@ -1,6 +1,6 @@
 # Documentation System
 
-This directory contains the user documentation for the ALP Experimental telescope control application.
+This directory contains the user documentation for the Experimental Scope Creep telescope control application.
 
 ## Documentation Viewer
 
