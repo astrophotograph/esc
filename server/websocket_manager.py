@@ -28,6 +28,7 @@ from websocket_protocol import (
     SubscribeMessage,
     UnsubscribeMessage,
     AnnotationEventMessage,
+    AlertMessage,
 )
 
 
@@ -292,6 +293,26 @@ class WebSocketManager:
             annotations=annotations,
             image_size=image_size,
             image_id=image_id,
+        )
+
+        # Send to all subscribed connections
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                await connection.send_message(message)
+
+    async def broadcast_alert_event(
+        self,
+        telescope_id: str,
+        state: Optional[str] = None,
+        error: str = "",
+        code: int = 0,
+    ):
+        """Broadcast alert events to all subscribed clients."""
+        message = MessageFactory.create_alert(
+            telescope_id=telescope_id,
+            state=state,
+            error=error,
+            code=code,
         )
 
         # Send to all subscribed connections

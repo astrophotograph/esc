@@ -22,6 +22,7 @@ class MessageType(str, Enum):
     TELESCOPE_DISCOVERED = "telescope_discovered"
     TELESCOPE_LOST = "telescope_lost"
     ANNOTATION_EVENT = "annotation_event"
+    ALERT = "alert"
 
     # Control commands
     CONTROL_COMMAND = "control_command"
@@ -194,6 +195,30 @@ class AnnotationEventMessage(WebSocketMessage):
         )
 
 
+class AlertMessage(WebSocketMessage):
+    """Alert message from telescope (e.g., warnings, errors, notifications)."""
+
+    type: MessageType = MessageType.ALERT
+
+    def __init__(
+        self,
+        telescope_id: str,
+        state: Optional[str] = None,
+        error: str = "",
+        code: int = 0,
+        **data,
+    ):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "state": state,
+                "error": error,
+                "code": code,
+            },
+            **data,
+        )
+
+
 class SubscribeMessage(WebSocketMessage):
     """Client subscription to specific update types."""
 
@@ -271,6 +296,8 @@ WebSocketMessageUnion = Union[
     CommandResponseMessage,
     TelescopeDiscoveredMessage,
     TelescopeLostMessage,
+    AnnotationEventMessage,
+    AlertMessage,
     SubscribeMessage,
     UnsubscribeMessage,
     HeartbeatMessage,
@@ -381,3 +408,18 @@ class MessageFactory:
     ) -> TelescopeLostMessage:
         """Create a telescope lost message."""
         return TelescopeLostMessage(telescope_id=telescope_id, reason=reason)
+
+    @staticmethod
+    def create_alert(
+        telescope_id: str,
+        state: Optional[str] = None,
+        error: str = "",
+        code: int = 0,
+    ) -> AlertMessage:
+        """Create an alert message."""
+        return AlertMessage(
+            telescope_id=telescope_id,
+            state=state,
+            error=error,
+            code=code,
+        )

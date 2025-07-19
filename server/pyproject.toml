@@ -39,6 +39,7 @@ dependencies = [
     "torchvision>=0.22.1",
     "pywavelets>=1.8.0",
     "opencv-contrib-python>=4.11.0.86",
+    "packaging>=25.0",
 ]
 
 [tool.pytest.ini_options]

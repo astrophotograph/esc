@@ -1618,6 +1618,26 @@ class Controller:
                                 "Annotate", forward_annotation_event
                             )
 
+                            # Define handler for Alert events
+                            async def forward_alert_event(alert_event):
+                                try:
+                                    await websocket_manager.broadcast_alert_event(
+                                        telescope_id,
+                                        state=alert_event.state,
+                                        error=alert_event.error,
+                                        code=alert_event.code,
+                                    )
+                                    logging.info(
+                                        f"Forwarded alert event for {telescope_id}: state={alert_event.state}, error='{alert_event.error}', code={alert_event.code}"
+                                    )
+                                except Exception as e:
+                                    logging.error(
+                                        f"Error forwarding alert event for {telescope_id}: {e}"
+                                    )
+
+                            # Subscribe to alert events
+                            tel.event_bus.subscribe("Alert", forward_alert_event)
+
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
                             # For now, let's set up a periodic status update instead
@@ -1830,6 +1850,26 @@ class Controller:
                                 "Annotate", forward_annotation_event
                             )
 
+                            # Define handler for Alert events
+                            async def forward_alert_event(alert_event):
+                                try:
+                                    await websocket_manager.broadcast_alert_event(
+                                        telescope_id,
+                                        state=alert_event.state,
+                                        error=alert_event.error,
+                                        code=alert_event.code,
+                                    )
+                                    logging.info(
+                                        f"Forwarded alert event for {telescope_id}: state={alert_event.state}, error='{alert_event.error}', code={alert_event.code}"
+                                    )
+                                except Exception as e:
+                                    logging.error(
+                                        f"Error forwarding alert event for {telescope_id}: {e}"
+                                    )
+
+                            # Subscribe to alert events
+                            tel.event_bus.subscribe("Alert", forward_alert_event)
+
                             # Subscribe to all events that might update status
                             # Note: EventBus doesn't support wildcard, we need to subscribe to specific events
                             # For now, let's set up a periodic status update instead
@@ -2011,6 +2051,10 @@ class Controller:
         # Add image processing router
         from api.routers.processing import router as processing_router
         self.app.include_router(processing_router)
+        
+        # Add system administration router
+        from api.routers.system import router as system_router
+        self.app.include_router(system_router)
 
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
