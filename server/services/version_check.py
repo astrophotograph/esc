@@ -15,7 +15,7 @@ class VersionChecker:
     def __init__(self, 
                  github_repo: str = "astrophotograph/esc",
                  current_version: str = "1.0.0",
-                 cache_duration_hours: int = 6):
+                 cache_duration_hours: int = 24):
         self.github_repo = github_repo
         self.current_version = current_version
         self.cache_duration = timedelta(hours=cache_duration_hours)
@@ -42,10 +42,16 @@ class VersionChecker:
             github_data = await self._fetch_github_release()
             
             if not github_data:
+                # If we have a cached result and GitHub is unavailable, return cached result
+                if self.cached_result:
+                    logger.info("GitHub unavailable, returning cached version check result")
+                    return self.cached_result
+                    
                 return {
                     "update_available": False,
                     "error": "Could not fetch release information",
-                    "current_version": self.current_version
+                    "current_version": self.current_version,
+                    "last_checked": datetime.now().isoformat()
                 }
             
             latest_version = github_data.get("tag_name", "").lstrip("v")
@@ -89,7 +95,13 @@ class VersionChecker:
         """Fetch the latest release from GitHub API."""
         url = f"https://api.github.com/repos/{self.github_repo}/releases/latest"
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        # Add headers to reduce rate limiting
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "alp-experimental/1.0"
+        }
+        
+        async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
             try:
                 response = await client.get(url)
                 response.raise_for_status()
@@ -97,6 +109,8 @@ class VersionChecker:
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 404:
                     logger.warning(f"Repository {self.github_repo} not found or has no releases")
+                elif e.response.status_code == 429:
+                    logger.warning(f"GitHub API rate limit exceeded. Try again later.")
                 else:
                     logger.error(f"HTTP error {e.response.status_code} when checking for updates")
                 return None
