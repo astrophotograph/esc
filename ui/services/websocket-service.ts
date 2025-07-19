@@ -19,7 +19,8 @@ export enum MessageType {
   HEARTBEAT = 'heartbeat',
   ERROR = 'error',
   SUBSCRIBE = 'subscribe',
-  UNSUBSCRIBE = 'unsubscribe'
+  UNSUBSCRIBE = 'unsubscribe',
+  ALERT = 'alert'
 }
 
 export enum CommandAction {
@@ -104,6 +105,15 @@ export interface ErrorMessage extends WebSocketMessage {
   }
 }
 
+export interface AlertMessage extends WebSocketMessage {
+  type: MessageType.ALERT
+  payload: {
+    state: string
+    error: string
+    code?: string
+  }
+}
+
 export type WebSocketMessageUnion =
   | StatusUpdateMessage
   | ControlCommandMessage
@@ -111,6 +121,7 @@ export type WebSocketMessageUnion =
   | TelescopeDiscoveredMessage
   | TelescopeLostMessage
   | ErrorMessage
+  | AlertMessage
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',

@@ -6,9 +6,11 @@ import {
   ConnectionState,
   StatusUpdateMessage,
   CommandResponseMessage,
-  MessageType
+  MessageType,
+  AlertMessage
 } from '../services/websocket-service';
 import type { TelescopeInfo } from '../types/telescope-types';
+import { toast } from 'sonner';
 
 export interface TelescopeStatus {
   battery_capacity?: number;
@@ -178,6 +180,25 @@ export function useTelescopeWebSocket(
       };
       
       wsService.on(MessageType.ANNOTATION_EVENT, annotationListener);
+      
+      // Listen for alert events and show toast notifications
+      const alertListener = (message: AlertMessage) => {
+        console.error('🚨 Alert Event Received:', {
+          telescope_id: message.telescope_id,
+          state: message.payload.state,
+          error: message.payload.error,
+          code: message.payload.code,
+          timestamp: new Date(message.timestamp).toISOString()
+        });
+        
+        // Show toast notification with the error message
+        toast.error(message.payload.error, {
+          description: `Telescope: ${message.telescope_id || 'Unknown'}`,
+          duration: 5000,
+        });
+      };
+      
+      wsService.on(MessageType.ALERT, alertListener);
       
       wsService.on('reconnected', () => {
         if (currentTelescope) {

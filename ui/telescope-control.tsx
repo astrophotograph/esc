@@ -24,6 +24,8 @@ import { TelescopeManagementModal } from "./components/telescope/modals/Telescop
 import { Button } from "./components/ui/button"
 import { Calendar as CalendarIcon, Settings, Search } from "lucide-react"
 import { AppTour } from "./components/telescope/AppTour"
+import { VersionFooter } from "./components/telescope/VersionFooter"
+import { VersionUpdateNotification } from "./components/telescope/VersionUpdateNotification"
 
 function TelescopeControlContent() {
   const {
@@ -71,7 +73,7 @@ function TelescopeControlContent() {
         </div>
       )}
 
-      <div className="p-2">
+      <div className="p-2 pb-12">
         <div className="max-w-7xl mx-auto">
           <Header />
 
@@ -161,7 +163,13 @@ function TelescopeControlContent() {
 
         {/* App Tour */}
         <AppTour />
+        
+        {/* Version Update Notification */}
+        <VersionUpdateNotification />
       </div>
+      
+      {/* Version Footer - hidden in full screen mode */}
+      <VersionFooter />
     </div>
   )
 }
