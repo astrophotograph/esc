@@ -27,6 +27,18 @@ dependencies = [
     "pytest-cov>=6.0.0",
     "numpy-typing>=1.1.1",
     "starplot>=0.9.0",
+    "onnxruntime>=1.22.1",
+    "appdirs>=1.4.4",
+    "minio>=7.2.15",
+    "sc-pylibs>=0.0.0.1",
+    "customtkinter>=5.2.2",
+    "localization>=0.1.7",
+    "python-multipart>=0.0.20",
+    "astropy>=7.1.0",
+    "torch>=2.7.1",
+    "torchvision>=0.22.1",
+    "pywavelets>=1.8.0",
+    "opencv-contrib-python>=4.11.0.86",
 ]
 
 [tool.pytest.ini_options]

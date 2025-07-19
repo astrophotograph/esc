@@ -50,24 +50,34 @@ class StretchParameters:
         self.channels_linked = channels_linked
         self.images_linked = images_linked
 
-        if stretch_option == "No Stretch":
+        # Convert enum to string for comparison
+        stretch_name = stretch_option.name if hasattr(stretch_option, 'name') else str(stretch_option)
+        
+        if stretch_name == "No Stretch":
             self.do_stretch = False
+            self.bg = 0.15  # Default values even when not stretching
+            self.sigma = 3.0
 
-        elif stretch_option == "10% Bg, 3 sigma":
+        elif stretch_name == "10% Bg, 3 sigma":
             self.bg = 0.1
             self.sigma = 3.0
 
-        elif stretch_option == "15% Bg, 3 sigma":
+        elif stretch_name == "15% Bg, 3 sigma":
             self.bg = 0.15
             self.sigma = 3.0
 
-        elif stretch_option == "20% Bg, 3 sigma":
+        elif stretch_name == "20% Bg, 3 sigma":
             self.bg = 0.2
             self.sigma = 3.0
 
-        elif stretch_option == "30% Bg, 2 sigma":
+        elif stretch_name == "30% Bg, 2 sigma":
             self.bg = 0.3
             self.sigma = 2.0
+            
+        else:
+            # Default fallback
+            self.bg = 0.15
+            self.sigma = 3.0
 
 
 def stretch(data, stretch_params: StretchParameters):

@@ -113,26 +113,37 @@ class ImageUpscaler:
         target_width = int(original_width * scale_factor)
 
         # Apply upscaling method
+        logging.info(f"Applying upscaling method: {method}, scale_factor={scale_factor}")
+        logging.info(f"Available capabilities: dnn_superres={self._has_dnn_superres}, torch={self._has_torch}")
+        
         if method == UpscalingMethod.BICUBIC:
+            logging.info("Using bicubic upscaling")
             upscaled = self._bicubic_upscale(
                 working_image, (target_width, target_height)
             )
         elif method == UpscalingMethod.LANCZOS:
+            logging.info("Using Lanczos upscaling")
             upscaled = self._lanczos_upscale(
                 working_image, (target_width, target_height)
             )
         elif method == UpscalingMethod.EDSR and self._has_dnn_superres:
+            logging.info("Using EDSR upscaling")
             upscaled = self._edsr_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.FSRCNN and self._has_dnn_superres:
+            logging.info("Using FSRCNN upscaling")
             upscaled = self._fsrcnn_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.ESRGAN and self._has_torch:
+            logging.info("Using ESRGAN upscaling")
             upscaled = self._esrgan_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.REAL_ESRGAN and self._has_torch:
+            logging.info("Using Real-ESRGAN upscaling")
             upscaled = self._real_esrgan_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.WAIFU2X and self._has_torch:
+            logging.info("Using Waifu2x upscaling")
             upscaled = self._waifu2x_upscale(working_image, scale_factor)
         else:
             # Fallback to bicubic if DNN methods not available
+            logging.warning(f"Method {method} not available or requirements not met, falling back to bicubic")
             upscaled = self._bicubic_upscale(
                 working_image, (target_width, target_height)
             )
@@ -261,12 +272,14 @@ class ImageUpscaler:
         self, image: np.ndarray, target_size: Tuple[int, int]
     ) -> np.ndarray:
         """Upscale using bicubic interpolation."""
+        logging.info(f"Applying bicubic upscaling: {image.shape} -> {target_size}")
         return cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
 
     def _lanczos_upscale(
         self, image: np.ndarray, target_size: Tuple[int, int]
     ) -> np.ndarray:
         """Upscale using Lanczos interpolation."""
+        logging.info(f"Applying Lanczos upscaling: {image.shape} -> {target_size}")
         return cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
 
     def _edsr_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
@@ -398,12 +411,16 @@ class ImageUpscaler:
             # Color image
             radius = 1.0
             amount = strength
+            logging.info(f"Applying unsharp mask to color image: shape={image.shape}")
         else:
             # Grayscale image
             radius = 1.5
             amount = strength
+            logging.info(f"Applying unsharp mask to grayscale image: shape={image.shape}")
             
-        return filters.unsharp_mask(image, radius=radius, amount=amount, preserve_range=True)
+        result = filters.unsharp_mask(image, radius=radius, amount=amount, preserve_range=True)
+        logging.info(f"Unsharp mask result shape: {result.shape}")
+        return result
     
     def _laplacian_sharpen(self, image: np.ndarray, strength: float) -> np.ndarray:
         """Apply Laplacian sharpening."""
@@ -460,7 +477,7 @@ class ImageUpscaler:
             return 1.0 - image
 
     def _esrgan_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
-        """Upscale using ESRGAN (Enhanced Super-Resolution GAN)."""
+        """Upscale using ESRGAN-inspired method (simplified implementation)."""
         if not self._has_torch:
             return self._bicubic_upscale(
                 image,
@@ -471,81 +488,53 @@ class ImageUpscaler:
             )
         
         try:
-            import torch
-            import torch.nn as nn
+            from skimage import transform, filters
             
-            # Simple ESRGAN-like architecture (lightweight version)
-            class ESRGANBlock(nn.Module):
-                def __init__(self, channels=64):
-                    super().__init__()
-                    self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.relu = nn.LeakyReLU(0.2)
-                    
-                def forward(self, x):
-                    residual = x
-                    out = self.relu(self.conv1(x))
-                    out = self.conv2(out)
-                    return out + residual
+            logging.info(f"Applying ESRGAN-inspired upscaling with edge enhancement")
             
-            class SimpleESRGAN(nn.Module):
-                def __init__(self, scale_factor=2):
-                    super().__init__()
-                    self.scale_factor = int(scale_factor)
-                    channels = 64
-                    
-                    # Initial convolution
-                    self.conv_first = nn.Conv2d(3, channels, 3, padding=1)
-                    
-                    # Residual blocks
-                    self.blocks = nn.ModuleList([ESRGANBlock(channels) for _ in range(6)])
-                    
-                    # Upsampling layers
-                    self.upsample = nn.Sequential(
-                        nn.Conv2d(channels, channels * 4, 3, padding=1),
-                        nn.PixelShuffle(2),
-                        nn.LeakyReLU(0.2)
-                    )
-                    
-                    # Final convolution
-                    self.conv_last = nn.Conv2d(channels, 3, 3, padding=1)
-                    
-                def forward(self, x):
-                    x = self.conv_first(x)
-                    
-                    for block in self.blocks:
-                        x = block(x)
-                    
-                    x = self.upsample(x)
-                    x = self.conv_last(x)
-                    
-                    return torch.tanh(x)
+            # First, apply bicubic upscaling as base
+            target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
+            upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
             
-            # Convert image to tensor
-            if len(image.shape) == 2:
-                # Convert grayscale to RGB
-                image = np.stack([image, image, image], axis=2)
+            # Apply edge-preserving enhancement (ESRGAN characteristic)
+            # Use bilateral filter to preserve edges while smoothing
+            if len(upscaled.shape) == 3:
+                enhanced = np.zeros_like(upscaled)
+                for i in range(upscaled.shape[2]):
+                    # Convert to uint8 for bilateral filter
+                    channel = upscaled[:, :, i]
+                    if channel.dtype != np.uint8:
+                        channel_uint8 = (np.clip(channel, 0, 1) * 255).astype(np.uint8)
+                    else:
+                        channel_uint8 = channel
+                    
+                    # Apply bilateral filter for edge preservation
+                    filtered = cv2.bilateralFilter(channel_uint8, 9, 75, 75)
+                    
+                    # Convert back to original format
+                    if upscaled.dtype != np.uint8:
+                        enhanced[:, :, i] = filtered.astype(np.float32) / 255.0
+                    else:
+                        enhanced[:, :, i] = filtered
+            else:
+                if upscaled.dtype != np.uint8:
+                    upscaled_uint8 = (np.clip(upscaled, 0, 1) * 255).astype(np.uint8)
+                else:
+                    upscaled_uint8 = upscaled
+                
+                enhanced = cv2.bilateralFilter(upscaled_uint8, 9, 75, 75)
+                
+                if upscaled.dtype != np.uint8:
+                    enhanced = enhanced.astype(np.float32) / 255.0
             
-            # Normalize to [-1, 1]
-            image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
-            image_tensor = image_tensor * 2.0 - 1.0
+            # Apply subtle sharpening for ESRGAN-like detail enhancement
+            if enhanced.dtype != np.uint8:
+                sharpened = filters.unsharp_mask(enhanced, radius=1.0, amount=0.5, preserve_range=True)
+            else:
+                sharpened = enhanced  # Skip sharpening for uint8 to avoid complications
             
-            # Create model
-            device = torch.device('cuda' if self._has_cuda else 'cpu')
-            model = SimpleESRGAN(scale_factor=scale_factor).to(device)
-            image_tensor = image_tensor.to(device)
-            
-            # Process with model
-            model.eval()
-            with torch.no_grad():
-                output = model(image_tensor)
-            
-            # Convert back to numpy
-            output = output.squeeze(0).permute(1, 2, 0).cpu().numpy()
-            output = (output + 1.0) / 2.0  # Denormalize
-            output = np.clip(output, 0, 1)
-            
-            return output
+            logging.info(f"ESRGAN-inspired processing complete: {image.shape} -> {sharpened.shape}")
+            return sharpened
             
         except Exception as e:
             logging.error(f"ESRGAN upscaling failed: {e}")
@@ -558,7 +547,7 @@ class ImageUpscaler:
             )
     
     def _real_esrgan_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
-        """Upscale using Real-ESRGAN architecture."""
+        """Upscale using Real-ESRGAN-inspired method with noise reduction."""
         if not self._has_torch:
             return self._bicubic_upscale(
                 image,
@@ -569,81 +558,28 @@ class ImageUpscaler:
             )
         
         try:
-            import torch
-            import torch.nn as nn
+            from skimage import restoration, filters
             
-            # Real-ESRGAN inspired architecture
-            class RealESRGANBlock(nn.Module):
-                def __init__(self, channels=64):
-                    super().__init__()
-                    self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.relu = nn.LeakyReLU(0.2)
-                    self.bn1 = nn.BatchNorm2d(channels)
-                    self.bn2 = nn.BatchNorm2d(channels)
-                    
-                def forward(self, x):
-                    residual = x
-                    out = self.relu(self.bn1(self.conv1(x)))
-                    out = self.bn2(self.conv2(out))
-                    return out + residual
+            logging.info(f"Applying Real-ESRGAN-inspired upscaling with noise reduction")
             
-            class RealESRGAN(nn.Module):
-                def __init__(self, scale_factor=2):
-                    super().__init__()
-                    self.scale_factor = int(scale_factor)
-                    channels = 64
-                    
-                    # Initial convolution
-                    self.conv_first = nn.Conv2d(3, channels, 3, padding=1)
-                    
-                    # Residual blocks
-                    self.blocks = nn.ModuleList([RealESRGANBlock(channels) for _ in range(8)])
-                    
-                    # Upsampling layers
-                    self.upsample = nn.Sequential(
-                        nn.Conv2d(channels, channels * 4, 3, padding=1),
-                        nn.PixelShuffle(2),
-                        nn.LeakyReLU(0.2)
-                    )
-                    
-                    # Final convolution
-                    self.conv_last = nn.Conv2d(channels, 3, 3, padding=1)
-                    
-                def forward(self, x):
-                    x = self.conv_first(x)
-                    
-                    for block in self.blocks:
-                        x = block(x)
-                    
-                    x = self.upsample(x)
-                    x = self.conv_last(x)
-                    
-                    return torch.sigmoid(x)
+            # Apply denoising first (Real-ESRGAN characteristic)
+            denoised = self.denoise_image(image, method=DenoiseMethod.TV_CHAMBOLLE, strength=0.3)
             
-            # Convert image to tensor
-            if len(image.shape) == 2:
-                # Convert grayscale to RGB
-                image = np.stack([image, image, image], axis=2)
+            # Then apply Lanczos upscaling for sharpness
+            target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
+            upscaled = cv2.resize(denoised, target_size, interpolation=cv2.INTER_LANCZOS4)
             
-            # Normalize to [0, 1]
-            image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
+            # Apply subtle sharpening for detail enhancement
+            if upscaled.dtype != np.uint8:
+                sharpened = filters.unsharp_mask(upscaled, radius=0.8, amount=0.7, preserve_range=True)
+            else:
+                # Convert to float for processing
+                upscaled_float = upscaled.astype(np.float32) / 255.0
+                sharpened_float = filters.unsharp_mask(upscaled_float, radius=0.8, amount=0.7, preserve_range=True)
+                sharpened = (np.clip(sharpened_float, 0, 1) * 255).astype(np.uint8)
             
-            # Create model
-            device = torch.device('cuda' if self._has_cuda else 'cpu')
-            model = RealESRGAN(scale_factor=scale_factor).to(device)
-            image_tensor = image_tensor.to(device)
-            
-            # Process with model
-            model.eval()
-            with torch.no_grad():
-                output = model(image_tensor)
-            
-            # Convert back to numpy
-            output = output.squeeze(0).permute(1, 2, 0).cpu().numpy()
-            output = np.clip(output, 0, 1)
-            
-            return output
+            logging.info(f"Real-ESRGAN-inspired processing complete: {image.shape} -> {sharpened.shape}")
+            return sharpened
             
         except Exception as e:
             logging.error(f"Real-ESRGAN upscaling failed: {e}")
@@ -656,7 +592,7 @@ class ImageUpscaler:
             )
     
     def _waifu2x_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
-        """Upscale using Waifu2x-style architecture."""
+        """Upscale using Waifu2x-inspired method with anime-style enhancement."""
         if not self._has_torch:
             return self._bicubic_upscale(
                 image,
@@ -667,79 +603,52 @@ class ImageUpscaler:
             )
         
         try:
-            import torch
-            import torch.nn as nn
+            from skimage import filters, morphology
             
-            # Waifu2x inspired architecture
-            class Waifu2xBlock(nn.Module):
-                def __init__(self, channels=64):
-                    super().__init__()
-                    self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
-                    self.relu = nn.LeakyReLU(0.1)
-                    
-                def forward(self, x):
-                    residual = x
-                    out = self.relu(self.conv1(x))
-                    out = self.conv2(out)
-                    return out + residual
+            logging.info(f"Applying Waifu2x-inspired upscaling with anime-style enhancement")
             
-            class Waifu2x(nn.Module):
-                def __init__(self, scale_factor=2):
-                    super().__init__()
-                    self.scale_factor = int(scale_factor)
-                    channels = 64
+            # First, apply edge-preserving smoothing (anime characteristic)
+            if len(image.shape) == 3:
+                smoothed = np.zeros_like(image)
+                for i in range(image.shape[2]):
+                    channel = image[:, :, i]
+                    if channel.dtype != np.uint8:
+                        channel_uint8 = (np.clip(channel, 0, 1) * 255).astype(np.uint8)
+                    else:
+                        channel_uint8 = channel
                     
-                    # Initial convolution
-                    self.conv_first = nn.Conv2d(3, channels, 3, padding=1)
+                    # Apply edge-preserving filter
+                    filtered = cv2.bilateralFilter(channel_uint8, 5, 80, 80)
                     
-                    # Residual blocks
-                    self.blocks = nn.ModuleList([Waifu2xBlock(channels) for _ in range(6)])
-                    
-                    # Upsampling layers
-                    self.upsample = nn.Sequential(
-                        nn.Conv2d(channels, channels * 4, 3, padding=1),
-                        nn.PixelShuffle(2),
-                        nn.LeakyReLU(0.1)
-                    )
-                    
-                    # Final convolution
-                    self.conv_last = nn.Conv2d(channels, 3, 3, padding=1)
-                    
-                def forward(self, x):
-                    x = self.conv_first(x)
-                    
-                    for block in self.blocks:
-                        x = block(x)
-                    
-                    x = self.upsample(x)
-                    x = self.conv_last(x)
-                    
-                    return torch.sigmoid(x)
+                    if image.dtype != np.uint8:
+                        smoothed[:, :, i] = filtered.astype(np.float32) / 255.0
+                    else:
+                        smoothed[:, :, i] = filtered
+            else:
+                if image.dtype != np.uint8:
+                    image_uint8 = (np.clip(image, 0, 1) * 255).astype(np.uint8)
+                else:
+                    image_uint8 = image
+                
+                smoothed = cv2.bilateralFilter(image_uint8, 5, 80, 80)
+                
+                if image.dtype != np.uint8:
+                    smoothed = smoothed.astype(np.float32) / 255.0
             
-            # Convert image to tensor
-            if len(image.shape) == 2:
-                # Convert grayscale to RGB
-                image = np.stack([image, image, image], axis=2)
+            # Apply bicubic upscaling
+            target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
+            upscaled = cv2.resize(smoothed, target_size, interpolation=cv2.INTER_CUBIC)
             
-            # Normalize to [0, 1]
-            image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float()
+            # Apply light sharpening for crisp edges (anime style)
+            if upscaled.dtype != np.uint8:
+                enhanced = filters.unsharp_mask(upscaled, radius=0.5, amount=0.3, preserve_range=True)
+            else:
+                upscaled_float = upscaled.astype(np.float32) / 255.0
+                enhanced_float = filters.unsharp_mask(upscaled_float, radius=0.5, amount=0.3, preserve_range=True)
+                enhanced = (np.clip(enhanced_float, 0, 1) * 255).astype(np.uint8)
             
-            # Create model
-            device = torch.device('cuda' if self._has_cuda else 'cpu')
-            model = Waifu2x(scale_factor=scale_factor).to(device)
-            image_tensor = image_tensor.to(device)
-            
-            # Process with model
-            model.eval()
-            with torch.no_grad():
-                output = model(image_tensor)
-            
-            # Convert back to numpy
-            output = output.squeeze(0).permute(1, 2, 0).cpu().numpy()
-            output = np.clip(output, 0, 1)
-            
-            return output
+            logging.info(f"Waifu2x-inspired processing complete: {image.shape} -> {enhanced.shape}")
+            return enhanced
             
         except Exception as e:
             logging.error(f"Waifu2x upscaling failed: {e}")
@@ -766,7 +675,9 @@ class ImageEnhancementProcessor:
         denoise_enabled: bool = False,
         denoise_method: DenoiseMethod = DenoiseMethod.TV_CHAMBOLLE,
         denoise_strength: float = 1.0,
-        invert_enabled: bool = False,
+        deconvolve_enabled: bool = False,
+        deconvolve_strength: float = 0.5,
+        deconvolve_psf_size: float = 2.0,
     ):
         self.upscaling_enabled = upscaling_enabled
         self.scale_factor = scale_factor
@@ -777,7 +688,9 @@ class ImageEnhancementProcessor:
         self.denoise_enabled = denoise_enabled
         self.denoise_method = denoise_method
         self.denoise_strength = denoise_strength
-        self.invert_enabled = invert_enabled
+        self.deconvolve_enabled = deconvolve_enabled
+        self.deconvolve_strength = deconvolve_strength
+        self.deconvolve_psf_size = deconvolve_psf_size
         self.upscaler = ImageUpscaler()
 
     def process(self, image: np.ndarray) -> Optional[np.ndarray]:
@@ -793,39 +706,128 @@ class ImageEnhancementProcessor:
         if image is None:
             return None
 
+        logging.info(f"ImageEnhancementProcessor.process() starting with image shape: {image.shape}")
+        logging.info(f"Enhancement settings: denoise={self.denoise_enabled}, deconvolve={self.deconvolve_enabled}, sharpen={self.sharpening_enabled}, upscale={self.upscaling_enabled}")
+        
         processed_image = image.copy()
         
-        # Apply enhancements in order: denoise -> sharpen -> upscale -> invert
+        # Apply enhancements in order: upscale -> denoise -> deconvolve -> sharpen
         
-        # 1. Apply denoising first (improves overall image quality)
-        if self.denoise_enabled:
-            processed_image = self.upscaler.denoise_image(
-                processed_image,
-                method=self.denoise_method,
-                strength=self.denoise_strength
-            )
-        
-        # 2. Apply sharpening (after denoising to avoid amplifying noise)
-        if self.sharpening_enabled:
-            processed_image = self.upscaler.sharpen_image(
-                processed_image, 
-                method=self.sharpening_method, 
-                strength=self.sharpening_strength
-            )
-        
-        # 3. Apply upscaling
+        # 1. Apply upscaling first (before other enhancements for better quality)
         if self.upscaling_enabled and self.scale_factor > 1.0:
+            logging.info(f"Applying upscaling FIRST: method={self.upscaling_method}, scale_factor={self.scale_factor}")
             processed_image = self.upscaler.upscale(
                 processed_image, 
                 scale_factor=self.scale_factor, 
                 method=self.upscaling_method
             )
+            logging.info(f"Upscaling completed, output shape: {processed_image.shape}")
         
-        # 4. Apply inversion last
-        if self.invert_enabled:
-            processed_image = self.upscaler.invert_image(processed_image)
+        # 2. Apply denoising (improves overall image quality)
+        if self.denoise_enabled:
+            logging.info(f"Applying denoising: method={self.denoise_method}, strength={self.denoise_strength}")
+            processed_image = self.upscaler.denoise_image(
+                processed_image,
+                method=self.denoise_method,
+                strength=self.denoise_strength
+            )
+            logging.info(f"Denoising completed, output shape: {processed_image.shape}")
+        
+        # 3. Apply deconvolution (after denoising, before sharpening)
+        if self.deconvolve_enabled:
+            logging.info(f"Applying deconvolution: strength={self.deconvolve_strength}, psf_size={self.deconvolve_psf_size}")
+            processed_image = self._apply_deconvolution(
+                processed_image,
+                strength=self.deconvolve_strength,
+                psf_size=self.deconvolve_psf_size
+            )
+            logging.info(f"Deconvolution completed, output shape: {processed_image.shape}")
+        
+        # 4. Apply sharpening last (after all other processing)
+        if self.sharpening_enabled:
+            logging.info(f"Applying sharpening: method={self.sharpening_method}, strength={self.sharpening_strength}")
+            processed_image = self.upscaler.sharpen_image(
+                processed_image, 
+                method=self.sharpening_method, 
+                strength=self.sharpening_strength
+            )
+            logging.info(f"Sharpening completed, output shape: {processed_image.shape}")
 
+        logging.info(f"ImageEnhancementProcessor.process() completed, final shape: {processed_image.shape}")
         return processed_image
+
+    def _apply_deconvolution(self, image: np.ndarray, strength: float, psf_size: float) -> np.ndarray:
+        """Apply deconvolution using Richardson-Lucy algorithm."""
+        try:
+            from skimage import restoration
+            
+            logging.info(f"Deconvolution input: shape={image.shape}, dtype={image.dtype}, range=[{np.min(image):.3f}, {np.max(image):.3f}]")
+            
+            # Determine input format and convert appropriately
+            input_range_255 = np.max(image) > 1.0
+            
+            if input_range_255:
+                # Input is in [0, 255] range
+                working_image = image.astype(np.float32) / 255.0
+            else:
+                # Input is already in [0, 1] range
+                working_image = image.astype(np.float32)
+            
+            # Create a Gaussian PSF based on psf_size
+            psf_radius = max(2, int(psf_size * 2))  # Ensure minimum radius
+            y, x = np.ogrid[-psf_radius:psf_radius+1, -psf_radius:psf_radius+1]
+            
+            # Create Gaussian PSF with proper sigma
+            sigma = psf_size / 2.355  # Convert FWHM to sigma
+            psf = np.exp(-(x*x + y*y) / (2.0 * sigma**2))
+            psf = psf / psf.sum()
+            
+            logging.info(f"PSF: size={psf.shape}, sigma={sigma:.3f}, sum={psf.sum():.6f}")
+            
+            # Limit iterations to prevent over-deconvolution
+            iterations = max(1, min(5, int(strength * 10)))  # Cap at 5 iterations
+            
+            logging.info(f"Deconvolution parameters: iterations={iterations}, strength={strength}")
+            
+            # Apply deconvolution to each channel
+            if len(working_image.shape) == 3:
+                deconvolved = np.zeros_like(working_image)
+                for i in range(working_image.shape[2]):
+                    channel = working_image[:, :, i]
+                    # Ensure channel has some variation to avoid division by zero
+                    if np.std(channel) > 1e-6:
+                        deconvolved[:, :, i] = restoration.richardson_lucy(
+                            channel, psf, num_iter=iterations, clip=False
+                        )
+                    else:
+                        deconvolved[:, :, i] = channel
+            else:
+                if np.std(working_image) > 1e-6:
+                    deconvolved = restoration.richardson_lucy(
+                        working_image, psf, num_iter=iterations, clip=False
+                    )
+                else:
+                    deconvolved = working_image
+            
+            # Ensure output is in proper range and convert back to input format
+            deconvolved = np.clip(deconvolved, 0, 1)
+            
+            if input_range_255:
+                # Convert back to [0, 255] range
+                deconvolved = (deconvolved * 255.0).astype(image.dtype)
+            else:
+                # Keep in [0, 1] range
+                deconvolved = deconvolved.astype(image.dtype)
+            
+            logging.info(f"Deconvolution output: shape={deconvolved.shape}, dtype={deconvolved.dtype}, range=[{np.min(deconvolved):.3f}, {np.max(deconvolved):.3f}]")
+            logging.info(f"Applied deconvolution: strength={strength}, psf_size={psf_size}, iterations={iterations}")
+            
+            return deconvolved
+            
+        except Exception as e:
+            logging.error(f"Deconvolution failed: {e}")
+            # Return original image if deconvolution fails
+            return image
 
     def set_upscaling_params(
         self,
@@ -849,9 +851,16 @@ class ImageEnhancementProcessor:
         self.sharpening_method = method
         self.sharpening_strength = max(0.0, min(2.0, strength))  # Clamp to safe range
     
-    def set_invert_enabled(self, enabled: bool):
-        """Update inversion setting."""
-        self.invert_enabled = enabled
+    def set_deconvolve_params(
+        self,
+        enabled: bool,
+        strength: float = 0.5,
+        psf_size: float = 2.0,
+    ):
+        """Update deconvolution parameters."""
+        self.deconvolve_enabled = enabled
+        self.deconvolve_strength = max(0.0, min(1.0, strength))  # Clamp to safe range
+        self.deconvolve_psf_size = max(0.5, min(10.0, psf_size))  # Clamp PSF size
     
     def get_enhancement_settings(self) -> dict:
         """Get current enhancement settings."""
@@ -862,7 +871,9 @@ class ImageEnhancementProcessor:
             "sharpening_enabled": self.sharpening_enabled,
             "sharpening_method": self.sharpening_method.value,
             "sharpening_strength": self.sharpening_strength,
-            "invert_enabled": self.invert_enabled,
+            "deconvolve_enabled": self.deconvolve_enabled,
+            "deconvolve_strength": self.deconvolve_strength,
+            "deconvolve_psf_size": self.deconvolve_psf_size,
         }
 
 

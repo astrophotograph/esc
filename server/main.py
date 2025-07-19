@@ -2007,6 +2007,10 @@ class Controller:
 
         # Add WebSocket router
         self.app.include_router(websocket_router, prefix="/api")
+        
+        # Add image processing router
+        from api.routers.processing import router as processing_router
+        self.app.include_router(processing_router)
 
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
