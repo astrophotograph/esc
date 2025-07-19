@@ -37,8 +37,8 @@ TILE_CACHE_DIR = Path("sky_tiles")
 TILE_CACHE_DIR.mkdir(exist_ok=True)
 
 # Constants for sky tiling
-TILE_WIDTH = 512   # pixels
-TILE_HEIGHT = 256  # pixels (2:1 aspect ratio for full sky)
+TILE_WIDTH = 256 * 2   # pixels
+TILE_HEIGHT = 256  * 2 # pixels (2:1 aspect ratio for full sky)
 MAX_ZOOM_LEVEL = 4  # From 0 (single tile) to 4 (16x16 grid)
 
 # Thread-local storage for starplot initialization
@@ -289,8 +289,8 @@ def _generate_full_sky_image_sync(z: int, projection: str, style: str, time: Opt
             plot.milky_way()
             plot.ecliptic()
             
-            if z >= 2:
-                plot.constellation_labels()
+            # if z >= 2:
+            plot.constellation_labels()
 
             # Export to temporary file and load as image array
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:

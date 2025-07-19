@@ -8,7 +8,7 @@ import React, { useState, useCallback, useMemo } from 'react'
 import DeckGL from '@deck.gl/react'
 import { TileLayer } from '@deck.gl/geo-layers'
 import { BitmapLayer } from '@deck.gl/layers'
-import { MapView } from '@deck.gl/core'
+import {MapView, OrthographicView} from '@deck.gl/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -38,7 +38,7 @@ export default function SkyMapPage() {
   // View state for DeckGL - using longitude/latitude for astronomical coordinates
   const [viewState, setViewState] = useState({
     longitude: 0,  // RA center
-    latitude: 0,   // Dec center  
+    latitude: 0,   // Dec center
     zoom: 0,
     bearing: 0,
     pitch: 0
@@ -74,42 +74,42 @@ export default function SkyMapPage() {
   const tileLayer = useMemo(() => new TileLayer({
     id: 'sky-tiles',
     data: tileUrlTemplate,
-    
+
     // Basic tile parameters
     minZoom: 0,
     maxZoom: skyMapInfo?.max_zoom_level || 4,
     tileSize: 512,  // Standard tile size for DeckGL coordinate calculations
-    
+
     // Custom extent to cover the full celestial sphere
     extent: [-180, -90, 180, 90],  // [west, south, east, north] in degrees
-    
+
     // Enable refinement strategy for smoother loading
     refinementStrategy: 'best-available',
-    
+
     // Render each tile as a bitmap
     renderSubLayers: (props: any) => {
       const { data, tile } = props
-      
+
       if (!data) return null
 
       // Calculate bounds for this tile in celestial coordinates
       const { x, y, z } = tile.index
       const tileCount = Math.pow(2, z)
-      
+
       // Map celestial coordinates to display coordinates
       // For sky mapping, we need to preserve the 2:1 aspect ratio (360° RA : 180° Dec)
       // RA: 0-360° maps to full width, Dec: -90° to +90° maps to full height
-      
+
       // Calculate RA bounds (Right Ascension: 0-360°)
       const raPerTile = 360 / tileCount
       const raMin = x * raPerTile
       const raMax = (x + 1) * raPerTile
-      
-      // Calculate Dec bounds (Declination: -90° to +90°)  
+
+      // Calculate Dec bounds (Declination: -90° to +90°)
       const decPerTile = 180 / tileCount
       const decMax = 90 - (y * decPerTile)
       const decMin = 90 - ((y + 1) * decPerTile)
-      
+
       // Map to longitude/latitude for DeckGL display
       // For celestial coordinates, we map RA directly to longitude (0-360° → -180 to +180)
       // and Dec directly to latitude (-90° to +90°)
@@ -155,7 +155,7 @@ export default function SkyMapPage() {
   const handleResetView = useCallback(() => {
     setViewState({
       longitude: 0,
-      latitude: 0, 
+      latitude: 0,
       zoom: 0,
       bearing: 0,
       pitch: 0
@@ -177,7 +177,7 @@ export default function SkyMapPage() {
               {skyMapInfo?.starplot_available ? 'Starplot Active' : 'Starplot Unavailable'}
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {/* View controls */}
             <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export default function SkyMapPage() {
                   {latitude.toFixed(1)}°
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium">Longitude</label>
                 <Slider
@@ -283,11 +283,11 @@ export default function SkyMapPage() {
         <div className="flex-1 relative bg-black">
           <DeckGL
             viewState={viewState}
-            onViewStateChange={({ viewState: newViewState }) => setViewState(newViewState as SkyViewState)}
             controller={true}
             layers={[tileLayer]}
             views={[new MapView({ id: 'sky-view' })]}
             getCursor={() => 'crosshair'}
+            onViewStateChange={({ viewState: newViewState }) => setViewState(newViewState as SkyViewState)}
             // Set a dark background for the sky map
             style={{ backgroundColor: '#000000' }}
             // Enable WebGL for proper rendering
@@ -311,4 +311,5 @@ export default function SkyMapPage() {
       </div>
     </div>
   )
+  // views={new OrthographicView({id: 'ortho'})}
 }
