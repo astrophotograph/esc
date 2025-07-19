@@ -1,6 +1,6 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "experimental-scope-creep",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,6 +15,10 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.1.13",
+    "@deck.gl/geo-layers": "^9.1.13",
+    "@deck.gl/layers": "^9.1.13",
+    "@deck.gl/react": "^9.1.13",
     "@heroicons/react": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.11",

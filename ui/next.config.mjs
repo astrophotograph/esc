@@ -11,6 +11,9 @@ const nextConfig = {
   },
   // Enable standalone output for production builds
   output: 'standalone',
+  env: {
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString().split('T')[0],
+  },
   async rewrites() {
     return [
       // General API proxy - telescopes and other endpoints
@@ -35,6 +38,16 @@ const nextConfig = {
       {
         source: '/processed/:path*',
         destination: 'http://localhost:8000/api/processing/processed/:path*',
+      },
+      // System administration endpoints
+      {
+        source: '/api/system/:path*',
+        destination: 'http://localhost:8000/api/system/:path*',
+      },
+      // Sky map endpoints
+      {
+        source: '/api/skymap/:path*',
+        destination: 'http://localhost:8000/api/skymap/:path*',
       },
     ]
   },

@@ -2055,6 +2055,10 @@ class Controller:
         # Add system administration router
         from api.routers.system import router as system_router
         self.app.include_router(system_router)
+        
+        # Add sky map router
+        from api.routers.skymap import router as skymap_router
+        self.app.include_router(skymap_router)
 
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")

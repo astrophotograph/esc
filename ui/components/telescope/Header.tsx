@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle, ImageIcon } from "lucide-react"
+import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle, ImageIcon, Shield, Star } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +19,7 @@ import { useTelescopeContext } from "../../context/TelescopeContext"
 import {useTheme} from "next-themes"
 import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
 import { useRouter } from "next/navigation"
+import { SystemAdminDialog } from "./modals/SystemAdminDialog"
 
 export function Header() {
   const router = useRouter()
@@ -27,6 +28,7 @@ export function Header() {
   const { handleSceneryMode, setShowDocumentation, setShowConfiguration } = useTelescopeContext()
 
   const [sceneryMode, setSceneryMode] = useState(false)
+  const [showSystemAdmin, setShowSystemAdmin] = useState(false)
 
   const handleSceneryToggle = async () => {
     const newSceneryMode = !sceneryMode
@@ -111,6 +113,18 @@ export function Header() {
             Processing
           </Button>
 
+          {/* Sky Map Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/skymap')}
+            className="flex items-center gap-2"
+            title="Interactive Sky Map"
+          >
+            <Star className="w-4 h-4" />
+            Sky Map
+          </Button>
+
           {/* Messages Button */}
           <Button
             variant="outline"
@@ -171,6 +185,11 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowSystemAdmin(true)}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>System Admin</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
@@ -180,6 +199,12 @@ export function Header() {
           </DropdownMenu>
         </div>
       </div>
+      
+      {/* System Admin Dialog */}
+      <SystemAdminDialog 
+        open={showSystemAdmin} 
+        onOpenChange={setShowSystemAdmin} 
+      />
     </div>
   )
 }
