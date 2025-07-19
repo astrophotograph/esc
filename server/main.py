@@ -2090,8 +2090,12 @@ class Controller:
             logging.info("WebSocket manager stopped")
 
             from webrtc_router import cleanup_webrtc_service
-
             await cleanup_webrtc_service()
+            
+            # Shutdown image processing thread pool
+            from services.async_image_processing import shutdown_cpu_executor
+            shutdown_cpu_executor()
+            logging.info("Image processing thread pool shutdown")
 
         # Add our own endpoints
         @self.app.get("/", response_class=HTMLResponse)

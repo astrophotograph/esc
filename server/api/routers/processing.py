@@ -17,6 +17,12 @@ from smarttel.imaging.fits_handler import FITSHandler
 from smarttel.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
 from smarttel.imaging.stretch import StretchParameter
+from services.async_image_processing import (
+    process_graxpert_async,
+    process_enhancement_async, 
+    read_fits_async,
+    convert_to_pil_async
+)
 
 # Metadata file for persistence
 METADATA_FILE = Path("fits_metadata.json")
@@ -135,35 +141,18 @@ async def reprocess_fits_file(request: ReprocessRequest):
         # Re-process with GraXpert stretch for initial display
         output_path = PROCESSED_DIR / f"{file_id}.png"
         
-        # Apply GraXpert stretch to original image for consistency
-        image_data, fits_metadata = fits_handler.read_fits_file(str(original_fits))
+        # Apply GraXpert stretch to original image for consistency (async)
+        image_data, fits_metadata = await read_fits_async(str(original_fits))
         
-        # Create GraxpertStretch processor for original image
-        original_graxpert = GraxpertStretch()
-        original_graxpert.set_stretch_parameter(StretchParameter["15% Bg, 3 sigma"])
+        # Process original image with default GraXpert stretch (no other enhancements) - async
+        original_stretched = await process_graxpert_async(
+            image_data,
+            stretch_parameter=StretchParameter["15% Bg, 3 sigma"],
+            enhancement_settings=None  # No enhancements, just stretch
+        )
         
-        # Process original image with default GraXpert stretch (no other enhancements)
-        original_stretched = original_graxpert.process(image_data)
-        
-        # Convert to PNG bytes
-        from PIL import Image
-        import io
-        
-        if original_stretched.dtype != np.uint8:
-            original_8bit = (np.clip(original_stretched, 0, 255)).astype(np.uint8)
-        else:
-            original_8bit = original_stretched
-        
-        # Check if this is a color image
-        if len(original_8bit.shape) == 3 and original_8bit.shape[2] == 3:
-            original_pil = Image.fromarray(original_8bit, mode='RGB')
-        else:
-            original_pil = Image.fromarray(original_8bit, mode='L')
-        
-        # Convert to bytes
-        output_buffer = io.BytesIO()
-        original_pil.save(output_buffer, format="PNG")
-        image_bytes = output_buffer.getvalue()
+        # Convert to PNG bytes (async)
+        image_bytes = await convert_to_pil_async(original_stretched, "PNG")
         
         # Save processed image
         with open(output_path, "wb") as f:
@@ -231,35 +220,18 @@ async def convert_fits_to_image(file: UploadFile = File(...)):
         # This provides a good baseline view using '10% Bg, 3 sigma' stretch
         output_path = PROCESSED_DIR / f"{file_id}.png"
         
-        # Apply GraXpert stretch to original image for consistency
-        image_data, fits_metadata = fits_handler.read_fits_file(str(temp_path))
+        # Apply GraXpert stretch to original image for consistency (async)
+        image_data, fits_metadata = await read_fits_async(str(temp_path))
         
-        # Create GraxpertStretch processor for original image
-        original_graxpert = GraxpertStretch()
-        original_graxpert.set_stretch_parameter(StretchParameter["15% Bg, 3 sigma"])
+        # Process original image with default GraXpert stretch (no other enhancements) - async
+        original_stretched = await process_graxpert_async(
+            image_data,
+            stretch_parameter=StretchParameter["15% Bg, 3 sigma"],
+            enhancement_settings=None  # No enhancements, just stretch
+        )
         
-        # Process original image with default GraXpert stretch (no other enhancements)
-        original_stretched = original_graxpert.process(image_data)
-        
-        # Convert to PNG bytes
-        from PIL import Image
-        import io
-        
-        if original_stretched.dtype != np.uint8:
-            original_8bit = (np.clip(original_stretched, 0, 255)).astype(np.uint8)
-        else:
-            original_8bit = original_stretched
-        
-        # Check if this is a color image
-        if len(original_8bit.shape) == 3 and original_8bit.shape[2] == 3:
-            original_pil = Image.fromarray(original_8bit, mode='RGB')
-        else:
-            original_pil = Image.fromarray(original_8bit, mode='L')
-        
-        # Convert to bytes
-        output_buffer = io.BytesIO()
-        original_pil.save(output_buffer, format="PNG")
-        image_bytes = output_buffer.getvalue()
+        # Convert to PNG bytes (async)
+        image_bytes = await convert_to_pil_async(original_stretched, "PNG")
         
         # Create metadata
         metadata = {
@@ -355,8 +327,8 @@ async def enhance_image(request: EnhanceRequest):
             try:
                 fits_handler = FITSHandler()
                 
-                # Read the FITS file to get raw image data
-                image_data, fits_metadata = fits_handler.read_fits_file(str(original_fits))
+                # Read the FITS file to get raw image data (async)
+                image_data, fits_metadata = await read_fits_async(str(original_fits))
                 
                 # Map UI stretch parameter to GraXpert StretchParameter enum
                 stretch_param_str = request.settings.stretch_parameter
@@ -369,10 +341,6 @@ async def enhance_image(request: EnhanceRequest):
                 
                 logging.info(f"Using GraXpert stretch parameter: '{graxpert_stretch_param}' from UI: '{stretch_param_str}'")
                 
-                # Create GraxpertStretch processor and configure it
-                graxpert_processor = GraxpertStretch()
-                graxpert_processor.set_stretch_parameter(graxpert_stretch_param)
-                
                 # Configure enhancement parameters
                 logging.info(f"Configuring enhancement parameters from request.settings:")
                 logging.info(f"  Upscaling: enabled={request.settings.upscaling_enabled}, factor={request.settings.scale_factor}, method={request.settings.upscaling_method}")
@@ -380,49 +348,39 @@ async def enhance_image(request: EnhanceRequest):
                 logging.info(f"  Denoising: enabled={request.settings.denoise_enabled}, method={request.settings.denoise_method}, strength={request.settings.denoise_strength}")
                 logging.info(f"  Deconvolution: enabled={request.settings.deconvolve_enabled}, strength={request.settings.deconvolve_strength}, psf_size={request.settings.deconvolve_psf_size}")
                 
-                graxpert_processor.set_upscaling_params(
-                    enabled=request.settings.upscaling_enabled,
-                    scale_factor=request.settings.scale_factor,
-                    method=UpscalingMethod(request.settings.upscaling_method)
+                # Create enhancement settings dictionary for async processing
+                enhancement_settings = {
+                    'upscaling': {
+                        'enabled': request.settings.upscaling_enabled,
+                        'scale_factor': request.settings.scale_factor,
+                        'method': request.settings.upscaling_method
+                    },
+                    'sharpening': {
+                        'enabled': request.settings.sharpening_enabled,
+                        'method': request.settings.sharpening_method,
+                        'strength': request.settings.sharpening_strength
+                    },
+                    'denoising': {
+                        'enabled': request.settings.denoise_enabled,
+                        'method': request.settings.denoise_method,
+                        'strength': request.settings.denoise_strength
+                    },
+                    'deconvolution': {
+                        'enabled': request.settings.deconvolve_enabled,
+                        'strength': request.settings.deconvolve_strength,
+                        'psf_size': request.settings.deconvolve_psf_size
+                    }
+                }
+                
+                # Process the image with GraxpertStretch (handles both stretching and enhancements) - async
+                enhanced_image = await process_graxpert_async(
+                    image_data,
+                    stretch_parameter=graxpert_stretch_param,
+                    enhancement_settings=enhancement_settings
                 )
-                graxpert_processor.set_sharpening_params(
-                    enabled=request.settings.sharpening_enabled,
-                    method=SharpeningMethod(request.settings.sharpening_method),
-                    strength=request.settings.sharpening_strength
-                )
-                graxpert_processor.set_denoise_params(
-                    enabled=request.settings.denoise_enabled,
-                    method=DenoiseMethod(request.settings.denoise_method),
-                    strength=request.settings.denoise_strength
-                )
-                graxpert_processor.set_deconvolve_params(
-                    enabled=request.settings.deconvolve_enabled,
-                    strength=request.settings.deconvolve_strength,
-                    psf_size=request.settings.deconvolve_psf_size
-                )
                 
-                # Process the image with GraxpertStretch (handles both stretching and enhancements)
-                enhanced_image = graxpert_processor.process(image_data)
-                
-                # Convert to PIL and save as PNG
-                from PIL import Image
-                import io
-                
-                if enhanced_image.dtype != np.uint8:
-                    enhanced_8bit = (np.clip(enhanced_image, 0, 255)).astype(np.uint8)
-                else:
-                    enhanced_8bit = enhanced_image
-                
-                # Check if this is a color image
-                if len(enhanced_8bit.shape) == 3 and enhanced_8bit.shape[2] == 3:
-                    enhanced_pil = Image.fromarray(enhanced_8bit, mode='RGB')
-                else:
-                    enhanced_pil = Image.fromarray(enhanced_8bit, mode='L')
-                
-                # Convert to bytes
-                output_buffer = io.BytesIO()
-                enhanced_pil.save(output_buffer, format="PNG")
-                enhanced_bytes = output_buffer.getvalue()
+                # Convert to PNG bytes (async)
+                enhanced_bytes = await convert_to_pil_async(enhanced_image, "PNG")
                 
                 metadata = {
                     'dimensions': {
@@ -442,36 +400,43 @@ async def enhance_image(request: EnhanceRequest):
                     detail="FITS processing not available. Please install astropy."
                 )
         else:
-            # Process from existing PNG
-            from PIL import Image
-            import io
-            
+            # Process from existing PNG (async)
             existing_path = PROCESSED_DIR / f"{file_id}.png"
             if not existing_path.exists():
                 raise HTTPException(status_code=404, detail="Image not found")
             
-            # Load image
-            pil_image = Image.open(existing_path)
-            image_array = np.array(pil_image).astype(np.float32) / 255.0
+            # Load image in thread pool
+            async def load_existing_image():
+                from PIL import Image
+                pil_image = Image.open(existing_path)
+                return np.array(pil_image).astype(np.float32) / 255.0
             
-            # Process
-            enhanced = processor.process(image_array)
+            import asyncio
+            loop = asyncio.get_event_loop()
+            from services.async_image_processing import get_cpu_executor
+            image_array = await loop.run_in_executor(get_cpu_executor(), load_existing_image)
             
-            # Convert back to PIL
-            if enhanced.dtype != np.uint8:
-                enhanced_8bit = (np.clip(enhanced, 0, 1) * 255).astype(np.uint8)
-            else:
-                enhanced_8bit = enhanced
+            # Create enhancement settings for async processing
+            enhancement_settings = {
+                'upscaling_enabled': request.settings.upscaling_enabled,
+                'scale_factor': request.settings.scale_factor,
+                'upscaling_method': request.settings.upscaling_method,
+                'sharpening_enabled': request.settings.sharpening_enabled,
+                'sharpening_method': request.settings.sharpening_method,
+                'sharpening_strength': request.settings.sharpening_strength,
+                'denoise_enabled': request.settings.denoise_enabled,
+                'denoise_method': request.settings.denoise_method,
+                'denoise_strength': request.settings.denoise_strength,
+                'deconvolve_enabled': request.settings.deconvolve_enabled,
+                'deconvolve_strength': request.settings.deconvolve_strength,
+                'deconvolve_psf_size': request.settings.deconvolve_psf_size
+            }
             
-            if len(enhanced_8bit.shape) == 2:
-                enhanced_pil = Image.fromarray(enhanced_8bit, mode='L')
-            else:
-                enhanced_pil = Image.fromarray(enhanced_8bit, mode='RGB')
+            # Process (async)
+            enhanced = await process_enhancement_async(image_array, enhancement_settings)
             
-            # Convert to bytes
-            output_buffer = io.BytesIO()
-            enhanced_pil.save(output_buffer, format="PNG")
-            enhanced_bytes = output_buffer.getvalue()
+            # Convert to PNG bytes (async)
+            enhanced_bytes = await convert_to_pil_async(enhanced, "PNG")
             
             metadata = {
                 'dimensions': {
