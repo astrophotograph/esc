@@ -141,7 +141,10 @@ class FITSHandler:
                 normalized[:,:,i] = self._normalize_channel(channel, stretch_mode, bg_percent)
         else:
             # Process single channel
-            normalized = self._normalize_channel(image_data, stretch_mode, bg_percent)
+            single_channel = self._normalize_channel(image_data, stretch_mode, bg_percent)
+            # Convert grayscale to RGB to maintain color capability through enhancement pipeline
+            normalized = np.stack([single_channel, single_channel, single_channel], axis=2)
+            logging.info(f"Converted grayscale to RGB for enhancement compatibility: {normalized.shape}")
         
         return normalized
     
@@ -219,15 +222,15 @@ class FITSHandler:
         # Normalize the data
         normalized = self.normalize_image_data(image_data, stretch_mode)
         
-        # Check if this is a color image
+        # Check if this is a color image (should always be true now since we convert grayscale to RGB)
         is_color = len(normalized.shape) == 3 and normalized.shape[2] == 3
         logging.info(f"fits_to_image: is_color={is_color}, normalized.shape={normalized.shape}")
         
         # Convert to 8-bit
         image_8bit = (normalized * 255).astype(np.uint8)
         
-        # Apply colormap if specified (only for grayscale images)
-        if colormap and not is_color:
+        # Apply colormap if specified (only for original grayscale images, but shouldn't happen anymore)
+        if colormap and len(normalized.shape) == 2:
             try:
                 import matplotlib.cm as cm
                 cmap = cm.get_cmap(colormap)
@@ -237,13 +240,17 @@ class FITSHandler:
             except Exception as e:
                 logging.warning(f"Failed to apply colormap {colormap}: {e}")
         
-        # Create PIL image
+        # Create PIL image - should always be RGB now
         if is_color:
             pil_image = Image.fromarray(image_8bit, mode='RGB')
             logging.info(f"Created RGB PIL image from shape {image_8bit.shape}")
         else:
-            pil_image = Image.fromarray(image_8bit, mode='L')
-            logging.info(f"Created grayscale PIL image from shape {image_8bit.shape}")
+            # Fallback: if somehow still grayscale, convert to RGB
+            logging.warning(f"Unexpected grayscale image in fits_to_image: {image_8bit.shape}")
+            if len(image_8bit.shape) == 2:
+                image_8bit = np.stack([image_8bit, image_8bit, image_8bit], axis=2)
+            pil_image = Image.fromarray(image_8bit, mode='RGB')
+            logging.info(f"Converted unexpected grayscale to RGB: {image_8bit.shape}")
         
         # Additional debug info
         logging.info(f"PIL image mode: {pil_image.mode}, size: {pil_image.size}")
@@ -288,7 +295,7 @@ class FITSHandler:
         # Process with enhancement pipeline
         enhanced = enhancement_processor.process(normalized)
         
-        # Check if this is a color image
+        # Check if this is a color image (should always be true now since we convert grayscale to RGB)
         is_color = len(enhanced.shape) == 3 and enhanced.shape[2] == 3
         
         # Convert to 8-bit
@@ -297,13 +304,17 @@ class FITSHandler:
         else:
             enhanced_8bit = enhanced
         
-        # Create PIL image
+        # Create PIL image - since we always convert grayscale to RGB, this should always be RGB
         if is_color:
             pil_image = Image.fromarray(enhanced_8bit, mode='RGB')
             logging.info(f"Enhancement: Created RGB PIL image from shape {enhanced_8bit.shape}")
         else:
-            pil_image = Image.fromarray(enhanced_8bit, mode='L')
-            logging.info(f"Enhancement: Created grayscale PIL image from shape {enhanced_8bit.shape}")
+            # Fallback: if somehow still grayscale, convert to RGB
+            logging.warning(f"Unexpected grayscale image after enhancement: {enhanced_8bit.shape}")
+            if len(enhanced_8bit.shape) == 2:
+                enhanced_8bit = np.stack([enhanced_8bit, enhanced_8bit, enhanced_8bit], axis=2)
+            pil_image = Image.fromarray(enhanced_8bit, mode='RGB')
+            logging.info(f"Enhancement: Converted unexpected grayscale to RGB: {enhanced_8bit.shape}")
         
         # Additional debug info
         logging.info(f"Enhancement: PIL image mode: {pil_image.mode}, size: {pil_image.size}")

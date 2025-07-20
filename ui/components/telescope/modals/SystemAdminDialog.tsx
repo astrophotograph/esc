@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { AlertCircle, RefreshCw, Power, CheckCircle, ExternalLink } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useVersionCheck } from "@/hooks/useVersionCheck"
+import { useVersionCheck } from "@/context/VersionCheckContext"
 
 interface SystemAdminDialogProps {
   open: boolean
@@ -27,9 +27,7 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartReason, setRestartReason] = useState("Manual restart from UI")
   
-  const { versionInfo, isChecking, checkForUpdates } = useVersionCheck({
-    checkOnMount: false, // Don't auto-check since this is an admin dialog
-  })
+  const { versionInfo, isChecking, checkForUpdates } = useVersionCheck()
 
   const handleRestart = async () => {
     if (!adminToken) {

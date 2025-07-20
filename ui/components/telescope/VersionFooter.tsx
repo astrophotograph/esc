@@ -1,16 +1,13 @@
 "use client"
 
 import { useTelescopeContext } from "@/context/TelescopeContext"
-import { useVersionCheck } from "@/hooks/useVersionCheck"
+import { useVersionCheck } from "@/context/VersionCheckContext"
 import { Badge } from "@/components/ui/badge"
 import packageJson from "../../package.json"
 
 export function VersionFooter() {
   const { liveViewFullscreen } = useTelescopeContext()
-  const { versionInfo } = useVersionCheck({
-    checkOnMount: true,
-    checkIntervalMinutes: 120, // Check every 2 hours in footer
-  })
+  const { versionInfo } = useVersionCheck()
 
   // Don't show footer in full screen mode
   if (liveViewFullscreen) {

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { NotificationPanels } from "./notification-panels"
 import { LocationManagement } from "./location-management"
 import { TelescopeProvider } from "./context/TelescopeContext"
+import { VersionCheckProvider } from "./context/VersionCheckContext"
 import { Header } from "./components/telescope/Header"
 import { CameraView } from "./components/telescope/CameraView"
 import { ControlPanel } from "./components/telescope/ControlPanel"
@@ -176,9 +177,11 @@ function TelescopeControlContent() {
 
 export default function TelescopeControl() {
   return (
-    <TelescopeProvider>
-      <TelescopeControlContent />
-      <NotificationPanels notifications={[]} onDismiss={() => {}} onMarkAsRead={() => {}} />
-    </TelescopeProvider>
+    <VersionCheckProvider checkIntervalMinutes={1440}>
+      <TelescopeProvider>
+        <TelescopeControlContent />
+        <NotificationPanels notifications={[]} onDismiss={() => {}} onMarkAsRead={() => {}} />
+      </TelescopeProvider>
+    </VersionCheckProvider>
   )
 }

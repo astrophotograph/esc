@@ -13,25 +13,20 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ExternalLink, Download, X, RefreshCw, Calendar, Tag } from "lucide-react"
-import { useVersionCheck, type VersionInfo } from "@/hooks/useVersionCheck"
+import { useVersionCheck, type VersionInfo } from "@/context/VersionCheckContext"
 import { toast } from "sonner"
 
 export function VersionUpdateNotification() {
   const [showDialog, setShowDialog] = useState(false)
   const [dismissedVersion, setDismissedVersion] = useState<string | null>(null)
 
-  const { versionInfo, isChecking, checkForUpdates } = useVersionCheck({
-    checkOnMount: true,
-    checkIntervalMinutes: 60, // Check every hour
-    onUpdateAvailable: (info: VersionInfo) => {
-      // Don't show if user already dismissed this version
-      if (dismissedVersion === info.latest_version) {
-        return
-      }
-
-      // Show toast notification
-      toast.info(`New version available: ${info.latest_version}`, {
-        description: info.release_name || "Click to view details",
+  const { versionInfo, isChecking, checkForUpdates } = useVersionCheck()
+  
+  // Handle showing notifications when update becomes available
+  useEffect(() => {
+    if (versionInfo?.update_available && versionInfo.latest_version !== dismissedVersion) {
+      toast.info(`New version available: ${versionInfo.latest_version}`, {
+        description: versionInfo.release_name || "Click to view details",
         action: {
           label: "View",
           onClick: () => setShowDialog(true)
@@ -39,7 +34,7 @@ export function VersionUpdateNotification() {
         duration: 10000,
       })
     }
-  })
+  }, [versionInfo, dismissedVersion])
 
   // Load dismissed version from localStorage
   useEffect(() => {

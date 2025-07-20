@@ -54,6 +54,7 @@ class EnhancementSettings(BaseModel):
     deconvolve_strength: float = 0.5
     deconvolve_psf_size: float = 2.0
     stretch_parameter: str = "15% Bg, 3 sigma"
+    processing_order: list[str] = ["upscaling", "denoise", "deconvolve", "sharpening"]
 
 
 class EnhanceRequest(BaseModel):
@@ -319,7 +320,8 @@ async def enhance_image(request: EnhanceRequest):
             denoise_strength=request.settings.denoise_strength,
             deconvolve_enabled=request.settings.deconvolve_enabled,
             deconvolve_strength=request.settings.deconvolve_strength,
-            deconvolve_psf_size=request.settings.deconvolve_psf_size
+            deconvolve_psf_size=request.settings.deconvolve_psf_size,
+            processing_order=request.settings.processing_order
         )
         
         if original_fits:

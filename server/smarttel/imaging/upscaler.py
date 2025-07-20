@@ -17,8 +17,6 @@ class UpscalingMethod(str, Enum):
     EDSR = "edsr"  # Enhanced Deep Super-Resolution (if OpenCV contrib available)
     FSRCNN = "fsrcnn"  # Fast Super-Resolution CNN (if OpenCV contrib available)
     ESRGAN = "esrgan"  # Enhanced Super-Resolution GAN (requires PyTorch and model files)
-    REAL_ESRGAN = "real_esrgan"  # Real-ESRGAN (requires PyTorch and model files)
-    WAIFU2X = "waifu2x"  # Waifu2x-style upscaling (requires PyTorch and model files)
 
 
 class SharpeningMethod(str, Enum):
@@ -103,9 +101,14 @@ class ImageUpscaler:
             working_image = image.astype(np.float32)
             input_uint8 = False
 
-        # Optional denoising for telescope images (helps with noise amplification)
-        if denoise:
-            working_image = self._denoise_image(working_image)
+        # Ensure we maintain color channels properly
+        original_shape = working_image.shape
+        is_color = len(original_shape) == 3 and original_shape[2] == 3
+        logging.info(f"Original image: shape={original_shape}, is_color={is_color}")
+
+        # Optional denoising for telescope images (helps with noise amplification) - skip for now to avoid fuzziness
+        # if denoise:
+        #     working_image = self._denoise_image(working_image)
 
         # Calculate target dimensions
         original_height, original_width = working_image.shape[:2]
@@ -115,6 +118,7 @@ class ImageUpscaler:
         # Apply upscaling method
         logging.info(f"Applying upscaling method: {method}, scale_factor={scale_factor}")
         logging.info(f"Available capabilities: dnn_superres={self._has_dnn_superres}, torch={self._has_torch}")
+        logging.info(f"Working image before upscaling: shape={working_image.shape}, dtype={working_image.dtype}")
         
         if method == UpscalingMethod.BICUBIC:
             logging.info("Using bicubic upscaling")
@@ -135,12 +139,6 @@ class ImageUpscaler:
         elif method == UpscalingMethod.ESRGAN and self._has_torch:
             logging.info("Using ESRGAN upscaling")
             upscaled = self._esrgan_upscale(working_image, scale_factor)
-        elif method == UpscalingMethod.REAL_ESRGAN and self._has_torch:
-            logging.info("Using Real-ESRGAN upscaling")
-            upscaled = self._real_esrgan_upscale(working_image, scale_factor)
-        elif method == UpscalingMethod.WAIFU2X and self._has_torch:
-            logging.info("Using Waifu2x upscaling")
-            upscaled = self._waifu2x_upscale(working_image, scale_factor)
         else:
             # Fallback to bicubic if DNN methods not available
             logging.warning(f"Method {method} not available or requirements not met, falling back to bicubic")
@@ -149,11 +147,13 @@ class ImageUpscaler:
             )
 
         # Convert back to original data type
+        logging.info(f"Upscaled image before conversion: shape={upscaled.shape}, dtype={upscaled.dtype}")
         if input_uint8:
             upscaled = np.clip(upscaled * 255.0, 0, 255).astype(np.uint8)
         else:
             upscaled = upscaled.astype(image.dtype)
 
+        logging.info(f"Final upscaled image: shape={upscaled.shape}, dtype={upscaled.dtype}")
         return upscaled
 
     def _denoise_image(self, image: np.ndarray, method: DenoiseMethod = DenoiseMethod.TV_CHAMBOLLE) -> np.ndarray:
@@ -273,14 +273,48 @@ class ImageUpscaler:
     ) -> np.ndarray:
         """Upscale using bicubic interpolation."""
         logging.info(f"Applying bicubic upscaling: {image.shape} -> {target_size}")
-        return cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
+        logging.info(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
+        
+        # For multi-channel images, ensure OpenCV handles them correctly
+        if len(image.shape) == 3:
+            # Process color image
+            upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
+            # Ensure we still have 3 channels after resize
+            if len(upscaled.shape) == 2:
+                # If somehow we lost channels, restore them
+                logging.warning("Lost color channels during upscaling, restoring...")
+                upscaled = np.stack([upscaled, upscaled, upscaled], axis=2)
+        else:
+            # Process grayscale image
+            upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
+        
+        logging.info(f"Upscaled image shape: {upscaled.shape}")
+        
+        return upscaled
 
     def _lanczos_upscale(
         self, image: np.ndarray, target_size: Tuple[int, int]
     ) -> np.ndarray:
         """Upscale using Lanczos interpolation."""
         logging.info(f"Applying Lanczos upscaling: {image.shape} -> {target_size}")
-        return cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
+        logging.info(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
+        
+        # For multi-channel images, ensure OpenCV handles them correctly
+        if len(image.shape) == 3:
+            # Process color image
+            upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
+            # Ensure we still have 3 channels after resize
+            if len(upscaled.shape) == 2:
+                # If somehow we lost channels, restore them
+                logging.warning("Lost color channels during Lanczos upscaling, restoring...")
+                upscaled = np.stack([upscaled, upscaled, upscaled], axis=2)
+        else:
+            # Process grayscale image
+            upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
+        
+        logging.info(f"Upscaled image shape: {upscaled.shape}")
+        
+        return upscaled
 
     def _edsr_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
         """Upscale using Enhanced Deep Super-Resolution (requires OpenCV contrib)."""
@@ -406,6 +440,8 @@ class ImageUpscaler:
     
     def _unsharp_mask(self, image: np.ndarray, strength: float) -> np.ndarray:
         """Apply unsharp mask sharpening."""
+        logging.info(f"Unsharp mask input: shape={image.shape}, dtype={image.dtype}")
+        
         # Use different parameters for different image types
         if len(image.shape) == 3:
             # Color image
@@ -419,7 +455,7 @@ class ImageUpscaler:
             logging.info(f"Applying unsharp mask to grayscale image: shape={image.shape}")
             
         result = filters.unsharp_mask(image, radius=radius, amount=amount, preserve_range=True)
-        logging.info(f"Unsharp mask result shape: {result.shape}")
+        logging.info(f"Unsharp mask result: shape={result.shape}, dtype={result.dtype}")
         return result
     
     def _laplacian_sharpen(self, image: np.ndarray, strength: float) -> np.ndarray:
@@ -546,119 +582,6 @@ class ImageUpscaler:
                 ),
             )
     
-    def _real_esrgan_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
-        """Upscale using Real-ESRGAN-inspired method with noise reduction."""
-        if not self._has_torch:
-            return self._bicubic_upscale(
-                image,
-                (
-                    int(image.shape[1] * scale_factor),
-                    int(image.shape[0] * scale_factor),
-                ),
-            )
-        
-        try:
-            from skimage import restoration, filters
-            
-            logging.info(f"Applying Real-ESRGAN-inspired upscaling with noise reduction")
-            
-            # Apply denoising first (Real-ESRGAN characteristic)
-            denoised = self.denoise_image(image, method=DenoiseMethod.TV_CHAMBOLLE, strength=0.3)
-            
-            # Then apply Lanczos upscaling for sharpness
-            target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
-            upscaled = cv2.resize(denoised, target_size, interpolation=cv2.INTER_LANCZOS4)
-            
-            # Apply subtle sharpening for detail enhancement
-            if upscaled.dtype != np.uint8:
-                sharpened = filters.unsharp_mask(upscaled, radius=0.8, amount=0.7, preserve_range=True)
-            else:
-                # Convert to float for processing
-                upscaled_float = upscaled.astype(np.float32) / 255.0
-                sharpened_float = filters.unsharp_mask(upscaled_float, radius=0.8, amount=0.7, preserve_range=True)
-                sharpened = (np.clip(sharpened_float, 0, 1) * 255).astype(np.uint8)
-            
-            logging.info(f"Real-ESRGAN-inspired processing complete: {image.shape} -> {sharpened.shape}")
-            return sharpened
-            
-        except Exception as e:
-            logging.error(f"Real-ESRGAN upscaling failed: {e}")
-            return self._bicubic_upscale(
-                image,
-                (
-                    int(image.shape[1] * scale_factor),
-                    int(image.shape[0] * scale_factor),
-                ),
-            )
-    
-    def _waifu2x_upscale(self, image: np.ndarray, scale_factor: float) -> np.ndarray:
-        """Upscale using Waifu2x-inspired method with anime-style enhancement."""
-        if not self._has_torch:
-            return self._bicubic_upscale(
-                image,
-                (
-                    int(image.shape[1] * scale_factor),
-                    int(image.shape[0] * scale_factor),
-                ),
-            )
-        
-        try:
-            from skimage import filters, morphology
-            
-            logging.info(f"Applying Waifu2x-inspired upscaling with anime-style enhancement")
-            
-            # First, apply edge-preserving smoothing (anime characteristic)
-            if len(image.shape) == 3:
-                smoothed = np.zeros_like(image)
-                for i in range(image.shape[2]):
-                    channel = image[:, :, i]
-                    if channel.dtype != np.uint8:
-                        channel_uint8 = (np.clip(channel, 0, 1) * 255).astype(np.uint8)
-                    else:
-                        channel_uint8 = channel
-                    
-                    # Apply edge-preserving filter
-                    filtered = cv2.bilateralFilter(channel_uint8, 5, 80, 80)
-                    
-                    if image.dtype != np.uint8:
-                        smoothed[:, :, i] = filtered.astype(np.float32) / 255.0
-                    else:
-                        smoothed[:, :, i] = filtered
-            else:
-                if image.dtype != np.uint8:
-                    image_uint8 = (np.clip(image, 0, 1) * 255).astype(np.uint8)
-                else:
-                    image_uint8 = image
-                
-                smoothed = cv2.bilateralFilter(image_uint8, 5, 80, 80)
-                
-                if image.dtype != np.uint8:
-                    smoothed = smoothed.astype(np.float32) / 255.0
-            
-            # Apply bicubic upscaling
-            target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
-            upscaled = cv2.resize(smoothed, target_size, interpolation=cv2.INTER_CUBIC)
-            
-            # Apply light sharpening for crisp edges (anime style)
-            if upscaled.dtype != np.uint8:
-                enhanced = filters.unsharp_mask(upscaled, radius=0.5, amount=0.3, preserve_range=True)
-            else:
-                upscaled_float = upscaled.astype(np.float32) / 255.0
-                enhanced_float = filters.unsharp_mask(upscaled_float, radius=0.5, amount=0.3, preserve_range=True)
-                enhanced = (np.clip(enhanced_float, 0, 1) * 255).astype(np.uint8)
-            
-            logging.info(f"Waifu2x-inspired processing complete: {image.shape} -> {enhanced.shape}")
-            return enhanced
-            
-        except Exception as e:
-            logging.error(f"Waifu2x upscaling failed: {e}")
-            return self._bicubic_upscale(
-                image,
-                (
-                    int(image.shape[1] * scale_factor),
-                    int(image.shape[0] * scale_factor),
-                ),
-            )
 
 
 class ImageEnhancementProcessor:
@@ -678,6 +601,7 @@ class ImageEnhancementProcessor:
         deconvolve_enabled: bool = False,
         deconvolve_strength: float = 0.5,
         deconvolve_psf_size: float = 2.0,
+        processing_order: list[str] = None,
     ):
         self.upscaling_enabled = upscaling_enabled
         self.scale_factor = scale_factor
@@ -691,6 +615,7 @@ class ImageEnhancementProcessor:
         self.deconvolve_enabled = deconvolve_enabled
         self.deconvolve_strength = deconvolve_strength
         self.deconvolve_psf_size = deconvolve_psf_size
+        self.processing_order = processing_order or ["upscaling", "denoise", "deconvolve", "sharpening"]
         self.upscaler = ImageUpscaler()
 
     def process(self, image: np.ndarray) -> Optional[np.ndarray]:
@@ -708,50 +633,47 @@ class ImageEnhancementProcessor:
 
         logging.info(f"ImageEnhancementProcessor.process() starting with image shape: {image.shape}")
         logging.info(f"Enhancement settings: denoise={self.denoise_enabled}, deconvolve={self.deconvolve_enabled}, sharpen={self.sharpening_enabled}, upscale={self.upscaling_enabled}")
+        logging.info(f"Processing order: {self.processing_order}")
         
         processed_image = image.copy()
         
-        # Apply enhancements in order: upscale -> denoise -> deconvolve -> sharpen
-        
-        # 1. Apply upscaling first (before other enhancements for better quality)
-        if self.upscaling_enabled and self.scale_factor > 1.0:
-            logging.info(f"Applying upscaling FIRST: method={self.upscaling_method}, scale_factor={self.scale_factor}")
-            processed_image = self.upscaler.upscale(
-                processed_image, 
-                scale_factor=self.scale_factor, 
-                method=self.upscaling_method
-            )
-            logging.info(f"Upscaling completed, output shape: {processed_image.shape}")
-        
-        # 2. Apply denoising (improves overall image quality)
-        if self.denoise_enabled:
-            logging.info(f"Applying denoising: method={self.denoise_method}, strength={self.denoise_strength}")
-            processed_image = self.upscaler.denoise_image(
-                processed_image,
-                method=self.denoise_method,
-                strength=self.denoise_strength
-            )
-            logging.info(f"Denoising completed, output shape: {processed_image.shape}")
-        
-        # 3. Apply deconvolution (after denoising, before sharpening)
-        if self.deconvolve_enabled:
-            logging.info(f"Applying deconvolution: strength={self.deconvolve_strength}, psf_size={self.deconvolve_psf_size}")
-            processed_image = self._apply_deconvolution(
-                processed_image,
-                strength=self.deconvolve_strength,
-                psf_size=self.deconvolve_psf_size
-            )
-            logging.info(f"Deconvolution completed, output shape: {processed_image.shape}")
-        
-        # 4. Apply sharpening last (after all other processing)
-        if self.sharpening_enabled:
-            logging.info(f"Applying sharpening: method={self.sharpening_method}, strength={self.sharpening_strength}")
-            processed_image = self.upscaler.sharpen_image(
-                processed_image, 
-                method=self.sharpening_method, 
-                strength=self.sharpening_strength
-            )
-            logging.info(f"Sharpening completed, output shape: {processed_image.shape}")
+        # Apply enhancements in custom order
+        for step in self.processing_order:
+            if step == "upscaling" and self.upscaling_enabled and self.scale_factor > 1.0:
+                logging.info(f"Applying upscaling: method={self.upscaling_method}, scale_factor={self.scale_factor}")
+                processed_image = self.upscaler.upscale(
+                    processed_image, 
+                    scale_factor=self.scale_factor, 
+                    method=self.upscaling_method
+                )
+                logging.info(f"Upscaling completed, output shape: {processed_image.shape}")
+            
+            elif step == "denoise" and self.denoise_enabled:
+                logging.info(f"Applying denoising: method={self.denoise_method}, strength={self.denoise_strength}")
+                processed_image = self.upscaler.denoise_image(
+                    processed_image,
+                    method=self.denoise_method,
+                    strength=self.denoise_strength
+                )
+                logging.info(f"Denoising completed, output shape: {processed_image.shape}")
+            
+            elif step == "deconvolve" and self.deconvolve_enabled:
+                logging.info(f"Applying deconvolution: strength={self.deconvolve_strength}, psf_size={self.deconvolve_psf_size}")
+                processed_image = self._apply_deconvolution(
+                    processed_image,
+                    strength=self.deconvolve_strength,
+                    psf_size=self.deconvolve_psf_size
+                )
+                logging.info(f"Deconvolution completed, output shape: {processed_image.shape}")
+            
+            elif step == "sharpening" and self.sharpening_enabled:
+                logging.info(f"Applying sharpening: method={self.sharpening_method}, strength={self.sharpening_strength}")
+                processed_image = self.upscaler.sharpen_image(
+                    processed_image, 
+                    method=self.sharpening_method, 
+                    strength=self.sharpening_strength
+                )
+                logging.info(f"Sharpening completed, output shape: {processed_image.shape}")
 
         logging.info(f"ImageEnhancementProcessor.process() completed, final shape: {processed_image.shape}")
         return processed_image

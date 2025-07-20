@@ -1,6 +1,25 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -14,8 +33,66 @@ import {
   Focus, 
   Palette, 
   RotateCcw,
-  Filter
+  Filter,
+  GripVertical
 } from "lucide-react"
+
+type ProcessingStep = 'upscaling' | 'denoise' | 'deconvolve' | 'sharpening'
+
+interface SortableStepItemProps {
+  step: ProcessingStep
+  index: number
+  isEnabled: boolean
+  disabled: boolean
+  getStepIcon: (step: ProcessingStep) => React.ReactNode
+  getStepName: (step: ProcessingStep) => string
+}
+
+function SortableStepItem({ step, index, isEnabled, disabled, getStepIcon, getStepName }: SortableStepItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: step, disabled })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`flex items-center gap-3 p-2 rounded border transition-all ${
+        isEnabled 
+          ? 'bg-gray-800 border-gray-600' 
+          : 'bg-gray-900 border-gray-700 opacity-50'
+      } ${
+        isDragging 
+          ? 'opacity-50 scale-95 shadow-lg z-10' 
+          : 'hover:bg-gray-750'
+      } ${
+        disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500 w-4 text-center">{index + 1}</span>
+        {getStepIcon(step)}
+        <span className={`text-sm ${isEnabled ? 'text-white' : 'text-gray-500'}`}>
+          {getStepName(step)}
+        </span>
+      </div>
+      <div className="flex-1"></div>
+      <GripVertical className={`w-4 h-4 text-gray-500 ${disabled ? '' : 'hover:text-gray-300'}`} />
+    </div>
+  )
+}
 
 interface ImageEnhancementSettings {
   upscaling_enabled: boolean
@@ -31,6 +108,7 @@ interface ImageEnhancementSettings {
   deconvolve_strength: number
   deconvolve_psf_size: number
   stretch_parameter: string
+  processing_order?: ProcessingStep[]
 }
 
 interface ImageEnhancementControlsProps {
@@ -46,11 +124,66 @@ export function ImageEnhancementControls({
   onApply,
   disabled = false
 }: ImageEnhancementControlsProps) {
+  // Default processing order
+  const defaultOrder: ProcessingStep[] = ['upscaling', 'denoise', 'deconvolve', 'sharpening']
+  const [processingOrder, setProcessingOrder] = useState<ProcessingStep[]>(
+    settings.processing_order || defaultOrder
+  )
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
   const updateSettings = (updates: Partial<ImageEnhancementSettings>) => {
     onChange(updates)
   }
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      const oldIndex = processingOrder.indexOf(active.id as ProcessingStep)
+      const newIndex = processingOrder.indexOf(over?.id as ProcessingStep)
+      
+      const newOrder = arrayMove(processingOrder, oldIndex, newIndex)
+      setProcessingOrder(newOrder)
+      updateSettings({ processing_order: newOrder })
+    }
+  }
+
+  const getStepIcon = (step: ProcessingStep) => {
+    switch (step) {
+      case 'upscaling': return <Zap className="w-4 h-4" />
+      case 'denoise': return <Filter className="w-4 h-4" />
+      case 'deconvolve': return <Focus className="w-4 h-4" />
+      case 'sharpening': return <Palette className="w-4 h-4" />
+    }
+  }
+
+  const getStepName = (step: ProcessingStep) => {
+    switch (step) {
+      case 'upscaling': return 'Super Resolution'
+      case 'denoise': return 'Denoising'
+      case 'deconvolve': return 'Deconvolution'
+      case 'sharpening': return 'Sharpening'
+    }
+  }
+
+  const isStepEnabled = (step: ProcessingStep) => {
+    switch (step) {
+      case 'upscaling': return settings.upscaling_enabled
+      case 'denoise': return settings.denoise_enabled
+      case 'deconvolve': return settings.deconvolve_enabled
+      case 'sharpening': return settings.sharpening_enabled
+    }
+  }
+
   const resetToDefaults = () => {
+    const newOrder = defaultOrder
+    setProcessingOrder(newOrder)
     onChange({
       upscaling_enabled: false,
       scale_factor: 2.0,
@@ -65,10 +198,11 @@ export function ImageEnhancementControls({
       deconvolve_strength: 0.5,
       deconvolve_psf_size: 2.0,
       stretch_parameter: "15% Bg, 3 sigma",
+      processing_order: newOrder,
     })
   }
 
-  const available_upscaling_methods = ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan", "real_esrgan", "waifu2x"]
+  const available_upscaling_methods = ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan"]
   const available_sharpening_methods = ["none", "unsharp_mask", "laplacian", "high_pass"]
   const available_denoise_methods = ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"]
   const available_stretch_parameters = [
@@ -81,6 +215,41 @@ export function ImageEnhancementControls({
 
   return (
     <div className="space-y-4">
+      {/* Processing Order */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Settings className="w-4 h-4 text-purple-400" />
+          <Label className="text-gray-300">Processing Order</Label>
+        </div>
+        <div className="pl-6 space-y-2">
+          <p className="text-xs text-gray-500">Drag items to reorder processing steps. Only enabled steps will be applied.</p>
+          <DndContext 
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext 
+              items={processingOrder}
+              strategy={verticalListSortingStrategy}
+            >
+              {processingOrder.map((step, index) => (
+                <SortableStepItem
+                  key={step}
+                  step={step}
+                  index={index}
+                  isEnabled={isStepEnabled(step)}
+                  disabled={disabled}
+                  getStepIcon={getStepIcon}
+                  getStepName={getStepName}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        </div>
+      </div>
+
+      <Separator className="border-gray-700" />
+
       {/* Super Resolution */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">

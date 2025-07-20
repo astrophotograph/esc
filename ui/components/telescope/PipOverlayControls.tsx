@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,8 +17,67 @@ export function PipOverlayControls() {
 
   const [activeTab, setActiveTab] = useState("crosshairs")
   const [animationsEnabled, setAnimationsEnabled] = useState(true)
+  const [allskyCameraType, setAllskyCameraType] = useState<"teamallsky" | "indi" | "custom">("custom")
+  const [hostname, setHostname] = useState("")
+
+  // Detect camera type from existing URL when component mounts or telescope changes
+  useEffect(() => {
+    if (!currentTelescope?.id) return
+    
+    const currentUrl = allskyUrls[currentTelescope.id] || ''
+    if (!currentUrl) {
+      setAllskyCameraType("custom")
+      setHostname("")
+      return
+    }
+
+    // Try to detect TeamAllsky pattern: http://host/current/tmp/image.jpg
+    const teamAllskyMatch = currentUrl.match(/^https?:\/\/([^\/]+)\/current\/tmp\/image\.jpg/)
+    if (teamAllskyMatch) {
+      setAllskyCameraType("teamallsky")
+      setHostname(teamAllskyMatch[1])
+      return
+    }
+
+    // Try to detect INDI Allsky pattern: http://host/indi-allsky/latestimage
+    const indiMatch = currentUrl.match(/^https?:\/\/([^\/]+)\/indi-allsky\/latestimage/)
+    if (indiMatch) {
+      setAllskyCameraType("indi")
+      setHostname(indiMatch[1])
+      return
+    }
+
+    // Default to custom for any other pattern
+    setAllskyCameraType("custom")
+    setHostname("")
+  }, [currentTelescope?.id, allskyUrls])
 
   if (!showPipOverlayControls) return null
+
+  // Generate URL based on camera type and hostname
+  const generateCameraUrl = (type: typeof allskyCameraType, host: string): string => {
+    switch (type) {
+      case "teamallsky":
+        return `http://${host}/current/tmp/image.jpg`
+      case "indi":
+        return `http://${host}/indi-allsky/latestimage`
+      case "custom":
+        return allskyUrls[currentTelescope?.id || ''] || ''
+      default:
+        return ''
+    }
+  }
+
+  // Update the allsky URL when type or hostname changes
+  const updateAllskyUrl = () => {
+    if (!currentTelescope?.id) return
+    
+    const newUrl = generateCameraUrl(allskyCameraType, hostname)
+    if (allskyCameraType !== "custom") {
+      const newUrls = { ...allskyUrls, [currentTelescope.id]: newUrl }
+      setAllskyUrls(newUrls)
+    }
+  }
 
   const updateCrosshairs = (updates: Partial<typeof pipOverlaySettings.crosshairs>) => {
     setPipOverlaySettings({
@@ -151,39 +210,99 @@ export function PipOverlayControls() {
             <TabsContent value="general" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="allsky-url" className="text-white">
-                    All-Sky Camera URL for {currentTelescope?.name || 'Current Telescope'}
+                  <Label className="text-white text-base font-medium">
+                    All-Sky Camera Configuration for {currentTelescope?.name || 'Current Telescope'}
                   </Label>
-                  <Input
-                    id="allsky-url"
-                    value={allskyUrls[currentTelescope?.id || ''] || ''}
-                    onChange={(e) => {
-                      const newUrls = { ...allskyUrls, [currentTelescope?.id || '']: e.target.value }
-                      setAllskyUrls(newUrls)
-                    }}
-                    placeholder="http://allsky/current/tmp/image.jpg"
-                    className="bg-gray-700 border-gray-600 text-white mt-2"
-                  />
-                </div>
-              </div>
-            </TabsContent>
+                  
+                  <div className="mt-3 space-y-4">
+                    <div>
+                      <Label htmlFor="camera-type" className="text-white text-sm">
+                        Camera Type
+                      </Label>
+                      <Select
+                        value={allskyCameraType}
+                        onValueChange={(value: "teamallsky" | "indi" | "custom") => {
+                          setAllskyCameraType(value)
+                          if (value !== "custom" && currentTelescope?.id && hostname) {
+                            // Update URL immediately when switching to a template
+                            const newUrl = generateCameraUrl(value, hostname)
+                            const newUrls = { ...allskyUrls, [currentTelescope.id]: newUrl }
+                            setAllskyUrls(newUrls)
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="teamallsky">TeamAllsky Allsky</SelectItem>
+                          <SelectItem value="indi">INDI Allsky</SelectItem>
+                          <SelectItem value="custom">Custom URL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-            <TabsContent value="general" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="allsky-url" className="text-white">
-                    All-Sky Camera URL for {currentTelescope?.name || 'Current Telescope'}
-                  </Label>
-                  <Input
-                    id="allsky-url"
-                    value={allskyUrls[currentTelescope?.id || ''] || ''}
-                    onChange={(e) => {
-                      const newUrls = { ...allskyUrls, [currentTelescope?.id || '']: e.target.value }
-                      setAllskyUrls(newUrls)
-                    }}
-                    placeholder="http://allsky/current/tmp/image.jpg"
-                    className="bg-gray-700 border-gray-600 text-white mt-2"
-                  />
+                    {(allskyCameraType === "teamallsky" || allskyCameraType === "indi") && (
+                      <div>
+                        <Label htmlFor="hostname" className="text-white text-sm">
+                          Hostname or IP Address
+                        </Label>
+                        <Input
+                          id="hostname"
+                          value={hostname}
+                          onChange={(e) => {
+                            const newHostname = e.target.value
+                            setHostname(newHostname)
+                            // Update URL as user types with current hostname
+                            if (currentTelescope?.id && allskyCameraType !== "custom") {
+                              const newUrl = generateCameraUrl(allskyCameraType, newHostname)
+                              const newUrls = { ...allskyUrls, [currentTelescope.id]: newUrl }
+                              setAllskyUrls(newUrls)
+                            }
+                          }}
+                          placeholder="192.168.1.100 or allsky.local"
+                          className="bg-gray-700 border-gray-600 text-white mt-1"
+                        />
+                        <div className="mt-2 text-sm text-gray-400">
+                          {allskyCameraType === "teamallsky" && 
+                            `URL will be: http://${hostname || "hostname"}/current/tmp/image.jpg`
+                          }
+                          {allskyCameraType === "indi" && 
+                            `URL will be: http://${hostname || "hostname"}/indi-allsky/latestimage`
+                          }
+                        </div>
+                      </div>
+                    )}
+
+                    {allskyCameraType === "custom" && (
+                      <div>
+                        <Label htmlFor="custom-url" className="text-white text-sm">
+                          Custom URL
+                        </Label>
+                        <Input
+                          id="custom-url"
+                          value={allskyUrls[currentTelescope?.id || ''] || ''}
+                          onChange={(e) => {
+                            const newUrls = { ...allskyUrls, [currentTelescope?.id || '']: e.target.value }
+                            setAllskyUrls(newUrls)
+                          }}
+                          placeholder="http://allsky/image.jpg"
+                          className="bg-gray-700 border-gray-600 text-white mt-1"
+                        />
+                        <div className="mt-2 text-sm text-gray-400">
+                          Enter the complete URL to your all-sky camera image
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show final URL for verification */}
+                    <div className="pt-2 border-t border-gray-600">
+                      <Label className="text-white text-sm">Current URL:</Label>
+                      <div className="mt-1 p-2 bg-gray-800 rounded text-xs font-mono text-gray-300 break-all">
+                        {allskyUrls[currentTelescope?.id || ''] || 'No URL configured'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </TabsContent>

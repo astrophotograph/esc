@@ -5,3 +5,5 @@ server/telescopes.db
 telescopes.db
 
 ui/coverage
+server/processed
+server/uploads
