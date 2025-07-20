@@ -2065,38 +2065,38 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showAnnotations, setShowAnnotations] = useState(false)
   const [currentAnnotations, setCurrentAnnotations] = useState<Annotation[]>([
     // Test annotations for development
-    {
-      "type": "sh2",
-      "pixelx": 923.287,
-      "pixely": 1084.06,
-      "radius": 15.5,
-      "name": "",
-      "names": [
-        "SH2-162"
-      ]
-    },
-    {
-      "type": "ngc",
-      "pixelx": 909.73,
-      "pixely": 1063.47,
-      "radius": 120.0,
-      "name": "",
-      "names": [
-        "NGC 7635",
-        "C 11 / Bubble Nebula"
-      ]
-    },
-    {
-      "type": "ngc",
-      "pixelx": 107.54,
-      "pixely": 581.549,
-      "radius": 8.75,
-      "name": "",
-      "names": [
-        "NGC 7654",
-        "M 52"
-      ]
-    }
+    // {
+    //   "type": "sh2",
+    //   "pixelx": 923.287,
+    //   "pixely": 1084.06,
+    //   "radius": 15.5,
+    //   "name": "",
+    //   "names": [
+    //     "SH2-162"
+    //   ]
+    // },
+    // {
+    //   "type": "ngc",
+    //   "pixelx": 909.73,
+    //   "pixely": 1063.47,
+    //   "radius": 120.0,
+    //   "name": "",
+    //   "names": [
+    //     "NGC 7635",
+    //     "C 11 / Bubble Nebula"
+    //   ]
+    // },
+    // {
+    //   "type": "ngc",
+    //   "pixelx": 107.54,
+    //   "pixely": 581.549,
+    //   "radius": 8.75,
+    //   "name": "",
+    //   "names": [
+    //     "NGC 7654",
+    //     "M 52"
+    //   ]
+    // }
   ])
   const [showStarmap, setShowStarmap] = useState(false)
   const [starmapSize, setStarmapSize] = useState<"small" | "medium" | "large" | "extra-large">("medium")
@@ -2104,21 +2104,21 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [starmapMinimized, setStarmapMinimized] = useState(false)
   const [starmapPosition, setStarmapPosition] = usePersistentState(STORAGE_KEYS.UI_STATE + "-starmap-position", { x: 20, y: 80 })
   const [annotationSettings, setAnnotationSettings] = useState<AnnotationSettings>({
-    enabled: true,
-    showLabels: true,
-    showMagnitudes: true,
-    showConstellations: true,
+    enabled: false,
+    showLabels: false,
+    showMagnitudes: false,
+    showConstellations: false,
     minMagnitude: -3,
     maxMagnitude: 8,
     objectTypes: {
-      stars: true,
-      galaxies: true,
-      nebulae: true,
-      clusters: true,
-      planets: true,
-      moons: true,
-      doubleStars: true,
-      variableStars: true,
+      stars: false,
+      galaxies: false,
+      nebulae: false,
+      clusters: false,
+      planets: false,
+      moons: false,
+      doubleStars: false,
+      variableStars: false,
       asteroids: false,
       comets: false,
     },

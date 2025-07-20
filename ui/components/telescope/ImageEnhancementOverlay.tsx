@@ -37,7 +37,9 @@ interface ImageEnhancementSettings {
   denoise_method: string
   denoise_strength: number
   available_denoise_methods: string[]
-  invert_enabled: boolean
+  deconvolve_enabled: boolean
+  deconvolve_strength: number
+  deconvolve_psf_size: number
   stretch_parameter: string
   available_stretch_parameters: string[]
 }
@@ -58,7 +60,7 @@ export function ImageEnhancementOverlay({
     upscaling_enabled: false,
     scale_factor: 2.0,
     upscaling_method: "bicubic",
-    available_upscaling_methods: ["bicubic", "lanczos"],
+    available_upscaling_methods: ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan"],
     sharpening_enabled: false,
     sharpening_method: "unsharp_mask",
     sharpening_strength: 1.0,
@@ -67,7 +69,9 @@ export function ImageEnhancementOverlay({
     denoise_method: "tv_chambolle",
     denoise_strength: 1.0,
     available_denoise_methods: ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
-    invert_enabled: false,
+    deconvolve_enabled: false,
+    deconvolve_strength: 0.5,
+    deconvolve_psf_size: 2.0,
     stretch_parameter: "15% Bg, 3 sigma",
     available_stretch_parameters: [
       "No Stretch", 
@@ -109,7 +113,7 @@ export function ImageEnhancementOverlay({
         upscaling_enabled: result?.upscaling_enabled ?? false,
         scale_factor: result?.scale_factor ?? 2.0,
         upscaling_method: result?.upscaling_method ?? "bicubic",
-        available_upscaling_methods: result?.available_upscaling_methods ?? ["bicubic", "lanczos"],
+        available_upscaling_methods: result?.available_upscaling_methods ?? ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan"],
         sharpening_enabled: result?.sharpening_enabled ?? false,
         sharpening_method: result?.sharpening_method ?? "unsharp_mask",
         sharpening_strength: result?.sharpening_strength ?? 1.0,
@@ -118,7 +122,9 @@ export function ImageEnhancementOverlay({
         denoise_method: result?.denoise_method ?? "tv_chambolle",
         denoise_strength: result?.denoise_strength ?? 1.0,
         available_denoise_methods: result?.available_denoise_methods ?? ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
-        invert_enabled: result?.invert_enabled ?? false,
+        deconvolve_enabled: result?.deconvolve_enabled ?? false,
+        deconvolve_strength: result?.deconvolve_strength ?? 0.5,
+        deconvolve_psf_size: result?.deconvolve_psf_size ?? 2.0,
         stretch_parameter: result?.stretch_parameter ?? "15% Bg, 3 sigma",
         available_stretch_parameters: result?.available_stretch_parameters ?? [
           "No Stretch", 
@@ -155,7 +161,9 @@ export function ImageEnhancementOverlay({
         denoise_enabled: updatedSettings.denoise_enabled,
         denoise_method: updatedSettings.denoise_method,
         denoise_strength: updatedSettings.denoise_strength,
-        invert_enabled: updatedSettings.invert_enabled,
+        deconvolve_enabled: updatedSettings.deconvolve_enabled,
+        deconvolve_strength: updatedSettings.deconvolve_strength,
+        deconvolve_psf_size: updatedSettings.deconvolve_psf_size,
         stretch_parameter: updatedSettings.stretch_parameter,
       }
       
@@ -188,7 +196,9 @@ export function ImageEnhancementOverlay({
       denoise_enabled: false,
       denoise_method: "tv_chambolle",
       denoise_strength: 1.0,
-      invert_enabled: false,
+      deconvolve_enabled: false,
+      deconvolve_strength: 0.5,
+      deconvolve_psf_size: 2.0,
       stretch_parameter: "15% Bg, 3 sigma",
     })
   }
@@ -198,7 +208,7 @@ export function ImageEnhancementOverlay({
     if (settings.upscaling_enabled) count++
     if (settings.sharpening_enabled) count++
     if (settings.denoise_enabled) count++
-    if (settings.invert_enabled) count++
+    if (settings.deconvolve_enabled) count++
     if (settings.stretch_parameter !== "No Stretch") count++
     return count
   }
@@ -416,6 +426,59 @@ export function ImageEnhancementOverlay({
 
             <Separator className="bg-gray-700" />
 
+            {/* Deconvolution */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-purple-400" />
+                  <Label className="text-gray-300">Deconvolution</Label>
+                </div>
+                <Switch
+                  checked={settings.deconvolve_enabled}
+                  onCheckedChange={(enabled) => updateSettings({ deconvolve_enabled: enabled })}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {settings.deconvolve_enabled && (
+                <div className="pl-6 space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Strength</span>
+                      <span className="text-white">{settings.deconvolve_strength.toFixed(2)}</span>
+                    </div>
+                    <Slider
+                      value={[settings.deconvolve_strength]}
+                      onValueChange={([value]) => updateSettings({ deconvolve_strength: value })}
+                      min={0.1}
+                      max={1.0}
+                      step={0.1}
+                      className="w-full"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">PSF Size</span>
+                      <span className="text-white">{settings.deconvolve_psf_size.toFixed(1)}</span>
+                    </div>
+                    <Slider
+                      value={[settings.deconvolve_psf_size]}
+                      onValueChange={([value]) => updateSettings({ deconvolve_psf_size: value })}
+                      min={0.5}
+                      max={10.0}
+                      step={0.5}
+                      className="w-full"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator className="bg-gray-700" />
+
             {/* Stretch Parameters */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -441,22 +504,6 @@ export function ImageEnhancementOverlay({
               </Select>
             </div>
 
-            <Separator className="bg-gray-700" />
-
-            {/* Image Inversion */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4 text-red-400" />
-                  <Label className="text-gray-300">Invert Colors</Label>
-                </div>
-                <Switch
-                  checked={settings.invert_enabled}
-                  onCheckedChange={(enabled) => updateSettings({ invert_enabled: enabled })}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
 
             <Separator className="bg-gray-700" />
 

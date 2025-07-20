@@ -47,21 +47,21 @@ export function AnnotationControls() {
 
   const resetToDefaults = () => {
     const defaultSettings = {
-      enabled: true,
-      showLabels: true,
-      showMagnitudes: true,
-      showConstellations: true,
+      enabled: false,
+      showLabels: false,
+      showMagnitudes: false,
+      showConstellations: false,
       minMagnitude: -3,
       maxMagnitude: 8,
       objectTypes: {
-        stars: true,
-        galaxies: true,
-        nebulae: true,
-        clusters: true,
-        planets: true,
-        moons: true,
-        doubleStars: true,
-        variableStars: true,
+        stars: false,
+        galaxies: false,
+        nebulae: false,
+        clusters: false,
+        planets: false,
+        moons: false,
+        doubleStars: false,
+        variableStars: false,
         asteroids: false,
         comets: false,
       },
@@ -83,7 +83,7 @@ export function AnnotationControls() {
     }
 
     setAnnotationSettings(defaultSettings)
-    setShowAnnotations(true)
+    setShowAnnotations(false)
   }
 
   const getActiveObjectCount = () => {

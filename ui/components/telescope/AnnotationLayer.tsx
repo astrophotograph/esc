@@ -232,8 +232,6 @@ export function AnnotationLayer({
       }}
     >
       {filteredAnnotations.map((annotation, index) => {
-        const x = (annotation.x / 100) * 800
-        const y = (annotation.y / 100) * 600
         const size = getAnnotationSize(annotation.magnitude, annotation.type)
         const color = getAnnotationColor(annotation.type)
         const isHovered = false // We'll implement this later
@@ -245,8 +243,9 @@ export function AnnotationLayer({
               isVisible ? "opacity-100 scale-100" : "opacity-0 scale-80"
             } pointer-events-auto`}
             style={{
-              left: x - size / 2,
-              top: y - size / 2,
+              left: `${annotation.x}%`,
+              top: `${annotation.y}%`,
+              transform: `translate(-50%, -50%)`,
               transitionDelay: isVisible ? `${index * 50}ms` : "0ms",
             }}
             onClick={() => handleAnnotationClick(annotation)}

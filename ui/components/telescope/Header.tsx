@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Bell, Camera, CogIcon as Cog6Tooth, LogOut, User, Mountain, MessageSquare, HelpCircle, ImageIcon, Shield, Star } from "lucide-react"
+import React, { useState } from "react"
+import { Camera, CogIcon as Cog6Tooth, Mountain, MessageSquare, HelpCircle, ImageIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -51,8 +51,8 @@ export function Header() {
       <div className="flex h-16 items-center px-4">
         <TelescopeSelector />
         <div className="ml-auto flex items-center space-x-4">
-          {/* Notification Bell */}
-          <Button
+          {/* Notification Bell - Hidden */}
+          {/* <Button
             variant="ghost"
             size="icon"
             className="relative"
@@ -63,7 +63,7 @@ export function Header() {
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
               3
             </span>
-          </Button>
+          </Button> */}
           {/*<Button*/}
           {/*  variant="outline"*/}
           {/*  size="sm"*/}
@@ -113,8 +113,8 @@ export function Header() {
             Processing
           </Button>
 
-          {/* Sky Map Button */}
-          <Button
+          {/* Sky Map Button - Hidden */}
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={() => router.push('/skymap')}
@@ -123,7 +123,7 @@ export function Header() {
           >
             <Star className="w-4 h-4" />
             Sky Map
-          </Button>
+          </Button> */}
 
           {/* Messages Button */}
           <Button
@@ -162,16 +162,18 @@ export function Header() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                {/* Profile - Hidden */}
+                {/* <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                   <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                </DropdownMenuItem> */}
+                {/* Notifications - Hidden */}
+                {/* <DropdownMenuItem>
                   <Bell className="mr-2 h-4 w-4" />
                   <span>Notifications</span>
                   <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={() => setShowConfiguration(true)}>
                   <Cog6Tooth className="mr-2 h-4 w-4" />
                   <span>Settings</span>
@@ -184,26 +186,28 @@ export function Header() {
                   <span>Start Tour</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
+              {/* System Admin - Hidden */}
+              {/* <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowSystemAdmin(true)}>
                 <Shield className="mr-2 h-4 w-4" />
                 <span>System Admin</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              </DropdownMenuItem> */}
+              {/* Log out - Hidden */}
+              {/* <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
                 <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-      
+
       {/* System Admin Dialog */}
-      <SystemAdminDialog 
-        open={showSystemAdmin} 
-        onOpenChange={setShowSystemAdmin} 
+      <SystemAdminDialog
+        open={showSystemAdmin}
+        onOpenChange={setShowSystemAdmin}
       />
     </div>
   )

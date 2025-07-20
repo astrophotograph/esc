@@ -27,12 +27,6 @@ const tourSteps: TourStep[] = [
     placement: "bottom",
   },
   {
-    target: "[data-tour='notification-bell']",
-    title: "Notifications",
-    content: "Important notifications will appear here for events like imaging completion, weather alerts, or system messages.",
-    placement: "bottom",
-  },
-  {
     target: "[data-tour='pip-toggle']",
     title: "Picture-in-Picture Mode",
     content: "Enable Picture-in-Picture mode to keep the camera view visible while using other applications.",
@@ -49,12 +43,6 @@ const tourSteps: TourStep[] = [
     title: "User Menu",
     content: "Access your profile, settings, documentation, and other options from the user menu.",
     placement: "left",
-  },
-  {
-    target: "[data-tour='quick-actions']",
-    title: "Quick Actions",
-    content: "Quick action buttons for common tasks: planning sessions, equipment management, and celestial object search.",
-    placement: "top",
   },
   {
     target: "[data-tour='camera-view']",
@@ -232,8 +220,10 @@ export function AppTour() {
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 z-40" onClick={handleSkip} />
+      {/* Backdrop - only show for body target */}
+      {step.target === "body" && (
+        <div className="fixed inset-0 bg-black/70 z-40" onClick={handleSkip} />
+      )}
       
       {/* Highlight current element */}
       {step.target !== "body" && (
@@ -242,7 +232,7 @@ export function AppTour() {
           <div
             className="fixed z-50 pointer-events-none border-4 border-blue-400 rounded-lg"
             style={{
-              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.8), inset 0 0 20px rgba(59, 130, 246, 0.3)",
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.8)",
               ...(() => {
                 const element = document.querySelector(step.target)
                 if (!element) return {}
@@ -261,7 +251,7 @@ export function AppTour() {
           <div
             className="fixed z-45 pointer-events-none rounded-lg animate-pulse"
             style={{
-              background: "rgba(59, 130, 246, 0.2)",
+              background: "transparent",
               border: "2px solid rgba(59, 130, 246, 0.6)",
               ...(() => {
                 const element = document.querySelector(step.target)
