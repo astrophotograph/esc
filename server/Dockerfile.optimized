@@ -48,6 +48,9 @@ ENV PYTHONUNBUFFERED=1
 # Copy application code
 COPY --chown=telescope:telescope . .
 
+# Ensure the restart script is executable
+RUN chmod +x /app/start_with_restart.sh
+
 # Switch to non-root user
 USER telescope
 
@@ -58,5 +61,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the server
-CMD ["python", "main.py", "server", "--server-port", "8000"]
+# Start the server with auto-restart capability
+CMD ["/app/start_with_restart.sh", "--server-port", "8000"]

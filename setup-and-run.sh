@@ -63,6 +63,23 @@ fi
 
 echo -e "${GREEN}✓ Docker is installed and running${NC}"
 
+# Check disk space
+echo -e "\n${YELLOW}Checking available disk space...${NC}"
+AVAILABLE_SPACE=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+REQUIRED_SPACE=5  # Require at least 5GB free space
+
+if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then
+    echo -e "${RED}❌ Insufficient disk space!${NC}"
+    echo "Available: ${AVAILABLE_SPACE}GB"
+    echo "Required: ${REQUIRED_SPACE}GB minimum"
+    echo ""
+    echo "Please free up disk space before continuing."
+    echo "You can use 'docker system prune -a' to clean up Docker resources."
+    exit 1
+else
+    echo -e "${GREEN}✓ Sufficient disk space available (${AVAILABLE_SPACE}GB free)${NC}"
+fi
+
 # Check if running on Raspberry Pi and ensure it's 64-bit
 if [ -f /etc/os-release ] && grep -qi "raspbian" /etc/os-release; then
     echo -e "\n${YELLOW}Detected Raspberry Pi. Checking architecture...${NC}"
@@ -148,6 +165,11 @@ fi
 # Stop any running containers
 echo -e "\n${YELLOW}Stopping any existing containers...${NC}"
 $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml down 2>/dev/null || true
+
+# Clean up Docker resources
+echo -e "\n${YELLOW}Cleaning up Docker resources...${NC}"
+$DOCKER_CMD system prune -f --volumes 2>/dev/null || true
+echo -e "${GREEN}✓ Docker cleanup completed${NC}"
 
 # Start the application
 echo -e "\n${YELLOW}Starting ALP Experimental...${NC}"
