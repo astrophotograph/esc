@@ -24,9 +24,9 @@ env:
   IMAGE_NAME_SERVER: ${{ github.repository }}-server
 
 jobs:
-  build-and-push:
+  build-amd64:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -37,24 +37,165 @@ jobs:
           - context: ./ui
             dockerfile: ./ui/Dockerfile.prod
             image: ui
-            platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
           - context: ./server
             dockerfile: ./server/Dockerfile.optimized
             image: server
-            platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to the Container registry
         if: github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for ${{ matrix.image }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
+          flavor: |
+            suffix=-amd64
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: Build and push ${{ matrix.image }} image (AMD64)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: ${{ github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-amd64
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-amd64,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Image build summary
+        run: |
+          echo "## AMD64 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push to registry**: ${{ github.event.inputs.push_images || github.event_name != 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  build-arm64:
+    runs-on: self-hosted
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        include:
+          - context: ./ui
+            dockerfile: ./ui/Dockerfile.prod
+            image: ui
+          - context: ./server
+            dockerfile: ./server/Dockerfile.optimized
+            image: server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        if: github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for ${{ matrix.image }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
+          flavor: |
+            suffix=-arm64
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: Build and push ${{ matrix.image }} image (ARM64)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/arm64
+          push: ${{ github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-arm64
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-arm64,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Image build summary
+        run: |
+          echo "## ARM64 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push to registry**: ${{ github.event.inputs.push_images || github.event_name != 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  create-manifest:
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        image: [ui, server]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -76,23 +217,22 @@ jobs:
             type=sha,prefix={{branch}}-,format=short
             type=raw,value={{date 'YYYYMMDD-HHmmss'}}
 
-      - name: Build and push ${{ matrix.image }} image
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          platforms: ${{ matrix.platforms }}
-          push: ${{ github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+      - name: Create and push multi-arch manifest
+        run: |
+          for tag in ${{ steps.meta.outputs.tags }}; do
+            echo "Creating manifest for $tag"
+            docker buildx imagetools create \
+              --tag $tag \
+              ${tag}-amd64 \
+              ${tag}-arm64
+          done
+
+      - name: Manifest creation summary
+        run: |
+          echo "## Multi-arch Manifest Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
 
       #- name: Delete Package Versions
       #  uses: actions/delete-package-versions@v5.0.0
@@ -100,12 +240,3 @@ jobs:
       #    package-name: ${{ github.repository }}-${{ matrix.image }}
       #    package-type: 'container'
       #    min-versions-to-keep: 10
-
-      - name: Image build summary
-        run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Platforms**: ${{ matrix.platforms }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Push to registry**: ${{ github.event.inputs.push_images || github.event_name != 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
