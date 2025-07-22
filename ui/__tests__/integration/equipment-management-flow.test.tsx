@@ -3,9 +3,9 @@ import { render, fireEvent, screen, waitFor } from '@testing-library/react'
 import { createMockTelescopeContext, mockTelescope, mockEquipment } from '../../test-utils'
 
 // Import components for integration testing
-import { EquipmentManager } from '../../components/telescope/panels/EquipmentManager'
-import { SessionManagement } from '../../components/telescope/panels/SessionManagement'
-import { ObservationLogger } from '../../components/telescope/panels/ObservationLogger'
+import { SessionManagement } from '@/components/telescope/panels/SessionManagement'
+import { ObservationLogger } from '@/components/telescope/panels/ObservationLogger'
+import { EquipmentManager } from "@/components/telescope/modals/EquipmentManager"
 
 // Mock storage utilities for data persistence testing
 const mockSaveToStorage = jest.fn()
@@ -48,8 +48,8 @@ const mockCheckEquipmentCompatibility = jest.fn((equipment1, equipment2) => {
     ['UV Filter', 'IR Filter'], // Can't use both simultaneously
     ['2" Eyepiece', '1.25" Eyepiece'], // Different sizes
   ]
-  
-  return !incompatiblePairs.some(([item1, item2]) => 
+
+  return !incompatiblePairs.some(([item1, item2]) =>
     (equipment1.name === item1 && equipment2.name === item2) ||
     (equipment1.name === item2 && equipment2.name === item1)
   )
@@ -125,14 +125,14 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       // 1. Add New Equipment
       render(<EquipmentManager />)
-      
+
       const addEquipmentButton = screen.getByRole('button', { name: /add equipment/i })
       fireEvent.click(addEquipmentButton)
 
       // Fill equipment form (assuming modal opens)
       const nameInput = screen.getByPlaceholderText(/equipment name/i)
       const typeSelect = screen.getByRole('combobox', { name: /type/i })
-      
+
       fireEvent.change(nameInput, { target: { value: 'New UV Filter' } })
       fireEvent.change(typeSelect, { target: { value: 'filter' } })
 
@@ -164,7 +164,7 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       // 3. Start session with equipment tracking
       render(<SessionManagement />)
-      
+
       const startSessionButton = screen.getByRole('button', { name: /start session/i })
       fireEvent.click(startSessionButton)
 
@@ -174,7 +174,7 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       // 5. Check maintenance alerts for high-usage equipment
       render(<EquipmentManager />)
-      
+
       // Should show maintenance alert for equipment with high usage
       expect(screen.getByText(/maintenance required/i)).toBeInTheDocument()
 
@@ -292,7 +292,7 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       // Start session with selected equipment
       render(<SessionManagement />)
-      
+
       const startButton = screen.getByRole('button', { name: /start session/i })
       fireEvent.click(startButton)
 
@@ -448,7 +448,7 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       const maintenanceTypeSelect = screen.getByRole('combobox', { name: /maintenance type/i })
       const maintenanceNotes = screen.getByPlaceholderText(/maintenance notes/i)
-      
+
       fireEvent.change(maintenanceTypeSelect, { target: { value: 'service' } })
       fireEvent.change(maintenanceNotes, { target: { value: 'Professional service completed' } })
 
@@ -684,7 +684,7 @@ describe('Equipment Management Flow Integration Tests', () => {
 
       // Rapid equipment selection
       const checkboxes = screen.getAllByRole('checkbox')
-      
+
       checkboxes.forEach((checkbox, index) => {
         fireEvent.click(checkbox)
         fireEvent.click(checkbox) // Unselect

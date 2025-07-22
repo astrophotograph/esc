@@ -7,8 +7,8 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square, Home, Target } from "lucide-react"
-import { useTelescopeContext } from "../../../context/TelescopeContext"
-import { formatRaDec } from "../../../utils/telescope-utils"
+import { useTelescopeContext } from "@/context/TelescopeContext"
+import { formatRaDec } from "@/utils/telescope-utils"
 import { PlateSolveSyncDialog, type PlateSolveResult } from "../modals/PlateSolveSyncDialog"
 
 export function TelescopeControls() {
@@ -50,10 +50,10 @@ export function TelescopeControls() {
       clearInterval(intervalRef.current)
     }
 
-    // Send initial move command immediately
+    // Send the initial move command immediately
     handleTelescopeMove(direction)
 
-    // Set up interval to send move commands every 500ms
+    // Set up an interval to send move commands every 500 ms
     intervalRef.current = setInterval(() => {
       handleTelescopeMove(direction)
     }, 500)
@@ -86,7 +86,7 @@ export function TelescopeControls() {
     stopContinuousMove()
   }, [stopContinuousMove])
 
-  // Cleanup on unmount
+  // Cleanup on unmounting
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -136,7 +136,7 @@ export function TelescopeControls() {
         throw new Error(`API request failed: ${response.status}`)
       }
 
-      // Optimistically update position - will be overridden by stream
+      // Optimistically update position - will be overridden by a stream
       setFocusPosition(value)
     } catch (error) {
       console.error('Error setting focus position:', error)
@@ -158,7 +158,7 @@ export function TelescopeControls() {
       return
     }
 
-    // Open dialog and start plate solving
+    // Open the dialog and start plate solving
     setShowPlateSolveDialog(true)
     setIsPlateSolving(true)
     setPlateSolveResult(null)

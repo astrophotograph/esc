@@ -11,7 +11,7 @@ export const runtime = 'nodejs'
  * Handles session creation, listing, and management.
  */
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Use direct backend URL to avoid circular proxy calls
     const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'

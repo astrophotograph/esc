@@ -232,7 +232,7 @@ export function AnnotationControls() {
                         id={key}
                         checked={enabled}
                         onCheckedChange={(checked) => updateObjectTypes({ [key]: checked })}
-                        size="sm"
+                        // size="sm"
                       />
                     </div>
                   ))}

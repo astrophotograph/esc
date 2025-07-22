@@ -27,6 +27,7 @@ pnpm test:coverage   # Run tests with coverage
 cd server
 uv sync              # Install dependencies
 uv run python main.py server    # Start API server (http://localhost:8000)
+uv run python main.py server --reload  # Start API server with auto-reload for development
 uv run python main.py console   # Start interactive CLI
 uv run pytest        # Run tests
 uv run ruff check .  # Run linter

@@ -208,7 +208,7 @@ async function loadSettings(): Promise<AppSettings> {
       session: { ...DEFAULT_SETTINGS.session, ...settings.session },
       notifications: { ...DEFAULT_SETTINGS.notifications, ...settings.notifications },
     }
-  } catch (error) {
+  } catch (_error) {
     console.log('Settings file not found, using defaults')
     return DEFAULT_SETTINGS
   }

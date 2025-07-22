@@ -1212,7 +1212,7 @@ class Controller:
     """Controller for all of the telescopes."""
 
     def __init__(
-        self, app: FastAPI, service_port: int = 8000, *, discover: bool = True
+        self, app: FastAPI, service_port: int = 8000, *, discover: bool = True, reload: bool = False
     ):
         """Initialize the controller."""
         self.app = app
@@ -1223,6 +1223,7 @@ class Controller:
         ] = {}  # Track remote controller metadata
         self.service_port = service_port
         self.discover = discover
+        self.reload = reload
         self.db = TelescopeDatabase()
 
     async def add_telescope(
@@ -3215,6 +3216,7 @@ class Controller:
             port=self.service_port,
             log_level="trace",
             log_config=None,
+            reload=self.reload,
         )
         server = uvicorn.Server(config)
         await server.serve()
@@ -3369,12 +3371,17 @@ def panorama(
 @click.option(
     "--no-discovery", is_flag=True, help="Disable automatic telescope discovery"
 )
-def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery):
+@click.option(
+    "--reload", is_flag=True, help="Enable auto-reload on code changes (development mode)"
+)
+def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery, reload):
     """Start a FastAPI server for controlling a Seestar device."""
 
     click.echo(f"Starting Seestar API server on port {server_port}")
     if no_discovery:
         click.echo("Auto-discovery is disabled")
+    if reload:
+        click.echo("Auto-reload enabled - server will restart when code changes")
 
     app = FastAPI(
         title="Seestar API", description="API for controlling Seestar devices"
@@ -3470,7 +3477,7 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
                 status_code=500, detail=f"Error generating star map: {str(e)}"
             )
 
-    controller = Controller(app, service_port=server_port, discover=not no_discovery)
+    controller = Controller(app, service_port=server_port, discover=not no_discovery, reload=reload)
 
     async def run_server():
         if seestar_host and seestar_port:

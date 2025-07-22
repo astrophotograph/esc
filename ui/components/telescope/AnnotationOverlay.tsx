@@ -69,17 +69,17 @@ export function AnnotationOverlay({
   offsetY,
   isPortrait: _isPortrait
 }: AnnotationOverlayProps) {
-  // Don't render anything if no annotations, but allow fade out when visible is false
-  if (annotations.length === 0) {
-    return null;
-  }
-
   // Track if we're on the client side to avoid SSR issues
   const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Don't render anything if no annotations, but allow fade out when visible is false
+  if (annotations.length === 0) {
+    return null;
+  }
 
 
   // Calculate the actual displayed image size within the container
