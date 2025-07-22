@@ -3,6 +3,7 @@ import datetime
 import inspect
 import json
 import logging as orig_logging
+import os
 import tempfile
 from typing import Optional, AsyncGenerator
 
@@ -29,8 +30,11 @@ from starplot import (
 from starplot.styles import PlotStyle, extensions
 
 from smarttel.imaging.graxpert_stretch import GraxpertStretch
-from smarttel.imaging.upscaler import UpscalingMethod, SharpeningMethod, ImageEnhancementProcessor
-from smarttel.imaging.stretch import StretchParameter
+from smarttel.imaging.upscaler import (
+    UpscalingMethod,
+    SharpeningMethod,
+    ImageEnhancementProcessor,
+)
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
 from smarttel.seestar.commands.discovery import discover_seestars
@@ -170,20 +174,36 @@ class RemoteControllerResponse(BaseModel):
 
 class ImageEnhancementSettingsRequest(BaseModel):
     """Request model for updating comprehensive image enhancement settings."""
-    
-    upscaling_enabled: bool = Field(default=False, description="Whether upscaling is enabled")
-    scale_factor: float = Field(default=2.0, ge=1.0, le=4.0, description="Upscaling factor (1.0-4.0)")
-    upscaling_method: UpscalingMethod = Field(default=UpscalingMethod.BICUBIC, description="Upscaling method")
-    sharpening_enabled: bool = Field(default=False, description="Whether sharpening is enabled")
-    sharpening_method: SharpeningMethod = Field(default=SharpeningMethod.UNSHARP_MASK, description="Sharpening method")
-    sharpening_strength: float = Field(default=1.0, ge=0.0, le=2.0, description="Sharpening strength (0.0-2.0)")
-    invert_enabled: bool = Field(default=False, description="Whether image inversion is enabled")
-    stretch_parameter: str = Field(default="15% Bg, 3 sigma", description="GraXpert stretch parameter")
+
+    upscaling_enabled: bool = Field(
+        default=False, description="Whether upscaling is enabled"
+    )
+    scale_factor: float = Field(
+        default=2.0, ge=1.0, le=4.0, description="Upscaling factor (1.0-4.0)"
+    )
+    upscaling_method: UpscalingMethod = Field(
+        default=UpscalingMethod.BICUBIC, description="Upscaling method"
+    )
+    sharpening_enabled: bool = Field(
+        default=False, description="Whether sharpening is enabled"
+    )
+    sharpening_method: SharpeningMethod = Field(
+        default=SharpeningMethod.UNSHARP_MASK, description="Sharpening method"
+    )
+    sharpening_strength: float = Field(
+        default=1.0, ge=0.0, le=2.0, description="Sharpening strength (0.0-2.0)"
+    )
+    invert_enabled: bool = Field(
+        default=False, description="Whether image inversion is enabled"
+    )
+    stretch_parameter: str = Field(
+        default="15% Bg, 3 sigma", description="GraXpert stretch parameter"
+    )
 
 
 class ImageEnhancementSettingsResponse(BaseModel):
     """Response model for comprehensive image enhancement settings."""
-    
+
     upscaling_enabled: bool
     scale_factor: float
     upscaling_method: str
@@ -323,7 +343,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         # Create shared image processor for upscaling
         self.image_processor = GraxpertStretch()
-        
+
         # Create comprehensive enhancement processor
         self.enhancement_processor = ImageEnhancementProcessor()
 
@@ -744,17 +764,22 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         async def get_enhancement_settings():
             """Get current comprehensive image enhancement settings."""
             from smarttel.imaging.upscaler import ImageUpscaler
-            
+
             upscaler = ImageUpscaler()
-            available_upscaling_methods = [method.value for method in upscaler.get_available_methods()]
+            available_upscaling_methods = [
+                method.value for method in upscaler.get_available_methods()
+            ]
             available_sharpening_methods = [method.value for method in SharpeningMethod]
             available_stretch_parameters = [
-                "No Stretch", "10% Bg, 3 sigma", "15% Bg, 3 sigma", 
-                "20% Bg, 3 sigma", "30% Bg, 2 sigma"
+                "No Stretch",
+                "10% Bg, 3 sigma",
+                "15% Bg, 3 sigma",
+                "20% Bg, 3 sigma",
+                "30% Bg, 2 sigma",
             ]
-            
+
             settings = self.enhancement_processor.get_enhancement_settings()
-            
+
             return ImageEnhancementSettingsResponse(
                 upscaling_enabled=settings["upscaling_enabled"],
                 scale_factor=settings["scale_factor"],
@@ -766,46 +791,55 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 available_sharpening_methods=available_sharpening_methods,
                 invert_enabled=settings["invert_enabled"],
                 stretch_parameter="15% Bg, 3 sigma",  # Get from image processor
-                available_stretch_parameters=available_stretch_parameters
+                available_stretch_parameters=available_stretch_parameters,
             )
 
         @router.post("/enhancement", response_model=ImageEnhancementSettingsResponse)
-        async def update_enhancement_settings(settings: ImageEnhancementSettingsRequest):
+        async def update_enhancement_settings(
+            settings: ImageEnhancementSettingsRequest,
+        ):
             """Update comprehensive image enhancement settings."""
             from smarttel.imaging.upscaler import ImageUpscaler
-            
+
             logging.info(f"Received enhancement settings update: {settings}")
-            
+
             # Update enhancement processor settings
             self.enhancement_processor.set_upscaling_params(
                 enabled=settings.upscaling_enabled,
                 scale_factor=settings.scale_factor,
-                method=settings.upscaling_method
+                method=settings.upscaling_method,
             )
-            
+
             self.enhancement_processor.set_sharpening_params(
                 enabled=settings.sharpening_enabled,
                 method=settings.sharpening_method,
-                strength=settings.sharpening_strength
+                strength=settings.sharpening_strength,
             )
-            
+
             self.enhancement_processor.set_invert_enabled(settings.invert_enabled)
-            
-            logging.info(f"Updated enhancement processor settings: {self.enhancement_processor.get_enhancement_settings()}")
-            
+
+            logging.info(
+                f"Updated enhancement processor settings: {self.enhancement_processor.get_enhancement_settings()}"
+            )
+
             # Update stretch parameter on the original image processor
             # Note: This would require modifying the GraxpertStretch class to support dynamic stretch parameters
-            
+
             upscaler = ImageUpscaler()
-            available_upscaling_methods = [method.value for method in upscaler.get_available_methods()]
+            available_upscaling_methods = [
+                method.value for method in upscaler.get_available_methods()
+            ]
             available_sharpening_methods = [method.value for method in SharpeningMethod]
             available_stretch_parameters = [
-                "No Stretch", "10% Bg, 3 sigma", "15% Bg, 3 sigma", 
-                "20% Bg, 3 sigma", "30% Bg, 2 sigma"
+                "No Stretch",
+                "10% Bg, 3 sigma",
+                "15% Bg, 3 sigma",
+                "20% Bg, 3 sigma",
+                "30% Bg, 2 sigma",
             ]
-            
+
             logging.info(f"Updated enhancement settings: {settings}")
-            
+
             return ImageEnhancementSettingsResponse(
                 upscaling_enabled=settings.upscaling_enabled,
                 scale_factor=settings.scale_factor,
@@ -817,7 +851,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 available_sharpening_methods=available_sharpening_methods,
                 invert_enabled=settings.invert_enabled,
                 stretch_parameter=settings.stretch_parameter,
-                available_stretch_parameters=available_stretch_parameters
+                available_stretch_parameters=available_stretch_parameters,
             )
 
         @router.get("/stream/{camera_id:int}")
@@ -827,6 +861,136 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 get_next_image(camera_id),
                 media_type="multipart/x-mixed-replace; boundary=frame",
             )
+
+        @router.post("/plate-solve")
+        async def plate_solve(api_key: str = None):
+            """Plate solve the current image using astrometry.net."""
+            # Check if imaging client is connected
+            if not self.imaging or not self.imaging.is_connected:
+                raise HTTPException(
+                    status_code=503, detail="Imaging client not connected"
+                )
+
+            # Get the current image
+            current_image = self.imaging.get_cached_raw_image()
+            if current_image is None:
+                raise HTTPException(
+                    status_code=404, detail="No current image available"
+                )
+
+            # Check if we have an API key
+            if not api_key:
+                # Try to get from environment variable
+                api_key = os.getenv("ASTROMETRY_API_KEY")
+                if not api_key:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Astrometry.net API key required. Pass as parameter or set ASTROMETRY_API_KEY environment variable",
+                    )
+
+            # Import here to avoid circular dependencies
+            from services.astrometry_client import AstrometryClient
+
+            # Create astrometry client
+            astrometry_client = AstrometryClient(api_key)
+
+            try:
+                # Get telescope's current position if available for better solving
+                solve_params = {}
+                if hasattr(self.client, "status") and self.client.status:
+                    if (
+                        self.client.status.ra is not None
+                        and self.client.status.dec is not None
+                    ):
+                        solve_params["center_ra"] = self.client.status.ra
+                        solve_params["center_dec"] = self.client.status.dec
+                        solve_params["radius"] = 10.0  # 10 degree search radius
+
+                # Perform plate solving
+                logging.info(f"Starting plate solve with params: {solve_params}")
+                result = await astrometry_client.solve_image(
+                    current_image, **solve_params
+                )
+
+                if result.success:
+                    logging.info(
+                        f"Plate solve successful: RA={result.ra}, Dec={result.dec}"
+                    )
+                    return {
+                        "success": True,
+                        "ra": result.ra,
+                        "dec": result.dec,
+                        "orientation": result.orientation,
+                        "pixscale": result.pixscale,
+                        "field_width": result.field_width,
+                        "field_height": result.field_height,
+                        "job_id": result.job_id,
+                        "submission_id": result.submission_id,
+                    }
+                else:
+                    logging.error(f"Plate solve failed: {result.error}")
+                    raise HTTPException(
+                        status_code=500, detail=f"Plate solving failed: {result.error}"
+                    )
+
+            except Exception as e:
+                logging.error(f"Error during plate solving: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"Error during plate solving: {str(e)}"
+                )
+            finally:
+                await astrometry_client.close()
+
+        @router.post("/sync")
+        async def sync_telescope(sync_data: dict):
+            """Sync the telescope to specific RA/Dec coordinates."""
+            # Check if client is connected
+            if not self.client or not self.client.is_connected:
+                raise HTTPException(
+                    status_code=503, detail="Telescope client not connected"
+                )
+
+            # Validate input data
+            if "ra" not in sync_data or "dec" not in sync_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Both 'ra' and 'dec' coordinates are required",
+                )
+
+            try:
+                ra = float(sync_data["ra"])
+                dec = float(sync_data["dec"])
+
+                # Validate coordinate ranges
+                if not (0 <= ra <= 360):
+                    raise HTTPException(
+                        status_code=400, detail="RA must be between 0 and 360 degrees"
+                    )
+                if not (-90 <= dec <= 90):
+                    raise HTTPException(
+                        status_code=400, detail="Dec must be between -90 and 90 degrees"
+                    )
+
+                # Perform sync
+                logging.info(f"Syncing telescope to RA={ra}, Dec={dec}")
+                self.client.scope_sync(ra, dec)
+
+                return {
+                    "success": True,
+                    "message": f"Telescope synced to RA={ra:.6f}°, Dec={dec:.6f}°",
+                    "ra": ra,
+                    "dec": dec,
+                }
+
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid coordinates: {str(e)}"
+                )
+            except Exception as e:
+                logging.error(f"Error during telescope sync: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"Error during sync: {str(e)}"
+                )
 
         self.router = router
 
@@ -1214,6 +1378,7 @@ class Controller:
 
                     # Register remote controllers with WebSocket manager for each telescope
                     from websocket_manager import get_websocket_manager
+
                     websocket_manager = get_websocket_manager()
 
                     for (
@@ -1290,6 +1455,7 @@ class Controller:
 
         # Unregister from WebSocket manager
         from websocket_manager import get_websocket_manager
+
         websocket_manager = get_websocket_manager()
 
         for telescope_name in telescopes_to_remove:
@@ -1557,6 +1723,7 @@ class Controller:
                         # Register telescope with WebSocket manager and set up status updates
                         if tel.client.is_connected:
                             from websocket_manager import get_websocket_manager
+
                             websocket_manager = get_websocket_manager()
 
                             telescope_id = tel.serial_number or tel.host
@@ -1790,6 +1957,7 @@ class Controller:
                         # Register telescope with WebSocket manager and set up status updates
                         if tel.client.is_connected:
                             from websocket_manager import get_websocket_manager
+
                             websocket_manager = get_websocket_manager()
 
                             telescope_id = tel.serial_number or tel.host
@@ -2019,27 +2187,28 @@ class Controller:
             for telescope in self.telescopes.values():
                 if telescope.serial_number == telescope_id:
                     return telescope
-            
+
             # Then try to find by host name
             telescope = self.telescopes.get(telescope_id)
             if telescope:
                 return telescope
-            
+
             # Finally try to find by name
             for telescope in self.telescopes.values():
                 if telescope.name == telescope_id:
                     return telescope
-            
-            logging.error(
-                f"WebSocket telescope lookup for '{telescope_id}': not found"
-            )
+
+            logging.error(f"WebSocket telescope lookup for '{telescope_id}': not found")
             logging.info(f"Available telescopes: {list(self.telescopes.keys())}")
             # Debug: show telescope details
             for key, telescope in self.telescopes.items():
-                logging.info(f"  Available telescope: key='{key}', name='{telescope.name}', serial='{telescope.serial_number}', host='{telescope.host}'")
+                logging.info(
+                    f"  Available telescope: key='{key}', name='{telescope.name}', serial='{telescope.serial_number}', host='{telescope.host}'"
+                )
             return None
 
         from websocket_manager import initialize_websocket_manager
+
         initialize_websocket_manager(get_telescope_by_id)
 
         # Add WebRTC router
@@ -2047,17 +2216,20 @@ class Controller:
 
         # Add WebSocket router
         self.app.include_router(websocket_router, prefix="/api")
-        
+
         # Add image processing router
         from api.routers.processing import router as processing_router
+
         self.app.include_router(processing_router)
-        
+
         # Add system administration router
         from api.routers.system import router as system_router
+
         self.app.include_router(system_router)
-        
+
         # Add sky map router
         from api.routers.skymap import router as skymap_router
+
         self.app.include_router(skymap_router)
 
         # Add startup handler to connect telescopes after server is ready
@@ -2065,6 +2237,7 @@ class Controller:
         async def startup_event():
             # Start WebSocket manager first
             from websocket_manager import get_websocket_manager
+
             websocket_manager = get_websocket_manager()
 
             await websocket_manager.start()
@@ -2088,16 +2261,19 @@ class Controller:
         async def shutdown_event():
             # Stop WebSocket manager
             from websocket_manager import get_websocket_manager
+
             websocket_manager = get_websocket_manager()
 
             await websocket_manager.stop()
             logging.info("WebSocket manager stopped")
 
             from webrtc_router import cleanup_webrtc_service
+
             await cleanup_webrtc_service()
-            
+
             # Shutdown image processing thread pool
             from services.async_image_processing import shutdown_cpu_executor
+
             shutdown_cpu_executor()
             logging.info("Image processing thread pool shutdown")
 
@@ -3163,7 +3339,7 @@ def panorama(
             click.echo(f"Error: Input must be a file or directory: {input}")
             return
 
-        click.echo(f"Panorama created successfully!")
+        click.echo("Panorama created successfully!")
         click.echo(f"Output: {output}")
         click.echo(f"Dimensions: {panorama.shape[1]} x {panorama.shape[0]} pixels")
 

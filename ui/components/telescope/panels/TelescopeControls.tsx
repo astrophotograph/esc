@@ -1,14 +1,15 @@
 "use client"
 
-import { useRef, useCallback, useEffect } from "react"
+import { useRef, useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square, Home } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, Camera, Square, Home, Target } from "lucide-react"
 import { useTelescopeContext } from "../../../context/TelescopeContext"
 import { formatRaDec } from "../../../utils/telescope-utils"
+import { PlateSolveSyncDialog, type PlateSolveResult } from "../modals/PlateSolveSyncDialog"
 
 export function TelescopeControls() {
   const {
@@ -32,7 +33,14 @@ export function TelescopeControls() {
   setIsImaging,
   addStatusAlert,
   currentTelescope,
+  handlePlateSolve,
+  handleSyncTelescope,
   } = useTelescopeContext()
+
+  // Plate solve dialog state
+  const [showPlateSolveDialog, setShowPlateSolveDialog] = useState(false)
+  const [plateSolveResult, setPlateSolveResult] = useState<PlateSolveResult | null>(null)
+  const [isPlateSolving, setIsPlateSolving] = useState(false)
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -138,6 +146,91 @@ export function TelescopeControls() {
         message: `Failed to set focus position: ${error instanceof Error ? error.message : 'Unknown error'}`,
       })
     }
+  }
+
+  const handlePlateSolveAndSync = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before plate solving",
+      })
+      return
+    }
+
+    // Open dialog and start plate solving
+    setShowPlateSolveDialog(true)
+    setIsPlateSolving(true)
+    setPlateSolveResult(null)
+
+    try {
+      const result = await handlePlateSolve()
+      setPlateSolveResult(result)
+      
+      if (result.success) {
+        addStatusAlert({
+          type: "success",
+          title: "Plate Solve Successful",
+          message: `Image solved: RA=${result.ra?.toFixed(4)}°, Dec=${result.dec?.toFixed(4)}°`,
+        })
+      } else {
+        addStatusAlert({
+          type: "error",
+          title: "Plate Solve Failed",
+          message: result.error || "Plate solving failed for unknown reason",
+        })
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      setPlateSolveResult({
+        success: false,
+        error: errorMessage
+      })
+      addStatusAlert({
+        type: "error",
+        title: "Plate Solve Error",
+        message: errorMessage,
+      })
+    } finally {
+      setIsPlateSolving(false)
+    }
+  }
+
+  const handleSync = async () => {
+    if (!plateSolveResult?.success || !plateSolveResult.ra || !plateSolveResult.dec) {
+      addStatusAlert({
+        type: "error",
+        title: "Sync Failed",
+        message: "No valid plate solve coordinates available",
+      })
+      return
+    }
+
+    try {
+      await handleSyncTelescope(plateSolveResult.ra, plateSolveResult.dec)
+      
+      addStatusAlert({
+        type: "success",
+        title: "Telescope Synced",
+        message: `Telescope synced to RA=${plateSolveResult.ra.toFixed(4)}°, Dec=${plateSolveResult.dec.toFixed(4)}°`,
+      })
+      
+      setShowPlateSolveDialog(false)
+      setPlateSolveResult(null)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      addStatusAlert({
+        type: "error",
+        title: "Sync Failed",
+        message: errorMessage,
+      })
+    }
+  }
+
+  const handleDialogCancel = () => {
+    setShowPlateSolveDialog(false)
+    setPlateSolveResult(null)
+    setIsPlateSolving(false)
   }
 
   return (
@@ -260,6 +353,17 @@ export function TelescopeControls() {
             <Home className="w-4 h-4 mr-2" />
             Park Telescope
           </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePlateSolveAndSync}
+            disabled={isPlateSolving}
+            className="w-full border-gray-600 text-white hover:bg-gray-700"
+          >
+            <Target className="w-4 h-4 mr-2" />
+            {isPlateSolving ? "Plate Solving..." : "Plate Solve & Sync"}
+          </Button>
         </div>
 
         <Separator className="bg-gray-700" />
@@ -363,5 +467,17 @@ export function TelescopeControls() {
         </div>
       </CardContent>
     </Card>
+    
+    {/* Plate Solve & Sync Dialog */}
+    <PlateSolveSyncDialog
+      isOpen={showPlateSolveDialog}
+      onClose={() => setShowPlateSolveDialog(false)}
+      currentRa={streamStatus?.status?.ra}
+      currentDec={streamStatus?.status?.dec}
+      plateSolveResult={plateSolveResult}
+      isLoading={isPlateSolving}
+      onSync={handleSync}
+      onCancel={handleDialogCancel}
+    />
   )
 }

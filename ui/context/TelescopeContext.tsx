@@ -295,6 +295,8 @@ interface TelescopeContextType {
   handleGotoTarget: (targetName: string, ra: number, dec: number, startImaging?: boolean, targetType?: string, magnitude?: number, description?: string) => Promise<void>
   handleSceneryMode: () => Promise<void>
   handleTargetSelect: (target: CelestialObject) => void
+  handlePlateSolve: (apiKey?: string) => Promise<any>
+  handleSyncTelescope: (ra: number, dec: number) => Promise<any>
   saveObservation: () => void
   deleteObservation: (id: string) => void
   startSession: () => void
@@ -2139,6 +2141,49 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     },
   })
 
+  // Plate Solve and Sync Functions
+  const handlePlateSolve = async (apiKey?: string) => {
+    if (!currentTelescope) {
+      throw new Error("No telescope selected")
+    }
+
+    const response = await fetch(`/api/telescopes/${currentTelescope.id}/plate-solve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ api_key: apiKey }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.detail || `API request failed: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
+  const handleSyncTelescope = async (ra: number, dec: number) => {
+    if (!currentTelescope) {
+      throw new Error("No telescope selected")
+    }
+
+    const response = await fetch(`/api/telescopes/${currentTelescope.id}/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ra, dec }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.detail || `API request failed: ${response.status}`)
+    }
+
+    return await response.json()
+  }
+
   const value = {
     // Telescope Management
     telescopes,
@@ -2329,6 +2374,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     handleGotoTarget,
     handleSceneryMode,
     handleTargetSelect,
+    handlePlateSolve,
+    handleSyncTelescope,
     saveObservation,
     deleteObservation,
     startSession,
