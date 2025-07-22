@@ -90,7 +90,7 @@
     "@testing-library/react-hooks": "8.0.1",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "29.5.0",
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.31.0",
