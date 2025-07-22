@@ -48,7 +48,7 @@ services:
 
   # Optional: Redis for caching/session management
   redis:
-    image: redis:7-alpine
+    image: redis:latest
     network_mode: host
     volumes:
       - redis-data:/data
