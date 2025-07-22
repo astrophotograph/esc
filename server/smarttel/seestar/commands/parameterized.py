@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, Any
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -14,11 +14,16 @@ class StopStage(str, Enum):
     AUTO_GOTO = "AutoGoto"
 
 
+class StartStackParams(BaseModel):
+    """Parameters for the StartStack command."""
+    restart: Optional[bool]
+
+
 class IscopeStartStack(BaseCommand):
     """Start the stack from the Seestar."""
 
     method: Literal["iscope_start_stack"] = "iscope_start_stack"
-    params: dict[str, Any] | None = None  # restart boolean
+    params: StartStackParams | None = None
 
 
 class IscopeStartViewParams(BaseModel):
@@ -26,20 +31,22 @@ class IscopeStartViewParams(BaseModel):
 
     mode: Literal["scenery", "solar_sys", "star"] | None = None
     target_name: str | None = None
+    target_ra_dec: tuple[float, float] | None = None
+    lp_filter: bool | None = None
 
 
 class IscopeStartView(BaseCommand):
     """Start the view from the Seestar."""
 
     method: Literal["iscope_start_view"] = "iscope_start_view"
-    params: IscopeStartViewParams | None = None
+    params: IscopeStartViewParams
 
 
 class IscopeStopView(BaseCommand):
     """Stop the view from the Seestar."""
 
     method: Literal["iscope_stop_view"] = "iscope_stop_view"
-    params: dict[str, StopStage] | None = None  # todo : make str just be 'stage'?
+    params: dict[str, StopStage]
 
 
 class ScopeSetTrackState(BaseCommand):

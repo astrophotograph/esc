@@ -13,6 +13,12 @@ class GetDiskVolume(BaseCommand):
     method: Literal["get_disk_volume"] = "get_disk_volume"
 
 
+class ScopeSync(BaseCommand):
+    """Sync the scope from the Seestar."""
+    method: Literal["scope_sync"] = "scope_sync"
+    params: tuple[float, float]
+
+
 class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
 

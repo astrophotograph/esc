@@ -16,8 +16,10 @@ from remote_websocket_client import RemoteWebSocketManager, RemoteController
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.parameterized import (
     IscopeStartView,
-    IscopeStartViewParams,
+    IscopeStartViewParams, IscopeStartStack, StartStackParams,
 )
+from smarttel.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
+    SequenceSettingParameters, SetControlValue
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -745,12 +747,14 @@ class WebSocketManager:
         try:
             target_name = parameters.get("target_name", "unknown")
             coordinates = parameters.get("coordinates", {})
-            ra = coordinates.get("ra", 0)
-            dec = coordinates.get("dec", 0)
+            ra = float(coordinates.get("ra", 0))
+            dec = float(coordinates.get("dec", 0))
             start_imaging = parameters.get("start_imaging", False)
             target_type = parameters.get("target_type", "unknown")
             magnitude = parameters.get("magnitude", "unknown")
             description = parameters.get("description", "")
+
+            stack_gain = parameters.get("gain", 80) # make this vary based on telescope
 
             logger.info(f"Goto command received for target: {target_name}")
             logger.info(f"Coordinates: RA={ra}, Dec={dec}")
@@ -759,45 +763,52 @@ class WebSocketManager:
             logger.info(f"Description: {description}")
             logger.info(f"Full message parameters: {parameters}")
 
-            # command = IscopeStartView(
-            #    params=IscopeStartViewParams(
-            #        mode='scenery'
-            #    )
-            # )
-            #             "method": "iscope_start_view",
-            #             "params": {
-            #                 "mode": "star",
-            #                 "target_ra_dec": [in_ra, in_dec],
-            #                 "target_name": target_name,
-            #                 "lp_filter": False,
-            #             },
-            # Watches AutoGoto events.
-            #         self.send_message_param_sync(
-            #             {"method": "set_setting", "params": {"stack_lenhance": is_use_LP_filter}}
-            #         )
-            #         req: MessageParams = {"method": "set_sequence_setting", "params": [{"group_name": name}]}
-            #         return self.send_message_param_sync(req)
+            # todo : do the Goto!
+
+            # if start_imaging:
+            #     client.send_and_recv(IscopeStartView(
+            #         params=IscopeStartViewParams(
+            #             mode='star',
+            #             target_name=target_name,
+            #             target_ra_dec=(ra, dec),
+            #             lp_filter=False,
+            #         )))
+            #     # todo : Watches AutoGoto events until Completed or Failed.  After timestamp of response to the send?
+            #     #        have an async helper on the client to wait for a specific event.  Includes timeout...
             #
-            # result = self.send_message_param_sync(
-            #    {"method": "iscope_start_stack", "params": {"restart": params["restart"]}}
-            # )
-            # ALP changes gain _after_ stacking starts!?
-            # if "gain" in params:
-            # stack_gain = params["gain"]
-            # result = self.send_message_param_sync(
-            #    {"method": "set_control_value", "params": ["gain", stack_gain]}
-            # )
+            #     client.send_and_recv(SetSetting(params=SettingParameters(
+            #         stack_lenhance=True,
+            #     )))
+            #
+            #     client.send_and_recv(SetSequenceSetting(params=[SequenceSettingParameters(group_name=target_name)]))
+            #
+            #     client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=True)))
+            #     #    {"method": "iscope_start_stack", "params": {"restart": params["restart"]}}
+            #
+            #     # Change the gain -after_ starting starts.
+            #     client.send_and_recv(SetControlValue(params=("gain", stack_gain)))
+
             # self.logger.info(result)
 
-            # response = await client.send_and_recv(command)
-
-            # For now, this is just a stub that logs the message
-            # In the future, this could:
-            # - Send actual goto command to telescope with coordinates
-            # - Validate coordinates are within telescope limits
-            # - Start imaging sequence if start_imaging is True
-            # - Track goto progress and completion
-            # - Handle goto errors and retries
+            # This is just for spectra functions: {"method":"scope_goto","params":[1.2345,75.0]}
+            #
+            # data: MessageParams = {
+            #     "method": "iscope_start_view",
+            #     "params": {
+            #         "mode": "star",
+            #         "target_ra_dec": [in_ra, in_dec],
+            #         "target_name": target_name,
+            #         "lp_filter": False,
+            #     },
+            # }
+            # working, starting mean it's slewing
+            # if task is cancelled
+            #
+            # data: MessageParams = {
+            #     "method": "iscope_stop_view",
+            #     "params": {"stage": "AutoGoto"},
+            # }
+            # return self.send_message_param_sync(data)
 
             imaging_message = " and start imaging" if start_imaging else ""
 

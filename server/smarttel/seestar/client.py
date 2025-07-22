@@ -12,10 +12,10 @@ from loguru import logger as logging
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
+from smarttel.seestar.commands.parameterized import IscopeStopView, IscopeStartView, IscopeStartViewParams
 from smarttel.seestar.commands.responses import (
     TelescopeMessageParser,
     MessageAnalytics,
-    EnhancedCommandResponse,
 )
 from smarttel.seestar.commands.simple import (
     GetTime,
@@ -23,7 +23,7 @@ from smarttel.seestar.commands.simple import (
     GetViewState,
     GetFocuserPosition,
     GetDiskVolume,
-    ScopeGetEquCoord,
+    ScopeGetEquCoord, ScopeSync,
 )
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import (
@@ -118,7 +118,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     text_protocol: TextProtocol = TextProtocol()
     client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
     message_history: collections.deque = collections.deque(maxlen=5000)
-    
+
     # Image enhancement settings
     image_enhancement_settings: Dict[str, Any] = {}
 
@@ -133,13 +133,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     write_timeout: float = 10.0
 
     def __init__(
-        self,
-        host: str,
-        port: int,
-        event_bus: EventBus,
-        connection_timeout: float = 10.0,
-        read_timeout: float = 30.0,
-        write_timeout: float = 10.0,
+            self,
+            host: str,
+            port: int,
+            event_bus: EventBus,
+            connection_timeout: float = 10.0,
+            read_timeout: float = 30.0,
+            write_timeout: float = 10.0,
     ):
         super().__init__(
             host=host,
@@ -241,14 +241,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 # Check if file has been modified or grown
                 if (
-                    last_modified_time is None
-                    or current_modified_time > last_modified_time
-                    or current_size > last_file_size
+                        last_modified_time is None
+                        or current_modified_time > last_modified_time
+                        or current_size > last_file_size
                 ):
                     # Read the file content
                     try:
                         with open(
-                            file_path, "r", encoding="utf-8", errors="ignore"
+                                file_path, "r", encoding="utf-8", errors="ignore"
                         ) as f:
                             content = f.read()
 
@@ -656,6 +656,25 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if len(events) >= limit:
                         break
         return list(reversed(events))
+
+    # Helper methods
+    def goto(self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False):
+        """Generalized goto."""
+        ... = self.send_and_recv(
+            IscopeStartView(params=IscopeStartViewParams(
+                mode="star",
+                target_ra_dec=(in_ra, in_dec),
+                target_name=target_name,
+                lp_filter=lp_filter,
+            )))
+
+    def stop_goto(self):
+        """Stop goto."""
+        ... = self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
+
+    def scope_sync(self, in_ra: float, in_dec: float):
+        """Scope sync."""
+        ... = self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
 
     def __str__(self):
         return f"{self.host}:{self.port}"

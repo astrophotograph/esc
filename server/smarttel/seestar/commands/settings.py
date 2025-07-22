@@ -1,5 +1,7 @@
 from typing import Literal, Optional, Any
 
+from pydantic import BaseModel
+
 from smarttel.seestar.commands.common import BaseCommand
 
 
@@ -7,7 +9,7 @@ class SetControlValue(BaseCommand):
     """Set the control value from the Seestar."""
 
     method: Literal["set_control_value"] = "set_control_value"
-    # [gain, int]
+    params: tuple[str, int]
 
 
 class SettingParameters(BaseCommand):
@@ -19,9 +21,20 @@ class SettingParameters(BaseCommand):
     save_discrete_frame: Optional[bool]
     save_discrete_ok_frame: Optional[bool]
     auto_3ppa_calib: Optional[bool]
+    stack_lenhance: Optional[bool]
 
 
 class SetSetting(BaseCommand):
     """Set the settings from the Seestar."""
 
     method: Literal["set_setting"] = "set_setting"
+    params: SettingParameters
+
+class SequenceSettingParameters(BaseModel):
+    """Parameters for the SetSequenceSetting command."""
+    group_name: Optional[str]
+
+class SetSequenceSetting(BaseCommand):
+    """Set the sequence setting from the Seestar."""
+    method: Literal["set_sequence_setting"] = "set_sequence_setting"
+    params: list[SequenceSettingParameters]
