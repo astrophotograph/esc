@@ -49,10 +49,10 @@ export function TelescopeControls() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
     }
-    
+
     // Send initial move command immediately
     handleTelescopeMove(direction)
-    
+
     // Set up interval to send move commands every 500ms
     intervalRef.current = setInterval(() => {
       handleTelescopeMove(direction)
@@ -65,7 +65,7 @@ export function TelescopeControls() {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
-    
+
     // Send stop command
     handleTelescopeMove("stop")
   }, [handleTelescopeMove])
@@ -166,7 +166,7 @@ export function TelescopeControls() {
     try {
       const result = await handlePlateSolve()
       setPlateSolveResult(result)
-      
+
       if (result.success) {
         addStatusAlert({
           type: "success",
@@ -208,13 +208,13 @@ export function TelescopeControls() {
 
     try {
       await handleSyncTelescope(plateSolveResult.ra, plateSolveResult.dec)
-      
+
       addStatusAlert({
         type: "success",
         title: "Telescope Synced",
         message: `Telescope synced to RA=${plateSolveResult.ra.toFixed(4)}°, Dec=${plateSolveResult.dec.toFixed(4)}°`,
       })
-      
+
       setShowPlateSolveDialog(false)
       setPlateSolveResult(null)
     } catch (error) {
@@ -234,6 +234,7 @@ export function TelescopeControls() {
   }
 
   return (
+    <>
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
         <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -343,7 +344,7 @@ export function TelescopeControls() {
             <span className="text-sm text-gray-300">Tracking</span>
             <Switch checked={isTracking} onCheckedChange={setIsTracking} />
           </div>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -353,7 +354,7 @@ export function TelescopeControls() {
             <Home className="w-4 h-4 mr-2" />
             Park Telescope
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -467,8 +468,7 @@ export function TelescopeControls() {
         </div>
       </CardContent>
     </Card>
-    
-    {/* Plate Solve & Sync Dialog */}
+
     <PlateSolveSyncDialog
       isOpen={showPlateSolveDialog}
       onClose={() => setShowPlateSolveDialog(false)}
@@ -479,5 +479,6 @@ export function TelescopeControls() {
       onSync={handleSync}
       onCancel={handleDialogCancel}
     />
+      </>
   )
 }

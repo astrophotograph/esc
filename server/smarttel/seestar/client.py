@@ -746,6 +746,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             logging.error(
                 f"Timeout waiting for {event_type} completion after {timeout}s"
             )
+            await self.stop_goto()
             raise
         finally:
             # Clean up the event listener
