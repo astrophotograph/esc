@@ -34,7 +34,7 @@ scikit-image==0.25.2
 scipy==1.16.0
 sniffio==1.3.1
 sqlalchemy==2.0.41
-starlette==0.46.2
+starlette==0.47.2
 tifffile==2025.6.11
 typing-extensions==4.14.1
 typing-inspect==0.9.0
