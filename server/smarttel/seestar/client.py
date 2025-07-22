@@ -12,7 +12,11 @@ from loguru import logger as logging
 from pydantic import BaseModel
 
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.parameterized import IscopeStopView, IscopeStartView, IscopeStartViewParams
+from smarttel.seestar.commands.parameterized import (
+    IscopeStopView,
+    IscopeStartView,
+    IscopeStartViewParams,
+)
 from smarttel.seestar.commands.responses import (
     TelescopeMessageParser,
     MessageAnalytics,
@@ -23,7 +27,8 @@ from smarttel.seestar.commands.simple import (
     GetViewState,
     GetFocuserPosition,
     GetDiskVolume,
-    ScopeGetEquCoord, ScopeSync,
+    ScopeGetEquCoord,
+    ScopeSync,
 )
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import (
@@ -32,6 +37,7 @@ from smarttel.seestar.events import (
     AnnotateResult,
     AnnotateEvent,
     InternalEvent,
+    BaseEvent,
 )
 from smarttel.seestar.protocol_handlers import TextProtocol
 from smarttel.util.eventbus import EventBus
@@ -133,13 +139,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     write_timeout: float = 10.0
 
     def __init__(
-            self,
-            host: str,
-            port: int,
-            event_bus: EventBus,
-            connection_timeout: float = 10.0,
-            read_timeout: float = 30.0,
-            write_timeout: float = 10.0,
+        self,
+        host: str,
+        port: int,
+        event_bus: EventBus,
+        connection_timeout: float = 10.0,
+        read_timeout: float = 30.0,
+        write_timeout: float = 10.0,
     ):
         super().__init__(
             host=host,
@@ -241,14 +247,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 # Check if file has been modified or grown
                 if (
-                        last_modified_time is None
-                        or current_modified_time > last_modified_time
-                        or current_size > last_file_size
+                    last_modified_time is None
+                    or current_modified_time > last_modified_time
+                    or current_size > last_file_size
                 ):
                     # Read the file content
                     try:
                         with open(
-                                file_path, "r", encoding="utf-8", errors="ignore"
+                            file_path, "r", encoding="utf-8", errors="ignore"
                         ) as f:
                             content = f.read()
 
@@ -658,23 +664,92 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         return list(reversed(events))
 
     # Helper methods
-    def goto(self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False):
+    def goto(
+        self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False
+    ):
         """Generalized goto."""
-        ... = self.send_and_recv(
-            IscopeStartView(params=IscopeStartViewParams(
-                mode="star",
-                target_ra_dec=(in_ra, in_dec),
-                target_name=target_name,
-                lp_filter=lp_filter,
-            )))
+        return self.send_and_recv(
+            IscopeStartView(
+                params=IscopeStartViewParams(
+                    mode="star",
+                    target_ra_dec=(in_ra, in_dec),
+                    target_name=target_name,
+                    lp_filter=lp_filter,
+                )
+            )
+        )
 
     def stop_goto(self):
         """Stop goto."""
-        ... = self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
+        return self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
 
     def scope_sync(self, in_ra: float, in_dec: float):
         """Scope sync."""
-        ... = self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
+        return self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
+
+    async def wait_for_event_completion(
+        self, event_type: str, timeout: float = 60.0
+    ) -> bool:
+        """
+        Wait for an event of the specified type to complete.
+
+        Listens for events of the given type and waits until the state field
+        reaches a terminal state: "complete" (success), "cancel" or "fail" (failure).
+
+        Args:
+            event_type: The type of event to listen for (e.g., "AutoGoto", "FocuserMove")
+            timeout: Maximum time to wait in seconds (default: 60)
+
+        Returns:
+            bool: True if state is "complete", False if state is "cancel" or "fail"
+
+        Raises:
+            asyncio.TimeoutError: If timeout is reached without completion
+            ValueError: If no event bus is available
+        """
+        if not self.event_bus:
+            raise ValueError("No event bus available")
+
+        # Create an asyncio Event to signal completion
+        completion_event = asyncio.Event()
+        result = {"success": False}
+
+        async def event_handler(event: BaseEvent):
+            """Handle incoming events and check for completion."""
+            logging.trace(f"Received {event_type} event: {event}")
+
+            # Check if event has a state field
+            if hasattr(event, "state") and event.state is not None:
+                state = (
+                    event.state.lower() if isinstance(event.state, str) else event.state
+                )
+
+                if state == "complete":
+                    logging.info(f"{event_type} completed successfully")
+                    result["success"] = True
+                    completion_event.set()
+                elif state in ["cancel", "fail"]:
+                    logging.info(f"{event_type} failed with state: {state}")
+                    result["success"] = False
+                    completion_event.set()
+                else:
+                    logging.trace(f"{event_type} in progress with state: {state}")
+
+        # Subscribe to the event
+        self.event_bus.subscribe(event_type, event_handler)
+
+        try:
+            # Wait for completion or timeout
+            await asyncio.wait_for(completion_event.wait(), timeout=timeout)
+            return result["success"]
+        except asyncio.TimeoutError:
+            logging.error(
+                f"Timeout waiting for {event_type} completion after {timeout}s"
+            )
+            raise
+        finally:
+            # Clean up the event listener
+            self.event_bus.remove_listener(event_type, event_handler)
 
     def __str__(self):
         return f"{self.host}:{self.port}"
