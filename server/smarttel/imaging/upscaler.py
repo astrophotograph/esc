@@ -64,11 +64,11 @@ class ImageUpscaler:
             self._has_torch = True
             # Check if CUDA is available
             self._has_cuda = torch.cuda.is_available()
-            logging.info(f"PyTorch available: {self._has_torch}, CUDA available: {self._has_cuda}")
+            logging.trace(f"PyTorch available: {self._has_torch}, CUDA available: {self._has_cuda}")
         except ImportError:
             self._has_torch = False
             self._has_cuda = False
-            logging.info("PyTorch not available - deep learning upscaling methods will be disabled")
+            logging.trace("PyTorch not available - deep learning upscaling methods will be disabled")
         return self._has_torch
 
     def upscale(
@@ -104,7 +104,7 @@ class ImageUpscaler:
         # Ensure we maintain color channels properly
         original_shape = working_image.shape
         is_color = len(original_shape) == 3 and original_shape[2] == 3
-        logging.info(f"Original image: shape={original_shape}, is_color={is_color}")
+        logging.trace(f"Original image: shape={original_shape}, is_color={is_color}")
 
         # Optional denoising for telescope images (helps with noise amplification) - skip for now to avoid fuzziness
         # if denoise:
@@ -116,28 +116,28 @@ class ImageUpscaler:
         target_width = int(original_width * scale_factor)
 
         # Apply upscaling method
-        logging.info(f"Applying upscaling method: {method}, scale_factor={scale_factor}")
-        logging.info(f"Available capabilities: dnn_superres={self._has_dnn_superres}, torch={self._has_torch}")
-        logging.info(f"Working image before upscaling: shape={working_image.shape}, dtype={working_image.dtype}")
+        logging.trace(f"Applying upscaling method: {method}, scale_factor={scale_factor}")
+        logging.trace(f"Available capabilities: dnn_superres={self._has_dnn_superres}, torch={self._has_torch}")
+        logging.trace(f"Working image before upscaling: shape={working_image.shape}, dtype={working_image.dtype}")
         
         if method == UpscalingMethod.BICUBIC:
-            logging.info("Using bicubic upscaling")
+            logging.trace("Using bicubic upscaling")
             upscaled = self._bicubic_upscale(
                 working_image, (target_width, target_height)
             )
         elif method == UpscalingMethod.LANCZOS:
-            logging.info("Using Lanczos upscaling")
+            logging.trace("Using Lanczos upscaling")
             upscaled = self._lanczos_upscale(
                 working_image, (target_width, target_height)
             )
         elif method == UpscalingMethod.EDSR and self._has_dnn_superres:
-            logging.info("Using EDSR upscaling")
+            logging.trace("Using EDSR upscaling")
             upscaled = self._edsr_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.FSRCNN and self._has_dnn_superres:
-            logging.info("Using FSRCNN upscaling")
+            logging.trace("Using FSRCNN upscaling")
             upscaled = self._fsrcnn_upscale(working_image, scale_factor)
         elif method == UpscalingMethod.ESRGAN and self._has_torch:
-            logging.info("Using ESRGAN upscaling")
+            logging.trace("Using ESRGAN upscaling")
             upscaled = self._esrgan_upscale(working_image, scale_factor)
         else:
             # Fallback to bicubic if DNN methods not available
@@ -147,13 +147,13 @@ class ImageUpscaler:
             )
 
         # Convert back to original data type
-        logging.info(f"Upscaled image before conversion: shape={upscaled.shape}, dtype={upscaled.dtype}")
+        logging.trace(f"Upscaled image before conversion: shape={upscaled.shape}, dtype={upscaled.dtype}")
         if input_uint8:
             upscaled = np.clip(upscaled * 255.0, 0, 255).astype(np.uint8)
         else:
             upscaled = upscaled.astype(image.dtype)
 
-        logging.info(f"Final upscaled image: shape={upscaled.shape}, dtype={upscaled.dtype}")
+        logging.trace(f"Final upscaled image: shape={upscaled.shape}, dtype={upscaled.dtype}")
         return upscaled
 
     def _denoise_image(self, image: np.ndarray, method: DenoiseMethod = DenoiseMethod.TV_CHAMBOLLE) -> np.ndarray:
@@ -272,8 +272,8 @@ class ImageUpscaler:
         self, image: np.ndarray, target_size: Tuple[int, int]
     ) -> np.ndarray:
         """Upscale using bicubic interpolation."""
-        logging.info(f"Applying bicubic upscaling: {image.shape} -> {target_size}")
-        logging.info(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
+        logging.trace(f"Applying bicubic upscaling: {image.shape} -> {target_size}")
+        logging.trace(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
         
         # For multi-channel images, ensure OpenCV handles them correctly
         if len(image.shape) == 3:
@@ -288,7 +288,7 @@ class ImageUpscaler:
             # Process grayscale image
             upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
         
-        logging.info(f"Upscaled image shape: {upscaled.shape}")
+        logging.trace(f"Upscaled image shape: {upscaled.shape}")
         
         return upscaled
 
@@ -296,8 +296,8 @@ class ImageUpscaler:
         self, image: np.ndarray, target_size: Tuple[int, int]
     ) -> np.ndarray:
         """Upscale using Lanczos interpolation."""
-        logging.info(f"Applying Lanczos upscaling: {image.shape} -> {target_size}")
-        logging.info(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
+        logging.trace(f"Applying Lanczos upscaling: {image.shape} -> {target_size}")
+        logging.trace(f"Input image dtype: {image.dtype}, range: [{np.min(image):.3f}, {np.max(image):.3f}]")
         
         # For multi-channel images, ensure OpenCV handles them correctly
         if len(image.shape) == 3:
@@ -312,7 +312,7 @@ class ImageUpscaler:
             # Process grayscale image
             upscaled = cv2.resize(image, target_size, interpolation=cv2.INTER_LANCZOS4)
         
-        logging.info(f"Upscaled image shape: {upscaled.shape}")
+        logging.trace(f"Upscaled image shape: {upscaled.shape}")
         
         return upscaled
 
@@ -440,22 +440,22 @@ class ImageUpscaler:
     
     def _unsharp_mask(self, image: np.ndarray, strength: float) -> np.ndarray:
         """Apply unsharp mask sharpening."""
-        logging.info(f"Unsharp mask input: shape={image.shape}, dtype={image.dtype}")
+        logging.trace(f"Unsharp mask input: shape={image.shape}, dtype={image.dtype}")
         
         # Use different parameters for different image types
         if len(image.shape) == 3:
             # Color image
             radius = 1.0
             amount = strength
-            logging.info(f"Applying unsharp mask to color image: shape={image.shape}")
+            logging.trace(f"Applying unsharp mask to color image: shape={image.shape}")
         else:
             # Grayscale image
             radius = 1.5
             amount = strength
-            logging.info(f"Applying unsharp mask to grayscale image: shape={image.shape}")
+            logging.trace(f"Applying unsharp mask to grayscale image: shape={image.shape}")
             
         result = filters.unsharp_mask(image, radius=radius, amount=amount, preserve_range=True)
-        logging.info(f"Unsharp mask result: shape={result.shape}, dtype={result.dtype}")
+        logging.trace(f"Unsharp mask result: shape={result.shape}, dtype={result.dtype}")
         return result
     
     def _laplacian_sharpen(self, image: np.ndarray, strength: float) -> np.ndarray:
@@ -526,7 +526,7 @@ class ImageUpscaler:
         try:
             from skimage import transform, filters
             
-            logging.info(f"Applying ESRGAN-inspired upscaling with edge enhancement")
+            logging.trace(f"Applying ESRGAN-inspired upscaling with edge enhancement")
             
             # First, apply bicubic upscaling as base
             target_size = (int(image.shape[1] * scale_factor), int(image.shape[0] * scale_factor))
@@ -569,7 +569,7 @@ class ImageUpscaler:
             else:
                 sharpened = enhanced  # Skip sharpening for uint8 to avoid complications
             
-            logging.info(f"ESRGAN-inspired processing complete: {image.shape} -> {sharpened.shape}")
+            logging.trace(f"ESRGAN-inspired processing complete: {image.shape} -> {sharpened.shape}")
             return sharpened
             
         except Exception as e:
@@ -631,51 +631,51 @@ class ImageEnhancementProcessor:
         if image is None:
             return None
 
-        logging.info(f"ImageEnhancementProcessor.process() starting with image shape: {image.shape}")
-        logging.info(f"Enhancement settings: denoise={self.denoise_enabled}, deconvolve={self.deconvolve_enabled}, sharpen={self.sharpening_enabled}, upscale={self.upscaling_enabled}")
-        logging.info(f"Processing order: {self.processing_order}")
+        logging.trace(f"ImageEnhancementProcessor.process() starting with image shape: {image.shape}")
+        logging.trace(f"Enhancement settings: denoise={self.denoise_enabled}, deconvolve={self.deconvolve_enabled}, sharpen={self.sharpening_enabled}, upscale={self.upscaling_enabled}")
+        logging.trace(f"Processing order: {self.processing_order}")
         
         processed_image = image.copy()
         
         # Apply enhancements in custom order
         for step in self.processing_order:
             if step == "upscaling" and self.upscaling_enabled and self.scale_factor > 1.0:
-                logging.info(f"Applying upscaling: method={self.upscaling_method}, scale_factor={self.scale_factor}")
+                logging.trace(f"Applying upscaling: method={self.upscaling_method}, scale_factor={self.scale_factor}")
                 processed_image = self.upscaler.upscale(
                     processed_image, 
                     scale_factor=self.scale_factor, 
                     method=self.upscaling_method
                 )
-                logging.info(f"Upscaling completed, output shape: {processed_image.shape}")
+                logging.trace(f"Upscaling completed, output shape: {processed_image.shape}")
             
             elif step == "denoise" and self.denoise_enabled:
-                logging.info(f"Applying denoising: method={self.denoise_method}, strength={self.denoise_strength}")
+                logging.trace(f"Applying denoising: method={self.denoise_method}, strength={self.denoise_strength}")
                 processed_image = self.upscaler.denoise_image(
                     processed_image,
                     method=self.denoise_method,
                     strength=self.denoise_strength
                 )
-                logging.info(f"Denoising completed, output shape: {processed_image.shape}")
+                logging.trace(f"Denoising completed, output shape: {processed_image.shape}")
             
             elif step == "deconvolve" and self.deconvolve_enabled:
-                logging.info(f"Applying deconvolution: strength={self.deconvolve_strength}, psf_size={self.deconvolve_psf_size}")
+                logging.trace(f"Applying deconvolution: strength={self.deconvolve_strength}, psf_size={self.deconvolve_psf_size}")
                 processed_image = self._apply_deconvolution(
                     processed_image,
                     strength=self.deconvolve_strength,
                     psf_size=self.deconvolve_psf_size
                 )
-                logging.info(f"Deconvolution completed, output shape: {processed_image.shape}")
+                logging.trace(f"Deconvolution completed, output shape: {processed_image.shape}")
             
             elif step == "sharpening" and self.sharpening_enabled:
-                logging.info(f"Applying sharpening: method={self.sharpening_method}, strength={self.sharpening_strength}")
+                logging.trace(f"Applying sharpening: method={self.sharpening_method}, strength={self.sharpening_strength}")
                 processed_image = self.upscaler.sharpen_image(
                     processed_image, 
                     method=self.sharpening_method, 
                     strength=self.sharpening_strength
                 )
-                logging.info(f"Sharpening completed, output shape: {processed_image.shape}")
+                logging.trace(f"Sharpening completed, output shape: {processed_image.shape}")
 
-        logging.info(f"ImageEnhancementProcessor.process() completed, final shape: {processed_image.shape}")
+        logging.trace(f"ImageEnhancementProcessor.process() completed, final shape: {processed_image.shape}")
         return processed_image
 
     def _apply_deconvolution(self, image: np.ndarray, strength: float, psf_size: float) -> np.ndarray:
@@ -683,7 +683,7 @@ class ImageEnhancementProcessor:
         try:
             from skimage import restoration
             
-            logging.info(f"Deconvolution input: shape={image.shape}, dtype={image.dtype}, range=[{np.min(image):.3f}, {np.max(image):.3f}]")
+            logging.trace(f"Deconvolution input: shape={image.shape}, dtype={image.dtype}, range=[{np.min(image):.3f}, {np.max(image):.3f}]")
             
             # Determine input format and convert appropriately
             input_range_255 = np.max(image) > 1.0
@@ -704,12 +704,12 @@ class ImageEnhancementProcessor:
             psf = np.exp(-(x*x + y*y) / (2.0 * sigma**2))
             psf = psf / psf.sum()
             
-            logging.info(f"PSF: size={psf.shape}, sigma={sigma:.3f}, sum={psf.sum():.6f}")
+            logging.trace(f"PSF: size={psf.shape}, sigma={sigma:.3f}, sum={psf.sum():.6f}")
             
             # Limit iterations to prevent over-deconvolution
             iterations = max(1, min(5, int(strength * 10)))  # Cap at 5 iterations
             
-            logging.info(f"Deconvolution parameters: iterations={iterations}, strength={strength}")
+            logging.trace(f"Deconvolution parameters: iterations={iterations}, strength={strength}")
             
             # Apply deconvolution to each channel
             if len(working_image.shape) == 3:
@@ -741,8 +741,8 @@ class ImageEnhancementProcessor:
                 # Keep in [0, 1] range
                 deconvolved = deconvolved.astype(image.dtype)
             
-            logging.info(f"Deconvolution output: shape={deconvolved.shape}, dtype={deconvolved.dtype}, range=[{np.min(deconvolved):.3f}, {np.max(deconvolved):.3f}]")
-            logging.info(f"Applied deconvolution: strength={strength}, psf_size={psf_size}, iterations={iterations}")
+            logging.trace(f"Deconvolution output: shape={deconvolved.shape}, dtype={deconvolved.dtype}, range=[{np.min(deconvolved):.3f}, {np.max(deconvolved):.3f}]")
+            logging.trace(f"Applied deconvolution: strength={strength}, psf_size={psf_size}, iterations={iterations}")
             
             return deconvolved
             

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
-import { useToast } from "../hooks/use-toast"
+import { toast } from "sonner"
 import { usePersistentState } from "../hooks/use-persistent-state"
 import { STORAGE_KEYS } from "../utils/storage-utils"
 import type {
@@ -445,7 +445,6 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [newSessionPriority, setNewSessionPriority] = useState<"high" | "medium" | "low">("medium")
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([])
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const { toast } = useToast()
 
   // WebSocket hook for telescope control and status
   const {
@@ -1171,13 +1170,28 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
   // Add a status alert using toast system
   const addStatusAlert = (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => {
-    const variant = alert.type === "error" ? "destructive" : alert.type
-
-    toast({
-      title: alert.title,
-      description: alert.message,
-      variant: variant as "default" | "destructive" | "success" | "warning" | "info"
-    })
+    // Use Sonner toast with appropriate styling based on alert type
+    if (alert.type === "error") {
+      toast.error(alert.title, {
+        description: alert.message,
+        duration: 8000, // Longer duration for error messages so users can read them
+      })
+    } else if (alert.type === "success") {
+      toast.success(alert.title, {
+        description: alert.message,
+        duration: 4000,
+      })
+    } else if (alert.type === "warning") {
+      toast.warning(alert.title, {
+        description: alert.message,
+        duration: 4000,
+      })
+    } else {
+      toast.info(alert.title, {
+        description: alert.message,
+        duration: 3000,
+      })
+    }
   }
 
   // Remote Controller Management Functions
@@ -1490,10 +1504,25 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       })
     } catch (error) {
       console.error('Error sending goto command via WebSocket:', error)
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Provide more specific error messages based on error type
+      let title = "Goto Command Failed"
+      let message = `Failed to send goto command: ${errorMessage}`
+      
+      if (errorMessage.includes('Command timeout')) {
+        title = "Goto Command Timed Out"
+        message = `Goto command took too long to complete. This is normal for large telescope movements. Please check telescope status.`
+      } else if (errorMessage.includes('WebSocket not connected')) {
+        title = "Connection Lost"
+        message = "Cannot send goto command - WebSocket connection lost. Attempting to reconnect..."
+      }
+      
       addStatusAlert({
         type: "error",
-        title: "Goto Command Failed",
-        message: `Failed to send goto command: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title,
+        message,
       })
     }
   }
@@ -1802,24 +1831,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Battery level monitoring
   useEffect(() => {
     if (systemStats.battery < 20) {
-      toast({
-        title: "Low Battery",
+      toast.error("Low Battery", {
         description: `Telescope battery is at ${systemStats.battery}%. Please charge soon.`,
-        variant: "destructive",
+        duration: 5000,
       })
     }
-  }, [systemStats.battery, toast])
-
-  // Battery level monitoring
-  useEffect(() => {
-    if (systemStats.battery < 20) {
-      toast({
-        title: "Low Battery",
-        description: `Telescope battery is at ${systemStats.battery}%. Please charge soon.`,
-        variant: "destructive",
-      })
-    }
-  }, [systemStats.battery, toast])
+  }, [systemStats.battery])
 
   // Update system stats from streaming status
   useEffect(() => {
@@ -2160,7 +2177,19 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       throw new Error(errorData?.detail || `API request failed: ${response.status}`)
     }
 
-    return await response.json()
+    const result = await response.json()
+    
+    // The new async endpoint returns immediately with job_id
+    // Results will come via WebSocket
+    if (result.job_id) {
+      addStatusAlert({
+        type: "info",
+        title: "Plate Solve Started",
+        message: `Plate solving started (Job: ${result.job_id.slice(0, 8)}...). Results will be shown when complete.`,
+      })
+    }
+    
+    return result
   }
 
   const handleSyncTelescope = async (ra: number, dec: number) => {

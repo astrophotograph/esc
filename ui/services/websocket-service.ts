@@ -20,7 +20,8 @@ export enum MessageType {
   ERROR = 'error',
   SUBSCRIBE = 'subscribe',
   UNSUBSCRIBE = 'unsubscribe',
-  ALERT = 'alert'
+  ALERT = 'alert',
+  PLATE_SOLVE_RESULT = 'plate_solve_result'
 }
 
 export enum CommandAction {
@@ -114,6 +115,23 @@ export interface AlertMessage extends WebSocketMessage {
   }
 }
 
+export interface PlateSolveResultMessage extends WebSocketMessage {
+  type: MessageType.PLATE_SOLVE_RESULT
+  payload: {
+    job_id: string
+    success: boolean
+    ra?: number
+    dec?: number
+    orientation?: number
+    pixscale?: number
+    field_width?: number
+    field_height?: number
+    error?: string
+    submission_id?: number
+    astrometry_job_id?: number
+  }
+}
+
 export type WebSocketMessageUnion =
   | StatusUpdateMessage
   | ControlCommandMessage
@@ -122,6 +140,7 @@ export type WebSocketMessageUnion =
   | TelescopeLostMessage
   | ErrorMessage
   | AlertMessage
+  | PlateSolveResultMessage
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',

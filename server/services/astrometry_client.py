@@ -53,29 +53,60 @@ class AstrometryClient:
     def __init__(self, api_key: str, api_url: str = "http://nova.astrometry.net/api/"):
         self.settings = AstrometrySettings(api_key=api_key, api_url=api_url)
         self.session_key: Optional[str] = None
-        self.client = httpx.AsyncClient(timeout=300.0)
+        # Add user agent and headers that might help
+        headers = {
+            "User-Agent": "ALP-Experimental-Telescope-Control/1.0",
+            "Accept": "application/json",
+        }
+        self.client = httpx.AsyncClient(timeout=300.0, headers=headers)
 
     async def login(self) -> bool:
         """Login to astrometry.net and get session key."""
-        try:
-            response = await self.client.post(
-                f"{self.settings.api_url}login", json={"apikey": self.settings.api_key}
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            if data.get("status") == "success":
-                self.session_key = data.get("session")
-                logger.info("Successfully logged in to astrometry.net")
-                return True
-            else:
-                logger.error(
-                    f"Login failed: {data.get('errormessage', 'Unknown error')}"
+        # Try both HTTP and HTTPS endpoints
+        urls_to_try = [self.settings.api_url]
+        if self.settings.api_url.startswith("http://"):
+            https_url = self.settings.api_url.replace("http://", "https://")
+            urls_to_try.append(https_url)
+        
+        for api_url in urls_to_try:
+            try:
+                logger.info(f"Attempting login to: {api_url}login")
+                # Use request-json format - astrometry.net API expects this specific format
+                response = await self.client.post(
+                    f"{api_url}login", 
+                    data={"request-json": json.dumps({"apikey": self.settings.api_key})}
                 )
-                return False
-        except Exception as e:
-            logger.error(f"Error logging in to astrometry.net: {e}")
-            return False
+                response.raise_for_status()
+                
+                # Log the raw response for debugging
+                logger.debug(f"Login response status: {response.status_code}")
+                logger.debug(f"Login response headers: {response.headers}")
+                logger.debug(f"Login response text: {response.text[:500]}...")  # First 500 chars
+                
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    logger.error(f"Login failed: Response is not valid JSON. Status: {response.status_code}, Content-Type: {response.headers.get('content-type')}, Response: {response.text[:200]}")
+                    continue  # Try next URL
+
+                if data.get("status") == "success":
+                    self.session_key = data.get("session")
+                    # Update the API URL to the working one
+                    self.settings.api_url = api_url
+                    logger.info(f"Successfully logged in to astrometry.net using {api_url}")
+                    return True
+                else:
+                    logger.error(
+                        f"Login failed with {api_url}: {data.get('errormessage', 'Unknown error')}"
+                    )
+                    continue  # Try next URL
+                    
+            except Exception as e:
+                logger.error(f"Error logging in to {api_url}: {e}")
+                continue  # Try next URL
+        
+        logger.error("Failed to login using all available URLs")
+        return False
 
     def _prepare_image(self, scope_image: ScopeImage) -> bytes:
         """Convert ScopeImage to JPEG bytes for upload."""

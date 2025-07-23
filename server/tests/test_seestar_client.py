@@ -340,3 +340,139 @@ class TestSeestarImagingClient:
             assert hasattr(imaging_client, prop), (
                 f"Imaging client missing property: {prop}"
             )
+
+
+# Additional tests for SeestarClient wait_for_event_completion error handling
+@pytest.mark.skipif(not SEESTAR_AVAILABLE, reason="Seestar modules not available")  
+class TestSeestarClientEventCompletion:
+    """Test SeestarClient event completion functionality with error handling."""
+
+    @pytest.fixture
+    def mock_event_bus(self):
+        """Create a mock event bus."""
+        from smarttel.util.eventbus import EventBus
+        return MagicMock(spec=EventBus)
+    
+    @pytest.fixture  
+    def client_with_event_bus(self, mock_event_bus):
+        """Create a SeestarClient with mocked event bus and connection."""
+        with patch("smarttel.seestar.client.SeestarConnection"):
+            client = SeestarClient("192.168.1.100", 4700, mock_event_bus)
+            return client
+    
+    @pytest.mark.asyncio
+    async def test_wait_for_event_completion_success(self, client_with_event_bus, mock_event_bus):
+        """Test wait_for_event_completion returns success with no error."""
+        # Mock event handler behavior
+        async def trigger_complete_event():
+            await asyncio.sleep(0.1)
+            # Get the event handler that was registered
+            handler = mock_event_bus.subscribe.call_args[0][1]
+            
+            # Create a mock event with successful completion
+            class MockEvent:
+                state = "complete"
+            
+            mock_event = MockEvent()
+            await handler(mock_event)
+        
+        # Start the completion trigger in the background
+        asyncio.create_task(trigger_complete_event())
+        
+        # Test the method
+        success, error = await client_with_event_bus.wait_for_event_completion("AutoGoto", timeout=1.0)
+        
+        assert success is True
+        assert error is None
+        mock_event_bus.subscribe.assert_called_once_with("AutoGoto", mock_event_bus.subscribe.call_args[0][1])
+        mock_event_bus.remove_listener.assert_called_once()
+
+    @pytest.mark.asyncio  
+    async def test_wait_for_event_completion_fail_with_error(self, client_with_event_bus, mock_event_bus):
+        """Test wait_for_event_completion returns failure with error message."""
+        # Mock event handler behavior
+        async def trigger_fail_event():
+            await asyncio.sleep(0.1)
+            # Get the event handler that was registered
+            handler = mock_event_bus.subscribe.call_args[0][1]
+            
+            # Create a mock event with failure and error
+            class MockEvent:
+                state = "fail"
+                error = "Telescope positioning failed: object below horizon"
+                message = None
+                reason = None
+            
+            mock_event = MockEvent()
+            await handler(mock_event)
+        
+        # Start the completion trigger in the background
+        asyncio.create_task(trigger_fail_event())
+        
+        # Test the method
+        success, error = await client_with_event_bus.wait_for_event_completion("AutoGoto", timeout=1.0)
+        
+        assert success is False
+        assert error == "Telescope positioning failed: object below horizon"
+        
+    @pytest.mark.asyncio
+    async def test_wait_for_event_completion_cancel_with_reason(self, client_with_event_bus, mock_event_bus):
+        """Test wait_for_event_completion returns failure with reason when cancelled."""
+        # Mock event handler behavior  
+        async def trigger_cancel_event():
+            await asyncio.sleep(0.1)
+            # Get the event handler that was registered
+            handler = mock_event_bus.subscribe.call_args[0][1]
+            
+            # Create a mock event with cancel state and reason
+            class MockEvent:
+                state = "cancel"
+                error = None
+                message = None
+                reason = "User cancelled operation"
+            
+            mock_event = MockEvent()
+            await handler(mock_event)
+        
+        # Start the completion trigger in the background
+        asyncio.create_task(trigger_cancel_event())
+        
+        # Test the method
+        success, error = await client_with_event_bus.wait_for_event_completion("FocuserMove", timeout=1.0)
+        
+        assert success is False
+        assert error == "User cancelled operation"
+
+    @pytest.mark.asyncio
+    async def test_wait_for_event_completion_fail_without_error_info(self, client_with_event_bus, mock_event_bus):
+        """Test wait_for_event_completion handles failure without error information."""
+        # Mock event handler behavior
+        async def trigger_fail_event_no_info():
+            await asyncio.sleep(0.1)
+            # Get the event handler that was registered
+            handler = mock_event_bus.subscribe.call_args[0][1]
+            
+            # Create a mock event with failure but no error info
+            class MockEvent:
+                state = "fail"
+                error = None
+                message = None  
+                reason = None
+                
+                def dict(self):
+                    return {}
+                
+                def __init__(self):
+                    self.__dict__ = {}
+            
+            mock_event = MockEvent()
+            await handler(mock_event)
+        
+        # Start the completion trigger in the background
+        asyncio.create_task(trigger_fail_event_no_info())
+        
+        # Test the method
+        success, error = await client_with_event_bus.wait_for_event_completion("AutoGoto", timeout=1.0)
+        
+        assert success is False
+        assert error is None  # No error info available

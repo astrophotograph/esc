@@ -10,6 +10,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, 
 import { useTelescopeContext } from "@/context/TelescopeContext"
 import { formatRaDec } from "@/utils/telescope-utils"
 import { PlateSolveSyncDialog, type PlateSolveResult } from "../modals/PlateSolveSyncDialog"
+import { MessageType, PlateSolveResultMessage, getWebSocketService } from "@/services/websocket-service"
 
 export function TelescopeControls() {
   const {
@@ -37,10 +38,41 @@ export function TelescopeControls() {
   handleSyncTelescope,
   } = useTelescopeContext()
 
-  // Plate solve dialog state
+  // State for plate solve sync dialog
   const [showPlateSolveDialog, setShowPlateSolveDialog] = useState(false)
   const [plateSolveResult, setPlateSolveResult] = useState<PlateSolveResult | null>(null)
-  const [isPlateSolving, setIsPlateSolving] = useState(false)
+
+  // Listen for plate solve results from WebSocket
+  useEffect(() => {
+    const wsService = getWebSocketService()
+    
+    const handlePlateSolveResult = (message: PlateSolveResultMessage) => {
+      if (message.payload.success) {
+        // Convert WebSocket message to PlateSolveResult format for the dialog
+        setPlateSolveResult({
+          success: true,
+          ra: message.payload.ra!,
+          dec: message.payload.dec!,
+          orientation: message.payload.orientation,
+          pixscale: message.payload.pixscale,
+          field_width: message.payload.field_width,
+          field_height: message.payload.field_height,
+          job_id: message.payload.astrometry_job_id,
+          submission_id: message.payload.submission_id,
+        })
+        
+        // Show the sync dialog
+        setShowPlateSolveDialog(true)
+      }
+      // For failures, the existing WebSocket toast notification is enough
+    }
+    
+    wsService.on(MessageType.PLATE_SOLVE_RESULT, handlePlateSolveResult)
+    
+    return () => {
+      wsService.off(MessageType.PLATE_SOLVE_RESULT, handlePlateSolveResult)
+    }
+  }, [])
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -158,41 +190,18 @@ export function TelescopeControls() {
       return
     }
 
-    // Open the dialog and start plate solving
-    setShowPlateSolveDialog(true)
-    setIsPlateSolving(true)
-    setPlateSolveResult(null)
-
     try {
-      const result = await handlePlateSolve()
-      setPlateSolveResult(result)
-
-      if (result.success) {
-        addStatusAlert({
-          type: "success",
-          title: "Plate Solve Successful",
-          message: `Image solved: RA=${result.ra?.toFixed(4)}°, Dec=${result.dec?.toFixed(4)}°`,
-        })
-      } else {
-        addStatusAlert({
-          type: "error",
-          title: "Plate Solve Failed",
-          message: result.error || "Plate solving failed for unknown reason",
-        })
-      }
+      // Start plate solving - results will come via WebSocket
+      await handlePlateSolve()
+      // handlePlateSolve now shows its own "started" notification
+      // Results will be shown via WebSocket toast notifications
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      setPlateSolveResult({
-        success: false,
-        error: errorMessage
-      })
       addStatusAlert({
         type: "error",
         title: "Plate Solve Error",
         message: errorMessage,
       })
-    } finally {
-      setIsPlateSolving(false)
     }
   }
 
@@ -230,7 +239,6 @@ export function TelescopeControls() {
   const handleDialogCancel = () => {
     setShowPlateSolveDialog(false)
     setPlateSolveResult(null)
-    setIsPlateSolving(false)
   }
 
   return (
@@ -359,11 +367,10 @@ export function TelescopeControls() {
             variant="outline"
             size="sm"
             onClick={handlePlateSolveAndSync}
-            disabled={isPlateSolving}
             className="w-full border-gray-600 text-white hover:bg-gray-700"
           >
             <Target className="w-4 h-4 mr-2" />
-            {isPlateSolving ? "Plate Solving..." : "Plate Solve & Sync"}
+            Plate Solve
           </Button>
         </div>
 
@@ -471,11 +478,11 @@ export function TelescopeControls() {
 
     <PlateSolveSyncDialog
       isOpen={showPlateSolveDialog}
-      onClose={() => setShowPlateSolveDialog(false)}
+      onClose={handleDialogCancel}
       currentRa={streamStatus?.status?.ra}
       currentDec={streamStatus?.status?.dec}
       plateSolveResult={plateSolveResult}
-      isLoading={isPlateSolving}
+      isLoading={false} // Never loading since results come from WebSocket
       onSync={handleSync}
       onCancel={handleDialogCancel}
     />

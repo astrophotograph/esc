@@ -145,8 +145,11 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         description: selectedObject.description
       })
       
-      // Use the context function to handle goto
-      await handleGotoTarget(
+      // Close dialog immediately for better UX
+      onOpenChange(false)
+      
+      // Execute the command in the background - context function will handle success/error notifications
+      handleGotoTarget(
         selectedObject.name,
         selectedObject.ra,
         selectedObject.dec,
@@ -155,31 +158,16 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         selectedObject.magnitude,
         selectedObject.description
       )
-      
-      console.log(`✅ Goto message sent successfully for ${selectedObject.name}`)
-      
-      // Show success toast
-      toast.success(
-        startImaging 
-          ? `Navigating to ${selectedObject.name} and starting imaging` 
-          : `Navigating telescope to ${selectedObject.name}`,
-        {
-          description: `${selectedObject.type.charAt(0).toUpperCase() + selectedObject.type.slice(1)} • Magnitude ${selectedObject.magnitude} • Altitude ${selectedObject.altitude.toFixed(1)}°`,
-          duration: 4000,
-        }
-      )
-      
-      onOpenChange(false)
     } catch (error) {
-      console.error('Failed to send goto message:', error)
+      console.error('Failed to initiate goto command:', error)
       
-      // Show error toast
-      toast.error("Failed to send goto command", {
-        description: `Could not navigate to ${selectedObject.name}. Please check your connection.`,
-        duration: 5000,
+      // Show error toast for immediate validation errors
+      toast.error("Failed to initiate goto command", {
+        description: `Could not start navigation to ${selectedObject.name}. Please try again.`,
+        duration: 6000,
       })
       
-      // Still close the dialog even if command fails
+      // Close the dialog
       onOpenChange(false)
     } finally {
       setIsPerformingAction(false)

@@ -7,7 +7,8 @@ import {
   StatusUpdateMessage,
   CommandResponseMessage,
   MessageType,
-  AlertMessage
+  AlertMessage,
+  PlateSolveResultMessage
 } from '../services/websocket-service';
 import type { TelescopeInfo } from '../types/telescope-types';
 import { toast } from 'sonner';
@@ -124,7 +125,7 @@ export function useTelescopeWebSocket(
         baseUrl: getWebSocketBaseUrl(),
         reconnectAttempts: 5,
         reconnectDelayMs: 1000,
-        commandTimeoutMs: 10000
+        commandTimeoutMs: 120000  // Match backend timeout for goto operations (120 seconds)
       });
     }
     
@@ -199,6 +200,33 @@ export function useTelescopeWebSocket(
       };
       
       wsService.on(MessageType.ALERT, alertListener);
+      
+      // Listen for plate solve result events and show toast notifications
+      const plateSolveResultListener = (message: PlateSolveResultMessage) => {
+        console.log('🔭 Plate Solve Result Received:', {
+          telescope_id: message.telescope_id,
+          job_id: message.payload.job_id,
+          success: message.payload.success,
+          ra: message.payload.ra,
+          dec: message.payload.dec,
+          error: message.payload.error,
+          timestamp: new Date(message.timestamp).toISOString()
+        });
+        
+        if (message.payload.success) {
+          // Success results are handled by the TelescopeControls component which shows the sync dialog
+          // Only log to console for debugging
+          console.log('✅ Plate solve successful - sync dialog will be shown');
+        } else {
+          // Show error toast
+          toast.error('Plate solve failed', {
+            description: message.payload.error || 'Unknown error occurred',
+            duration: 8000,
+          });
+        }
+      };
+      
+      wsService.on(MessageType.PLATE_SOLVE_RESULT, plateSolveResultListener);
       
       wsService.on('reconnected', () => {
         if (currentTelescope) {

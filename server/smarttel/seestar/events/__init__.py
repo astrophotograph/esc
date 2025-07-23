@@ -25,6 +25,8 @@ class AutoGotoEvent(BaseEvent):
     lapse_ms: int = 0
     count: int = 0
     hint: bool = False
+    error: str | None = None
+    code: int | None = None
     route: list[Any] = []
 
 

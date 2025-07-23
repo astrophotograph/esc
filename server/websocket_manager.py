@@ -16,8 +16,7 @@ from remote_websocket_client import RemoteWebSocketManager, RemoteController
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.parameterized import (
     IscopeStartView,
-    IscopeStartViewParams, IscopeStartStack, StartStackParams,
-)
+    IscopeStartViewParams, IscopeStartStack, StartStackParams, )
 from smarttel.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
 from websocket_protocol import (
@@ -30,7 +29,6 @@ from websocket_protocol import (
     SubscribeMessage,
     UnsubscribeMessage,
     AnnotationEventMessage,
-    AlertMessage,
 )
 
 
@@ -55,8 +53,8 @@ class WebSocketConnection:
             # Check if WebSocket is still connected
             try:
                 if (
-                    hasattr(self.websocket, "client_state")
-                    and self.websocket.client_state.name != "CONNECTED"
+                        hasattr(self.websocket, "client_state")
+                        and self.websocket.client_state.name != "CONNECTED"
                 ):
                     logger.warning(
                         f"WebSocket not connected for {self.connection_id}, state: {self.websocket.client_state.name}"
@@ -76,7 +74,7 @@ class WebSocketConnection:
             return False
 
     def is_subscribed_to(
-        self, telescope_id: str, subscription_type: SubscriptionType
+            self, telescope_id: str, subscription_type: SubscriptionType
     ) -> bool:
         """Check if this connection is subscribed to updates for a telescope."""
         if telescope_id not in self.subscriptions:
@@ -84,12 +82,12 @@ class WebSocketConnection:
 
         telescope_subs = self.subscriptions[telescope_id]
         return (
-            SubscriptionType.ALL in telescope_subs
-            or subscription_type in telescope_subs
+                SubscriptionType.ALL in telescope_subs
+                or subscription_type in telescope_subs
         )
 
     def add_subscription(
-        self, telescope_id: str, subscription_types: List[SubscriptionType]
+            self, telescope_id: str, subscription_types: List[SubscriptionType]
     ):
         """Add subscriptions for a telescope."""
         if telescope_id not in self.subscriptions:
@@ -101,7 +99,7 @@ class WebSocketConnection:
         )
 
     def remove_subscription(
-        self, telescope_id: str, subscription_types: List[SubscriptionType]
+            self, telescope_id: str, subscription_types: List[SubscriptionType]
     ):
         """Remove subscriptions for a telescope."""
         if telescope_id not in self.subscriptions:
@@ -165,7 +163,7 @@ class WebSocketManager:
         logger.info("WebSocket manager stopped")
 
     async def connect(
-        self, websocket: WebSocket, connection_id: str, skip_accept: bool = False
+            self, websocket: WebSocket, connection_id: str, skip_accept: bool = False
     ) -> WebSocketConnection:
         """Handle a new WebSocket connection."""
         if not skip_accept:
@@ -251,10 +249,10 @@ class WebSocketManager:
             logger.debug(f"Skipping error message send to {connection_id}")
 
     async def broadcast_status_update(
-        self,
-        telescope_id: str,
-        status: Dict[str, Any],
-        changes: Optional[List[str]] = None,
+            self,
+            telescope_id: str,
+            status: Dict[str, Any],
+            changes: Optional[List[str]] = None,
     ):
         """Broadcast status update to all subscribed clients."""
         message = StatusUpdateMessage(
@@ -274,7 +272,7 @@ class WebSocketManager:
             await connection.send_message(message)
 
     async def broadcast_telescope_lost(
-        self, telescope_id: str, reason: str = "Connection lost"
+            self, telescope_id: str, reason: str = "Connection lost"
     ):
         """Broadcast telescope loss to all connections."""
         message = MessageFactory.create_telescope_lost(telescope_id, reason)
@@ -283,11 +281,11 @@ class WebSocketManager:
             await connection.send_message(message)
 
     async def broadcast_annotation_event(
-        self,
-        telescope_id: str,
-        annotations: List[Dict[str, Any]],
-        image_size: List[int],
-        image_id: int,
+            self,
+            telescope_id: str,
+            annotations: List[Dict[str, Any]],
+            image_size: List[int],
+            image_id: int,
     ):
         """Broadcast annotation events to all subscribed clients."""
         message = AnnotationEventMessage(
@@ -303,11 +301,11 @@ class WebSocketManager:
                 await connection.send_message(message)
 
     async def broadcast_alert_event(
-        self,
-        telescope_id: str,
-        state: Optional[str] = None,
-        error: str = "",
-        code: int = 0,
+            self,
+            telescope_id: str,
+            state: Optional[str] = None,
+            error: str = "",
+            code: int = 0,
     ):
         """Broadcast alert events to all subscribed clients."""
         message = MessageFactory.create_alert(
@@ -315,6 +313,42 @@ class WebSocketManager:
             state=state,
             error=error,
             code=code,
+        )
+
+        # Send to all subscribed connections
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                await connection.send_message(message)
+
+    async def broadcast_plate_solve_result(
+            self,
+            telescope_id: str,
+            job_id: str,
+            success: bool,
+            ra: Optional[float] = None,
+            dec: Optional[float] = None,
+            orientation: Optional[float] = None,
+            pixscale: Optional[float] = None,
+            field_width: Optional[float] = None,
+            field_height: Optional[float] = None,
+            error: Optional[str] = None,
+            submission_id: Optional[int] = None,
+            astrometry_job_id: Optional[int] = None,
+    ):
+        """Broadcast plate solve result to all subscribed clients."""
+        message = MessageFactory.create_plate_solve_result(
+            telescope_id=telescope_id,
+            job_id=job_id,
+            success=success,
+            ra=ra,
+            dec=dec,
+            orientation=orientation,
+            pixscale=pixscale,
+            field_width=field_width,
+            field_height=field_height,
+            error=error,
+            submission_id=submission_id,
+            astrometry_job_id=astrometry_job_id,
         )
 
         # Send to all subscribed connections
@@ -350,7 +384,7 @@ class WebSocketManager:
             return False
 
     async def unregister_remote_controller(
-        self, controller_id: str, telescope_id: str = None
+            self, controller_id: str, telescope_id: str = None
     ):
         """Unregister a remote controller."""
         try:
@@ -401,10 +435,10 @@ class WebSocketManager:
             logger.error(f"Error handling remote message from {telescope_id}: {e}")
 
     async def _broadcast_to_subscribers(
-        self,
-        message: WebSocketMessage,
-        telescope_id: str,
-        subscription_type: SubscriptionType,
+            self,
+            message: WebSocketMessage,
+            telescope_id: str,
+            subscription_type: SubscriptionType,
     ):
         """Broadcast a message to all connections subscribed to the given telescope and type."""
         for connection in self.connections.values():
@@ -412,7 +446,7 @@ class WebSocketManager:
                 await connection.send_message(message)
 
     async def _handle_control_command(
-        self, connection: WebSocketConnection, message: ControlCommandMessage
+            self, connection: WebSocketConnection, message: ControlCommandMessage
     ):
         """Handle control command from client."""
         telescope_id = message.telescope_id
@@ -429,8 +463,8 @@ class WebSocketManager:
 
         # Check if telescope is available (either local or remote)
         if not (
-            self.is_telescope_local(telescope_id)
-            or self.is_telescope_remote(telescope_id)
+                self.is_telescope_local(telescope_id)
+                or self.is_telescope_remote(telescope_id)
         ):
             await connection.send_message(
                 MessageFactory.create_command_response(
@@ -453,19 +487,33 @@ class WebSocketManager:
                 result = await self._execute_telescope_command(
                     client, action, parameters
                 )
+                logger.info(f"Command {action} executed on local telescope.  Result: {result}")
             else:
                 # Forward to remote controller
                 result = await self._execute_remote_command(telescope_id, message)
 
             # Send response back to client
-            await connection.send_message(
-                MessageFactory.create_command_response(
-                    telescope_id=telescope_id,
-                    command_id=message.id,
-                    success=True,
-                    result=result,
+            # Check if the result indicates an error and convert to failed response
+            if isinstance(result, dict) and result.get("status") == "error":
+                # Convert error result to failed command response
+                await connection.send_message(
+                    MessageFactory.create_command_response(
+                        telescope_id=telescope_id,
+                        command_id=message.id,
+                        success=False,
+                        error=result.get("message", "Command failed"),
+                    )
                 )
-            )
+            else:
+                # Send successful response
+                await connection.send_message(
+                    MessageFactory.create_command_response(
+                        telescope_id=telescope_id,
+                        command_id=message.id,
+                        success=True,
+                        result=result,
+                    )
+                )
 
         except Exception as e:
             logger.error(
@@ -481,7 +529,7 @@ class WebSocketManager:
             )
 
     async def _execute_telescope_command(
-        self, client: Any, action: str, parameters: Dict[str, Any]
+            self, client: SeestarClient, action: str, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute a command on the telescope client."""
         logger.info(f"Executing command: {action} with parameters: {parameters}")
@@ -510,7 +558,7 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _execute_remote_command(
-        self, telescope_id: str, message: ControlCommandMessage
+            self, telescope_id: str, message: ControlCommandMessage
     ) -> Dict[str, Any]:
         """Execute a command on a remote telescope via its controller."""
         try:
@@ -545,7 +593,7 @@ class WebSocketManager:
             raise
 
     async def _execute_move_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute telescope movement command."""
         direction = parameters.get("direction", "").lower()
@@ -637,7 +685,7 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _execute_park_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute telescope park command."""
         try:
@@ -676,7 +724,7 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _execute_focus_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute focuser movement command."""
         increment = parameters.get("increment", 0)
@@ -708,9 +756,9 @@ class WebSocketManager:
 
             # Update status with new position (like in main.py)
             if (
-                response is not None
-                and hasattr(response, "result")
-                and response.result is not None
+                    response is not None
+                    and hasattr(response, "result")
+                    and response.result is not None
             ):
                 if isinstance(response.result, dict) and "step" in response.result:
                     client.status.focus_position = response.result["step"]
@@ -740,67 +788,211 @@ class WebSocketManager:
             logger.error(f"Error executing focus command: {e}")
             return {"status": "error", "message": str(e)}
 
+    def _parse_ra_coordinate(self, ra_value: Any) -> float:
+        """Parse RA coordinate in various formats to decimal degrees.
+        
+        Supported formats:
+        - Decimal degrees: 123.456 or "123.456"
+        - Hours/minutes/seconds: "12h34m56.7s" or "12:34:56.7"
+        - Hours with decimal: "12.5h" or "12.5"
+        - Space separated: "12 34 56.7"
+        """
+        import re
+
+        if isinstance(ra_value, (int, float)):
+            # Already numeric, assume degrees
+            return float(ra_value)
+
+        if not isinstance(ra_value, str):
+            raise ValueError(f"Invalid RA format: {ra_value}")
+
+        ra_str = ra_value.strip()
+
+        # Try decimal degrees first
+        try:
+            return float(ra_str)
+        except ValueError:
+            pass
+
+        # HMS format with h/m/s markers
+        hms_pattern = r'(\d+(?:\.\d+)?)[hH]\s*(\d+(?:\.\d+)?)[mM]\s*(\d+(?:\.\d+)?)[sS]?'
+        match = re.match(hms_pattern, ra_str)
+        if match:
+            hours = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            # Convert to degrees (1h = 15°)
+            return (hours + minutes / 60 + seconds / 3600) * 15
+
+        # Colon separated format HH:MM:SS or HH:MM:SS.S
+        colon_pattern = r'(\d+):(\d+):(\d+(?:\.\d+)?)'
+        match = re.match(colon_pattern, ra_str)
+        if match:
+            hours = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            return (hours + minutes / 60 + seconds / 3600) * 15
+
+        # Space separated format
+        space_pattern = r'(\d+)\s+(\d+)\s+(\d+(?:\.\d+)?)'
+        match = re.match(space_pattern, ra_str)
+        if match:
+            hours = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            return (hours + minutes / 60 + seconds / 3600) * 15
+
+        # Hours only with h marker
+        hours_pattern = r'(\d+(?:\.\d+)?)[hH]'
+        match = re.match(hours_pattern, ra_str)
+        if match:
+            hours = float(match.group(1))
+            return hours * 15
+
+        raise ValueError(f"Unable to parse RA format: {ra_str}")
+
+    def _parse_dec_coordinate(self, dec_value: Any) -> float:
+        """Parse Dec coordinate in various formats to decimal degrees.
+        
+        Supported formats:
+        - Decimal degrees: 45.678 or "-45.678"
+        - Degrees/minutes/seconds: "+45d12m34.5s" or "45:12:34.5"
+        - Degrees with decimal: "45.5d" or "-45.5"
+        - Space separated: "45 12 34.5" or "-45 12 34.5"
+        """
+        import re
+
+        if isinstance(dec_value, (int, float)):
+            # Already numeric
+            return float(dec_value)
+
+        if not isinstance(dec_value, str):
+            raise ValueError(f"Invalid Dec format: {dec_value}")
+
+        dec_str = dec_value.strip()
+
+        # Try decimal degrees first
+        try:
+            return float(dec_str)
+        except ValueError:
+            pass
+
+        # Check for sign
+        negative = False
+        if dec_str.startswith('-'):
+            negative = True
+            dec_str = dec_str[1:].strip()
+        elif dec_str.startswith('+'):
+            dec_str = dec_str[1:].strip()
+
+        # DMS format with d/m/s markers
+        dms_pattern = r'(\d+(?:\.\d+)?)[dD°]\s*(\d+(?:\.\d+)?)[mM\']\s*(\d+(?:\.\d+)?)[sS"]?'
+        match = re.match(dms_pattern, dec_str)
+        if match:
+            degrees = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            result = degrees + minutes / 60 + seconds / 3600
+            return -result if negative else result
+
+        # Colon separated format DD:MM:SS or DD:MM:SS.S
+        colon_pattern = r'(\d+):(\d+):(\d+(?:\.\d+)?)'
+        match = re.match(colon_pattern, dec_str)
+        if match:
+            degrees = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            result = degrees + minutes / 60 + seconds / 3600
+            return -result if negative else result
+
+        # Space separated format
+        space_pattern = r'(\d+)\s+(\d+)\s+(\d+(?:\.\d+)?)'
+        match = re.match(space_pattern, dec_str)
+        if match:
+            degrees = float(match.group(1))
+            minutes = float(match.group(2))
+            seconds = float(match.group(3))
+            result = degrees + minutes / 60 + seconds / 3600
+            return -result if negative else result
+
+        # Degrees only with d marker
+        degrees_pattern = r'(\d+(?:\.\d+)?)[dD°]'
+        match = re.match(degrees_pattern, dec_str)
+        if match:
+            degrees = float(match.group(1))
+            return -degrees if negative else degrees
+
+        raise ValueError(f"Unable to parse Dec format: {dec_value}")
+
     async def _execute_goto_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: SeestarClient, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute goto command - stub handler that logs the target information."""
         try:
             target_name = parameters.get("target_name", "unknown")
             coordinates = parameters.get("coordinates", {})
-            ra = float(coordinates.get("ra", 0))
-            dec = float(coordinates.get("dec", 0))
+
+            # Parse RA and Dec with multiple format support
+            try:
+                ra = self._parse_ra_coordinate(coordinates.get("ra", 0)) / 15.0
+            except ValueError as e:
+                logger.error(f"Failed to parse RA coordinate: {e}")
+                return {"status": "error", "message": f"Invalid RA format: {coordinates.get('ra')}"}
+
+            try:
+                dec = self._parse_dec_coordinate(coordinates.get("dec", 0))
+            except ValueError as e:
+                logger.error(f"Failed to parse Dec coordinate: {e}")
+                return {"status": "error", "message": f"Invalid Dec format: {coordinates.get('dec')}"}
             start_imaging = parameters.get("start_imaging", False)
             target_type = parameters.get("target_type", "unknown")
             magnitude = parameters.get("magnitude", "unknown")
             description = parameters.get("description", "")
 
-            stack_gain = parameters.get("gain", 80) # make this vary based on telescope
+            stack_gain = parameters.get("gain", 80)  # make this vary based on telescope
 
             logger.info(f"Goto command received for target: {target_name}")
-            logger.info(f"Coordinates: RA={ra}, Dec={dec}")
+            logger.info(f"Original coordinates: RA={coordinates.get('ra')}, Dec={coordinates.get('dec')}")
+            logger.info(f"Parsed coordinates: RA={ra:.6f}°, Dec={dec:.6f}°")
             logger.info(f"Target type: {target_type}, Magnitude: {magnitude}")
             logger.info(f"Start imaging: {start_imaging}")
             logger.info(f"Description: {description}")
             logger.info(f"Full message parameters: {parameters}")
 
-            # todo : do the Goto!
+            await client.goto(target_name, ra, dec)
+            success, error = await client.wait_for_event_completion("AutoGoto", timeout=120.0)
+            if not success:
+                await client.stop_goto()
+                error_message = f"Error positioning telescope: {error}" if error else "Error positioning telescope"
+                logger.error(error_message)
+                return {"status": "error", "message": error_message}
 
-            # if start_imaging:
-            #     client.send_and_recv(IscopeStartView(
-            #         params=IscopeStartViewParams(
-            #             mode='star',
-            #             target_name=target_name,
-            #             target_ra_dec=(ra, dec),
-            #             lp_filter=False,
-            #         )))
-            #     # todo : Watches AutoGoto events until Completed or Failed.  After timestamp of response to the send?
-            #     #        have an async helper on the client to wait for a specific event.  Includes timeout...
-            #
-            #     client.send_and_recv(SetSetting(params=SettingParameters(
-            #         stack_lenhance=True,
-            #     )))
-            #
-            #     client.send_and_recv(SetSequenceSetting(params=[SequenceSettingParameters(group_name=target_name)]))
-            #
-            #     client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=True)))
-            #     #    {"method": "iscope_start_stack", "params": {"restart": params["restart"]}}
-            #
-            #     # Change the gain -after_ starting starts.
-            #     client.send_and_recv(SetControlValue(params=("gain", stack_gain)))
+            logger.debug(f"Start imaging: {start_imaging}")
+            if start_imaging or True:
+                await asyncio.sleep(5.0)
 
+                r = await client.send_and_recv(SetSetting(
+                    params=SettingParameters(
+                        stack_lenhance=True,
+                    )))
+                logger.debug(f"Response from SetSetting: {r}")
+
+                r = await client.send_and_recv(SetSequenceSetting(params=[
+                    SequenceSettingParameters(group_name=target_name)]))
+                logger.debug(f"Response from SetSequenceSetting: {r}")
+
+                r = await client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=False)))
+                logger.debug(f"Response from IscopeStartStack: {r}")
+
+                # Change the gain _after_ starting starts.
+                r = await client.send_and_recv(SetControlValue(params=("gain", stack_gain)))
+                logger.debug(f"Response from SetControlValue: {r}")
+
+            logger.info("Telescope goto command completed successfully")
             # self.logger.info(result)
 
             # This is just for spectra functions: {"method":"scope_goto","params":[1.2345,75.0]}
             #
-            # data: MessageParams = {
-            #     "method": "iscope_start_view",
-            #     "params": {
-            #         "mode": "star",
-            #         "target_ra_dec": [in_ra, in_dec],
-            #         "target_name": target_name,
-            #         "lp_filter": False,
-            #     },
-            # }
             # working, starting mean it's slewing
             # if task is cancelled
             #
@@ -826,7 +1018,7 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _execute_scenery_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute scenery mode command - stub handler that logs the message."""
         mode = parameters.get("mode", "unknown")
@@ -853,7 +1045,7 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _handle_subscribe(
-        self, connection: WebSocketConnection, message: SubscribeMessage
+            self, connection: WebSocketConnection, message: SubscribeMessage
     ):
         """Handle subscription request from client."""
         payload = message.payload
@@ -878,7 +1070,7 @@ class WebSocketManager:
             )
 
     async def _handle_unsubscribe(
-        self, connection: WebSocketConnection, message: UnsubscribeMessage
+            self, connection: WebSocketConnection, message: UnsubscribeMessage
     ):
         """Handle unsubscription request from client."""
         payload = message.payload
@@ -896,19 +1088,19 @@ class WebSocketManager:
             connection.remove_subscription(telescope_id, subscription_types)
 
     async def _execute_set_image_enhancement_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute set image enhancement command - configures enhancement settings."""
         try:
             logger.info(f"Setting image enhancement parameters: {parameters}")
-            
+
             # Store settings on client
             if not hasattr(client, "image_enhancement_settings"):
                 client.image_enhancement_settings = {}
-            
+
             # Update stored settings with new parameters
             client.image_enhancement_settings.update(parameters)
-            
+
             # Find the telescope object that owns this client
             telescope = None
             if self.telescope_getter:
@@ -923,10 +1115,10 @@ class WebSocketManager:
                         break
                 else:
                     logger.error(f"No matching client found in telescope_clients registry")
-            
+
             if telescope:
                 logger.info(f"Found telescope object, configuring processors")
-                
+
                 # Configure stretch parameters if image_processor exists
                 if hasattr(telescope, "image_processor") and telescope.image_processor:
                     # Configure GraxpertStretch with stretch parameter
@@ -934,7 +1126,7 @@ class WebSocketManager:
                     if hasattr(telescope.image_processor, "set_stretch_parameter"):
                         telescope.image_processor.set_stretch_parameter(stretch_param)
                         logger.info(f"Set image processor stretch parameter: {stretch_param}")
-                
+
                 # Configure enhancement processor if it exists
                 if hasattr(telescope, "enhancement_processor") and telescope.enhancement_processor:
                     # Update enhancement processor settings
@@ -958,9 +1150,9 @@ class WebSocketManager:
                         telescope.enhancement_processor.denoise_strength = parameters["denoise_strength"]
                     if "invert_enabled" in parameters:
                         telescope.enhancement_processor.invert_enabled = parameters["invert_enabled"]
-                    
+
                     logger.info(f"Updated enhancement processor settings")
-                    
+
                     # Trigger instant processing of cached image
                     if hasattr(telescope, "imaging") and telescope.imaging:
                         telescope.imaging.trigger_enhancement_settings_changed()
@@ -968,13 +1160,14 @@ class WebSocketManager:
                     logger.warning("Could not find enhancement processor on telescope")
             else:
                 logger.warning("Could not find telescope object - processors not configured")
-            
+
             # Return frontend-compatible format with all current settings
             settings = {
                 "upscaling_enabled": client.image_enhancement_settings.get("upscaling_enabled", False),
                 "scale_factor": client.image_enhancement_settings.get("scale_factor", 2.0),
                 "upscaling_method": client.image_enhancement_settings.get("upscaling_method", "bicubic"),
-                "available_upscaling_methods": ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan", "real_esrgan", "waifu2x"],
+                "available_upscaling_methods": ["bicubic", "lanczos", "edsr", "fsrcnn", "esrgan", "real_esrgan",
+                                                "waifu2x"],
                 "sharpening_enabled": client.image_enhancement_settings.get("sharpening_enabled", False),
                 "sharpening_method": client.image_enhancement_settings.get("sharpening_method", "unsharp_mask"),
                 "sharpening_strength": client.image_enhancement_settings.get("sharpening_strength", 1.0),
@@ -982,7 +1175,8 @@ class WebSocketManager:
                 "denoise_enabled": client.image_enhancement_settings.get("denoise_enabled", False),
                 "denoise_method": client.image_enhancement_settings.get("denoise_method", "tv_chambolle"),
                 "denoise_strength": client.image_enhancement_settings.get("denoise_strength", 1.0),
-                "available_denoise_methods": ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"],
+                "available_denoise_methods": ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet",
+                                              "gaussian", "median"],
                 "invert_enabled": client.image_enhancement_settings.get("invert_enabled", False),
                 "stretch_parameter": client.image_enhancement_settings.get("stretch_parameter", "15% Bg, 3 sigma"),
                 "available_stretch_parameters": [
@@ -993,21 +1187,21 @@ class WebSocketManager:
                     "30% Bg, 2 sigma"
                 ]
             }
-            
+
             return settings
-            
+
         except Exception as e:
             logger.error(f"Error executing set image enhancement command: {e}")
             return {"status": "error", "message": str(e)}
-    
+
     async def _execute_get_image_enhancement_command(
-        self, client: Any, parameters: Dict[str, Any]
+            self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute get image enhancement command - retrieves current enhancement settings."""
         try:
             # Try to get settings from client instance first
             stored_settings = getattr(client, "image_enhancement_settings", {})
-            
+
             # Return frontend-compatible format
             settings = {
                 "upscaling_enabled": stored_settings.get("upscaling_enabled", False),
@@ -1028,7 +1222,7 @@ class WebSocketManager:
                     "30% Bg, 2 sigma"
                 ]
             }
-            
+
             # Try to derive current settings from processors if not stored
             if not stored_settings:
                 # Find the telescope object that owns this client
@@ -1039,7 +1233,7 @@ class WebSocketManager:
                         if stored_client == client:
                             telescope = self.telescope_getter(telescope_id)
                             break
-                
+
                 if telescope:
                     # Check enhancement processor for upscaling settings
                     if hasattr(telescope, "enhancement_processor") and telescope.enhancement_processor:
@@ -1057,10 +1251,10 @@ class WebSocketManager:
                             settings["sharpening_strength"] = telescope.enhancement_processor.sharpening_strength
                         if hasattr(telescope.enhancement_processor, "invert_enabled"):
                             settings["invert_enabled"] = telescope.enhancement_processor.invert_enabled
-            
+
             logger.info(f"Retrieved image enhancement settings: {settings}")
             return settings
-            
+
         except Exception as e:
             logger.error(f"Error executing get image enhancement command: {e}")
             return {"status": "error", "message": str(e)}
@@ -1075,8 +1269,8 @@ class WebSocketManager:
                 for connection_id, connection in self.connections.items():
                     # Check if connection is stale
                     if (
-                        current_time - connection.last_heartbeat
-                        > self.heartbeat_interval * 2
+                            current_time - connection.last_heartbeat
+                            > self.heartbeat_interval * 2
                     ):
                         logger.warning(
                             f"Connection {connection_id} appears dead (no heartbeat)"

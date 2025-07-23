@@ -17,12 +17,13 @@ from pydantic import BaseModel, Field
 class MessageType(str, Enum):
     """WebSocket message types."""
 
-    # Status and updates
+    # Status and updates  
     STATUS_UPDATE = "status_update"
     TELESCOPE_DISCOVERED = "telescope_discovered"
     TELESCOPE_LOST = "telescope_lost"
     ANNOTATION_EVENT = "annotation_event"
     ALERT = "alert"
+    PLATE_SOLVE_RESULT = "plate_solve_result"
 
     # Control commands
     CONTROL_COMMAND = "control_command"
@@ -214,6 +215,46 @@ class AlertMessage(WebSocketMessage):
                 "state": state,
                 "error": error,
                 "code": code,
+            },
+            **data,
+        )
+
+
+class PlateSolveResultMessage(WebSocketMessage):
+    """Plate solve result message containing astrometry solution."""
+
+    type: MessageType = MessageType.PLATE_SOLVE_RESULT
+
+    def __init__(
+        self,
+        telescope_id: str,
+        job_id: str,
+        success: bool,
+        ra: Optional[float] = None,
+        dec: Optional[float] = None,
+        orientation: Optional[float] = None,
+        pixscale: Optional[float] = None,
+        field_width: Optional[float] = None,
+        field_height: Optional[float] = None,
+        error: Optional[str] = None,
+        submission_id: Optional[int] = None,
+        astrometry_job_id: Optional[int] = None,
+        **data,
+    ):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "job_id": job_id,
+                "success": success,
+                "ra": ra,
+                "dec": dec,
+                "orientation": orientation,
+                "pixscale": pixscale,
+                "field_width": field_width,
+                "field_height": field_height,
+                "error": error,
+                "submission_id": submission_id,
+                "astrometry_job_id": astrometry_job_id,
             },
             **data,
         )
@@ -422,4 +463,35 @@ class MessageFactory:
             state=state,
             error=error,
             code=code,
+        )
+
+    @staticmethod
+    def create_plate_solve_result(
+        telescope_id: str,
+        job_id: str,
+        success: bool,
+        ra: Optional[float] = None,
+        dec: Optional[float] = None,
+        orientation: Optional[float] = None,
+        pixscale: Optional[float] = None,
+        field_width: Optional[float] = None,
+        field_height: Optional[float] = None,
+        error: Optional[str] = None,
+        submission_id: Optional[int] = None,
+        astrometry_job_id: Optional[int] = None,
+    ) -> PlateSolveResultMessage:
+        """Create a plate solve result message."""
+        return PlateSolveResultMessage(
+            telescope_id=telescope_id,
+            job_id=job_id,
+            success=success,
+            ra=ra,
+            dec=dec,
+            orientation=orientation,
+            pixscale=pixscale,
+            field_width=field_width,
+            field_height=field_height,
+            error=error,
+            submission_id=submission_id,
+            astrometry_job_id=astrometry_job_id,
         )

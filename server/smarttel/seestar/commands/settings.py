@@ -12,23 +12,23 @@ class SetControlValue(BaseCommand):
     params: tuple[str, int]
 
 
-class SettingParameters(BaseCommand):
+class SettingParameters(BaseModel):
     """Parameters for the SetSetting command."""
 
-    exp_ms: Optional[dict[str, int]]  # values: stack_l, continuous
-    ae_bri_percent: Optional[int]
-    stack_dither: Optional[dict[str, Any]]  # pix: int, interval: int, enable: bool
-    save_discrete_frame: Optional[bool]
-    save_discrete_ok_frame: Optional[bool]
-    auto_3ppa_calib: Optional[bool]
-    stack_lenhance: Optional[bool]
+    exp_ms: Optional[dict[str, int]] = None # values: stack_l, continuous
+    ae_bri_percent: Optional[int] = None
+    stack_dither: Optional[dict[str, Any]] = None  # pix: int, interval: int, enable: bool
+    save_discrete_frame: Optional[bool] = None
+    save_discrete_ok_frame: Optional[bool] = None
+    auto_3ppa_calib: Optional[bool] = None
+    stack_lenhance: Optional[bool] = None
 
 
 class SetSetting(BaseCommand):
     """Set the settings from the Seestar."""
 
     method: Literal["set_setting"] = "set_setting"
-    params: SettingParameters
+    params: SettingParameters | None = None
 
 class SequenceSettingParameters(BaseModel):
     """Parameters for the SetSequenceSetting command."""

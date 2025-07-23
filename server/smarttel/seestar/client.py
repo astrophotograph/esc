@@ -485,7 +485,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         if isinstance(data, BaseModel):
             if data.id is None:
                 data.id = next(self.counter)
-            data = data.model_dump_json()
+            data = data.model_dump_json(exclude_none=True) # Not sure if this is safe...
 
         # Log sent message
         self.message_history.append(
@@ -540,7 +540,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.lp_filter = wheel_event.position == 2
                 case "View":
                     self._process_view(parser.event.dict())
-                # Todo: include Exposure, Stacked
+                case _:
+                    self.event_bus.emit(parser.event.Event, parser.event)
+
+            # Todo: include Exposure, Stacked
                 # case _:
                 #    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
@@ -689,7 +692,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def wait_for_event_completion(
         self, event_type: str, timeout: float = 60.0
-    ) -> bool:
+    ) -> tuple[bool, str | None]:
         """
         Wait for an event of the specified type to complete.
 
@@ -701,7 +704,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             timeout: Maximum time to wait in seconds (default: 60)
 
         Returns:
-            bool: True if state is "complete", False if state is "cancel" or "fail"
+            tuple[bool, str | None]: (success, error_message)
+                - success: True if state is "complete", False if state is "cancel" or "fail"
+                - error_message: Error message if available when state is "cancel" or "fail", None otherwise
 
         Raises:
             asyncio.TimeoutError: If timeout is reached without completion
@@ -712,11 +717,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         # Create an asyncio Event to signal completion
         completion_event = asyncio.Event()
-        result = {"success": False}
+        result = {"success": False, "error": None}
 
         async def event_handler(event: BaseEvent):
             """Handle incoming events and check for completion."""
-            logging.trace(f"Received {event_type} event: {event}")
+            logging.debug(f"wait_for_event_completion Received {event_type} event: {event}")
 
             # Check if event has a state field
             if hasattr(event, "state") and event.state is not None:
@@ -727,10 +732,32 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 if state == "complete":
                     logging.info(f"{event_type} completed successfully")
                     result["success"] = True
+                    result["error"] = None
                     completion_event.set()
                 elif state in ["cancel", "fail"]:
-                    logging.info(f"{event_type} failed with state: {state}")
+                    # Try to extract error information
+                    error_msg = None
+                    if hasattr(event, "error") and event.error is not None:
+                        error_msg = str(event.error)
+                    elif hasattr(event, "message") and event.message is not None:
+                        error_msg = str(event.message)
+                    elif hasattr(event, "reason") and event.reason is not None:
+                        error_msg = str(event.reason)
+                    
+                    # Check if event is a dict-like object with error field
+                    try:
+                        if hasattr(event, "__dict__") and "error" in event.__dict__:
+                            error_msg = str(event.__dict__["error"])
+                        elif hasattr(event, "dict") and callable(event.dict):
+                            event_dict = event.dict()
+                            if "error" in event_dict and event_dict["error"]:
+                                error_msg = str(event_dict["error"])
+                    except Exception:
+                        pass
+                    
+                    logging.info(f"{event_type} failed with state: {state}, error: {error_msg}")
                     result["success"] = False
+                    result["error"] = error_msg
                     completion_event.set()
                 else:
                     logging.trace(f"{event_type} in progress with state: {state}")
@@ -741,12 +768,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         try:
             # Wait for completion or timeout
             await asyncio.wait_for(completion_event.wait(), timeout=timeout)
-            return result["success"]
+            return result["success"], result["error"]
         except asyncio.TimeoutError:
             logging.error(
                 f"Timeout waiting for {event_type} completion after {timeout}s"
             )
-            await self.stop_goto()
             raise
         finally:
             # Clean up the event listener

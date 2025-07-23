@@ -864,7 +864,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         @router.post("/plate-solve")
         async def plate_solve(api_key: str = None):
-            """Plate solve the current image using astrometry.net."""
+            """Start plate solving and return immediately with job ID."""
             # Check if imaging client is connected
             if not self.imaging or not self.imaging.is_connected:
                 raise HTTPException(
@@ -888,58 +888,106 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         detail="Astrometry.net API key required. Pass as parameter or set ASTROMETRY_API_KEY environment variable",
                     )
 
-            # Import here to avoid circular dependencies
-            from services.astrometry_client import AstrometryClient
+            # Generate a unique job ID
+            import uuid
+            job_id = str(uuid.uuid4())
+            telescope_id = getattr(self, 'serial_number', None) or getattr(self, 'host', 'unknown')
+            logging.info(f"Starting plate solve job {job_id} for telescope {telescope_id}")
 
-            # Create astrometry client
-            astrometry_client = AstrometryClient(api_key)
+            # Get WebSocket manager
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
 
-            try:
-                # Get telescope's current position if available for better solving
-                solve_params = {}
-                if hasattr(self.client, "status") and self.client.status:
-                    if (
-                        self.client.status.ra is not None
-                        and self.client.status.dec is not None
-                    ):
-                        solve_params["center_ra"] = self.client.status.ra
-                        solve_params["center_dec"] = self.client.status.dec
-                        solve_params["radius"] = 10.0  # 10 degree search radius
+            # Create background task for plate solving
+            async def plate_solve_task():
+                """Background task to perform plate solving."""
+                try:
+                    # Import here to avoid circular dependencies
+                    from services.astrometry_client import AstrometryClient
 
-                # Perform plate solving
-                logging.info(f"Starting plate solve with params: {solve_params}")
-                result = await astrometry_client.solve_image(
-                    current_image, **solve_params
-                )
+                    # Create astrometry client
+                    astrometry_client = AstrometryClient(api_key)
 
-                if result.success:
-                    logging.info(
-                        f"Plate solve successful: RA={result.ra}, Dec={result.dec}"
+                    try:
+                        # Get telescope's current position if available for better solving
+                        solve_params = {}
+                        if hasattr(self.client, "status") and self.client.status:
+                            if (
+                                self.client.status.ra is not None
+                                and self.client.status.dec is not None
+                            ):
+                                solve_params["center_ra"] = self.client.status.ra
+                                solve_params["center_dec"] = self.client.status.dec
+                                solve_params["radius"] = 10.0  # 10 degree search radius
+
+                        # Perform plate solving
+                        logging.info(f"Starting background plate solve with params: {solve_params}")
+                        result = await astrometry_client.solve_image(
+                            current_image, **solve_params
+                        )
+
+                        if result.success:
+                            logging.info(
+                                f"Plate solve successful: RA={result.ra}, Dec={result.dec}"
+                            )
+                            # Send success result via WebSocket
+                            await websocket_manager.broadcast_plate_solve_result(
+                                telescope_id=telescope_id,
+                                job_id=job_id,
+                                success=True,
+                                ra=result.ra,
+                                dec=result.dec,
+                                orientation=result.orientation,
+                                pixscale=result.pixscale,
+                                field_width=result.field_width,
+                                field_height=result.field_height,
+                                submission_id=result.submission_id,
+                                astrometry_job_id=result.job_id,
+                            )
+                        else:
+                            logging.error(f"Plate solve failed: {result.error}")
+                            # Send failure result via WebSocket
+                            await websocket_manager.broadcast_plate_solve_result(
+                                telescope_id=telescope_id,
+                                job_id=job_id,
+                                success=False,
+                                error=result.error,
+                                submission_id=result.submission_id,
+                                astrometry_job_id=result.job_id,
+                            )
+
+                    except Exception as e:
+                        logging.error(f"Error during plate solving: {e}")
+                        # Send error result via WebSocket
+                        await websocket_manager.broadcast_plate_solve_result(
+                            telescope_id=telescope_id,
+                            job_id=job_id,
+                            success=False,
+                            error=str(e),
+                        )
+                    finally:
+                        await astrometry_client.close()
+
+                except Exception as e:
+                    logging.error(f"Critical error in plate solve task: {e}")
+                    # Send critical error result via WebSocket
+                    await websocket_manager.broadcast_plate_solve_result(
+                        telescope_id=telescope_id,
+                        job_id=job_id,
+                        success=False,
+                        error=f"Critical error: {str(e)}",
                     )
-                    return {
-                        "success": True,
-                        "ra": result.ra,
-                        "dec": result.dec,
-                        "orientation": result.orientation,
-                        "pixscale": result.pixscale,
-                        "field_width": result.field_width,
-                        "field_height": result.field_height,
-                        "job_id": result.job_id,
-                        "submission_id": result.submission_id,
-                    }
-                else:
-                    logging.error(f"Plate solve failed: {result.error}")
-                    raise HTTPException(
-                        status_code=500, detail=f"Plate solving failed: {result.error}"
-                    )
 
-            except Exception as e:
-                logging.error(f"Error during plate solving: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Error during plate solving: {str(e)}"
-                )
-            finally:
-                await astrometry_client.close()
+            # Start the background task
+            import asyncio
+            asyncio.create_task(plate_solve_task())
+
+            # Return immediately with job ID
+            return {
+                "job_id": job_id,
+                "status": "started",
+                "message": "Plate solving started in background. Results will be sent via WebSocket.",
+            }
 
         @router.post("/sync")
         async def sync_telescope(sync_data: dict):
@@ -3512,6 +3560,171 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
     # app.include_router(router)
 
     # uvicorn.run(app, host="0.0.0.0", port=server_port)
+
+
+@main.command("test-command")
+@click.option("--host", required=True, help="Seestar host address")
+@click.option("--port", type=int, default=4700, help="Seestar port (default: 4700)")
+@click.option("--action", required=True, 
+              type=click.Choice(['goto', 'move', 'park', 'focus_increment', 'scenery', 'set_image_enhancement', 'get_image_enhancement']),
+              help="Command action to execute")
+@click.option("--target-name", help="Target name for goto command")
+@click.option("--ra", type=float, help="Right Ascension for goto (decimal degrees or HMS format)")
+@click.option("--dec", type=float, help="Declination for goto (decimal degrees or DMS format)")
+@click.option("--ra-str", help="Right Ascension as string (HMS format like '12h34m56s')")
+@click.option("--dec-str", help="Declination as string (DMS format like '+45d30m15s')")
+@click.option("--start-imaging", is_flag=True, help="Start imaging after goto")
+@click.option("--target-type", default="star", help="Target type (star, galaxy, nebula, etc.)")
+@click.option("--magnitude", type=float, help="Target magnitude")
+@click.option("--description", help="Target description")
+@click.option("--direction", type=click.Choice(['north', 'south', 'east', 'west', 'stop']), help="Move direction")
+@click.option("--duration", type=float, default=1.0, help="Move duration in seconds")
+@click.option("--focus-increment", type=int, help="Focus increment (positive or negative)")
+@click.option("--scenery-mode", type=click.Choice(['Star', 'Moon', 'Landscape']), help="Scenery mode")
+@click.option("--enhancement-method", type=click.Choice(['No Stretch', '10% Bg, 3 sigma', '15% Bg, 3 sigma', '20% Bg, 3 sigma', '30% Bg, 2 sigma']),
+              help="Image enhancement method")
+@click.option("--gain", type=int, help="Gain setting for goto command")
+def test_command(host, port, action, target_name, ra, dec, ra_str, dec_str, start_imaging, 
+                target_type, magnitude, description, direction, duration, focus_increment,
+                scenery_mode, enhancement_method, gain):
+    """Test telescope commands directly using the _execute_telescope_command methods.
+    
+    Examples:
+      # Test goto command with decimal coordinates
+      uv run python main.py test-command --host 192.168.1.100 --action goto --target-name "M31" --ra 10.684 --dec 41.269
+      
+      # Test goto command with HMS/DMS format
+      uv run python main.py test-command --host 192.168.1.100 --action goto --target-name "Vega" --ra-str "18h36m56s" --dec-str "+38d47m01s"
+      
+      # Test move command
+      uv run python main.py test-command --host 192.168.1.100 --action move --direction north --duration 2.0
+      
+      # Test focus command  
+      uv run python main.py test-command --host 192.168.1.100 --action focus_increment --focus-increment 100
+      
+      # Test park command
+      uv run python main.py test-command --host 192.168.1.100 --action park
+      
+      # Test scenery mode
+      uv run python main.py test-command --host 192.168.1.100 --action scenery --scenery-mode Star
+    """
+    
+    async def run_test():
+        from websocket_manager import WebSocketManager
+        from smarttel.util.eventbus import EventBus
+        
+        # Initialize WebSocket manager and create a telescope client
+        event_bus = EventBus()
+        client = SeestarClient(host, port, event_bus)
+        
+        # Create WebSocket manager instance for testing
+        ws_manager = WebSocketManager()
+        
+        click.echo(f"🔗 Connecting to Seestar telescope at {host}:{port}")
+        
+        try:
+            # Connect to telescope
+            await client.connect()
+            click.echo("✅ Connected to telescope successfully")
+            
+            # Prepare parameters based on action
+            parameters = {}
+            
+            if action == "goto":
+                if not target_name:
+                    click.echo("❌ Error: --target-name is required for goto command")
+                    return
+                
+                # Handle coordinate input
+                if ra_str or dec_str:
+                    if not (ra_str and dec_str):
+                        click.echo("❌ Error: Both --ra-str and --dec-str are required when using string format")
+                        return
+                    parameters["coordinates"] = {"ra": ra_str, "dec": dec_str}
+                elif ra is not None and dec is not None:
+                    parameters["coordinates"] = {"ra": ra, "dec": dec}
+                else:
+                    click.echo("❌ Error: Either --ra/--dec or --ra-str/--dec-str are required for goto command")
+                    return
+                
+                parameters.update({
+                    "target_name": target_name,
+                    "start_imaging": start_imaging,
+                    "target_type": target_type,
+                    "magnitude": magnitude,
+                    "description": description or f"{target_type.title()} target",
+                })
+                if gain is not None:
+                    parameters["gain"] = gain
+                    
+            elif action == "move":
+                if not direction:
+                    click.echo("❌ Error: --direction is required for move command")
+                    return
+                parameters = {
+                    "direction": direction,
+                    "duration": duration
+                }
+                
+            elif action == "focus_increment":
+                if focus_increment is None:
+                    click.echo("❌ Error: --focus-increment is required for focus command")
+                    return
+                parameters = {"increment": focus_increment}
+                
+            elif action == "scenery":
+                if not scenery_mode:
+                    click.echo("❌ Error: --scenery-mode is required for scenery command")
+                    return
+                parameters = {"mode": scenery_mode}
+                
+            elif action == "set_image_enhancement":
+                if not enhancement_method:
+                    click.echo("❌ Error: --enhancement-method is required for set_image_enhancement command")
+                    return
+                parameters = {"enhancement_method": enhancement_method}
+                
+            elif action == "get_image_enhancement":
+                # No additional parameters needed
+                pass
+                
+            elif action == "park":
+                # No additional parameters needed
+                pass
+            
+            click.echo(f"🚀 Executing {action} command with parameters:")
+            click.echo(f"   Parameters: {json.dumps(parameters, indent=2)}")
+            
+            # Execute the command
+            result = await ws_manager._execute_telescope_command(client, action, parameters)
+            
+            click.echo(f"📊 Command result:")
+            click.echo(json.dumps(result, indent=2))
+            
+            # Check if result indicates success or error
+            if isinstance(result, dict):
+                if result.get("status") == "error":
+                    click.echo(f"❌ Command failed: {result.get('message', 'Unknown error')}")
+                elif result.get("status") == "success":
+                    click.echo(f"✅ Command succeeded: {result.get('message', 'Command completed')}")
+                else:
+                    click.echo(f"ℹ️  Command completed with result: {result}")
+            else:
+                click.echo(f"✅ Command completed successfully")
+                
+        except Exception as e:
+            click.echo(f"❌ Error: {e}")
+            import traceback
+            click.echo(f"📋 Traceback: {traceback.format_exc()}")
+        finally:
+            try:
+                await client.disconnect()
+                click.echo("🔌 Disconnected from telescope")
+            except Exception as e:
+                click.echo(f"⚠️  Error during disconnect: {e}")
+    
+    # Run the async function
+    asyncio.run(run_test())
 
 
 if __name__ == "__main__":
