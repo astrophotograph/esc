@@ -1,0 +1,206 @@
+{
+  "astronomical_catalogs": {
+    "description": "Comprehensive catalog of Messier, NGC, IC objects, and bright stars with standardized JSON structure",
+    "data_sources": {
+      "messier_ngc_ic_objects": {
+        "name": "OpenNGC Database",
+        "description": "Contains positions and main data of NGC (New General Catalogue) and IC (Index Catalogue) objects, including all Messier objects",
+        "license": "CC-BY-SA-4.0",
+        "total_objects": "~13,000+ NGC/IC objects",
+        "source_urls": {
+          "github_repository": "https://github.com/mattiaverga/OpenNGC",
+          "raw_csv_file": "https://github.com/mattiaverga/OpenNGC/refs/heads/master/database_files/NGC.csv",
+          "addendum_csv": "https://github.com/mattiaverga/OpenNGC/refs/heads/master/database_files/addendum.csv",
+          "python_interface": "https://github.com/mattiaverga/PyOngc",
+          "tap_service": "http://dc.g-vo.org/tap"
+        },
+        "data_fields": {
+          "name": "Object name (NGC/IC + number)",
+          "type": "Object type (Galaxy, Open Cluster, Globular Cluster, Planetary Nebula, etc.)",
+          "ra": "Right Ascension in J2000 (HH:MM:SS.SS)",
+          "dec": "Declination in J2000 (+/-DD:MM:SS.SS)",
+          "const": "Constellation",
+          "majax": "Major axis in arcmin",
+          "minax": "Minor axis in arcmin",
+          "pa": "Position angle in degrees",
+          "b_mag": "B magnitude",
+          "v_mag": "V magnitude",
+          "j_mag": "J magnitude (2MASS)",
+          "h_mag": "H magnitude (2MASS)",
+          "k_mag": "K magnitude (2MASS)",
+          "surfbr": "Surface brightness",
+          "hubble": "Hubble morphological type (for galaxies)",
+          "cstar_b_mag": "Central star B magnitude (planetary nebulae)",
+          "cstar_v_mag": "Central star V magnitude (planetary nebulae)",
+          "messier": "Messier number",
+          "ngc": "NGC number",
+          "ic": "IC number",
+          "cstar_names": "Central star names",
+          "identifiers": "Alternative identifiers",
+          "common_names": "Common names",
+          "ned_notes": "Notes from NED",
+          "sources": "Data sources for this object"
+        }
+      },
+      "bright_stars": {
+        "hyg_database": {
+          "name": "HYG Stellar Database",
+          "description": "Compilation of Hipparcos, Yale Bright Star, and Gliese catalogs",
+          "license": "CC-BY-SA-4.0",
+          "version": "4.1 (2024)",
+          "total_stars": "~120,000",
+          "source_urls": {
+            "official_site": "https://www.astronexus.com/hyg",
+            "github_mirror": "https://github.com/astronexus/HYG-Database",
+            "codeberg": "https://codeberg.org/astronexus/hyg",
+            "download_csv": "Available as CSV (14 MB) from astronexus.com"
+          },
+          "data_fields": {
+            "id": "Database primary key",
+            "hip": "Hipparcos catalog ID",
+            "hd": "Henry Draper catalog ID",
+            "hr": "Harvard Revised catalog ID (Yale BSC number)",
+            "gl": "Gliese catalog ID",
+            "bf": "Bayer/Flamsteed designation",
+            "proper": "Proper name (e.g., Sirius, Vega)",
+            "ra": "Right Ascension (decimal degrees, J2000)",
+            "dec": "Declination (decimal degrees, J2000)",
+            "dist": "Distance in parsecs",
+            "pmra": "Proper motion in RA (mas/yr)",
+            "pmdec": "Proper motion in Dec (mas/yr)",
+            "rv": "Radial velocity (km/s)",
+            "mag": "Apparent visual magnitude",
+            "absmag": "Absolute magnitude",
+            "spect": "Spectral type",
+            "ci": "Color index (B-V)",
+            "x": "Cartesian X coordinate (parsecs)",
+            "y": "Cartesian Y coordinate (parsecs)",
+            "z": "Cartesian Z coordinate (parsecs)",
+            "vx": "X velocity component (km/s)",
+            "vy": "Y velocity component (km/s)",
+            "vz": "Z velocity component (km/s)",
+            "rarad": "RA in radians",
+            "decrad": "Dec in radians",
+            "pmrarad": "Proper motion RA in radians/year",
+            "pmdecrad": "Proper motion Dec in radians/year",
+            "bayer": "Bayer designation",
+            "flam": "Flamsteed number",
+            "con": "Constellation abbreviation",
+            "comp": "Multiple star component",
+            "comp_primary": "Primary of multiple system",
+            "base": "Base name for navigation",
+            "lum": "Luminosity (solar units)",
+            "var": "Variable star designation",
+            "var_min": "Minimum magnitude (variables)",
+            "var_max": "Maximum magnitude (variables)"
+          }
+        },
+        "yale_bright_star_catalog": {
+          "name": "Yale Bright Star Catalog (BSC5P)",
+          "description": "All stars brighter than magnitude 6.5",
+          "total_stars": "9,110",
+          "json_versions": {
+            "bsc5p_json": "https://github.com/frostoven/BSC5P-JSON",
+            "simplified": "https://github.com/brettonw/YaleBrightStarCatalog",
+            "lightweight": "https://github.com/aduboisforge/Bright-Star-Catalog-JSON"
+          }
+        }
+      }
+    },
+    "unified_json_structure": {
+      "description": "Proposed unified JSON structure for all astronomical objects",
+      "example_object": {
+        "id": "unique_identifier",
+        "catalog_ids": {
+          "messier": "M31",
+          "ngc": "NGC224",
+          "ic": null,
+          "hr": null,
+          "hd": null,
+          "hip": null,
+          "gl": null
+        },
+        "names": {
+          "proper": "Andromeda Galaxy",
+          "bayer_flamsteed": null,
+          "common": ["Andromeda", "M31"],
+          "other": []
+        },
+        "object_type": "Galaxy",
+        "coordinates": {
+          "ra_j2000": {
+            "decimal": 10.68470833,
+            "sexagesimal": "00:42:44.33"
+          },
+          "dec_j2000": {
+            "decimal": 41.26916667,
+            "sexagesimal": "+41:16:09.0"
+          },
+          "constellation": "And",
+          "galactic": {
+            "l": 121.17,
+            "b": -21.57
+          }
+        },
+        "magnitudes": {
+          "v": 3.44,
+          "b": 4.36,
+          "u": null,
+          "r": null,
+          "i": null,
+          "j": null,
+          "h": null,
+          "k": null
+        },
+        "physical_properties": {
+          "distance_pc": null,
+          "distance_ly": null,
+          "size": {
+            "major_axis_arcmin": 189.1,
+            "minor_axis_arcmin": 61.7,
+            "position_angle_deg": 35
+          },
+          "spectral_type": null,
+          "color_index_bv": null,
+          "absolute_magnitude": null,
+          "luminosity_solar": null,
+          "surface_brightness": 13.5
+        },
+        "motion": {
+          "proper_motion_ra_mas_yr": null,
+          "proper_motion_dec_mas_yr": null,
+          "radial_velocity_km_s": -301
+        },
+        "variability": {
+          "is_variable": false,
+          "variable_type": null,
+          "magnitude_range": {
+            "min": null,
+            "max": null
+          }
+        },
+        "morphology": {
+          "hubble_type": "SA(s)b",
+          "morphology_code": null
+        },
+        "notes": "Largest galaxy in Local Group"
+      }
+    },
+    "implementation_steps": [
+      "1. Download HYG database CSV from astronexus.com/hyg (contains all bright stars)",
+      "2. Download OpenNGC CSV files from GitHub repository",
+      "3. Parse both CSV files and merge data",
+      "4. Convert to unified JSON structure",
+      "5. Include cross-references between catalogs",
+      "6. Add proper error handling for missing data",
+      "7. Validate coordinates and magnitudes"
+    ],
+    "usage_notes": {
+      "coordinate_systems": "All coordinates should be in J2000 epoch",
+      "magnitude_systems": "V magnitude is visual, B is blue, IR magnitudes from 2MASS",
+      "distance_units": "Parsecs primary, light-years calculated (1 pc = 3.262 ly)",
+      "missing_data": "Use null for missing values, not empty strings or 0",
+      "identifiers": "Maintain all catalog cross-references for maximum compatibility"
+    }
+  }
+}

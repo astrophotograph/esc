@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 
 /sky_tiles/*
+/data/catalogs/**/*.csv

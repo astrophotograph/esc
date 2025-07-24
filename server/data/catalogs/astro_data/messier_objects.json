@@ -1,0 +1,8207 @@
+{
+  "metadata": {
+    "description": "Messier objects catalog",
+    "total_objects": 107
+  },
+  "objects": [
+    {
+      "id": "IC4715",
+      "catalog_ids": {
+        "messier": "M024",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Small Sgr Star Cloud",
+        "bayer_flamsteed": null,
+        "common": [
+          "Small Sgr Star Cloud"
+        ],
+        "other": []
+      },
+      "object_type": "*Ass",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 274.23383333333334,
+          "sexagesimal": "18:16:56.12"
+        },
+        "dec_j2000": {
+          "decimal": -18.514555555555557,
+          "sexagesimal": "-18:30:52.4"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.5,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 120.0,
+          "minor_axis_arcmin": 60.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Milky Way star cloud."
+    },
+    {
+      "id": "IC4725",
+      "catalog_ids": {
+        "messier": "M025",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 277.944875,
+          "sexagesimal": "18:31:46.77"
+        },
+        "dec_j2000": {
+          "decimal": -19.114944444444447,
+          "sexagesimal": "-19:06:53.8"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.6,
+        "b": 5.29,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 14.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0205",
+      "catalog_ids": {
+        "messier": "M110",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 10.091999999999999,
+          "sexagesimal": "00:40:22.08"
+        },
+        "dec_j2000": {
+          "decimal": 41.68530555555555,
+          "sexagesimal": "+41:41:07.1"
+        },
+        "constellation": "And",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.15,
+        "b": 8.9,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.45,
+        "h": 5.87,
+        "k": 5.59
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 16.22,
+          "minor_axis_arcmin": 9.59,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.78
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0221",
+      "catalog_ids": {
+        "messier": "M032",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 10.674291666666665,
+          "sexagesimal": "00:42:41.83"
+        },
+        "dec_j2000": {
+          "decimal": 40.86527777777778,
+          "sexagesimal": "+40:51:55.0"
+        },
+        "constellation": "And",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.13,
+        "b": 8.89,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.28,
+        "h": 5.37,
+        "k": 5.1
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.74,
+          "minor_axis_arcmin": 4.86,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.17
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0224",
+      "catalog_ids": {
+        "messier": "M031",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Andromeda Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Andromeda Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 10.684791666666666,
+          "sexagesimal": "00:42:44.35"
+        },
+        "dec_j2000": {
+          "decimal": 41.26905555555555,
+          "sexagesimal": "+41:16:08.6"
+        },
+        "constellation": "And",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 3.44,
+        "b": 4.29,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 2.09,
+        "h": 1.28,
+        "k": 0.98
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 177.83,
+          "minor_axis_arcmin": 69.66,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.63
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0581",
+      "catalog_ids": {
+        "messier": "M103",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 23.340875,
+          "sexagesimal": "01:33:21.81"
+        },
+        "dec_j2000": {
+          "decimal": 60.658,
+          "sexagesimal": "+60:39:28.8"
+        },
+        "constellation": "Cas",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.4,
+        "b": 7.72,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 4.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0598",
+      "catalog_ids": {
+        "messier": "M033",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Triangulum Galaxy,Triangulum Pinwheel",
+        "bayer_flamsteed": null,
+        "common": [
+          "Triangulum Galaxy",
+          "Triangulum Pinwheel"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 23.462041666666668,
+          "sexagesimal": "01:33:50.89"
+        },
+        "dec_j2000": {
+          "decimal": 30.66022222222222,
+          "sexagesimal": "+30:39:36.8"
+        },
+        "constellation": "Tri",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.79,
+        "b": 6.35,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 5.04,
+        "h": 4.35,
+        "k": 4.1
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 62.09,
+          "minor_axis_arcmin": 36.73,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.61
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0628",
+      "catalog_ids": {
+        "messier": "M074",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 24.173958333333335,
+          "sexagesimal": "01:36:41.75"
+        },
+        "dec_j2000": {
+          "decimal": 15.783666666666667,
+          "sexagesimal": "+15:47:01.2"
+        },
+        "constellation": "Psc",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.31,
+        "b": 9.71,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.63,
+        "h": 7.04,
+        "k": 6.85
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.89,
+          "minor_axis_arcmin": 9.33,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.37
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC0650",
+      "catalog_ids": {
+        "messier": "M076",
+        "ngc": "NGC0651",
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Barbell Nebula,Cork Nebula,Little Dumbbell Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Barbell Nebula",
+          "Cork Nebula",
+          "Little Dumbbell Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "PN",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 25.58204166666667,
+          "sexagesimal": "01:42:19.69"
+        },
+        "dec_j2000": {
+          "decimal": 51.575472222222224,
+          "sexagesimal": "+51:34:31.7"
+        },
+        "constellation": "Per",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.1,
+        "b": 12.2,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 1.12,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "The 2MASX position is centered on a superposed star."
+    },
+    {
+      "id": "NGC1039",
+      "catalog_ids": {
+        "messier": "M034",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 40.53083333333334,
+          "sexagesimal": "02:42:07.40"
+        },
+        "dec_j2000": {
+          "decimal": 42.74613888888889,
+          "sexagesimal": "+42:44:46.1"
+        },
+        "constellation": "Per",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.2,
+        "b": 5.37,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 22.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1068",
+      "catalog_ids": {
+        "messier": "M077",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 40.669625,
+          "sexagesimal": "02:42:40.71"
+        },
+        "dec_j2000": {
+          "decimal": -0.013277777777777777,
+          "sexagesimal": "-00:00:47.8"
+        },
+        "constellation": "Cet",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.29,
+        "b": 9.74,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.97,
+        "h": 6.26,
+        "k": 5.79
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.11,
+          "minor_axis_arcmin": 5.61,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.35
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1904",
+      "catalog_ids": {
+        "messier": "M079",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 81.04412500000001,
+          "sexagesimal": "05:24:10.59"
+        },
+        "dec_j2000": {
+          "decimal": -24.52422222222222,
+          "sexagesimal": "-24:31:27.2"
+        },
+        "constellation": "Lep",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.16,
+        "b": 9.21,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1912",
+      "catalog_ids": {
+        "messier": "M038",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 82.17704166666667,
+          "sexagesimal": "05:28:42.49"
+        },
+        "dec_j2000": {
+          "decimal": 35.85491666666667,
+          "sexagesimal": "+35:51:17.7"
+        },
+        "constellation": "Aur",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.4,
+        "b": 6.69,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1952",
+      "catalog_ids": {
+        "messier": "M001",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Crab Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Crab Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "SNR",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 83.63320833333333,
+          "sexagesimal": "05:34:31.97"
+        },
+        "dec_j2000": {
+          "decimal": 22.01447222222222,
+          "sexagesimal": "+22:00:52.1"
+        },
+        "constellation": "Tau",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.4,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.0,
+          "minor_axis_arcmin": 4.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Position is for the Crab pulsar."
+    },
+    {
+      "id": "NGC1960",
+      "catalog_ids": {
+        "messier": "M036",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 84.07391666666666,
+          "sexagesimal": "05:36:17.74"
+        },
+        "dec_j2000": {
+          "decimal": 34.14075,
+          "sexagesimal": "+34:08:26.7"
+        },
+        "constellation": "Aur",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.0,
+        "b": 6.09,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1976",
+      "catalog_ids": {
+        "messier": "M042",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Great Orion Nebula,Orion Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Great Orion Nebula",
+          "Orion Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "Cl+N",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 83.81866666666666,
+          "sexagesimal": "05:35:16.48"
+        },
+        "dec_j2000": {
+          "decimal": -5.389666666666667,
+          "sexagesimal": "-05:23:22.8"
+        },
+        "constellation": "Ori",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.0,
+        "b": 4.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 90.0,
+          "minor_axis_arcmin": 60.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC1982",
+      "catalog_ids": {
+        "messier": "M043",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Mairan's Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Mairan's Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "HII",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 83.88074999999999,
+          "sexagesimal": "05:35:31.38"
+        },
+        "dec_j2000": {
+          "decimal": -5.2674722222222226,
+          "sexagesimal": "-05:16:02.9"
+        },
+        "constellation": "Ori",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.0,
+        "b": 9.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 20.0,
+          "minor_axis_arcmin": 15.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2068",
+      "catalog_ids": {
+        "messier": "M078",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "RfN",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 86.69091666666667,
+          "sexagesimal": "05:46:45.82"
+        },
+        "dec_j2000": {
+          "decimal": 0.07930555555555556,
+          "sexagesimal": "+00:04:45.5"
+        },
+        "constellation": "Ori",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.0,
+        "b": 8.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 4.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2099",
+      "catalog_ids": {
+        "messier": "M037",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 88.07645833333333,
+          "sexagesimal": "05:52:18.35"
+        },
+        "dec_j2000": {
+          "decimal": 32.553,
+          "sexagesimal": "+32:33:10.8"
+        },
+        "constellation": "Aur",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.6,
+        "b": 6.19,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.4,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2168",
+      "catalog_ids": {
+        "messier": "M035",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 92.27108333333334,
+          "sexagesimal": "06:09:05.06"
+        },
+        "dec_j2000": {
+          "decimal": 24.338638888888887,
+          "sexagesimal": "+24:20:19.1"
+        },
+        "constellation": "Gem",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.1,
+        "b": 5.31,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 24.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2287",
+      "catalog_ids": {
+        "messier": "M041",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 101.49975,
+          "sexagesimal": "06:45:59.94"
+        },
+        "dec_j2000": {
+          "decimal": -20.75422222222222,
+          "sexagesimal": "-20:45:15.2"
+        },
+        "constellation": "CMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.5,
+        "b": 4.89,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 12.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2323",
+      "catalog_ids": {
+        "messier": "M050",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 105.668625,
+          "sexagesimal": "07:02:40.47"
+        },
+        "dec_j2000": {
+          "decimal": -8.364027777777778,
+          "sexagesimal": "-08:21:50.5"
+        },
+        "constellation": "Mon",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.9,
+        "b": 6.27,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 14.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2422",
+      "catalog_ids": {
+        "messier": "M047",
+        "ngc": "NGC2478",
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 114.14591666666666,
+          "sexagesimal": "07:36:35.02"
+        },
+        "dec_j2000": {
+          "decimal": -14.482611111111112,
+          "sexagesimal": "-14:28:57.4"
+        },
+        "constellation": "Pup",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.4,
+        "b": 4.42,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 19.8,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2437",
+      "catalog_ids": {
+        "messier": "M046",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 115.44508333333334,
+          "sexagesimal": "07:41:46.82"
+        },
+        "dec_j2000": {
+          "decimal": -14.81,
+          "sexagesimal": "-14:48:36.0"
+        },
+        "constellation": "Pup",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.1,
+        "b": 6.33,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 21.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2447",
+      "catalog_ids": {
+        "messier": "M093",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 116.12179166666667,
+          "sexagesimal": "07:44:29.23"
+        },
+        "dec_j2000": {
+          "decimal": -23.853083333333334,
+          "sexagesimal": "-23:51:11.1"
+        },
+        "constellation": "Pup",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.2,
+        "b": 6.57,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 15.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2548",
+      "catalog_ids": {
+        "messier": "M048",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 123.42991666666668,
+          "sexagesimal": "08:13:43.18"
+        },
+        "dec_j2000": {
+          "decimal": -5.750444444444445,
+          "sexagesimal": "-05:45:01.6"
+        },
+        "constellation": "Hya",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.8,
+        "b": 6.11,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 28.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2632",
+      "catalog_ids": {
+        "messier": "M044",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Beehive,Praesepe Cluster",
+        "bayer_flamsteed": null,
+        "common": [
+          "Beehive",
+          "Praesepe Cluster"
+        ],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 130.0925,
+          "sexagesimal": "08:40:22.20"
+        },
+        "dec_j2000": {
+          "decimal": 19.672055555555556,
+          "sexagesimal": "+19:40:19.4"
+        },
+        "constellation": "Cnc",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 3.1,
+        "b": 3.46,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 108.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC2682",
+      "catalog_ids": {
+        "messier": "M067",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 132.833875,
+          "sexagesimal": "08:51:20.13"
+        },
+        "dec_j2000": {
+          "decimal": 11.811944444444444,
+          "sexagesimal": "+11:48:43.0"
+        },
+        "constellation": "Cnc",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.9,
+        "b": 7.6,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 33.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3031",
+      "catalog_ids": {
+        "messier": "M081",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Bode's Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Bode's Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 148.88820833333332,
+          "sexagesimal": "09:55:33.17"
+        },
+        "dec_j2000": {
+          "decimal": 69.06530555555555,
+          "sexagesimal": "+69:03:55.1"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.92,
+        "b": 7.79,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 4.76,
+        "h": 4.09,
+        "k": 3.83
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 21.63,
+          "minor_axis_arcmin": 11.25,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.78
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sab",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3034",
+      "catalog_ids": {
+        "messier": "M082",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Cigar Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Cigar Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 148.96970833333333,
+          "sexagesimal": "09:55:52.73"
+        },
+        "dec_j2000": {
+          "decimal": 69.6793888888889,
+          "sexagesimal": "+69:40:45.8"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.3,
+        "b": 8.94,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 5.84,
+        "h": 5.07,
+        "k": 4.67
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 10.99,
+          "minor_axis_arcmin": 5.11,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.22
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "S?",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3351",
+      "catalog_ids": {
+        "messier": "M095",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 160.99041666666668,
+          "sexagesimal": "10:43:57.70"
+        },
+        "dec_j2000": {
+          "decimal": 11.703805555555554,
+          "sexagesimal": "+11:42:13.7"
+        },
+        "constellation": "Leo",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.77,
+        "b": 10.58,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.57,
+        "h": 6.95,
+        "k": 6.67
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.23,
+          "minor_axis_arcmin": 4.45,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.26
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3368",
+      "catalog_ids": {
+        "messier": "M096",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 161.69058333333334,
+          "sexagesimal": "10:46:45.74"
+        },
+        "dec_j2000": {
+          "decimal": 11.819944444444443,
+          "sexagesimal": "+11:49:11.8"
+        },
+        "constellation": "Leo",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.21,
+        "b": 10.08,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.24,
+        "h": 6.57,
+        "k": 6.32
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.26,
+          "minor_axis_arcmin": 5.51,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.14
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sab",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3379",
+      "catalog_ids": {
+        "messier": "M105",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 161.956625,
+          "sexagesimal": "10:47:49.59"
+        },
+        "dec_j2000": {
+          "decimal": 12.58161111111111,
+          "sexagesimal": "+12:34:53.8"
+        },
+        "constellation": "Leo",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.27,
+        "b": 10.23,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.17,
+        "h": 6.49,
+        "k": 6.27
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 4.89,
+          "minor_axis_arcmin": 4.25,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.54
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3556",
+      "catalog_ids": {
+        "messier": "M108",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 167.87904166666667,
+          "sexagesimal": "11:11:30.97"
+        },
+        "dec_j2000": {
+          "decimal": 55.67411111111111,
+          "sexagesimal": "+55:40:26.8"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.05,
+        "b": 10.7,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 8.02,
+        "h": 7.37,
+        "k": 7.04
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 3.98,
+          "minor_axis_arcmin": 1.66,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 21.7
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3587",
+      "catalog_ids": {
+        "messier": "M097",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Owl Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Owl Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "PN",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 168.69879166666666,
+          "sexagesimal": "11:14:47.71"
+        },
+        "dec_j2000": {
+          "decimal": 55.01902777777778,
+          "sexagesimal": "+55:01:08.5"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.9,
+        "b": 11.6,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 16.71,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 3.58,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3623",
+      "catalog_ids": {
+        "messier": "M065",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 169.733,
+          "sexagesimal": "11:18:55.92"
+        },
+        "dec_j2000": {
+          "decimal": 13.092361111111112,
+          "sexagesimal": "+13:05:32.5"
+        },
+        "constellation": "Leo",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.32,
+        "b": 10.14,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.99,
+        "h": 6.31,
+        "k": 6.07
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.64,
+          "minor_axis_arcmin": 1.97,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.73
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sa",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC3627",
+      "catalog_ids": {
+        "messier": "M066",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 170.06233333333336,
+          "sexagesimal": "11:20:14.96"
+        },
+        "dec_j2000": {
+          "decimal": 12.991527777777778,
+          "sexagesimal": "+12:59:29.5"
+        },
+        "constellation": "Leo",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.92,
+        "b": 9.73,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.84,
+        "h": 6.15,
+        "k": 5.88
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 10.28,
+          "minor_axis_arcmin": 4.61,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.96
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": "The position in 1989H&RHI.C...0000H is incorrect."
+    },
+    {
+      "id": "NGC3992",
+      "catalog_ids": {
+        "messier": "M109",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 179.39991666666666,
+          "sexagesimal": "11:57:35.98"
+        },
+        "dec_j2000": {
+          "decimal": 53.37452777777778,
+          "sexagesimal": "+53:22:28.3"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.88,
+        "b": 10.48,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.85,
+        "h": 7.19,
+        "k": 6.94
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.07,
+          "minor_axis_arcmin": 5.64,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.45
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sbc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4192",
+      "catalog_ids": {
+        "messier": "M098",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 183.45120833333334,
+          "sexagesimal": "12:13:48.29"
+        },
+        "dec_j2000": {
+          "decimal": 14.900333333333334,
+          "sexagesimal": "+14:54:01.2"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.84,
+        "b": 10.82,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.82,
+        "h": 7.1,
+        "k": 6.89
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.04,
+          "minor_axis_arcmin": 2.66,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.89
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4254",
+      "catalog_ids": {
+        "messier": "M099",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Coma Pinwheel,Virgo Cluster Pinwheel",
+        "bayer_flamsteed": null,
+        "common": [
+          "Coma Pinwheel",
+          "Virgo Cluster Pinwheel"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 184.70666666666668,
+          "sexagesimal": "12:18:49.60"
+        },
+        "dec_j2000": {
+          "decimal": 14.416500000000001,
+          "sexagesimal": "+14:24:59.4"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.84,
+        "b": 10.4,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.89,
+        "h": 7.25,
+        "k": 6.93
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.04,
+          "minor_axis_arcmin": 4.74,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.6
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4258",
+      "catalog_ids": {
+        "messier": "M106",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 184.73958333333334,
+          "sexagesimal": "12:18:57.50"
+        },
+        "dec_j2000": {
+          "decimal": 47.30397222222222,
+          "sexagesimal": "+47:18:14.3"
+        },
+        "constellation": "CVn",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.29,
+        "b": 9.12,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.38,
+        "h": 5.72,
+        "k": 5.46
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 16.98,
+          "minor_axis_arcmin": 7.24,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.36
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sbc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4303",
+      "catalog_ids": {
+        "messier": "M061",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 185.47875,
+          "sexagesimal": "12:21:54.90"
+        },
+        "dec_j2000": {
+          "decimal": 4.473638888888889,
+          "sexagesimal": "+04:28:25.1"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.25,
+        "b": 10.16,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.73,
+        "h": 7.09,
+        "k": 6.84
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.89,
+          "minor_axis_arcmin": 6.56,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.05
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sbc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4321",
+      "catalog_ids": {
+        "messier": "M100",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 185.72845833333335,
+          "sexagesimal": "12:22:54.83"
+        },
+        "dec_j2000": {
+          "decimal": 15.821805555555555,
+          "sexagesimal": "+15:49:18.5"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.47,
+        "b": 10.01,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.46,
+        "h": 6.82,
+        "k": 6.59
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.1,
+          "minor_axis_arcmin": 5.62,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.61
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4374",
+      "catalog_ids": {
+        "messier": "M084",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 186.26558333333332,
+          "sexagesimal": "12:25:03.74"
+        },
+        "dec_j2000": {
+          "decimal": 12.886972222222221,
+          "sexagesimal": "+12:53:13.1"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.79,
+        "b": 10.01,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.12,
+        "h": 6.47,
+        "k": 6.22
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.41,
+          "minor_axis_arcmin": 6.44,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.23
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4382",
+      "catalog_ids": {
+        "messier": "M085",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 186.3504583333333,
+          "sexagesimal": "12:25:24.11"
+        },
+        "dec_j2000": {
+          "decimal": 18.1915,
+          "sexagesimal": "+18:11:29.4"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.05,
+        "b": 9.94,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.06,
+        "h": 6.42,
+        "k": 6.15
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.95,
+          "minor_axis_arcmin": 5.35,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.87
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "S0-a",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4406",
+      "catalog_ids": {
+        "messier": "M086",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 186.54891666666668,
+          "sexagesimal": "12:26:11.74"
+        },
+        "dec_j2000": {
+          "decimal": 12.946222222222222,
+          "sexagesimal": "+12:56:46.4"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.86,
+        "b": 9.74,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.01,
+        "h": 6.33,
+        "k": 6.1
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.53,
+          "minor_axis_arcmin": 8.43,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.9
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": "HOLM 403H is a star."
+    },
+    {
+      "id": "NGC4472",
+      "catalog_ids": {
+        "messier": "M049",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 187.44483333333332,
+          "sexagesimal": "12:29:46.76"
+        },
+        "dec_j2000": {
+          "decimal": 8.000472222222223,
+          "sexagesimal": "+08:00:01.7"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.28,
+        "b": 9.35,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.27,
+        "h": 5.64,
+        "k": 5.4
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 10.21,
+          "minor_axis_arcmin": 8.38,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.25
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": "HOLM 413B is a star."
+    },
+    {
+      "id": "NGC4486",
+      "catalog_ids": {
+        "messier": "M087",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Virgo Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Virgo Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 187.70591666666667,
+          "sexagesimal": "12:30:49.42"
+        },
+        "dec_j2000": {
+          "decimal": 12.39111111111111,
+          "sexagesimal": "+12:23:28.0"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.0,
+        "b": 9.65,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.72,
+        "h": 6.07,
+        "k": 5.81
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.11,
+          "minor_axis_arcmin": 6.67,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.79
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4501",
+      "catalog_ids": {
+        "messier": "M088",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 187.99650000000003,
+          "sexagesimal": "12:31:59.16"
+        },
+        "dec_j2000": {
+          "decimal": 14.420388888888889,
+          "sexagesimal": "+14:25:13.4"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.33,
+        "b": 10.24,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.21,
+        "h": 6.56,
+        "k": 6.27
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.65,
+          "minor_axis_arcmin": 4.38,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.17
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4548",
+      "catalog_ids": {
+        "messier": "M091",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 188.86020833333333,
+          "sexagesimal": "12:35:26.45"
+        },
+        "dec_j2000": {
+          "decimal": 14.496333333333332,
+          "sexagesimal": "+14:29:46.8"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.96,
+        "b": 10.94,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 8.01,
+        "h": 7.37,
+        "k": 7.12
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.55,
+          "minor_axis_arcmin": 4.52,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.24
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4552",
+      "catalog_ids": {
+        "messier": "M089",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 188.915875,
+          "sexagesimal": "12:35:39.81"
+        },
+        "dec_j2000": {
+          "decimal": 12.556333333333335,
+          "sexagesimal": "+12:33:22.8"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.08,
+        "b": 10.68,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.62,
+        "h": 6.94,
+        "k": 6.73
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.13,
+          "minor_axis_arcmin": 8.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 24.11
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4569",
+      "catalog_ids": {
+        "messier": "M090",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 189.20745833333334,
+          "sexagesimal": "12:36:49.79"
+        },
+        "dec_j2000": {
+          "decimal": 13.162944444444445,
+          "sexagesimal": "+13:09:46.6"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.54,
+        "b": 10.18,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.5,
+        "h": 6.79,
+        "k": 6.58
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.12,
+          "minor_axis_arcmin": 3.82,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.16
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sab",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4579",
+      "catalog_ids": {
+        "messier": "M058",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 189.43133333333333,
+          "sexagesimal": "12:37:43.52"
+        },
+        "dec_j2000": {
+          "decimal": 11.818194444444444,
+          "sexagesimal": "+11:49:05.5"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 10.3,
+        "b": 10.44,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.37,
+        "h": 6.71,
+        "k": 6.49
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.01,
+          "minor_axis_arcmin": 3.84,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.49
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4590",
+      "catalog_ids": {
+        "messier": "M068",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 189.86670833333335,
+          "sexagesimal": "12:39:28.01"
+        },
+        "dec_j2000": {
+          "decimal": -26.74302777777778,
+          "sexagesimal": "-26:44:34.9"
+        },
+        "constellation": "Hya",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.96,
+        "b": 10.26,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4594",
+      "catalog_ids": {
+        "messier": "M104",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Sombrero Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Sombrero Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 189.997625,
+          "sexagesimal": "12:39:59.43"
+        },
+        "dec_j2000": {
+          "decimal": -11.623055555555556,
+          "sexagesimal": "-11:37:23.0"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.59,
+        "b": 9.15,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 5.89,
+        "h": 5.21,
+        "k": 4.96
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.45,
+          "minor_axis_arcmin": 4.91,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.26
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sa",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4621",
+      "catalog_ids": {
+        "messier": "M059",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 190.50933333333333,
+          "sexagesimal": "12:42:02.24"
+        },
+        "dec_j2000": {
+          "decimal": 11.647027777777778,
+          "sexagesimal": "+11:38:49.3"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.56,
+        "b": 10.57,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 7.65,
+        "h": 6.97,
+        "k": 6.75
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 4.55,
+          "minor_axis_arcmin": 3.21,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.71
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4649",
+      "catalog_ids": {
+        "messier": "M060",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 190.91658333333334,
+          "sexagesimal": "12:43:39.98"
+        },
+        "dec_j2000": {
+          "decimal": 11.552694444444445,
+          "sexagesimal": "+11:33:09.7"
+        },
+        "constellation": "Vir",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.79,
+        "b": 9.79,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.67,
+        "h": 6.0,
+        "k": 5.74
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.78,
+          "minor_axis_arcmin": 5.45,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.81
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "E",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC4736",
+      "catalog_ids": {
+        "messier": "M094",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 192.72108333333335,
+          "sexagesimal": "12:50:53.06"
+        },
+        "dec_j2000": {
+          "decimal": 41.120444444444445,
+          "sexagesimal": "+41:07:13.6"
+        },
+        "constellation": "CVn",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.24,
+        "b": 8.71,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.03,
+        "h": 5.35,
+        "k": 5.11
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.74,
+          "minor_axis_arcmin": 6.68,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 21.79
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABa",
+        "morphology_code": null
+      },
+      "notes": "IRAS F12485+4123 (in FSC version 1) was removed from version 2."
+    },
+    {
+      "id": "NGC4826",
+      "catalog_ids": {
+        "messier": "M064",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Black Eye Galaxy,Evil Eye Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Black Eye Galaxy",
+          "Evil Eye Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 194.18183333333334,
+          "sexagesimal": "12:56:43.64"
+        },
+        "dec_j2000": {
+          "decimal": 21.682972222222222,
+          "sexagesimal": "+21:40:58.7"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.52,
+        "b": 9.27,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.27,
+        "h": 5.58,
+        "k": 5.33
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 10.52,
+          "minor_axis_arcmin": 5.33,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.68
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABa",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC5024",
+      "catalog_ids": {
+        "messier": "M053",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 198.230125,
+          "sexagesimal": "13:12:55.23"
+        },
+        "dec_j2000": {
+          "decimal": 18.16911111111111,
+          "sexagesimal": "+18:10:08.8"
+        },
+        "constellation": "Com",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.79,
+        "b": 8.95,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC5055",
+      "catalog_ids": {
+        "messier": "M063",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Sunflower Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Sunflower Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 198.95554166666668,
+          "sexagesimal": "13:15:49.33"
+        },
+        "dec_j2000": {
+          "decimal": 42.02927777777778,
+          "sexagesimal": "+42:01:45.4"
+        },
+        "constellation": "CVn",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.61,
+        "b": 9.32,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.57,
+        "h": 5.83,
+        "k": 5.61
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.83,
+          "minor_axis_arcmin": 7.16,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.04
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sbc",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC5194",
+      "catalog_ids": {
+        "messier": "M051",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Whirlpool Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Whirlpool Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 202.46962499999998,
+          "sexagesimal": "13:29:52.71"
+        },
+        "dec_j2000": {
+          "decimal": 47.195166666666665,
+          "sexagesimal": "+47:11:42.6"
+        },
+        "constellation": "CVn",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.36,
+        "b": 8.61,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.4,
+        "h": 5.65,
+        "k": 5.5
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 13.71,
+          "minor_axis_arcmin": 11.67,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.9
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABb",
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC5236",
+      "catalog_ids": {
+        "messier": "M083",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Southern Pinwheel Galaxy",
+        "bayer_flamsteed": null,
+        "common": [
+          "Southern Pinwheel Galaxy"
+        ],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 204.25395833333334,
+          "sexagesimal": "13:37:00.95"
+        },
+        "dec_j2000": {
+          "decimal": -29.86541666666667,
+          "sexagesimal": "-29:51:55.5"
+        },
+        "constellation": "Hya",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.21,
+        "b": 7.82,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 5.54,
+        "h": 4.87,
+        "k": 4.62
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 13.61,
+          "minor_axis_arcmin": 13.21,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 22.2
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "Sc",
+        "morphology_code": null
+      },
+      "notes": "Extended HIPASS source"
+    },
+    {
+      "id": "NGC5272",
+      "catalog_ids": {
+        "messier": "M003",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 205.54679166666665,
+          "sexagesimal": "13:42:11.23"
+        },
+        "dec_j2000": {
+          "decimal": 28.375444444444444,
+          "sexagesimal": "+28:22:31.6"
+        },
+        "constellation": "CVn",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.39,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 16.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC5457",
+      "catalog_ids": {
+        "messier": "M101",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "G",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 210.80225000000002,
+          "sexagesimal": "14:03:12.54"
+        },
+        "dec_j2000": {
+          "decimal": 54.34894444444445,
+          "sexagesimal": "+54:20:56.2"
+        },
+        "constellation": "UMa",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.9,
+        "b": 8.36,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.52,
+        "h": 5.81,
+        "k": 5.51
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 23.99,
+          "minor_axis_arcmin": 23.07,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": 23.97
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": "SABc",
+        "morphology_code": null
+      },
+      "notes": "M102 may be a duplicate obs. of M101; see Sawyer, JRASC 41, Nos 7&8, 1947."
+    },
+    {
+      "id": "NGC5904",
+      "catalog_ids": {
+        "messier": "M005",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 229.64062500000003,
+          "sexagesimal": "15:18:33.75"
+        },
+        "dec_j2000": {
+          "decimal": 2.082694444444445,
+          "sexagesimal": "+02:04:57.7"
+        },
+        "constellation": "Se1",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.95,
+        "b": 7.34,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 15.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6093",
+      "catalog_ids": {
+        "messier": "M080",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 244.26045833333336,
+          "sexagesimal": "16:17:02.51"
+        },
+        "dec_j2000": {
+          "decimal": -22.975111111111108,
+          "sexagesimal": "-22:58:30.4"
+        },
+        "constellation": "Sco",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.3,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.7,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6121",
+      "catalog_ids": {
+        "messier": "M004",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 245.89749999999998,
+          "sexagesimal": "16:23:35.40"
+        },
+        "dec_j2000": {
+          "decimal": -26.52552777777778,
+          "sexagesimal": "-26:31:31.9"
+        },
+        "constellation": "Sco",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.4,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 28.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6171",
+      "catalog_ids": {
+        "messier": "M107",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 248.133,
+          "sexagesimal": "16:32:31.92"
+        },
+        "dec_j2000": {
+          "decimal": -13.053638888888889,
+          "sexagesimal": "-13:03:13.1"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.85,
+        "b": 9.96,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.8,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6205",
+      "catalog_ids": {
+        "messier": "M013",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Hercules Globular Cluster",
+        "bayer_flamsteed": null,
+        "common": [
+          "Hercules Globular Cluster"
+        ],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 250.42345833333337,
+          "sexagesimal": "16:41:41.63"
+        },
+        "dec_j2000": {
+          "decimal": 36.46130555555556,
+          "sexagesimal": "+36:27:40.7"
+        },
+        "constellation": "Her",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.8,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 4.45,
+        "h": 3.94,
+        "k": 3.85
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 16.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6218",
+      "catalog_ids": {
+        "messier": "M012",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 251.81050000000002,
+          "sexagesimal": "16:47:14.52"
+        },
+        "dec_j2000": {
+          "decimal": -1.9478333333333333,
+          "sexagesimal": "-01:56:52.2"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.07,
+        "b": 8.52,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6254",
+      "catalog_ids": {
+        "messier": "M010",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 254.2874583333333,
+          "sexagesimal": "16:57:08.99"
+        },
+        "dec_j2000": {
+          "decimal": -4.099333333333333,
+          "sexagesimal": "-04:05:57.6"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.98,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.3,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6266",
+      "catalog_ids": {
+        "messier": "M062",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 255.30249999999998,
+          "sexagesimal": "17:01:12.60"
+        },
+        "dec_j2000": {
+          "decimal": -30.112361111111113,
+          "sexagesimal": "-30:06:44.5"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.39,
+        "b": 8.55,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.8,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6273",
+      "catalog_ids": {
+        "messier": "M019",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 255.657,
+          "sexagesimal": "17:02:37.68"
+        },
+        "dec_j2000": {
+          "decimal": -26.267944444444442,
+          "sexagesimal": "-26:16:04.6"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.57,
+        "b": 8.45,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 7.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6333",
+      "catalog_ids": {
+        "messier": "M009",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 259.79908333333333,
+          "sexagesimal": "17:19:11.78"
+        },
+        "dec_j2000": {
+          "decimal": -18.51625,
+          "sexagesimal": "-18:30:58.5"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.42,
+        "b": 9.36,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.9,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6341",
+      "catalog_ids": {
+        "messier": "M092",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 259.28029166666664,
+          "sexagesimal": "17:17:07.27"
+        },
+        "dec_j2000": {
+          "decimal": 43.13652777777778,
+          "sexagesimal": "+43:08:11.5"
+        },
+        "constellation": "Her",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.52,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 14.4,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6402",
+      "catalog_ids": {
+        "messier": "M014",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 264.40066666666667,
+          "sexagesimal": "17:37:36.16"
+        },
+        "dec_j2000": {
+          "decimal": -3.2459166666666666,
+          "sexagesimal": "-03:14:45.3"
+        },
+        "constellation": "Oph",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.73,
+        "b": 9.55,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": null,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6405",
+      "catalog_ids": {
+        "messier": "M006",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Butterfly Cluster",
+        "bayer_flamsteed": null,
+        "common": [
+          "Butterfly Cluster"
+        ],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 265.0864583333334,
+          "sexagesimal": "17:40:20.75"
+        },
+        "dec_j2000": {
+          "decimal": -32.25416666666667,
+          "sexagesimal": "-32:15:15.0"
+        },
+        "constellation": "Sco",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.2,
+        "b": 4.48,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 15.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6475",
+      "catalog_ids": {
+        "messier": "M007",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Ptolemy's Cluster",
+        "bayer_flamsteed": null,
+        "common": [
+          "Ptolemy's Cluster"
+        ],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 268.46324999999996,
+          "sexagesimal": "17:53:51.18"
+        },
+        "dec_j2000": {
+          "decimal": -34.792833333333334,
+          "sexagesimal": "-34:47:34.2"
+        },
+        "constellation": "Sco",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 3.3,
+        "b": 3.45,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 22.2,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6494",
+      "catalog_ids": {
+        "messier": "M023",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 269.269875,
+          "sexagesimal": "17:57:04.77"
+        },
+        "dec_j2000": {
+          "decimal": -18.985333333333333,
+          "sexagesimal": "-18:59:07.2"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.5,
+        "b": 6.03,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 16.8,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6514",
+      "catalog_ids": {
+        "messier": "M020",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Trifid Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Trifid Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "Neb",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 270.6754583333333,
+          "sexagesimal": "18:02:42.11"
+        },
+        "dec_j2000": {
+          "decimal": -22.971888888888888,
+          "sexagesimal": "-22:58:18.8"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.5,
+        "b": 6.3,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 28.0,
+          "minor_axis_arcmin": 28.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6523",
+      "catalog_ids": {
+        "messier": "M008",
+        "ngc": "NGC6533",
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Lagoon Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Lagoon Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "Neb",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 270.92195833333335,
+          "sexagesimal": "18:03:41.27"
+        },
+        "dec_j2000": {
+          "decimal": -24.380166666666668,
+          "sexagesimal": "-24:22:48.6"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.8,
+        "b": 5.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 45.0,
+          "minor_axis_arcmin": 30.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Nominal position for NGC 6533 is -30 arcmin in error."
+    },
+    {
+      "id": "NGC6531",
+      "catalog_ids": {
+        "messier": "M021",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 271.05604166666666,
+          "sexagesimal": "18:04:13.45"
+        },
+        "dec_j2000": {
+          "decimal": -22.490055555555557,
+          "sexagesimal": "-22:29:24.2"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.9,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6611",
+      "catalog_ids": {
+        "messier": "M016",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Eagle Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Eagle Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "Neb",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 274.70070833333335,
+          "sexagesimal": "18:18:48.17"
+        },
+        "dec_j2000": {
+          "decimal": -13.807222222222222,
+          "sexagesimal": "-13:48:26.0"
+        },
+        "constellation": "Se2",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.0,
+        "b": 6.58,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 120.0,
+          "minor_axis_arcmin": 25.0,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6613",
+      "catalog_ids": {
+        "messier": "M018",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 274.99370833333336,
+          "sexagesimal": "18:19:58.49"
+        },
+        "dec_j2000": {
+          "decimal": -17.101972222222223,
+          "sexagesimal": "-17:06:07.1"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.9,
+        "b": 7.24,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6618",
+      "catalog_ids": {
+        "messier": "M017",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Checkmark Nebula,Lobster Nebula,Swan Nebula,omega Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Checkmark Nebula",
+          "Lobster Nebula",
+          "Swan Nebula",
+          "omega Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "Neb",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 275.19629166666664,
+          "sexagesimal": "18:20:47.11"
+        },
+        "dec_j2000": {
+          "decimal": -16.17152777777778,
+          "sexagesimal": "-16:10:17.5"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.0,
+        "b": 6.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 12.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6626",
+      "catalog_ids": {
+        "messier": "M028",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 276.1370416666666,
+          "sexagesimal": "18:24:32.89"
+        },
+        "dec_j2000": {
+          "decimal": -24.869833333333332,
+          "sexagesimal": "-24:52:11.4"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.9,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6637",
+      "catalog_ids": {
+        "messier": "M069",
+        "ngc": "NGC6634",
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 277.84679166666666,
+          "sexagesimal": "18:31:23.23"
+        },
+        "dec_j2000": {
+          "decimal": -32.347972222222225,
+          "sexagesimal": "-32:20:52.7"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.31,
+        "b": 9.32,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.7,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6656",
+      "catalog_ids": {
+        "messier": "M022",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 279.10083333333336,
+          "sexagesimal": "18:36:24.20"
+        },
+        "dec_j2000": {
+          "decimal": -23.903416666666665,
+          "sexagesimal": "-23:54:12.3"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.17,
+        "b": 7.16,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 12.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6681",
+      "catalog_ids": {
+        "messier": "M070",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 280.80266666666665,
+          "sexagesimal": "18:43:12.64"
+        },
+        "dec_j2000": {
+          "decimal": -32.291888888888884,
+          "sexagesimal": "-32:17:30.8"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 9.06,
+        "b": 9.76,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6694",
+      "catalog_ids": {
+        "messier": "M026",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 281.32775000000004,
+          "sexagesimal": "18:45:18.66"
+        },
+        "dec_j2000": {
+          "decimal": -9.38361111111111,
+          "sexagesimal": "-09:23:01.0"
+        },
+        "constellation": "Sct",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.87,
+        "b": 8.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6705",
+      "catalog_ids": {
+        "messier": "M011",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Amas de l'Ecu de Sobieski,Wild Duck Cluster",
+        "bayer_flamsteed": null,
+        "common": [
+          "Amas de l'Ecu de Sobieski",
+          "Wild Duck Cluster"
+        ],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 282.77495833333336,
+          "sexagesimal": "18:51:05.99"
+        },
+        "dec_j2000": {
+          "decimal": -6.270027777777778,
+          "sexagesimal": "-06:16:12.1"
+        },
+        "constellation": "Sct",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 5.8,
+        "b": 6.32,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6715",
+      "catalog_ids": {
+        "messier": "M054",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 283.76362500000005,
+          "sexagesimal": "18:55:03.27"
+        },
+        "dec_j2000": {
+          "decimal": -30.478499999999997,
+          "sexagesimal": "-30:28:42.6"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.7,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Likely associated with the Sagittarius Dwarf Spheroidal."
+    },
+    {
+      "id": "NGC6720",
+      "catalog_ids": {
+        "messier": "M057",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Ring Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Ring Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "PN",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 283.395875,
+          "sexagesimal": "18:53:35.01"
+        },
+        "dec_j2000": {
+          "decimal": 33.02858333333333,
+          "sexagesimal": "+33:01:42.9"
+        },
+        "constellation": "Lyr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.8,
+        "b": 9.7,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 16.4,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 1.27,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6779",
+      "catalog_ids": {
+        "messier": "M056",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 289.1479583333333,
+          "sexagesimal": "19:16:35.51"
+        },
+        "dec_j2000": {
+          "decimal": 30.1845,
+          "sexagesimal": "+30:11:04.2"
+        },
+        "constellation": "Lyr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.4,
+        "b": 8.9,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 5.8,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6809",
+      "catalog_ids": {
+        "messier": "M055",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 294.9975,
+          "sexagesimal": "19:39:59.40"
+        },
+        "dec_j2000": {
+          "decimal": -30.962083333333332,
+          "sexagesimal": "-30:57:43.5"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.49,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 12.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6838",
+      "catalog_ids": {
+        "messier": "M071",
+        "ngc": "NGC6839",
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 298.442125,
+          "sexagesimal": "19:53:46.11"
+        },
+        "dec_j2000": {
+          "decimal": 18.778388888888887,
+          "sexagesimal": "+18:46:42.2"
+        },
+        "constellation": "Sge",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.1,
+        "b": 7.91,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.9,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Identification as NGC 6839 is very uncertain."
+    },
+    {
+      "id": "NGC6853",
+      "catalog_ids": {
+        "messier": "M027",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": "Dumbbell Nebula",
+        "bayer_flamsteed": null,
+        "common": [
+          "Dumbbell Nebula"
+        ],
+        "other": []
+      },
+      "object_type": "PN",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 299.90158333333335,
+          "sexagesimal": "19:59:36.38"
+        },
+        "dec_j2000": {
+          "decimal": 22.721027777777778,
+          "sexagesimal": "+22:43:15.7"
+        },
+        "constellation": "Vul",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.4,
+        "b": 7.6,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 11.79,
+        "h": 10.61,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 6.7,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6864",
+      "catalog_ids": {
+        "messier": "M075",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 301.5201666666667,
+          "sexagesimal": "20:06:04.84"
+        },
+        "dec_j2000": {
+          "decimal": -21.922222222222224,
+          "sexagesimal": "-21:55:20.0"
+        },
+        "constellation": "Sgr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.26,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": 6.93,
+        "h": 6.43,
+        "k": 6.28
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 3.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6913",
+      "catalog_ids": {
+        "messier": "M029",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 305.9907083333333,
+          "sexagesimal": "20:23:57.77"
+        },
+        "dec_j2000": {
+          "decimal": 38.507666666666665,
+          "sexagesimal": "+38:30:27.6"
+        },
+        "constellation": "Cyg",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.6,
+        "b": 7.3,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 3.6,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6981",
+      "catalog_ids": {
+        "messier": "M072",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 313.36629166666665,
+          "sexagesimal": "20:53:27.91"
+        },
+        "dec_j2000": {
+          "decimal": -12.537055555555556,
+          "sexagesimal": "-12:32:13.4"
+        },
+        "constellation": "Aqr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.96,
+        "b": 9.95,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 4.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC6994",
+      "catalog_ids": {
+        "messier": "M073",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "Other",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 314.73320833333327,
+          "sexagesimal": "20:58:55.97"
+        },
+        "dec_j2000": {
+          "decimal": -12.6355,
+          "sexagesimal": "-12:38:07.8"
+        },
+        "constellation": "Aqr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 8.9,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": null,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": "Four Galactic stars."
+    },
+    {
+      "id": "NGC7078",
+      "catalog_ids": {
+        "messier": "M015",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 322.49325,
+          "sexagesimal": "21:29:58.38"
+        },
+        "dec_j2000": {
+          "decimal": 12.166833333333333,
+          "sexagesimal": "+12:10:00.6"
+        },
+        "constellation": "Peg",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.3,
+        "b": 3.0,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 11.1,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC7089",
+      "catalog_ids": {
+        "messier": "M002",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 323.3625416666667,
+          "sexagesimal": "21:33:27.01"
+        },
+        "dec_j2000": {
+          "decimal": -0.8233055555555555,
+          "sexagesimal": "-00:49:23.9"
+        },
+        "constellation": "Aqr",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.25,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 8.4,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC7092",
+      "catalog_ids": {
+        "messier": "M039",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 322.9513333333333,
+          "sexagesimal": "21:31:48.32"
+        },
+        "dec_j2000": {
+          "decimal": 48.43816666666666,
+          "sexagesimal": "+48:26:17.4"
+        },
+        "constellation": "Cyg",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 4.6,
+        "b": 4.66,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 19.5,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC7099",
+      "catalog_ids": {
+        "messier": "M030",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "GCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 325.09175000000005,
+          "sexagesimal": "21:40:22.02"
+        },
+        "dec_j2000": {
+          "decimal": -23.179083333333335,
+          "sexagesimal": "-23:10:44.7"
+        },
+        "constellation": "Cap",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 7.1,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.0,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    },
+    {
+      "id": "NGC7654",
+      "catalog_ids": {
+        "messier": "M052",
+        "ngc": null,
+        "ic": null,
+        "hr": null,
+        "hd": null,
+        "hip": null,
+        "gl": null
+      },
+      "names": {
+        "proper": null,
+        "bayer_flamsteed": null,
+        "common": [],
+        "other": []
+      },
+      "object_type": "OCl",
+      "coordinates": {
+        "ra_j2000": {
+          "decimal": 351.20166666666665,
+          "sexagesimal": "23:24:48.40"
+        },
+        "dec_j2000": {
+          "decimal": 61.59316666666667,
+          "sexagesimal": "+61:35:35.4"
+        },
+        "constellation": "Cas",
+        "galactic": {
+          "l": null,
+          "b": null
+        }
+      },
+      "magnitudes": {
+        "v": 6.9,
+        "b": null,
+        "u": null,
+        "r": null,
+        "i": null,
+        "j": null,
+        "h": null,
+        "k": null
+      },
+      "physical_properties": {
+        "distance_pc": null,
+        "distance_ly": null,
+        "size": {
+          "major_axis_arcmin": 9.9,
+          "minor_axis_arcmin": null,
+          "position_angle_deg": null
+        },
+        "spectral_type": null,
+        "color_index_bv": null,
+        "absolute_magnitude": null,
+        "luminosity_solar": null,
+        "surface_brightness": null
+      },
+      "motion": {
+        "proper_motion_ra_mas_yr": null,
+        "proper_motion_dec_mas_yr": null,
+        "radial_velocity_km_s": null
+      },
+      "variability": {
+        "is_variable": false,
+        "variable_type": null,
+        "magnitude_range": {
+          "min": null,
+          "max": null
+        }
+      },
+      "morphology": {
+        "hubble_type": null,
+        "morphology_code": null
+      },
+      "notes": null
+    }
+  ]
+}
