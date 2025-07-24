@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Astronomical Catalog Processor.
-
+"""
+Astronomical Catalog Processor
 Downloads and processes OpenNGC and HYG databases into a unified JSON format
 containing Messier, NGC, IC objects and bright stars.
 """
@@ -14,7 +14,6 @@ import io
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import re
-
 
 class AstronomicalCatalogProcessor:
     def __init__(self, output_dir: str = "./astro_data"):
@@ -95,6 +94,8 @@ class AstronomicalCatalogProcessor:
             print(f"and place it in {self.output_dir}")
             return
 
+        # Process main NGC catalog
+        ngc_count = 0
         with open(ngc_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f, delimiter=';')
 
@@ -102,17 +103,48 @@ class AstronomicalCatalogProcessor:
                 obj = self.create_object_from_openngc(row)
                 if obj:
                     self.objects.append(obj)
+                    ngc_count += 1
 
-        print(f"Processed {len(self.objects)} OpenNGC objects")
+        print(f"Processed {ngc_count} NGC/IC objects")
+
+        # Process addendum file for additional Messier objects
+        addendum_file = self.output_dir / "addendum.csv"
+
+        if addendum_file.exists():
+            addendum_count = 0
+            with open(addendum_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f, delimiter=';')
+
+                for row in reader:
+                    obj = self.create_object_from_openngc(row)
+                    if obj:
+                        self.objects.append(obj)
+                        addendum_count += 1
+
+            print(f"Processed {addendum_count} addendum objects (including M40, M45)")
+        else:
+            print(f"Note: addendum.csv not found - please download from https://github.com/mattiaverga/OpenNGC")
+            print(f"This file contains M40 (Winnecke 4) and M45 (Pleiades)")
+
+        # Check for specific Messier objects
+        self.verify_messier_objects()
+
+        print(f"Total OpenNGC objects processed: {len(self.objects)}")
 
     def create_object_from_openngc(self, row: Dict) -> Optional[Dict]:
         """Create standardized object from OpenNGC row."""
         try:
+            # Skip non-existent or duplicate objects unless they're special Messier cases
+            obj_type = row.get('Type', '')
+            if obj_type in ['NonEx', 'Dup']:
+                # Check if it's M102 (which might be marked as duplicate)
+                if row.get('M') == '102':
+                    obj_type = 'G'  # Treat as galaxy
+                else:
+                    return None
+
             # Parse coordinates
             coords = self.parse_ra_dec(row.get('RA'), row.get('Dec'))
-
-            # Determine object type
-            obj_type = row.get('Type', '')
 
             # Parse magnitudes
             def safe_float(val):
@@ -121,8 +153,19 @@ class AstronomicalCatalogProcessor:
                 except:
                     return None
 
+            # Get object name
+            name = row.get('Name', '').strip()
+            if not name:
+                # For addendum objects, construct name from available data
+                if row.get('M'):
+                    name = f"M{row.get('M')}"
+                elif row.get('NGC'):
+                    name = f"NGC{row.get('NGC')}"
+                elif row.get('IC'):
+                    name = f"IC{row.get('IC')}"
+
             obj = {
-                'id': row.get('Name', '').strip(),
+                'id': name,
                 'catalog_ids': {
                     'messier': f"M{row.get('M')}" if row.get('M') else None,
                     'ngc': f"NGC{row.get('NGC')}" if row.get('NGC') else None,
@@ -332,6 +375,162 @@ class AstronomicalCatalogProcessor:
             print(f"Error processing HYG star: {e}")
             return None
 
+    def verify_messier_objects(self):
+        """Verify that all Messier objects are included, with special handling for problematic ones."""
+        messier_ids = set()
+        for obj in self.objects:
+            if obj['catalog_ids']['messier']:
+                messier_num = int(obj['catalog_ids']['messier'][1:])  # Remove 'M' prefix
+                messier_ids.add(messier_num)
+
+        print(f"\nVerifying Messier objects...")
+        print(f"Found {len(messier_ids)} Messier objects")
+
+        # Check for specific objects
+        special_cases = {
+            40: "M40 (Winnecke 4) - Double star in Ursa Major",
+            45: "M45 (Pleiades) - Open cluster in Taurus",
+            102: "M102 - Disputed object, possibly NGC 5866 or duplicate of M101"
+        }
+
+        for m_num, description in special_cases.items():
+            if m_num in messier_ids:
+                print(f"✓ {description} - Found")
+            else:
+                print(f"✗ {description} - Missing")
+                # Add placeholder if missing
+                self.add_missing_messier(m_num)
+
+        # Check for complete Messier catalog (M1-M110)
+        missing = []
+        for i in range(1, 111):
+            if i not in messier_ids:
+                missing.append(f"M{i}")
+
+        if missing:
+            print(f"\nWarning: Missing Messier objects: {', '.join(missing)}")
+
+    def add_missing_messier(self, messier_number: int):
+        """Add placeholder data for missing Messier objects."""
+        # Special handling for known missing objects
+        special_data = {
+            40: {
+                'name': 'M40',
+                'common_name': 'Winnecke 4',
+                'type': '**',  # Double star
+                'ra': '12:22:04.0',
+                'dec': '+58:05:00',
+                'constellation': 'UMa',
+                'mag': 9.65,
+                'notes': 'Double star, not a deep sky object'
+            },
+            45: {
+                'name': 'M45',
+                'common_name': 'Pleiades',
+                'type': 'OCl',  # Open Cluster
+                'ra': '03:47:24.0',
+                'dec': '+24:07:00',
+                'constellation': 'Tau',
+                'mag': 1.6,
+                'size': 110.0,  # arcmin
+                'notes': 'The Pleiades or Seven Sisters'
+            },
+            102: {
+                'name': 'M102',
+                'common_name': 'Spindle Galaxy (disputed)',
+                'type': 'G',  # Galaxy
+                'ra': '15:06:29.5',
+                'dec': '+55:45:48',
+                'constellation': 'Dra',
+                'mag': 10.7,
+                'notes': 'Possibly NGC 5866 or duplicate observation of M101'
+            }
+        }
+
+        if messier_number in special_data:
+            data = special_data[messier_number]
+            coords = self.parse_ra_dec(data['ra'], data['dec'])
+
+            obj = {
+                'id': data['name'],
+                'catalog_ids': {
+                    'messier': data['name'],
+                    'ngc': 'NGC5866' if messier_number == 102 else None,
+                    'ic': None,
+                    'hr': None,
+                    'hd': None,
+                    'hip': None,
+                    'gl': None
+                },
+                'names': {
+                    'proper': data['common_name'],
+                    'bayer_flamsteed': None,
+                    'common': [data['common_name']],
+                    'other': ['Win 4'] if messier_number == 40 else []
+                },
+                'object_type': data['type'],
+                'coordinates': {
+                    'ra_j2000': {
+                        'decimal': coords.get('ra_decimal'),
+                        'sexagesimal': coords.get('ra_sexagesimal')
+                    },
+                    'dec_j2000': {
+                        'decimal': coords.get('dec_decimal'),
+                        'sexagesimal': coords.get('dec_sexagesimal')
+                    },
+                    'constellation': data['constellation'],
+                    'galactic': {
+                        'l': None,
+                        'b': None
+                    }
+                },
+                'magnitudes': {
+                    'v': data.get('mag'),
+                    'b': None,
+                    'u': None,
+                    'r': None,
+                    'i': None,
+                    'j': None,
+                    'h': None,
+                    'k': None
+                },
+                'physical_properties': {
+                    'distance_pc': None,
+                    'distance_ly': None,
+                    'size': {
+                        'major_axis_arcmin': data.get('size'),
+                        'minor_axis_arcmin': data.get('size'),
+                        'position_angle_deg': None
+                    },
+                    'spectral_type': None,
+                    'color_index_bv': None,
+                    'absolute_magnitude': None,
+                    'luminosity_solar': None,
+                    'surface_brightness': None
+                },
+                'motion': {
+                    'proper_motion_ra_mas_yr': None,
+                    'proper_motion_dec_mas_yr': None,
+                    'radial_velocity_km_s': None
+                },
+                'variability': {
+                    'is_variable': False,
+                    'variable_type': None,
+                    'magnitude_range': {
+                        'min': None,
+                        'max': None
+                    }
+                },
+                'morphology': {
+                    'hubble_type': None,
+                    'morphology_code': None
+                },
+                'notes': data['notes']
+            }
+
+            self.objects.append(obj)
+            print(f"  Added placeholder for {data['name']}")
+
     def decimal_to_sexagesimal_ra(self, ra: float) -> Optional[str]:
         """Convert decimal RA to sexagesimal format."""
         if ra is None:
@@ -364,9 +563,15 @@ class AstronomicalCatalogProcessor:
                     'total_objects': len(self.objects),
                     'sources': [
                         'OpenNGC Database (NGC/IC/Messier objects)',
+                        'OpenNGC Addendum (M40, M45, etc.)',
                         'HYG Stellar Database v4.1 (bright stars)'
                     ],
-                    'licenses': 'CC-BY-SA-4.0'
+                    'licenses': 'CC-BY-SA-4.0',
+                    'special_notes': {
+                        'M40': 'Double star (Winnecke 4) in Ursa Major',
+                        'M45': 'Pleiades open cluster in Taurus',
+                        'M102': 'Disputed object, possibly NGC 5866 or duplicate of M101'
+                    }
                 },
                 'objects': self.objects
             }, f, indent=2, ensure_ascii=False)
@@ -379,13 +584,17 @@ class AstronomicalCatalogProcessor:
         ic_objects = [obj for obj in self.objects if obj['catalog_ids']['ic']]
         bright_stars = [obj for obj in self.objects if obj['object_type'] == 'Star']
 
+        # Sort Messier objects by number
+        messier_objects.sort(key=lambda x: int(x['catalog_ids']['messier'][1:]))
+
         # Save Messier catalog
         messier_file = self.output_dir / "messier_objects.json"
         with open(messier_file, 'w', encoding='utf-8') as f:
             json.dump({
                 'metadata': {
-                    'description': 'Messier objects catalog',
-                    'total_objects': len(messier_objects)
+                    'description': 'Complete Messier objects catalog (M1-M110)',
+                    'total_objects': len(messier_objects),
+                    'note': 'Includes M40 (double star), M45 (Pleiades), and M102 (disputed)'
                 },
                 'objects': messier_objects
             }, f, indent=2, ensure_ascii=False)
@@ -404,6 +613,15 @@ class AstronomicalCatalogProcessor:
         print(f"Saved {len(messier_objects)} Messier objects to {messier_file}")
         print(f"Saved {len(bright_stars)} bright stars to {stars_file}")
         print(f"\nTotal objects processed: {len(self.objects)}")
+
+        # Verify Messier catalog completeness
+        if messier_objects:
+            messier_numbers = sorted([int(obj['catalog_ids']['messier'][1:]) for obj in messier_objects])
+            print(f"\nMessier objects range: M{messier_numbers[0]} - M{messier_numbers[-1]}")
+            if len(messier_numbers) == 110:
+                print("✓ Complete Messier catalog (all 110 objects)")
+            else:
+                print(f"⚠ Found {len(messier_numbers)} of 110 Messier objects")
 
     def run(self):
         """Run the complete processing pipeline."""
@@ -432,8 +650,11 @@ if __name__ == "__main__":
     print("Processing complete!")
     print("\nTo use this data:")
     print("1. Download NGC.csv from https://github.com/mattiaverga/OpenNGC")
-    print("2. Download hygdata_v41.csv from https://www.astronexus.com/hyg")
-    print("3. Place both files in the ./astro_data directory")
-    print("4. Run this script again")
+    print("2. Download addendum.csv from https://github.com/mattiaverga/OpenNGC")
+    print("3. Download hygdata_v41.csv from https://www.astronexus.com/hyg")
+    print("4. Place all files in the ./astro_data directory")
+    print("5. Run this script again")
     print("\nThe output JSON files will contain all the astronomical data")
     print("in a standardized, machine-processable format.")
+    print("\nImportant: The addendum.csv file contains M40 and M45 which")
+    print("are not in the main NGC/IC catalogs.")
