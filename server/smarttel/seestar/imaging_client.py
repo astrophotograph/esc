@@ -33,7 +33,7 @@ class SeestarImagingStatus(BaseModel):
     """Seestar imaging status."""
 
     temp: float | None = None
-    charger_status: Literal["Discharging", "Charging", "Full"] | None = None
+    charger_status: Literal["Discharging", "Charging", "Full", "Not charging"] | None = None
     charge_online: bool | None = None
     battery_capacity: int | None = None
     stacked_frame: int = 0

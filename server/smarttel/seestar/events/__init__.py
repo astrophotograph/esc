@@ -70,7 +70,7 @@ class PiStatusEvent(BaseEvent):
 
     Event: Literal["PiStatus"] = "PiStatus"
     temp: float | None = None
-    charger_status: Literal["Discharging", "Charging", "Full"] | None = None
+    charger_status: Literal["Discharging", "Charging", "Full", "Not charging"] | None = None
     charge_online: bool | None = None
     battery_capacity: int | None = None
 
