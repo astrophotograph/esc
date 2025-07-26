@@ -43,12 +43,13 @@ jobs:
       - name: Generate version
         id: version
         run: |
+          cd ui
           # Generate version using our script (quiet mode in CI)
           VERSION=$(node scripts/generate-version.js --update-package --quiet)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Read build info
-          BUILD_INFO=$(cat ui/build-info.json | tr -d '\n')
+          BUILD_INFO=$(cat build-info.json | tr -d '\n')
           echo "build-info=$BUILD_INFO" >> $GITHUB_OUTPUT
           
           echo "Generated version: $VERSION"
@@ -84,6 +85,7 @@ jobs:
       
       - name: Restore version info
         run: |
+          cd ui
           # Regenerate version info for this job (quiet mode in CI)
           node scripts/generate-version.js --update-package --quiet
           echo "Version: ${{ needs.generate-version.outputs.version }}"

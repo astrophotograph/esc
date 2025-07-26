@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node ../scripts/generate-version.js --update-package",
+    "prebuild": "node scripts/generate-version.js --update-package",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -14,8 +14,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "version:generate": "node ../scripts/generate-version.js --update-package",
-    "version:show": "node ../scripts/generate-version.js"
+    "version:generate": "node scripts/generate-version.js --update-package",
+    "version:show": "node scripts/generate-version.js"
   },
   "dependencies": {
     "@deck.gl/core": "^9.1.13",
