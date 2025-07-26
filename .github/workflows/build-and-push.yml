@@ -11,7 +11,7 @@ on:
       platforms:
         description: 'Target platforms'
         required: false
-        default: 'linux/amd64,linux/arm64'
+        default: 'linux/arm64'
         type: string
   push:
     tags:
@@ -24,83 +24,37 @@ env:
   IMAGE_NAME_SERVER: ${{ github.repository }}-server
 
 jobs:
-  build-amd64:
+  generate-version:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      packages: write
-      
-    strategy:
-      matrix:
-        include:
-          - context: ./ui
-            dockerfile: ./ui/Dockerfile.prod
-            image: ui
-          - context: ./server
-            dockerfile: ./server/Dockerfile.optimized
-            image: server
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build-info: ${{ steps.version.outputs.build-info }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to the Container registry
-        if: github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch'
-        uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for ${{ matrix.image }}
-        id: meta
-        uses: docker/metadata-action@v5
+          fetch-depth: 0  # Fetch all history for tags
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
-          flavor: |
-            suffix=-amd64
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-,format=short
-            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
-
-      - name: Build and push ${{ matrix.image }} image (AMD64)
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64
-          push: ${{ github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-amd64
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-amd64,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-
-      - name: Image build summary
+          node-version: '18'
+      
+      - name: Generate version
+        id: version
         run: |
-          echo "## AMD64 Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Platform**: linux/amd64" >> $GITHUB_STEP_SUMMARY
-          echo "- **Push to registry**: ${{ github.event.inputs.push_images || github.event_name != 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          # Generate version using our script
+          VERSION=$(node scripts/generate-version.js --update-package)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Read build info
+          BUILD_INFO=$(cat ui/build-info.json | tr -d '\n')
+          echo "build-info=$BUILD_INFO" >> $GITHUB_OUTPUT
+          
+          echo "Generated version: $VERSION"
 
   build-arm64:
+    needs: generate-version
     runs-on: self-hosted
     timeout-minutes: 60
     permissions:
@@ -120,6 +74,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Restore version info
+        run: |
+          # Regenerate version info for this job
+          node scripts/generate-version.js --update-package
+          echo "Version: ${{ needs.generate-version.outputs.version }}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -137,8 +104,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
-          flavor: |
-            suffix=-arm64
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -147,7 +112,7 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix={{branch}}-,format=short
-            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value=${{ needs.generate-version.outputs.version }}
 
       - name: Build and push ${{ matrix.image }} image (ARM64)
         uses: docker/build-push-action@v5
@@ -166,6 +131,7 @@ jobs:
             type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:buildcache-arm64,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            VERSION=${{ needs.generate-version.outputs.version }}
 
       - name: Image build summary
         run: |
@@ -173,70 +139,6 @@ jobs:
           echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Dockerfile**: ${{ matrix.dockerfile }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Platform**: linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.generate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Push to registry**: ${{ github.event.inputs.push_images || github.event_name != 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-
-  create-manifest:
-    needs: [build-amd64, build-arm64]
-    runs-on: ubuntu-latest
-    if: github.event.inputs.push_images == 'true' || github.event_name != 'workflow_dispatch'
-    permissions:
-      contents: read
-      packages: write
-      
-    strategy:
-      matrix:
-        image: [ui, server]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for ${{ matrix.image }}
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-,format=short
-            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
-
-      - name: Create and push multi-arch manifest
-        run: |
-          echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r tag; do
-            echo "Creating manifest for $tag"
-            docker buildx imagetools create \
-              --tag $tag \
-              ${tag}-amd64 \
-              ${tag}-arm64
-          done
-
-      - name: Manifest creation summary
-        run: |
-          echo "## Multi-arch Manifest Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tags**: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-
-      #- name: Delete Package Versions
-      #  uses: actions/delete-package-versions@v5.0.0
-      #  with:
-      #    package-name: ${{ github.repository }}-${{ matrix.image }}
-      #    package-type: 'container'
-      #    min-versions-to-keep: 10

@@ -157,21 +157,28 @@ _version_checker: Optional[VersionChecker] = None
 
 
 def _get_current_version() -> str:
-    """Get the current version from package.json."""
+    """Get the current version from build-info.json or package.json."""
     try:
         import os
         import json
         
-        # Look for package.json in the ui directory
+        # First try build-info.json (preferred)
+        build_info_path = os.path.join(os.path.dirname(__file__), "../../ui/build-info.json")
+        if os.path.exists(build_info_path):
+            with open(build_info_path, 'r') as f:
+                build_data = json.load(f)
+                return build_data.get("version", "25.07.26-pre-alpha")
+        
+        # Fallback to package.json
         package_json_path = os.path.join(os.path.dirname(__file__), "../../ui/package.json")
         if os.path.exists(package_json_path):
             with open(package_json_path, 'r') as f:
                 package_data = json.load(f)
-                return package_data.get("version", "1.0.0")
+                return package_data.get("version", "25.07.26-pre-alpha")
     except Exception as e:
-        logger.warning(f"Could not read version from package.json: {e}")
+        logger.warning(f"Could not read version from build-info.json or package.json: {e}")
     
-    return "1.0.0"
+    return "25.07.26-pre-alpha"
 
 
 def get_version_checker() -> VersionChecker:
