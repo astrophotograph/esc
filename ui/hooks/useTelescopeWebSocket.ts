@@ -8,7 +8,8 @@ import {
   CommandResponseMessage,
   MessageType,
   AlertMessage,
-  PlateSolveResultMessage
+  PlateSolveResultMessage,
+  ClientModeChangedMessage
 } from '../services/websocket-service';
 import type { TelescopeInfo } from '../types/telescope-types';
 import { toast } from 'sonner';
@@ -92,6 +93,7 @@ export function useTelescopeWebSocket(
     lastHeartbeatReceived: number;
   } | null>(null);
   
+  
   // Use refs to avoid dependency issues
   const isConnectingRef = useRef(false);
   const currentTelescopeRef = useRef<TelescopeInfo | null>(null);
@@ -157,12 +159,44 @@ export function useTelescopeWebSocket(
       
       const statusListener = (message: StatusUpdateMessage) => {
         if (message.payload.status) {
-          setStatus(message.payload.status);
+          const newStatus = message.payload.status;
+          setStatus(newStatus);
           setLastUpdate(Date.now());
         }
       };
       
       wsService.on(MessageType.STATUS_UPDATE, statusListener);
+      
+      // Listen for client mode change events and show toast notifications
+      const clientModeChangeListener = (message: ClientModeChangedMessage) => {
+        console.log('📡 Client Mode Changed Event Received:', {
+          telescope_id: message.telescope_id,
+          old_mode: message.payload.old_mode,
+          new_mode: message.payload.new_mode,
+          timestamp: new Date(message.timestamp).toISOString()
+        });
+        
+        // Show toast notification for client mode changes
+        const getModeDisplayName = (mode: string | null | undefined) => {
+          switch (mode) {
+            case 'ContinuousExposure': return 'Continuous Exposure';
+            case 'Stack': return 'Stacking';
+            case 'Streaming': return 'Streaming';
+            case 'Idle': return 'Idle';
+            default: return mode || 'Unknown';
+          }
+        };
+        
+        const fromMode = getModeDisplayName(message.payload.old_mode);
+        const toMode = getModeDisplayName(message.payload.new_mode);
+        
+        toast.info(`Telescope mode changed from ${fromMode} to ${toMode}`, {
+          description: `Telescope: ${currentTelescopeRef.current?.name || 'Unknown'}`,
+          duration: 4000,
+        });
+      };
+      
+      wsService.on(MessageType.CLIENT_MODE_CHANGED, clientModeChangeListener);
       
       // Listen for annotation events and log them to console
       const annotationListener = (message: any) => {

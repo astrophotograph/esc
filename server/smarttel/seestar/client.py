@@ -127,7 +127,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
+    client_mode: Literal["ContinuousExposure", "Stack", "Streaming", "Idle"] | None = "Idle"
     message_history: collections.deque = collections.deque(maxlen=5000)
 
     # Image enhancement settings
@@ -340,6 +340,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         mode = pydash.get(data, "mode", "unknown")
         state = pydash.get(data, "state", "unknown")
 
+        logging.warning(f"Process view: {stage=} {mode=} {state=}")
+
         annotate_result = pydash.get(data, "Stack.Annotate.result", None)
 
         if annotate_result is not None:
@@ -351,7 +353,6 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             self.event_bus.emit("Annotate", annotation)
 
         # Update client mode
-        new_client_mode = None
         if state != "cancel":
             if stage == "ContinuousExposure":
                 new_client_mode = "ContinuousExposure"
@@ -360,7 +361,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             elif stage == "Stack":
                 new_client_mode = "Stacking"
             else:
-                logging.warning(f"Unknown stage: {stage}")
+                # Stage isn't a known active stage, default to Idle for safety
+                # This prevents the frontend from trying to load streams when the telescope state is unknown
+                logging.warning(f"Unknown stage: {stage=} {mode=} {state=} - defaulting to Idle")
+                new_client_mode = "ContinuousExposure"
+        else:
+            new_client_mode = "Idle"
 
         if self.client_mode != new_client_mode:
             # client mode is changing, so let's make appropriate changes
@@ -391,17 +397,29 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     logging.error(f"Error broadcasting client mode change to websocket: {e}")
         else:
             self.client_mode = new_client_mode
-        self.status.stage = stage
+        
+        # Set status.stage to match the client mode for frontend consistency
+        # Frontend expects status.stage to indicate the current telescope state
+        if new_client_mode == "Idle":
+            self.status.stage = "Idle"
+        elif new_client_mode == "ContinuousExposure":
+            self.status.stage = "ContinuousExposure"
+        elif new_client_mode == "Stacking":
+            self.status.stage = "Stack"
+        elif new_client_mode == "Streaming":
+            self.status.stage = "RTSP"
+        else:
+            # Fallback to original stage if unknown mode
+            self.status.stage = stage
 
     async def _broadcast_client_mode_change(self, old_mode: str | None, new_mode: str | None):
         """Broadcast client mode change to websocket clients."""
         try:
-            # Get current status and broadcast with client_mode change indication
-            status_dict = self.status.model_dump()
-            await self.websocket_manager.broadcast_status_update(
-                self.telescope_id, 
-                status_dict, 
-                changes=["client_mode"]
+            # Use dedicated client mode change broadcast
+            await self.websocket_manager.broadcast_client_mode_changed(
+                telescope_id=self.telescope_id,
+                old_mode=old_mode,
+                new_mode=new_mode
             )
             logging.info(f"Broadcasted client mode change from {old_mode} to {new_mode} via websocket")
         except Exception as e:

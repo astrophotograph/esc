@@ -21,7 +21,8 @@ export enum MessageType {
   SUBSCRIBE = 'subscribe',
   UNSUBSCRIBE = 'unsubscribe',
   ALERT = 'alert',
-  PLATE_SOLVE_RESULT = 'plate_solve_result'
+  PLATE_SOLVE_RESULT = 'plate_solve_result',
+  CLIENT_MODE_CHANGED = 'client_mode_changed'
 }
 
 export enum CommandAction {
@@ -132,6 +133,14 @@ export interface PlateSolveResultMessage extends WebSocketMessage {
   }
 }
 
+export interface ClientModeChangedMessage extends WebSocketMessage {
+  type: MessageType.CLIENT_MODE_CHANGED
+  payload: {
+    old_mode?: string
+    new_mode?: string
+  }
+}
+
 export type WebSocketMessageUnion =
   | StatusUpdateMessage
   | ControlCommandMessage
@@ -141,6 +150,7 @@ export type WebSocketMessageUnion =
   | ErrorMessage
   | AlertMessage
   | PlateSolveResultMessage
+  | ClientModeChangedMessage
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',

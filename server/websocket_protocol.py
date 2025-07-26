@@ -24,6 +24,7 @@ class MessageType(str, Enum):
     ANNOTATION_EVENT = "annotation_event"
     ALERT = "alert"
     PLATE_SOLVE_RESULT = "plate_solve_result"
+    CLIENT_MODE_CHANGED = "client_mode_changed"
 
     # Control commands
     CONTROL_COMMAND = "control_command"
@@ -220,6 +221,28 @@ class AlertMessage(WebSocketMessage):
         )
 
 
+class ClientModeChangedMessage(WebSocketMessage):
+    """Client mode change notification."""
+
+    type: MessageType = MessageType.CLIENT_MODE_CHANGED
+
+    def __init__(
+        self,
+        telescope_id: str,
+        old_mode: Optional[str] = None,
+        new_mode: Optional[str] = None,
+        **data,
+    ):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "old_mode": old_mode,
+                "new_mode": new_mode,
+            },
+            **data,
+        )
+
+
 class PlateSolveResultMessage(WebSocketMessage):
     """Plate solve result message containing astrometry solution."""
 
@@ -339,6 +362,7 @@ WebSocketMessageUnion = Union[
     TelescopeLostMessage,
     AnnotationEventMessage,
     AlertMessage,
+    ClientModeChangedMessage,
     SubscribeMessage,
     UnsubscribeMessage,
     HeartbeatMessage,
@@ -494,4 +518,17 @@ class MessageFactory:
             error=error,
             submission_id=submission_id,
             astrometry_job_id=astrometry_job_id,
+        )
+
+    @staticmethod
+    def create_client_mode_changed(
+        telescope_id: str,
+        old_mode: Optional[str] = None,
+        new_mode: Optional[str] = None,
+    ) -> ClientModeChangedMessage:
+        """Create a client mode changed message."""
+        return ClientModeChangedMessage(
+            telescope_id=telescope_id,
+            old_mode=old_mode,
+            new_mode=new_mode,
         )

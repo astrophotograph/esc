@@ -118,6 +118,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             connection_timeout=connection_timeout,
             read_timeout=read_timeout,
             write_timeout=write_timeout,
+            should_reconnect_callback=self._should_attempt_reconnection,
         )
 
     async def _reader(self):
@@ -127,11 +128,19 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             try:
                 # Check if connection is still valid
                 if not self.connection.is_connected():
-                    logging.warning(
-                        f"Connection lost for {self}, attempting to reconnect..."
-                    )
-                    await asyncio.sleep(1.0)  # Wait before next iteration
-                    continue
+                    # Only attempt reconnection if client_mode is not Idle or None
+                    if self.client_mode in ["Idle", None]:
+                        logging.info(
+                            f"Connection lost for {self}, but client_mode is {self.client_mode}. Skipping reconnection."
+                        )
+                        await asyncio.sleep(1.0)  # Wait before next iteration
+                        continue
+                    else:
+                        logging.warning(
+                            f"Connection lost for {self}, attempting to reconnect..."
+                        )
+                        await asyncio.sleep(1.0)  # Wait before next iteration
+                        continue
 
                 header = await self.connection.read_exactly(80)
                 if header is None:
@@ -287,6 +296,16 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             if existing == "Streaming":
                 await self.stop_rtsp()
 
+            # If transitioning from Idle/None to an active mode, attempt reconnection if needed
+            if existing in ["Idle", None] and new_mode not in ["Idle", None]:
+                if not self.connection.is_connected():
+                    logging.info(f"Client mode changing from {existing} to {new_mode}, attempting reconnection")
+                    try:
+                        await self.connection.open()
+                        logging.info(f"Successfully reconnected for mode change to {new_mode}")
+                    except Exception as e:
+                        logging.error(f"Failed to reconnect when changing to {new_mode}: {e}")
+
             match new_mode:
                 case "ContinuousExposure":
                     await self.start_streaming()
@@ -337,6 +356,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         """Get the cached raw image."""
         with self.cached_raw_image_lock:
             return self.cached_raw_image.copy() if self.cached_raw_image and hasattr(self.cached_raw_image, 'copy') else self.cached_raw_image
+
+    def _should_attempt_reconnection(self) -> bool:
+        """Check if reconnection should be attempted based on client_mode."""
+        return self.client_mode not in ["Idle", None]
 
     def __str__(self):
         return f"{self.host}:{self.port}"

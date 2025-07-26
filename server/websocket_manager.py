@@ -29,6 +29,7 @@ from websocket_protocol import (
     SubscribeMessage,
     UnsubscribeMessage,
     AnnotationEventMessage,
+    ClientModeChangedMessage,
 )
 
 
@@ -349,6 +350,24 @@ class WebSocketManager:
             error=error,
             submission_id=submission_id,
             astrometry_job_id=astrometry_job_id,
+        )
+
+        # Send to all subscribed connections
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                await connection.send_message(message)
+
+    async def broadcast_client_mode_changed(
+            self,
+            telescope_id: str,
+            old_mode: Optional[str] = None,
+            new_mode: Optional[str] = None,
+    ):
+        """Broadcast client mode change to all subscribed clients."""
+        message = MessageFactory.create_client_mode_changed(
+            telescope_id=telescope_id,
+            old_mode=old_mode,
+            new_mode=new_mode,
         )
 
         # Send to all subscribed connections
