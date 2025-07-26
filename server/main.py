@@ -336,7 +336,22 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         # Create a shared client instance
         self.event_bus = EventBus()
-        self.client = SeestarClient(self.host, self.port, self.event_bus)
+        # Import websocket_manager here to avoid circular imports
+        try:
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
+            telescope_id = getattr(self, 'serial_number', None) or self.host
+        except ImportError:
+            websocket_manager = None
+            telescope_id = None
+        
+        self.client = SeestarClient(
+            self.host, 
+            self.port, 
+            self.event_bus,
+            websocket_manager=websocket_manager,
+            telescope_id=telescope_id
+        )
         self.imaging = SeestarImagingClient(
             self.host, self.imaging_port, self.event_bus
         )
@@ -1052,7 +1067,22 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         if not hasattr(self, "event_bus") or not self.event_bus:
             self.event_bus = EventBus()
         if not hasattr(self, "client") or not self.client:
-            self.client = SeestarClient(self.host, self.port, self.event_bus)
+            # Import websocket_manager here to avoid circular imports
+            try:
+                from websocket_manager import get_websocket_manager
+                websocket_manager = get_websocket_manager()
+                telescope_id = getattr(self, 'serial_number', None) or self.host
+            except ImportError:
+                websocket_manager = None
+                telescope_id = None
+            
+            self.client = SeestarClient(
+                self.host, 
+                self.port, 
+                self.event_bus,
+                websocket_manager=websocket_manager,
+                telescope_id=telescope_id
+            )
         if not hasattr(self, "imaging") or not self.imaging:
             self.imaging = SeestarImagingClient(
                 self.host, self.imaging_port, self.event_bus
@@ -3620,7 +3650,7 @@ def test_command(host, port, action, target_name, ra, dec, ra_str, dec_str, star
         
         # Initialize WebSocket manager and create a telescope client
         event_bus = EventBus()
-        client = SeestarClient(host, port, event_bus)
+        client = SeestarClient(host, port, event_bus)  # Test client - no websocket integration needed
         
         # Create WebSocket manager instance for testing
         ws_manager = WebSocketManager()

@@ -113,6 +113,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     host: str
     port: int
     event_bus: EventBus | None = None
+    websocket_manager: Any | None = None  # WebSocketManager - using Any to avoid circular import
+    telescope_id: str | None = None
     connection: SeestarConnection | None = None
     # Start counter at 100 to not conflict with some lower, hardcoded IDs
     counter: itertools.count = itertools.count(100)
@@ -146,6 +148,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             host: str,
             port: int,
             event_bus: EventBus,
+            websocket_manager: Any = None,
+            telescope_id: str = None,
             connection_timeout: float = 10.0,
             read_timeout: float = 30.0,
             write_timeout: float = 10.0,
@@ -154,6 +158,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             host=host,
             port=port,
             event_bus=event_bus,
+            websocket_manager=websocket_manager,
+            telescope_id=telescope_id,
             connection_timeout=connection_timeout,
             read_timeout=read_timeout,
             write_timeout=write_timeout,
@@ -353,23 +359,53 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 new_client_mode = "Streaming"
             elif stage == "Stack":
                 new_client_mode = "Stacking"
+            else:
+                logging.warning(f"Unknown stage: {stage}")
 
         if self.client_mode != new_client_mode:
             # client mode is changing, so let's make appropriate changes
+            old_client_mode = self.client_mode
             logging.warning(
-                f"Client mode changing from {self.client_mode} to {new_client_mode}"
+                f"Client mode changing from {old_client_mode} to {new_client_mode}"
             )
-            self.event_bus.emit(
-                "ClientModeChanged",
-                InternalEvent(
-                    Timestamp=datetime.now().isoformat(),
-                    params={"existing": self.client_mode, "new_mode": new_client_mode},
-                ),
-            )
-            pass
-
-        self.client_mode = new_client_mode
+            
+            # Emit to event bus for imaging client and other local listeners
+            if self.event_bus:
+                self.event_bus.emit(
+                    "ClientModeChanged",
+                    InternalEvent(
+                        Timestamp=datetime.now().isoformat(),
+                        params={"existing": old_client_mode, "new_mode": new_client_mode},
+                    ),
+                )
+            
+            # Update client mode
+            self.client_mode = new_client_mode
+            
+            # Broadcast to websocket for frontend clients
+            if self.websocket_manager and self.telescope_id:
+                try:
+                    # Create a task to handle the async websocket broadcast
+                    asyncio.create_task(self._broadcast_client_mode_change(old_client_mode, new_client_mode))
+                except Exception as e:
+                    logging.error(f"Error broadcasting client mode change to websocket: {e}")
+        else:
+            self.client_mode = new_client_mode
         self.status.stage = stage
+
+    async def _broadcast_client_mode_change(self, old_mode: str | None, new_mode: str | None):
+        """Broadcast client mode change to websocket clients."""
+        try:
+            # Get current status and broadcast with client_mode change indication
+            status_dict = self.status.model_dump()
+            await self.websocket_manager.broadcast_status_update(
+                self.telescope_id, 
+                status_dict, 
+                changes=["client_mode"]
+            )
+            logging.info(f"Broadcasted client mode change from {old_mode} to {new_mode} via websocket")
+        except Exception as e:
+            logging.error(f"Failed to broadcast client mode change via websocket: {e}")
 
     def _process_view_state(self, response: CommandResponse):
         """Process view state."""
