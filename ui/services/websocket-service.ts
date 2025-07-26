@@ -37,7 +37,8 @@ export enum CommandAction {
   SET_EXPOSURE = 'set_exposure',
   SCENERY = 'scenery',
   SET_IMAGE_ENHANCEMENT = 'set_image_enhancement',
-  GET_IMAGE_ENHANCEMENT = 'get_image_enhancement'
+  GET_IMAGE_ENHANCEMENT = 'get_image_enhancement',
+  REBOOT = 'reboot'
 }
 
 export enum SubscriptionType {

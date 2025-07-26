@@ -10,7 +10,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, Focus, Settings, 
 import { useTelescopeContext } from "@/context/TelescopeContext"
 import { formatRaDec } from "@/utils/telescope-utils"
 import { PlateSolveSyncDialog, type PlateSolveResult } from "../modals/PlateSolveSyncDialog"
-import { MessageType, PlateSolveResultMessage, getWebSocketService } from "@/services/websocket-service"
+import { MessageType, PlateSolveResultMessage, getWebSocketService, CommandAction } from "@/services/websocket-service"
 
 export function TelescopeControls() {
   const {
@@ -36,6 +36,7 @@ export function TelescopeControls() {
   currentTelescope,
   handlePlateSolve,
   handleSyncTelescope,
+  clientMode,
   } = useTelescopeContext()
 
   // State for plate solve sync dialog
@@ -241,6 +242,35 @@ export function TelescopeControls() {
     setPlateSolveResult(null)
   }
 
+  const handleReboot = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before rebooting",
+      })
+      return
+    }
+
+    try {
+      const wsService = getWebSocketService()
+      await wsService.sendCommand(CommandAction.REBOOT, {}, currentTelescope.id)
+
+      addStatusAlert({
+        type: "warning",
+        title: "Reboot Command Sent",
+        message: "Telescope reboot command has been sent",
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      addStatusAlert({
+        type: "error",
+        title: "Reboot Failed",
+        message: errorMessage,
+      })
+    }
+  }
+
   return (
     <>
     <Card className="bg-gray-800 border-gray-700">
@@ -280,10 +310,20 @@ export function TelescopeControls() {
           </div>
         </div>
 
-        <Separator className="bg-gray-700" />
+        <Separator 
+          className={`bg-gray-700 transition-all duration-300 ease-in-out ${
+            clientMode === "Stacking" ? "opacity-0 h-0" : "opacity-100"
+          }`} 
+        />
 
         {/* Movement Controls */}
-        <div className="space-y-3">
+        <div 
+          className={`space-y-3 transition-all duration-300 ease-in-out overflow-hidden ${
+            clientMode === "Stacking" 
+              ? "max-h-0 opacity-0 pointer-events-none" 
+              : "max-h-[1000px] opacity-100"
+          }`}
+        >
           <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">Movement & Tracking</h4>
           <div className="grid grid-cols-3 gap-2">
             <div></div>
@@ -374,10 +414,20 @@ export function TelescopeControls() {
           </Button>
         </div>
 
-        <Separator className="bg-gray-700" />
+        <Separator 
+          className={`bg-gray-700 transition-all duration-300 ease-in-out ${
+            clientMode === "Stacking" ? "opacity-0 h-0" : "opacity-100"
+          }`} 
+        />
 
         {/* Focus Controls */}
-        <div className="space-y-3">
+        <div 
+          className={`space-y-3 transition-all duration-300 ease-in-out overflow-hidden ${
+            clientMode === "Stacking" 
+              ? "max-h-0 opacity-0 pointer-events-none" 
+              : "max-h-[1000px] opacity-100"
+          }`}
+        >
           <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">
             <Focus className="w-4 h-4" />
             Focus Control
@@ -473,6 +523,22 @@ export function TelescopeControls() {
         {/*    </Button>*/}
         {/*  </div>*/}
         {/*</div>*/}
+
+        <Separator className="bg-gray-700" />
+
+        {/* Reboot Section */}
+        <div className="space-y-3 border-2 border-red-600 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-300">System Control</h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReboot}
+            className="w-full border-red-600 text-red-400 hover:bg-red-900 hover:text-red-300"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reboot Telescope
+          </Button>
+        </div>
       </CardContent>
     </Card>
 

@@ -148,15 +148,15 @@ export function ControlPanel() {
                   Telescope
                   {getTelescopeIndicators()}
                 </TabsTrigger>
-                <TabsTrigger
-                  value="environment"
-                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
-                  data-tour="environment-tab"
-                >
-                  <Cloud className="w-4 h-4" />
-                  Environment
-                  {getEnvironmentIndicators()}
-                </TabsTrigger>
+                {/*<TabsTrigger*/}
+                {/*  value="environment"*/}
+                {/*  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"*/}
+                {/*  data-tour="environment-tab"*/}
+                {/*>*/}
+                {/*  <Cloud className="w-4 h-4" />*/}
+                {/*  Environment*/}
+                {/*  {getEnvironmentIndicators()}*/}
+                {/*</TabsTrigger>*/}
                 <TabsTrigger
                   value="location"
                   className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
@@ -225,9 +225,9 @@ export function ControlPanel() {
               <ImageControls />
             </TabsContent>
 
-            <TabsContent value="environment" className="space-y-4 mt-4">
-              <EnvironmentPanel />
-            </TabsContent>
+            {/*<TabsContent value="environment" className="space-y-4 mt-4">*/}
+            {/*  <EnvironmentPanel />*/}
+            {/*</TabsContent>*/}
 
             <TabsContent value="location" className="space-y-4 mt-4">
               <LocationPanel />

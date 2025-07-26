@@ -29,6 +29,7 @@ import type {
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
 import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
+import { getWebSocketService, MessageType } from "../services/websocket-service"
 
 export interface Annotation {
   type: string;
@@ -270,6 +271,8 @@ interface TelescopeContextType {
     setStreamStatus: (status: any) => void
     isImaging: boolean
     setIsImaging: (imaging: boolean) => void
+    clientMode: string | null
+    setClientMode: (mode: string | null) => void
     annotationSettings: AnnotationSettings
     setAnnotationSettings: (settings: AnnotationSettings) => void
     showAnnotations: boolean
@@ -627,6 +630,9 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
   // Imaging state
   const [isImaging, setIsImaging] = useState(false)
+
+  // Client mode state
+  const [clientMode, setClientMode] = useState<string | null>(null)
 
   // Picture-in-Picture state
   const [showPiP, setShowPiP] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-pip", false)
@@ -1512,13 +1518,13 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       })
     } catch (error) {
       console.error('Error sending goto command via WebSocket:', error)
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
       // Provide more specific error messages based on error type
       let title = "Goto Command Failed"
       let message = `Failed to send goto command: ${errorMessage}`
-      
+
       if (errorMessage.includes('Command timeout')) {
         title = "Goto Command Timed Out"
         message = `Goto command took too long to complete. This is normal for large telescope movements. Please check telescope status.`
@@ -1526,7 +1532,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         title = "Connection Lost"
         message = "Cannot send goto command - WebSocket connection lost. Attempting to reconnect..."
       }
-      
+
       addStatusAlert({
         type: "error",
         title,
@@ -1867,6 +1873,23 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     fetchRemoteControllers()
   }, [])
 
+  // Listen for client mode changes
+  useEffect(() => {
+    const wsService = getWebSocketService()
+
+    const handleClientModeChange = (message: any) => {
+      if (message.telescope_id === currentTelescope?.id) {
+        setClientMode(message.payload.new_mode)
+      }
+    }
+
+    wsService.on(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
+
+    return () => {
+      wsService.off(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
+    }
+  }, [currentTelescope?.id])
+
   // Keyboard event handler
   const handleKeyDown = (event: KeyboardEvent) => {
     // Prevent shortcuts when typing in input fields
@@ -2193,7 +2216,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     const result = await response.json()
-    
+
     // The new async endpoint returns immediately with job_id
     // Results will come via WebSocket
     if (result.job_id) {
@@ -2203,7 +2226,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         message: `Plate solving started (Job: ${result.job_id.slice(0, 8)}...). Results will be shown when complete.`,
       })
     }
-    
+
     return result
   }
 
@@ -2393,6 +2416,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setStreamStatus,
     isImaging,
     setIsImaging,
+    clientMode,
+    setClientMode,
     annotationSettings,
     setAnnotationSettings,
     showAnnotations,

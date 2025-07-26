@@ -568,6 +568,8 @@ class WebSocketManager:
                 return await self._execute_set_image_enhancement_command(client, parameters)
             elif action == "get_image_enhancement":
                 return await self._execute_get_image_enhancement_command(client, parameters)
+            elif action == "reboot":
+                return await self._execute_reboot_command(client, parameters)
             else:
                 logger.warning(f"Unknown command action: {action}")
                 return {"status": "error", "message": f"Unknown action: {action}"}
@@ -1061,6 +1063,27 @@ class WebSocketManager:
 
         except Exception as e:
             logger.error(f"Error executing scenery command: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_reboot_command(
+            self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute reboot command - stub handler that logs the reboot request."""
+        try:
+            logger.info(f"Reboot command received with parameters: {parameters}")
+            
+            # Log the reboot request for now (since this is a stub)
+            logger.warning("REBOOT REQUEST: Telescope reboot command received")
+            logger.info("This is a stub implementation - actual reboot not performed")
+            
+            return {
+                "status": "success",
+                "action": "reboot",
+                "message": "Reboot command logged successfully (stub implementation)",
+            }
+
+        except Exception as e:
+            logger.error(f"Error executing reboot command: {e}")
             return {"status": "error", "message": str(e)}
 
     async def _handle_subscribe(
