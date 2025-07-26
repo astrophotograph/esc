@@ -77,26 +77,31 @@ export function WebRTCLiveView({
         telescope.product_model?.toLowerCase().includes('test')
       );
       
-      let url;
+      let newUrl;
       if (isTestTelescope) {
         // Use WebRTC test endpoint for test telescopes
-        url = '/api/webrtc/test/video-stream';
+        newUrl = '/api/webrtc/test/video-stream';
         console.log('Using WebRTC test endpoint for test telescope:', telescope.name);
       } else {
         // Use real telescope stream endpoint for actual telescopes
-        url = `/api/${telescope.name}/stream`;
+        newUrl = `/api/${telescope.name}/stream`;
         console.log('Using real telescope stream endpoint for:', telescope.name);
       }
       
-      setMjpegUrl(url);
-      console.log('Setting MJPEG fallback URL:', url);
+      // Only update URL if it's actually different to prevent duplicate requests
+      if (newUrl !== mjpegUrl) {
+        setMjpegUrl(newUrl);
+        console.log('Setting MJPEG fallback URL:', newUrl);
+      }
     } else if (stage === 'Idle') {
       // Clear URL when telescope is idle
-      setMjpegUrl('');
-      setConnectionType('disconnected');
-      onConnectionStateChange?.('disconnected');
+      if (mjpegUrl !== '') {
+        setMjpegUrl('');
+        setConnectionType('disconnected');
+        onConnectionStateChange?.('disconnected');
+      }
     }
-  }, [telescope, stage, onConnectionStateChange]);
+  }, [telescope, stage, mjpegUrl, onConnectionStateChange]);
 
   // Handle WebRTC stream assignment to video element
   useEffect(() => {
