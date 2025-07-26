@@ -1,6 +1,6 @@
 """Simple commands without parameters."""
 
-from typing import Literal, NamedTuple, List, Optional
+from typing import Literal, NamedTuple, List, Optional, Any
 
 from pydantic import BaseModel
 
@@ -23,6 +23,7 @@ class ScopePark(BaseCommand):
     """Park the scope from the Seestar."""
 
     method: Literal["scope_park"] = "scope_park"
+    params: Optional[dict[str, Any]] = None
 
 
 class TestConnection(BaseCommand):
@@ -131,6 +132,11 @@ class GetWheelState(BaseCommand):
     """Get the wheel state from the Seestar."""
 
     method: Literal["get_wheel_state"] = "get_wheel_state"
+
+
+class PiIsVerified(BaseCommand):
+    """Set that the Pi is verified."""
+    method: Literal["pi_is_verified"] = "pi_is_verified"
 
 
 class ScopeGetEquCoord(BaseCommand):

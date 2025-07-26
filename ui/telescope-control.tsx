@@ -42,6 +42,10 @@ function TelescopeControlContent() {
     setShowConfiguration,
     showLocationManager,
     setShowLocationManager,
+    observingLocations,
+    setObservingLocations,
+    currentObservingLocation,
+    setCurrentObservingLocation,
     isControlsCollapsed,
     handleKeyDown,
     showDataManagementSettings,
@@ -125,7 +129,16 @@ function TelescopeControlContent() {
         {showNotificationSettings && <NotificationSettingsModal />}
         {showNotificationHistory && <NotificationHistoryModal />}
         {showKeyboardHelp && <KeyboardHelpModal onClose={() => setShowKeyboardHelp(false)} />}
-        {showLocationManager && <LocationManagement onClose={() => setShowLocationManager(false)} />}
+        {showLocationManager && (
+          <LocationManagement 
+            showLocationManager={showLocationManager}
+            setShowLocationManager={setShowLocationManager}
+            locations={observingLocations}
+            setLocations={setObservingLocations}
+            currentLocation={currentObservingLocation}
+            setCurrentLocation={setCurrentObservingLocation}
+          />
+        )}
         {showDataManagementSettings && <DataManagementSettings onClose={() => setShowDataManagementSettings(false)} />}
         {showEquipmentManager && <EquipmentManager onClose={() => setShowEquipmentManager(false)} />}
 

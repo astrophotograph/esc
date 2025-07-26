@@ -40,6 +40,7 @@ dependencies = [
     "pywavelets>=1.8.0",
     "opencv-contrib-python>=4.11.0.86",
     "packaging>=25.0",
+    "tzlocal>=5.3.1",
 ]
 
 [tool.pytest.ini_options]

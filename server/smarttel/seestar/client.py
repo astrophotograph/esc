@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TypeVar, Literal, Any, Dict
 
 import pydash
+import tzlocal
 from loguru import logger as logging
 from pydantic import BaseModel
 
@@ -21,6 +22,8 @@ from smarttel.seestar.commands.responses import (
     TelescopeMessageParser,
     MessageAnalytics,
 )
+from smarttel.seestar.commands.settings import SetUserLocation, SetUserLocationParameters, PiSetTime, \
+    PiSetTimeParameter, SetSetting, SettingParameters, SetStackSetting, SetStackSettingParameters, PiOutputSet2
 from smarttel.seestar.commands.simple import (
     GetTime,
     GetDeviceState,
@@ -28,7 +31,7 @@ from smarttel.seestar.commands.simple import (
     GetFocuserPosition,
     GetDiskVolume,
     ScopeGetEquCoord,
-    ScopeSync,
+    ScopeSync, PiIsVerified, ScopePark,
 )
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import (
@@ -139,13 +142,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     write_timeout: float = 10.0
 
     def __init__(
-        self,
-        host: str,
-        port: int,
-        event_bus: EventBus,
-        connection_timeout: float = 10.0,
-        read_timeout: float = 30.0,
-        write_timeout: float = 10.0,
+            self,
+            host: str,
+            port: int,
+            event_bus: EventBus,
+            connection_timeout: float = 10.0,
+            read_timeout: float = 30.0,
+            write_timeout: float = 10.0,
     ):
         super().__init__(
             host=host,
@@ -247,14 +250,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
                 # Check if file has been modified or grown
                 if (
-                    last_modified_time is None
-                    or current_modified_time > last_modified_time
-                    or current_size > last_file_size
+                        last_modified_time is None
+                        or current_modified_time > last_modified_time
+                        or current_size > last_file_size
                 ):
                     # Read the file content
                     try:
                         with open(
-                            file_path, "r", encoding="utf-8", errors="ignore"
+                                file_path, "r", encoding="utf-8", errors="ignore"
                         ) as f:
                             content = f.read()
 
@@ -485,7 +488,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         if isinstance(data, BaseModel):
             if data.id is None:
                 data.id = next(self.counter)
-            data = data.model_dump_json(exclude_none=True) # Not sure if this is safe...
+            data = data.model_dump_json(exclude_none=True)  # Not sure if this is safe...
 
         # Log sent message
         self.message_history.append(
@@ -544,8 +547,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     self.event_bus.emit(parser.event.Event, parser.event)
 
             # Todo: include Exposure, Stacked
-                # case _:
-                #    logging.debug(f"Unhandled event: {parser}")
+            # case _:
+            #    logging.debug(f"Unhandled event: {parser}")
         except Exception as e:
             logging.error(
                 f"Error while parsing event from {self}: {event_str} {type(e)} {e}"
@@ -568,6 +571,18 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         # We just need to wait for our specific message ID
         return await self.text_protocol.recv_message(self, message_id)
 
+    async def send_and_validate(self, data: str | BaseModel) -> CommandResponse | None:
+        """Send a command and validate the response."""
+        response = await self.send_and_recv(data)
+        # perhaps throw a special kind of error?  also prints the response...
+        if response is not None:
+            if response.result is not None:
+                if response.result.get("success") is True:
+                    return response
+                else:
+                    logging.error(f"Error while processing {data} from {self}: {response}")
+                    return None
+
     async def update_current_coords(self) -> bool:
         """Update telescope position.
 
@@ -584,35 +599,6 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 self.status.dec = new_dec
                 return True
         return False
-
-    # async def recv(self) -> CommandResponse[U] | None:
-    #     """Receive data from Seestar."""
-    #     response = ""
-    #     try:
-    #         while 'jsonrpc' not in response:
-    #             response = await self.connection.read()
-    #             # if self.debug:
-    #             #    print(f"Received data from {self}: {response}")
-    #             if response is None:
-    #                 await self.disconnect()
-    #                 return None
-    #             if 'Event' in response:
-    #                 # it's an event, so parse it and stash!
-    #                 self._handle_event(response)
-    #                 return None
-    #
-    #         parsed_response = CommandResponse[U](**json.loads(response))
-    #
-    #         # Try to resolve any pending futures for this message
-    #         if self.text_protocol.handle_incoming_message(parsed_response):
-    #             # Message was handled by a pending future, don't return it here
-    #             return None
-    #
-    #         # No pending future for this message, return it normally
-    #         return parsed_response
-    #     except Exception as e:
-    #         logging.error(f"Error while receiving data from {self}: {response} {e}")
-    #         raise e
 
     def get_message_history(self) -> list[Dict[str, Any]]:
         """Get message history as a list of dictionaries."""
@@ -668,7 +654,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     # Helper methods
     def goto(
-        self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False
+            self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False
     ):
         """Generalized goto."""
         return self.send_and_recv(
@@ -691,7 +677,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         return self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
 
     async def wait_for_event_completion(
-        self, event_type: str, timeout: float = 60.0
+            self, event_type: str, timeout: float = 60.0
     ) -> tuple[bool, str | None]:
         """
         Wait for an event of the specified type to complete.
@@ -743,7 +729,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         error_msg = str(event.message)
                     elif hasattr(event, "reason") and event.reason is not None:
                         error_msg = str(event.reason)
-                    
+
                     # Check if event is a dict-like object with error field
                     try:
                         if hasattr(event, "__dict__") and "error" in event.__dict__:
@@ -754,7 +740,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                                 error_msg = str(event_dict["error"])
                     except Exception:
                         pass
-                    
+
                     logging.info(f"{event_type} failed with state: {state}, error: {error_msg}")
                     result["success"] = False
                     result["error"] = error_msg
@@ -777,6 +763,58 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         finally:
             # Clean up the event listener
             self.event_bus.remove_listener(event_type, event_handler)
+
+    async def initialize_telescope(self, lat: float, lon: float):
+        """Initialize telescope.
+
+        Sends a series of commands to initialize the telescope."""
+
+        tz_name = tzlocal.get_localzone_name()
+        tz = tzlocal.get_localzone()
+        now = datetime.now(tz)
+
+        await self.send_and_recv(PiIsVerified())
+        await self.send_and_recv(PiSetTime(params=[PiSetTimeParameter(
+            year=now.year,
+            mon=now.month,
+            day=now.day,
+            hour=now.hour,
+            min=now.minute,
+            sec=now.second,
+            time_zone=tz_name
+        )]))
+        await self.send_and_recv(SetUserLocation(params=SetUserLocationParameters(
+            lat=lat, lon=lon)))
+
+        settings = [
+            SettingParameters(lang="en"),
+            SettingParameters(auto_af=True), # ??
+            SettingParameters(stack_after_goto=False), #  New in firmware 2.1
+            SettingParameters(exp_ms={"stack_l": 1, "continuous": 1}),
+            SettingParameters(stack_dither={
+                "enable": True,
+                "pix": 1,
+                "interval": 1,
+            }),
+            SettingParameters(stack={"dbe": False}),
+            SettingParameters(frame_calib=False),
+        ]
+        for setting in settings:
+            await self.send_and_recv(SetSetting(params=setting))
+
+        # delay....
+
+        # await self.send_and_recv(PiOutputSet2(params={
+        #     "heater": {
+        #         "state": False,
+        #         "value": 0, # Power
+        #     }
+        # }))
+        # await self.send_and_recv(SetStackSetting(params=SetStackSettingParameters(
+        #     save_discrete_ok_frame=True,
+        #     save_discrete_frame=True,
+        # )))
+        # await self.send_and_recv(ScopePark(params={"equ_mode": self.is_EQ_mode}))
 
     def __str__(self):
         return f"{self.host}:{self.port}"

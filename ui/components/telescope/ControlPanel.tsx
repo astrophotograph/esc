@@ -3,11 +3,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TelescopeControls } from "./panels/TelescopeControls"
 import { EnvironmentPanel } from "./panels/EnvironmentPanel"
+import { LocationPanel } from "./panels/LocationPanel"
 import { ImageControls } from "./panels/ImageControls"
 import { TabIndicator } from "./TabIndicator"
 import { ScrollableTabs } from "./ScrollableTabs"
 import { useTelescopeContext } from "../../context/TelescopeContext"
-import { Settings, Cloud, BarChart3 } from "lucide-react"
+import { Settings, Cloud, BarChart3, MapPin } from "lucide-react"
 import { ImagingMetrics } from "./panels/ImagingMetrics"
 
 export function ControlPanel() {
@@ -22,6 +23,8 @@ export function ControlPanel() {
     showPiP: _showPiP,
     showAnnotations: _showAnnotations,
     isImaging,
+    setShowLocationManager,
+    currentObservingLocation,
   } = useTelescopeContext()
 
   // Calculate dynamic indicators based on current state
@@ -154,6 +157,15 @@ export function ControlPanel() {
                   Environment
                   {getEnvironmentIndicators()}
                 </TabsTrigger>
+                <TabsTrigger
+                  value="location"
+                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                  data-tour="location-tab"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Location
+                  {currentObservingLocation ? <TabIndicator type="active" /> : <TabIndicator type="warning" />}
+                </TabsTrigger>
               </>
             )}
             {isImaging && (
@@ -215,6 +227,10 @@ export function ControlPanel() {
 
             <TabsContent value="environment" className="space-y-4 mt-4">
               <EnvironmentPanel />
+            </TabsContent>
+
+            <TabsContent value="location" className="space-y-4 mt-4">
+              <LocationPanel />
             </TabsContent>
           </>
         )}
