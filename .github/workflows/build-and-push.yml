@@ -43,8 +43,8 @@ jobs:
       - name: Generate version
         id: version
         run: |
-          # Generate version using our script
-          VERSION=$(node scripts/generate-version.js --update-package)
+          # Generate version using our script (quiet mode in CI)
+          VERSION=$(node scripts/generate-version.js --update-package --quiet)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Read build info
@@ -84,8 +84,8 @@ jobs:
       
       - name: Restore version info
         run: |
-          # Regenerate version info for this job
-          node scripts/generate-version.js --update-package
+          # Regenerate version info for this job (quiet mode in CI)
+          node scripts/generate-version.js --update-package --quiet
           echo "Version: ${{ needs.generate-version.outputs.version }}"
 
       - name: Set up Docker Buildx

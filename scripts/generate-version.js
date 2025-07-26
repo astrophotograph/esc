@@ -131,20 +131,24 @@ function generateBuildInfo(version, gitInfo) {
   };
 }
 
-function updatePackageJson(version) {
+function updatePackageJson(version, quiet = false) {
   const packagePath = path.join(__dirname, '../ui/package.json');
   if (fs.existsSync(packagePath)) {
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     packageJson.version = version;
     fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
-    console.log(`Updated ui/package.json version to ${version}`);
+    if (!quiet) {
+      console.log(`Updated ui/package.json version to ${version}`);
+    }
   }
 }
 
-function writeBuildInfo(buildInfo) {
+function writeBuildInfo(buildInfo, quiet = false) {
   const buildInfoPath = path.join(__dirname, '../ui/build-info.json');
   fs.writeFileSync(buildInfoPath, JSON.stringify(buildInfo, null, 2) + '\n');
-  console.log(`Written build info to ui/build-info.json`);
+  if (!quiet) {
+    console.log(`Written build info to ui/build-info.json`);
+  }
 }
 
 function main() {
@@ -152,6 +156,7 @@ function main() {
   const forcePhase = args.find(arg => arg.startsWith('--phase='))?.split('=')[1];
   const forcePatch = args.find(arg => arg.startsWith('--patch='))?.split('=')[1];
   const updatePackage = args.includes('--update-package');
+  const quiet = args.includes('--quiet') || process.env.CI === 'true';
   
   const gitInfo = getGitInfo();
   
@@ -165,27 +170,35 @@ function main() {
   
   const buildInfo = generateBuildInfo(version, gitInfo);
   
-  console.log(`Generated version: ${version}`);
-  console.log(`Build date: ${buildInfo.buildDate}`);
-  console.log(`Build number: ${buildInfo.buildNumber}`);
-  
-  if (gitInfo.hasGit) {
-    console.log(`Git hash: ${gitInfo.hash}`);
-    console.log(`Git dirty: ${gitInfo.isDirty}`);
-    if (gitInfo.latestTag) {
-      console.log(`Latest tag: ${gitInfo.latestTag}`);
-      console.log(`Commits since tag: ${gitInfo.commitsSinceTag}`);
+  if (!quiet) {
+    console.log(`Generated version: ${version}`);
+    console.log(`Build date: ${buildInfo.buildDate}`);
+    console.log(`Build number: ${buildInfo.buildNumber}`);
+    
+    if (gitInfo.hasGit) {
+      console.log(`Git hash: ${gitInfo.hash}`);
+      console.log(`Git dirty: ${gitInfo.isDirty}`);
+      if (gitInfo.latestTag) {
+        console.log(`Latest tag: ${gitInfo.latestTag}`);
+        console.log(`Commits since tag: ${gitInfo.commitsSinceTag}`);
+      }
     }
   }
   
-  writeBuildInfo(buildInfo);
+  writeBuildInfo(buildInfo, quiet);
   
   if (updatePackage) {
-    updatePackageJson(version);
+    updatePackageJson(version, quiet);
   }
   
   // Output version for use in scripts
-  process.stdout.write(version);
+  if (quiet) {
+    // In CI/quiet mode, only output the version
+    console.log(version);
+  } else {
+    // In interactive mode, use process.stdout.write to avoid extra newline
+    process.stdout.write(version);
+  }
 }
 
 if (require.main === module) {
