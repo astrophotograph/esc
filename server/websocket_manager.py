@@ -19,6 +19,7 @@ from smarttel.seestar.commands.parameterized import (
     IscopeStartViewParams, IscopeStartStack, StartStackParams, )
 from smarttel.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
+from smarttel.seestar.commands.simple import PiReboot
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -1072,14 +1073,12 @@ class WebSocketManager:
         try:
             logger.info(f"Reboot command received with parameters: {parameters}")
             
-            # Log the reboot request for now (since this is a stub)
-            logger.warning("REBOOT REQUEST: Telescope reboot command received")
-            logger.info("This is a stub implementation - actual reboot not performed")
-            
+            await client.send(PiReboot())
+
             return {
                 "status": "success",
                 "action": "reboot",
-                "message": "Reboot command logged successfully (stub implementation)",
+                "message": "Reboot request sent to Seestar",
             }
 
         except Exception as e:

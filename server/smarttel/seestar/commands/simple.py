@@ -12,6 +12,9 @@ class GetDiskVolume(BaseCommand):
 
     method: Literal["get_disk_volume"] = "get_disk_volume"
 
+class PiReboot(BaseCommand):
+    """Reboot the Seestar."""
+    method: Literal["pi_reboot"] = "pi_reboot"
 
 class ScopeSync(BaseCommand):
     """Sync the scope from the Seestar."""
