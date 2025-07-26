@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { EyeOff } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -103,21 +103,23 @@ export function PictureInPictureOverlay() {
     }
   }
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return
 
     const newX = e.clientX - dragOffset.x
     const newY = e.clientY - dragOffset.y
 
     // Keep within viewport bounds
+    const headerHeight = 40
+    const totalHeight = pipMinimized ? headerHeight : currentSize.height + headerHeight
     const maxX = window.innerWidth - currentSize.width
-    const maxY = window.innerHeight - currentSize.height
+    const maxY = window.innerHeight - totalHeight
 
     setPipPosition({
       x: Math.max(0, Math.min(maxX, newX)),
       y: Math.max(0, Math.min(maxY, newY)),
     })
-  }
+  }, [isDragging, dragOffset.x, dragOffset.y, pipMinimized, currentSize.width, currentSize.height, setPipPosition])
 
   const handleMouseUp = () => {
     setIsDragging(false)
@@ -133,7 +135,33 @@ export function PictureInPictureOverlay() {
         document.removeEventListener("mouseup", handleMouseUp)
       }
     }
-  }, [isDragging, dragOffset])
+  }, [isDragging, dragOffset, handleMouseMove])
+
+  // Handle window resize to keep PiP in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      if (pipFullscreen) return
+      
+      const headerHeight = 40
+      const totalHeight = pipMinimized ? headerHeight : currentSize.height + headerHeight
+      const maxX = window.innerWidth - currentSize.width
+      const maxY = window.innerHeight - totalHeight
+
+      setPipPosition(prevPosition => ({
+        x: Math.max(0, Math.min(maxX, prevPosition.x)),
+        y: Math.max(0, Math.min(maxY, prevPosition.y)),
+      }))
+    }
+
+    window.addEventListener("resize", handleResize)
+    
+    // Check bounds on mount and when size changes
+    handleResize()
+
+    return () => {
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [currentSize.width, currentSize.height, pipFullscreen, pipMinimized, setPipPosition])
 
   // Don't render if PiP is not enabled
   if (!showPiP) return null
@@ -217,7 +245,17 @@ export function PictureInPictureOverlay() {
               )}
 
               {/* Size Selector - always available but compact for smaller sizes */}
-              <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large" | "extra-large") => setPipSize(value)}>
+              <Select value={pipSize} onValueChange={(value: "small" | "medium" | "large" | "extra-large") => {
+                setPipSize(value)
+                // Ensure PiP stays in bounds after size change
+                const newSize = sizeConfig[value]
+                const maxX = window.innerWidth - newSize.width
+                const maxY = window.innerHeight - newSize.height - 40 // 40 for header
+                setPipPosition(prevPosition => ({
+                  x: Math.max(0, Math.min(maxX, prevPosition.x)),
+                  y: Math.max(0, Math.min(maxY, prevPosition.y)),
+                }))
+              }}>
                 <SelectTrigger className={`h-6 text-xs bg-gray-600 border-gray-500 ${
                   pipSize === "small" ? "w-12" : pipSize === "medium" ? "w-14" : "w-16"
                 }`}>

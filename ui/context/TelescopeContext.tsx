@@ -5,7 +5,7 @@ import type React from "react"
 import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
 import { toast } from "sonner"
 import { usePersistentState } from "../hooks/use-persistent-state"
-import { STORAGE_KEYS } from "../utils/storage-utils"
+import { STORAGE_KEYS, loadFromStorage } from "../utils/storage-utils"
 import type {
   CelestialObject,
   Session,
@@ -586,9 +586,15 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       type: "dark_site",
     },
   ])
-  const [currentObservingLocation, setCurrentObservingLocation] = useState<ObservingLocation | null>(
-    observingLocations.find((loc) => loc.settings.isDefault) || null,
-  )
+  const [currentObservingLocation, setCurrentObservingLocation] = useState<ObservingLocation | null>(() => {
+    // Check for saved browser location first
+    const savedBrowserLocation = loadFromStorage<ObservingLocation | null>("telescope-browser-location", null)
+    if (savedBrowserLocation) {
+      return savedBrowserLocation
+    }
+    // Otherwise, use default location
+    return observingLocations.find((loc) => loc.settings.isDefault) || null
+  })
   const [celestialObjects, setCelestialObjects] = useState<CelestialObject[]>(sampleCelestialObjects)
   const [celestialEvents, setCelestialEvents] = useState<CelestialEvent[]>(sampleCelestialEvents)
   const [weatherForecast, setWeatherForecast] = useState<WeatherForecast[]>(sampleWeatherForecast)

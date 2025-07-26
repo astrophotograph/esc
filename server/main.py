@@ -2281,6 +2281,11 @@ class Controller:
 
         self.app.include_router(skymap_router)
 
+        # Add catalog router
+        from api.routers.catalog import router as catalog_router
+
+        self.app.include_router(catalog_router)
+
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
         async def startup_event():

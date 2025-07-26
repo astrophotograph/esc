@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Search, MapPin, Clock, Navigation, Camera } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -24,7 +24,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useTelescopeContext } from "../../context/TelescopeContext"
-import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
 import { 
   filterVisibleObjects, 
@@ -32,6 +31,7 @@ import {
   DEFAULT_OBSERVER_LOCATION,
   type CelestialObjectWithHorizon 
 } from "../../utils/celestial-calculations"
+import { catalogAPI, CatalogAPI } from "../../services/catalog-api"
 
 interface CelestialSearchDialogProps {
   open: boolean
@@ -39,25 +39,66 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { celestialObjects, handleTargetSelect, currentTelescope, streamStatus, handleGotoTarget } = useTelescopeContext()
+  const { currentObservingLocation, handleTargetSelect, streamStatus, handleGotoTarget } = useTelescopeContext()
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
   const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
   const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
   const [pendingGotoAction, setPendingGotoAction] = useState<{ startImaging: boolean } | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const fetchCatalogObjects = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      // Use current observing location or default to NYC
+      const location = currentObservingLocation || {
+        coordinates: { latitude: DEFAULT_OBSERVER_LOCATION.latitude, longitude: DEFAULT_OBSERVER_LOCATION.longitude },
+        elevation: 0
+      }
+
+      const response = await catalogAPI.searchCatalog({
+        query: debouncedSearchQuery || undefined,
+        above_horizon_only: true,
+        latitude: location.coordinates.latitude,
+        longitude: location.coordinates.longitude,
+        elevation: location.elevation,
+        limit: 100
+      })
+
+      // Convert catalog objects to frontend format
+      const convertedObjects = response.objects.map((obj, index) => 
+        CatalogAPI.convertToFrontendObject(obj, index)
+      ) as CelestialObjectWithHorizon[]
+
+      setVisibleObjects(convertedObjects)
+    } catch (error) {
+      console.error('Failed to fetch catalog objects:', error)
+      toast.error('Failed to load catalog data')
+      // Fallback to static data
+      const objectsWithHorizon = getDynamicCelestialObjects([], DEFAULT_OBSERVER_LOCATION)
+      const filtered = filterVisibleObjects(objectsWithHorizon, 0)
+      filtered.sort((a, b) => b.altitude - a.altitude)
+      setVisibleObjects(filtered)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [debouncedSearchQuery, currentObservingLocation])
 
   useEffect(() => {
-    // Get objects with real-time calculations for planets, sun, moon
-    const objectsWithHorizon = getDynamicCelestialObjects(celestialObjects, DEFAULT_OBSERVER_LOCATION)
-    
-    // Filter to only show objects above horizon
-    const filtered = filterVisibleObjects(objectsWithHorizon, 0)
-    
-    // Sort by altitude (highest first)
-    filtered.sort((a, b) => b.altitude - a.altitude)
-    
-    setVisibleObjects(filtered)
-  }, [celestialObjects])
+    if (!open) return
+    fetchCatalogObjects()
+  }, [open, fetchCatalogObjects])
 
   // Reset selected object when dialog closes
   useEffect(() => {
@@ -69,26 +110,127 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     }
   }, [open])
 
-  // Group objects by type
-  const groupedObjects = visibleObjects.reduce((groups, obj) => {
-    const type = obj.type
-    if (!groups[type]) {
-      groups[type] = []
+  // Get display group for an object based on its type
+  const getDisplayGroup = (type: string) => {
+    const typeMapping: Record<string, string> = {
+      // Planets and Solar System
+      'Planet': 'Planets',
+      'Moon': 'Planets',
+      'planet': 'Planets',
+      'moon': 'Planets',
+      
+      // Stars
+      'Star': 'Stars',
+      '*': 'Stars',
+      '**': 'Stars',
+      'V*': 'Stars',
+      'double-star': 'Stars',
+      
+      // Nebulae
+      'PN': 'Nebulae',
+      'EN': 'Nebulae',
+      'RN': 'Nebulae',
+      'DN': 'Nebulae',
+      'SNR': 'Nebulae',
+      'Neb': 'Nebulae',
+      'HII': 'Nebulae',
+      'EmN': 'Nebulae',
+      'RfN': 'Nebulae',
+      'DrkN': 'Nebulae',
+      'nebula': 'Nebulae',
+      
+      // Galaxies
+      'G': 'Galaxies',
+      'GPair': 'Galaxies',
+      'GTrpl': 'Galaxies',
+      'GGroup': 'Galaxies',
+      'galaxy': 'Galaxies',
+      
+      // Clusters
+      'OC': 'Clusters',
+      'OCl': 'Clusters',
+      'GC': 'Clusters',
+      'GCl': 'Clusters',
+      'Cl+N': 'Clusters',
+      '*Ass': 'Clusters',
+      'cluster': 'Clusters',
     }
-    groups[type].push(obj)
+    return typeMapping[type] || 'Other'
+  }
+
+  // Group objects by display group and sort by magnitude within each group
+  const groupedObjects = visibleObjects.reduce((groups, obj) => {
+    const displayGroup = getDisplayGroup(obj.type)
+    if (!groups[displayGroup]) {
+      groups[displayGroup] = []
+    }
+    groups[displayGroup].push(obj)
     return groups
   }, {} as Record<string, CelestialObjectWithHorizon[]>)
 
+  // Sort each group by magnitude (brightest first)
+  Object.keys(groupedObjects).forEach(group => {
+    groupedObjects[group].sort((a, b) => {
+      const magA = a.magnitude ?? 999
+      const magB = b.magnitude ?? 999
+      return magA - magB // Smaller magnitude = brighter
+    })
+  })
+
+  // Define the order of groups - Stars last as requested
+  const groupOrder = ['Planets', 'Nebulae', 'Galaxies', 'Clusters', 'Other', 'Stars']
+  const orderedGroups = groupOrder.filter(group => groupedObjects[group])
+
   const getGroupTitle = (type: string) => {
-    switch (type) {
-      case 'planet': return 'Planets & Sun'
-      case 'moon': return 'Moon'
-      case 'galaxy': return 'Galaxies'
-      case 'nebula': return 'Nebulae'
-      case 'cluster': return 'Star Clusters'
-      case 'double-star': return 'Double Stars'
-      default: return type.charAt(0).toUpperCase() + type.slice(1)
+    // Backend now groups objects into main categories
+    const groupMapping: Record<string, string> = {
+      // Main display groups from backend
+      'Planets': 'Planets & Solar System',
+      'Stars': 'Stars',
+      'Nebulae': 'Nebulae',
+      'Galaxies': 'Galaxies',
+      'Clusters': 'Star Clusters',
+      'Other': 'Other Objects',
+      
+      // Legacy mappings for compatibility
+      'planet': 'Planets & Solar System',
+      'moon': 'Planets & Solar System',
+      'Planet': 'Planets & Solar System',
+      'Moon': 'Planets & Solar System',
+      'Star': 'Stars',
+      '*': 'Stars',
+      '**': 'Stars',
+      'V*': 'Stars',
+      'G': 'Galaxies',
+      'galaxy': 'Galaxies',
+      'GPair': 'Galaxies',
+      'GTrpl': 'Galaxies',
+      'GGroup': 'Galaxies',
+      'PN': 'Nebulae',
+      'nebula': 'Nebulae',
+      'EN': 'Nebulae',
+      'RN': 'Nebulae',
+      'DN': 'Nebulae',
+      'SNR': 'Nebulae',
+      'Neb': 'Nebulae',
+      'HII': 'Nebulae',
+      'EmN': 'Nebulae',
+      'RfN': 'Nebulae',
+      'DrkN': 'Nebulae',
+      'OC': 'Star Clusters',
+      'OCl': 'Star Clusters',
+      'GC': 'Star Clusters',
+      'GCl': 'Star Clusters',
+      'cluster': 'Star Clusters',
+      'Cl+N': 'Star Clusters',
+      '*Ass': 'Star Clusters',
+      'double-star': 'Stars',
+      'As': 'Other Objects',
+      'Co': 'Other Objects',
+      'Nova': 'Other Objects'
     }
+    
+    return groupMapping[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
 
 
@@ -205,31 +347,43 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       <CommandInput 
         placeholder="Search celestial objects above horizon..." 
         className="text-base"
+        value={searchQuery}
+        onValueChange={setSearchQuery}
       />
       <CommandList className="max-h-[400px]">
         <CommandEmpty>
           <div className="flex flex-col items-center gap-2 py-6">
-            <Search className="w-8 h-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No visible objects found</p>
-            <p className="text-xs text-muted-foreground">
-              Only objects above the horizon are shown
-            </p>
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <p className="text-sm text-muted-foreground">Loading catalog...</p>
+              </>
+            ) : (
+              <>
+                <Search className="w-8 h-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No visible objects found</p>
+                <p className="text-xs text-muted-foreground">
+                  Only objects above the horizon are shown
+                </p>
+              </>
+            )}
           </div>
         </CommandEmpty>
         
-        {Object.entries(groupedObjects).map(([type, objects]) => {
-          if (objects.length === 0) return null
+        {orderedGroups.map((group) => {
+          const objects = groupedObjects[group]
+          if (!objects || objects.length === 0) return null
           
           return (
-            <CommandGroup key={type} heading={getGroupTitle(type)}>
+            <CommandGroup key={group} heading={getGroupTitle(group)}>
               {objects.map((obj) => (
                 <CommandItem
                   key={obj.id}
-                  value={`${obj.name} ${obj.type} ${obj.description}`}
+                  value={`${obj.name} ${obj.type} ${obj.description} ${obj.name.startsWith('M ') ? `Messier ${obj.name.slice(2)}` : ''}`}
                   onSelect={() => handleSelect(obj)}
                   className={`flex items-center justify-between p-3 cursor-pointer ${
                     selectedObject?.id === obj.id ? 'bg-blue-600/20 border-blue-400 border' : ''
-                  }`}
+                  } ${obj.altitude <= 0 ? 'opacity-60' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
@@ -255,6 +409,11 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                             Phase: {Math.round(obj._realTimeData.moonData.illumination * 100)}% illuminated
                           </div>
                         )}
+                        {obj.id === 'moon' && obj._moonPhase !== undefined && (
+                          <div className="text-xs mt-1">
+                            Phase: {Math.round(obj._moonPhase * 100)}% illuminated
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -264,12 +423,21 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       <MapPin className="w-3 h-3" />
                       <span>{obj.altitude.toFixed(1)}°</span>
                     </div>
-                    <Badge 
-                      variant={obj.altitude > 45 ? "default" : obj.altitude > 20 ? "secondary" : "outline"}
-                      className="text-xs"
-                    >
-                      {obj.altitude > 45 ? "High" : obj.altitude > 20 ? "Med" : "Low"}
-                    </Badge>
+                    {obj.altitude > 0 ? (
+                      <Badge 
+                        variant={obj.altitude > 45 ? "default" : obj.altitude > 20 ? "secondary" : "outline"}
+                        className="text-xs"
+                      >
+                        {obj.altitude > 45 ? "High" : obj.altitude > 20 ? "Med" : "Low"}
+                      </Badge>
+                    ) : (
+                      <Badge 
+                        variant="destructive"
+                        className="text-xs"
+                      >
+                        Below Horizon
+                      </Badge>
+                    )}
                   </div>
                 </CommandItem>
               ))}
@@ -333,7 +501,10 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       
       <div className="border-t p-3 text-xs text-muted-foreground">
         <div className="flex items-center justify-between">
-          <span>Showing {visibleObjects.length} objects above horizon</span>
+          <span>
+            Showing {visibleObjects.length} objects
+            {searchQuery && ' (including below horizon)'}
+          </span>
           <div className="flex items-center gap-2">
             <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
               <span className="text-xs">⌘</span>K
