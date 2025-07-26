@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Settings, 
-  Zap, 
-  Focus, 
-  Palette, 
+import {
+  Settings,
+  Zap,
+  Focus,
+  Palette,
   RotateCcw,
   X,
   ChevronUp,
@@ -50,10 +50,10 @@ interface ImageEnhancementOverlayProps {
   onClose: () => void
 }
 
-export function ImageEnhancementOverlay({ 
-  isVisible, 
-  onToggle, 
-  onClose 
+export function ImageEnhancementOverlay({
+  isVisible,
+  onToggle,
+  onClose
 }: ImageEnhancementOverlayProps) {
   const { currentTelescope } = useTelescopeContext()
   const [settings, setSettings] = useState<ImageEnhancementSettings>({
@@ -74,14 +74,14 @@ export function ImageEnhancementOverlay({
     deconvolve_psf_size: 2.0,
     stretch_parameter: "15% Bg, 3 sigma",
     available_stretch_parameters: [
-      "No Stretch", 
-      "10% Bg, 3 sigma", 
-      "15% Bg, 3 sigma", 
-      "20% Bg, 3 sigma", 
+      "No Stretch",
+      "10% Bg, 3 sigma",
+      "15% Bg, 3 sigma",
+      "20% Bg, 3 sigma",
       "30% Bg, 2 sigma"
     ]
   })
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -95,19 +95,19 @@ export function ImageEnhancementOverlay({
 
   const fetchSettings = async () => {
     if (!currentTelescope) return
-    
+
     try {
       console.log("Fetching enhancement settings via WebSocket for telescope:", currentTelescope.name)
       const wsService = getWebSocketService()
-      
+
       const result = await wsService.sendCommand(
         CommandAction.GET_IMAGE_ENHANCEMENT,
         {},
         currentTelescope.name
       )
-      
+
       console.log("Received enhancement settings:", result)
-      
+
       // Ensure arrays exist with defaults
       const safeResult = {
         upscaling_enabled: result?.upscaling_enabled ?? false,
@@ -127,14 +127,14 @@ export function ImageEnhancementOverlay({
         deconvolve_psf_size: result?.deconvolve_psf_size ?? 2.0,
         stretch_parameter: result?.stretch_parameter ?? "15% Bg, 3 sigma",
         available_stretch_parameters: result?.available_stretch_parameters ?? [
-          "No Stretch", 
-          "10% Bg, 3 sigma", 
-          "15% Bg, 3 sigma", 
-          "20% Bg, 3 sigma", 
+          "No Stretch",
+          "10% Bg, 3 sigma",
+          "15% Bg, 3 sigma",
+          "20% Bg, 3 sigma",
           "30% Bg, 2 sigma"
         ]
       }
-      
+
       setSettings(safeResult)
     } catch (error) {
       console.error("Failed to fetch enhancement settings:", error)
@@ -144,13 +144,13 @@ export function ImageEnhancementOverlay({
 
   const updateSettings = async (newSettings: Partial<ImageEnhancementSettings>) => {
     if (!currentTelescope || isLoading) return
-    
+
     console.log("Updating settings with:", newSettings)
     setIsLoading(true)
     try {
       const updatedSettings = { ...settings, ...newSettings }
       console.log("Full settings payload:", updatedSettings)
-      
+
       const payload = {
         upscaling_enabled: updatedSettings.upscaling_enabled,
         scale_factor: updatedSettings.scale_factor,
@@ -166,16 +166,16 @@ export function ImageEnhancementOverlay({
         deconvolve_psf_size: updatedSettings.deconvolve_psf_size,
         stretch_parameter: updatedSettings.stretch_parameter,
       }
-      
+
       console.log("Sending payload via WebSocket:", payload)
-      
+
       const wsService = getWebSocketService()
       const result = await wsService.sendCommand(
         CommandAction.SET_IMAGE_ENHANCEMENT,
         payload,
         currentTelescope.name
       )
-      
+
       console.log("Received updated settings:", result)
       setSettings(result)
     } catch (error) {
@@ -216,7 +216,7 @@ export function ImageEnhancementOverlay({
   if (!isVisible) return null
 
   return (
-    <div 
+    <div
       className="fixed top-4 right-4 z-50 w-80 max-h-[80vh] overflow-hidden"
       style={{ backdropFilter: 'blur(8px)' }}
     >
@@ -252,232 +252,232 @@ export function ImageEnhancementOverlay({
             </div>
           </div>
         </CardHeader>
-        
+
         {!isCollapsed && (
           <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
             {/* Super Resolution */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-400" />
-                  <Label className="text-gray-300">Super Resolution</Label>
-                </div>
-                <Switch
-                  checked={settings.upscaling_enabled}
-                  onCheckedChange={(enabled) => updateSettings({ upscaling_enabled: enabled })}
-                  disabled={isLoading}
-                />
-              </div>
+            {/*<div className="space-y-3">*/}
+            {/*  <div className="flex items-center justify-between">*/}
+            {/*    <div className="flex items-center gap-2">*/}
+            {/*      <Zap className="w-4 h-4 text-blue-400" />*/}
+            {/*      <Label className="text-gray-300">Super Resolution</Label>*/}
+            {/*    </div>*/}
+            {/*    <Switch*/}
+            {/*      checked={settings.upscaling_enabled}*/}
+            {/*      onCheckedChange={(enabled) => updateSettings({ upscaling_enabled: enabled })}*/}
+            {/*      disabled={isLoading}*/}
+            {/*    />*/}
+            {/*  </div>*/}
 
-              {settings.upscaling_enabled && (
-                <div className="pl-6 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Scale Factor</span>
-                      <span className="text-white">{settings.scale_factor}x</span>
-                    </div>
-                    <Slider
-                      value={[settings.scale_factor]}
-                      onValueChange={([value]) => updateSettings({ scale_factor: value })}
-                      min={1.0}
-                      max={4.0}
-                      step={0.5}
-                      className="w-full"
-                      disabled={isLoading}
-                    />
-                  </div>
+            {/*  {settings.upscaling_enabled && (*/}
+            {/*    <div className="pl-6 space-y-3">*/}
+            {/*      <div className="space-y-2">*/}
+            {/*        <div className="flex justify-between text-sm">*/}
+            {/*          <span className="text-gray-400">Scale Factor</span>*/}
+            {/*          <span className="text-white">{settings.scale_factor}x</span>*/}
+            {/*        </div>*/}
+            {/*        <Slider*/}
+            {/*          value={[settings.scale_factor]}*/}
+            {/*          onValueChange={([value]) => updateSettings({ scale_factor: value })}*/}
+            {/*          min={1.0}*/}
+            {/*          max={4.0}*/}
+            {/*          step={0.5}*/}
+            {/*          className="w-full"*/}
+            {/*          disabled={isLoading}*/}
+            {/*        />*/}
+            {/*      </div>*/}
 
-                  <div className="space-y-2">
-                    <Label className="text-gray-400 text-sm">Method</Label>
-                    <Select
-                      value={settings.upscaling_method}
-                      onValueChange={(method) => updateSettings({ upscaling_method: method })}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        {(settings.available_upscaling_methods || []).map((method) => (
-                          <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
-                            {method.charAt(0).toUpperCase() + method.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/*      <div className="space-y-2">*/}
+            {/*        <Label className="text-gray-400 text-sm">Method</Label>*/}
+            {/*        <Select*/}
+            {/*          value={settings.upscaling_method}*/}
+            {/*          onValueChange={(method) => updateSettings({ upscaling_method: method })}*/}
+            {/*          disabled={isLoading}*/}
+            {/*        >*/}
+            {/*          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">*/}
+            {/*            <SelectValue />*/}
+            {/*          </SelectTrigger>*/}
+            {/*          <SelectContent className="bg-gray-800 border-gray-600">*/}
+            {/*            {(settings.available_upscaling_methods || []).map((method) => (*/}
+            {/*              <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">*/}
+            {/*                {method.charAt(0).toUpperCase() + method.slice(1)}*/}
+            {/*              </SelectItem>*/}
+            {/*            ))}*/}
+            {/*          </SelectContent>*/}
+            {/*        </Select>*/}
+            {/*      </div>*/}
+            {/*    </div>*/}
+            {/*  )}*/}
+            {/*</div>*/}
 
-            <Separator className="bg-gray-700" />
+            {/*<Separator className="bg-gray-700" />*/}
 
             {/* Sharpening */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Focus className="w-4 h-4 text-green-400" />
-                  <Label className="text-gray-300">Sharpening</Label>
-                </div>
-                <Switch
-                  checked={settings.sharpening_enabled}
-                  onCheckedChange={(enabled) => updateSettings({ sharpening_enabled: enabled })}
-                  disabled={isLoading}
-                />
-              </div>
+            {/*<div className="space-y-3">*/}
+            {/*  <div className="flex items-center justify-between">*/}
+            {/*    <div className="flex items-center gap-2">*/}
+            {/*      <Focus className="w-4 h-4 text-green-400" />*/}
+            {/*      <Label className="text-gray-300">Sharpening</Label>*/}
+            {/*    </div>*/}
+            {/*    <Switch*/}
+            {/*      checked={settings.sharpening_enabled}*/}
+            {/*      onCheckedChange={(enabled) => updateSettings({ sharpening_enabled: enabled })}*/}
+            {/*      disabled={isLoading}*/}
+            {/*    />*/}
+            {/*  </div>*/}
 
-              {settings.sharpening_enabled && (
-                <div className="pl-6 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Strength</span>
-                      <span className="text-white">{settings.sharpening_strength.toFixed(1)}</span>
-                    </div>
-                    <Slider
-                      value={[settings.sharpening_strength]}
-                      onValueChange={([value]) => updateSettings({ sharpening_strength: value })}
-                      min={0.0}
-                      max={2.0}
-                      step={0.1}
-                      className="w-full"
-                      disabled={isLoading}
-                    />
-                  </div>
+            {/*  {settings.sharpening_enabled && (*/}
+            {/*    <div className="pl-6 space-y-3">*/}
+            {/*      <div className="space-y-2">*/}
+            {/*        <div className="flex justify-between text-sm">*/}
+            {/*          <span className="text-gray-400">Strength</span>*/}
+            {/*          <span className="text-white">{settings.sharpening_strength.toFixed(1)}</span>*/}
+            {/*        </div>*/}
+            {/*        <Slider*/}
+            {/*          value={[settings.sharpening_strength]}*/}
+            {/*          onValueChange={([value]) => updateSettings({ sharpening_strength: value })}*/}
+            {/*          min={0.0}*/}
+            {/*          max={2.0}*/}
+            {/*          step={0.1}*/}
+            {/*          className="w-full"*/}
+            {/*          disabled={isLoading}*/}
+            {/*        />*/}
+            {/*      </div>*/}
 
-                  <div className="space-y-2">
-                    <Label className="text-gray-400 text-sm">Method</Label>
-                    <Select
-                      value={settings.sharpening_method}
-                      onValueChange={(method) => updateSettings({ sharpening_method: method })}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        {(settings.available_sharpening_methods || []).map((method) => (
-                          <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
-                            {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/*      <div className="space-y-2">*/}
+            {/*        <Label className="text-gray-400 text-sm">Method</Label>*/}
+            {/*        <Select*/}
+            {/*          value={settings.sharpening_method}*/}
+            {/*          onValueChange={(method) => updateSettings({ sharpening_method: method })}*/}
+            {/*          disabled={isLoading}*/}
+            {/*        >*/}
+            {/*          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">*/}
+            {/*            <SelectValue />*/}
+            {/*          </SelectTrigger>*/}
+            {/*          <SelectContent className="bg-gray-800 border-gray-600">*/}
+            {/*            {(settings.available_sharpening_methods || []).map((method) => (*/}
+            {/*              <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">*/}
+            {/*                {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}*/}
+            {/*              </SelectItem>*/}
+            {/*            ))}*/}
+            {/*          </SelectContent>*/}
+            {/*        </Select>*/}
+            {/*      </div>*/}
+            {/*    </div>*/}
+            {/*  )}*/}
+            {/*</div>*/}
 
-            <Separator className="bg-gray-700" />
+            {/*<Separator className="bg-gray-700" />*/}
 
             {/* Denoising */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-purple-400" />
-                  <Label className="text-gray-300">Denoising</Label>
-                </div>
-                <Switch
-                  checked={settings.denoise_enabled}
-                  onCheckedChange={(enabled) => updateSettings({ denoise_enabled: enabled })}
-                  disabled={isLoading}
-                />
-              </div>
+            {/*<div className="space-y-3">*/}
+            {/*  <div className="flex items-center justify-between">*/}
+            {/*    <div className="flex items-center gap-2">*/}
+            {/*      <Filter className="w-4 h-4 text-purple-400" />*/}
+            {/*      <Label className="text-gray-300">Denoising</Label>*/}
+            {/*    </div>*/}
+            {/*    <Switch*/}
+            {/*      checked={settings.denoise_enabled}*/}
+            {/*      onCheckedChange={(enabled) => updateSettings({ denoise_enabled: enabled })}*/}
+            {/*      disabled={isLoading}*/}
+            {/*    />*/}
+            {/*  </div>*/}
 
-              {settings.denoise_enabled && (
-                <div className="pl-6 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Strength</span>
-                      <span className="text-white">{settings.denoise_strength.toFixed(1)}</span>
-                    </div>
-                    <Slider
-                      value={[settings.denoise_strength]}
-                      onValueChange={([value]) => updateSettings({ denoise_strength: value })}
-                      min={0.0}
-                      max={2.0}
-                      step={0.1}
-                      className="w-full"
-                      disabled={isLoading}
-                    />
-                  </div>
+            {/*  {settings.denoise_enabled && (*/}
+            {/*    <div className="pl-6 space-y-3">*/}
+            {/*      <div className="space-y-2">*/}
+            {/*        <div className="flex justify-between text-sm">*/}
+            {/*          <span className="text-gray-400">Strength</span>*/}
+            {/*          <span className="text-white">{settings.denoise_strength.toFixed(1)}</span>*/}
+            {/*        </div>*/}
+            {/*        <Slider*/}
+            {/*          value={[settings.denoise_strength]}*/}
+            {/*          onValueChange={([value]) => updateSettings({ denoise_strength: value })}*/}
+            {/*          min={0.0}*/}
+            {/*          max={2.0}*/}
+            {/*          step={0.1}*/}
+            {/*          className="w-full"*/}
+            {/*          disabled={isLoading}*/}
+            {/*        />*/}
+            {/*      </div>*/}
 
-                  <div className="space-y-2">
-                    <Label className="text-gray-400 text-sm">Method</Label>
-                    <Select
-                      value={settings.denoise_method}
-                      onValueChange={(method) => updateSettings({ denoise_method: method })}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        {(settings.available_denoise_methods || []).map((method) => (
-                          <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
-                            {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/*      <div className="space-y-2">*/}
+            {/*        <Label className="text-gray-400 text-sm">Method</Label>*/}
+            {/*        <Select*/}
+            {/*          value={settings.denoise_method}*/}
+            {/*          onValueChange={(method) => updateSettings({ denoise_method: method })}*/}
+            {/*          disabled={isLoading}*/}
+            {/*        >*/}
+            {/*          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">*/}
+            {/*            <SelectValue />*/}
+            {/*          </SelectTrigger>*/}
+            {/*          <SelectContent className="bg-gray-800 border-gray-600">*/}
+            {/*            {(settings.available_denoise_methods || []).map((method) => (*/}
+            {/*              <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">*/}
+            {/*                {method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}*/}
+            {/*              </SelectItem>*/}
+            {/*            ))}*/}
+            {/*          </SelectContent>*/}
+            {/*        </Select>*/}
+            {/*      </div>*/}
+            {/*    </div>*/}
+            {/*  )}*/}
+            {/*</div>*/}
 
-            <Separator className="bg-gray-700" />
+            {/*<Separator className="bg-gray-700" />*/}
 
             {/* Deconvolution */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-purple-400" />
-                  <Label className="text-gray-300">Deconvolution</Label>
-                </div>
-                <Switch
-                  checked={settings.deconvolve_enabled}
-                  onCheckedChange={(enabled) => updateSettings({ deconvolve_enabled: enabled })}
-                  disabled={isLoading}
-                />
-              </div>
+            {/*<div className="space-y-3">*/}
+            {/*  <div className="flex items-center justify-between">*/}
+            {/*    <div className="flex items-center gap-2">*/}
+            {/*      <Zap className="w-4 h-4 text-purple-400" />*/}
+            {/*      <Label className="text-gray-300">Deconvolution</Label>*/}
+            {/*    </div>*/}
+            {/*    <Switch*/}
+            {/*      checked={settings.deconvolve_enabled}*/}
+            {/*      onCheckedChange={(enabled) => updateSettings({ deconvolve_enabled: enabled })}*/}
+            {/*      disabled={isLoading}*/}
+            {/*    />*/}
+            {/*  </div>*/}
 
-              {settings.deconvolve_enabled && (
-                <div className="pl-6 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Strength</span>
-                      <span className="text-white">{settings.deconvolve_strength.toFixed(2)}</span>
-                    </div>
-                    <Slider
-                      value={[settings.deconvolve_strength]}
-                      onValueChange={([value]) => updateSettings({ deconvolve_strength: value })}
-                      min={0.1}
-                      max={1.0}
-                      step={0.1}
-                      className="w-full"
-                      disabled={isLoading}
-                    />
-                  </div>
+            {/*  {settings.deconvolve_enabled && (*/}
+            {/*    <div className="pl-6 space-y-3">*/}
+            {/*      <div className="space-y-2">*/}
+            {/*        <div className="flex justify-between text-sm">*/}
+            {/*          <span className="text-gray-400">Strength</span>*/}
+            {/*          <span className="text-white">{settings.deconvolve_strength.toFixed(2)}</span>*/}
+            {/*        </div>*/}
+            {/*        <Slider*/}
+            {/*          value={[settings.deconvolve_strength]}*/}
+            {/*          onValueChange={([value]) => updateSettings({ deconvolve_strength: value })}*/}
+            {/*          min={0.1}*/}
+            {/*          max={1.0}*/}
+            {/*          step={0.1}*/}
+            {/*          className="w-full"*/}
+            {/*          disabled={isLoading}*/}
+            {/*        />*/}
+            {/*      </div>*/}
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">PSF Size</span>
-                      <span className="text-white">{settings.deconvolve_psf_size.toFixed(1)}</span>
-                    </div>
-                    <Slider
-                      value={[settings.deconvolve_psf_size]}
-                      onValueChange={([value]) => updateSettings({ deconvolve_psf_size: value })}
-                      min={0.5}
-                      max={10.0}
-                      step={0.5}
-                      className="w-full"
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            {/*      <div className="space-y-2">*/}
+            {/*        <div className="flex justify-between text-sm">*/}
+            {/*          <span className="text-gray-400">PSF Size</span>*/}
+            {/*          <span className="text-white">{settings.deconvolve_psf_size.toFixed(1)}</span>*/}
+            {/*        </div>*/}
+            {/*        <Slider*/}
+            {/*          value={[settings.deconvolve_psf_size]}*/}
+            {/*          onValueChange={([value]) => updateSettings({ deconvolve_psf_size: value })}*/}
+            {/*          min={0.5}*/}
+            {/*          max={10.0}*/}
+            {/*          step={0.5}*/}
+            {/*          className="w-full"*/}
+            {/*          disabled={isLoading}*/}
+            {/*        />*/}
+            {/*      </div>*/}
+            {/*    </div>*/}
+            {/*  )}*/}
+            {/*</div>*/}
 
-            <Separator className="bg-gray-700" />
+            {/*<Separator className="bg-gray-700" />*/}
 
             {/* Stretch Parameters */}
             <div className="space-y-3">
@@ -485,7 +485,7 @@ export function ImageEnhancementOverlay({
                 <Palette className="w-4 h-4 text-orange-400" />
                 <Label className="text-gray-300">Stretch Algorithm</Label>
               </div>
-              
+
               <Select
                 value={settings.stretch_parameter}
                 onValueChange={(param) => updateSettings({ stretch_parameter: param })}

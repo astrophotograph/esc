@@ -27,11 +27,11 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Settings, 
-  Zap, 
-  Focus, 
-  Palette, 
+import {
+  Settings,
+  Zap,
+  Focus,
+  Palette,
   RotateCcw,
   Filter,
   GripVertical
@@ -118,8 +118,8 @@ interface ImageEnhancementControlsProps {
   disabled?: boolean
 }
 
-export function ImageEnhancementControls({ 
-  settings, 
+export function ImageEnhancementControls({
+  settings,
   onChange,
   onApply,
   disabled = false
@@ -147,7 +147,7 @@ export function ImageEnhancementControls({
     if (active.id !== over?.id) {
       const oldIndex = processingOrder.indexOf(active.id as ProcessingStep)
       const newIndex = processingOrder.indexOf(over?.id as ProcessingStep)
-      
+
       const newOrder = arrayMove(processingOrder, oldIndex, newIndex)
       setProcessingOrder(newOrder)
       updateSettings({ processing_order: newOrder })
@@ -206,10 +206,10 @@ export function ImageEnhancementControls({
   const available_sharpening_methods = ["none", "unsharp_mask", "laplacian", "high_pass"]
   const available_denoise_methods = ["none", "tv_chambolle", "bilateral", "non_local_means", "wavelet", "gaussian", "median"]
   const available_stretch_parameters = [
-    "No Stretch", 
-    "10% Bg, 3 sigma", 
-    "15% Bg, 3 sigma", 
-    "20% Bg, 3 sigma", 
+    "No Stretch",
+    "10% Bg, 3 sigma",
+    "15% Bg, 3 sigma",
+    "20% Bg, 3 sigma",
     "30% Bg, 2 sigma"
   ]
 
@@ -223,12 +223,12 @@ export function ImageEnhancementControls({
         </div>
         <div className="pl-6 space-y-2">
           <p className="text-xs text-gray-500">Drag items to reorder processing steps. Only enabled steps will be applied.</p>
-          <DndContext 
+          <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext 
+            <SortableContext
               items={processingOrder}
               strategy={verticalListSortingStrategy}
             >
@@ -251,61 +251,61 @@ export function ImageEnhancementControls({
       <Separator className="border-gray-700" />
 
       {/* Super Resolution */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-blue-400" />
-            <Label className="text-gray-300">Super Resolution</Label>
-          </div>
-          <Switch
-            checked={settings.upscaling_enabled}
-            onCheckedChange={(enabled) => updateSettings({ upscaling_enabled: enabled })}
-            disabled={disabled}
-          />
-        </div>
+      {/*<div className="space-y-3">*/}
+      {/*  <div className="flex items-center justify-between">*/}
+      {/*    <div className="flex items-center gap-2">*/}
+      {/*      <Zap className="w-4 h-4 text-blue-400" />*/}
+      {/*      <Label className="text-gray-300">Super Resolution</Label>*/}
+      {/*    </div>*/}
+      {/*    <Switch*/}
+      {/*      checked={settings.upscaling_enabled}*/}
+      {/*      onCheckedChange={(enabled) => updateSettings({ upscaling_enabled: enabled })}*/}
+      {/*      disabled={disabled}*/}
+      {/*    />*/}
+      {/*  </div>*/}
 
-        {settings.upscaling_enabled && (
-          <div className="pl-6 space-y-3">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Scale Factor</span>
-                <span className="text-white">{settings.scale_factor}x</span>
-              </div>
-              <Slider
-                value={[settings.scale_factor]}
-                onValueChange={([value]) => updateSettings({ scale_factor: value })}
-                min={1.0}
-                max={4.0}
-                step={0.5}
-                className="w-full"
-                disabled={disabled}
-              />
-            </div>
+      {/*  {settings.upscaling_enabled && (*/}
+      {/*    <div className="pl-6 space-y-3">*/}
+      {/*      <div className="space-y-2">*/}
+      {/*        <div className="flex justify-between text-sm">*/}
+      {/*          <span className="text-gray-400">Scale Factor</span>*/}
+      {/*          <span className="text-white">{settings.scale_factor}x</span>*/}
+      {/*        </div>*/}
+      {/*        <Slider*/}
+      {/*          value={[settings.scale_factor]}*/}
+      {/*          onValueChange={([value]) => updateSettings({ scale_factor: value })}*/}
+      {/*          min={1.0}*/}
+      {/*          max={4.0}*/}
+      {/*          step={0.5}*/}
+      {/*          className="w-full"*/}
+      {/*          disabled={disabled}*/}
+      {/*        />*/}
+      {/*      </div>*/}
 
-            <div className="space-y-2">
-              <Label className="text-gray-400 text-sm">Method</Label>
-              <Select
-                value={settings.upscaling_method}
-                onValueChange={(method) => updateSettings({ upscaling_method: method })}
-                disabled={disabled}
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  {available_upscaling_methods.map((method) => (
-                    <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">
-                      {method.charAt(0).toUpperCase() + method.slice(1).replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-      </div>
+      {/*      <div className="space-y-2">*/}
+      {/*        <Label className="text-gray-400 text-sm">Method</Label>*/}
+      {/*        <Select*/}
+      {/*          value={settings.upscaling_method}*/}
+      {/*          onValueChange={(method) => updateSettings({ upscaling_method: method })}*/}
+      {/*          disabled={disabled}*/}
+      {/*        >*/}
+      {/*          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">*/}
+      {/*            <SelectValue />*/}
+      {/*          </SelectTrigger>*/}
+      {/*          <SelectContent className="bg-gray-800 border-gray-600">*/}
+      {/*            {available_upscaling_methods.map((method) => (*/}
+      {/*              <SelectItem key={method} value={method} className="text-white hover:bg-gray-700">*/}
+      {/*                {method.charAt(0).toUpperCase() + method.slice(1).replace(/_/g, ' ')}*/}
+      {/*              </SelectItem>*/}
+      {/*            ))}*/}
+      {/*          </SelectContent>*/}
+      {/*        </Select>*/}
+      {/*      </div>*/}
+      {/*    </div>*/}
+      {/*  )}*/}
+      {/*</div>*/}
 
-      <Separator className="bg-gray-700" />
+      {/*<Separator className="bg-gray-700" />*/}
 
       {/* Denoising */}
       <div className="space-y-3">
@@ -427,7 +427,7 @@ export function ImageEnhancementControls({
           <Palette className="w-4 h-4 text-orange-400" />
           <Label className="text-gray-300">Stretch Algorithm</Label>
         </div>
-        
+
         <Select
           value={settings.stretch_parameter}
           onValueChange={(param) => updateSettings({ stretch_parameter: param })}

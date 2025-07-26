@@ -45,7 +45,7 @@ export function TelescopeControls() {
   // Listen for plate solve results from WebSocket
   useEffect(() => {
     const wsService = getWebSocketService()
-    
+
     const handlePlateSolveResult = (message: PlateSolveResultMessage) => {
       if (message.payload.success) {
         // Convert WebSocket message to PlateSolveResult format for the dialog
@@ -60,15 +60,15 @@ export function TelescopeControls() {
           job_id: message.payload.astrometry_job_id,
           submission_id: message.payload.submission_id,
         })
-        
+
         // Show the sync dialog
         setShowPlateSolveDialog(true)
       }
       // For failures, the existing WebSocket toast notification is enough
     }
-    
+
     wsService.on(MessageType.PLATE_SOLVE_RESULT, handlePlateSolveResult)
-    
+
     return () => {
       wsService.off(MessageType.PLATE_SOLVE_RESULT, handlePlateSolveResult)
     }
@@ -409,70 +409,70 @@ export function TelescopeControls() {
           </div>
         </div>
 
-        <Separator className="bg-gray-700" />
+        {/*<Separator className="bg-gray-700" />*/}
 
         {/* Image Controls */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-300">Image Settings</h4>
+        {/*<div className="space-y-4">*/}
+        {/*  <h4 className="text-sm font-medium text-gray-300">Image Settings</h4>*/}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Exposure</span>
-                <span className="text-white">{exposure[0]}s</span>
-              </div>
-              <Slider value={exposure} onValueChange={setExposure} min={0.1} max={30} step={0.1} className="w-full" />
-            </div>
+        {/*  <div className="grid grid-cols-2 gap-4">*/}
+        {/*    <div className="space-y-2">*/}
+        {/*      <div className="flex justify-between text-sm">*/}
+        {/*        <span className="text-gray-300">Exposure</span>*/}
+        {/*        <span className="text-white">{exposure[0]}s</span>*/}
+        {/*      </div>*/}
+        {/*      <Slider value={exposure} onValueChange={setExposure} min={0.1} max={30} step={0.1} className="w-full" />*/}
+        {/*    </div>*/}
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Gain</span>
-                <span className="text-white">{gain[0]}</span>
-              </div>
-              <Slider value={gain} onValueChange={setGain} min={0} max={100} step={1} className="w-full" />
-            </div>
+        {/*    <div className="space-y-2">*/}
+        {/*      <div className="flex justify-between text-sm">*/}
+        {/*        <span className="text-gray-300">Gain</span>*/}
+        {/*        <span className="text-white">{gain[0]}</span>*/}
+        {/*      </div>*/}
+        {/*      <Slider value={gain} onValueChange={setGain} min={0} max={100} step={1} className="w-full" />*/}
+        {/*    </div>*/}
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Brightness</span>
-                <span className="text-white">{brightness[0]}</span>
-              </div>
-              <Slider value={brightness} onValueChange={setBrightness} min={-50} max={50} step={1} className="w-full" />
-            </div>
+        {/*    <div className="space-y-2">*/}
+        {/*      <div className="flex justify-between text-sm">*/}
+        {/*        <span className="text-gray-300">Brightness</span>*/}
+        {/*        <span className="text-white">{brightness[0]}</span>*/}
+        {/*      </div>*/}
+        {/*      <Slider value={brightness} onValueChange={setBrightness} min={-50} max={50} step={1} className="w-full" />*/}
+        {/*    </div>*/}
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Contrast</span>
-                <span className="text-white">{contrast[0]}%</span>
-              </div>
-              <Slider value={contrast} onValueChange={setContrast} min={50} max={200} step={5} className="w-full" />
-            </div>
-          </div>
+        {/*    <div className="space-y-2">*/}
+        {/*      <div className="flex justify-between text-sm">*/}
+        {/*        <span className="text-gray-300">Contrast</span>*/}
+        {/*        <span className="text-white">{contrast[0]}%</span>*/}
+        {/*      </div>*/}
+        {/*      <Slider value={contrast} onValueChange={setContrast} min={50} max={200} step={5} className="w-full" />*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
 
-          {/* Imaging Control */}
-          <div className="mt-4">
-            <Button
-              onClick={handleImagingToggle}
-              className={`w-full ${
-                isImaging 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
-            >
-              {isImaging ? (
-                <>
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop Imaging
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Start Imaging
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        {/*  /!* Imaging Control *!/*/}
+        {/*  <div className="mt-4">*/}
+        {/*    <Button*/}
+        {/*      onClick={handleImagingToggle}*/}
+        {/*      className={`w-full ${*/}
+        {/*        isImaging */}
+        {/*          ? "bg-red-600 hover:bg-red-700 text-white" */}
+        {/*          : "bg-green-600 hover:bg-green-700 text-white"*/}
+        {/*      }`}*/}
+        {/*    >*/}
+        {/*      {isImaging ? (*/}
+        {/*        <>*/}
+        {/*          <Square className="w-4 h-4 mr-2" />*/}
+        {/*          Stop Imaging*/}
+        {/*        </>*/}
+        {/*      ) : (*/}
+        {/*        <>*/}
+        {/*          <Camera className="w-4 h-4 mr-2" />*/}
+        {/*          Start Imaging*/}
+        {/*        </>*/}
+        {/*      )}*/}
+        {/*    </Button>*/}
+        {/*  </div>*/}
+        {/*</div>*/}
       </CardContent>
     </Card>
 
