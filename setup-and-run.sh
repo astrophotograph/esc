@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# ALP Experimental - Quick Setup and Run Script
-# This script checks for Docker, clones/updates the repository, and starts the application
+# ESC (Experimental Scope Creep) - Quick Setup and Run Script
+# This script checks for Docker and starts the application using pre-built images
+# Handles repository rename from alp-experimental to esc
 
 set -e
 
@@ -9,15 +10,47 @@ set -e
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-REPO_URL="https://github.com/astrophotograph/alp-experimental.git"
-REPO_DIR="alp-experimental"
+REPO_URL="https://github.com/astrophotograph/esc.git"
+OLD_REPO_DIR="alp-experimental"
+NEW_REPO_DIR="esc"
 BRANCH="main"
+FORCE_DOWNLOAD=false
 
-echo -e "${GREEN}ALP Experimental - Setup and Run Script${NC}"
-echo "========================================"
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force-download)
+            FORCE_DOWNLOAD=true
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  --force-download    Force download of the repository even if it exists"
+            echo "  --help             Show this help message"
+            echo ""
+            echo "This script will:"
+            echo "  - Check for Docker installation"
+            echo "  - Rename alp-experimental directory to esc if needed"
+            echo "  - Run ESC using pre-built Docker images (no code download required)"
+            echo "  - Optionally download the source code with --force-download"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+echo -e "${GREEN}ESC (Experimental Scope Creep) - Setup and Run Script${NC}"
+echo "======================================================"
 
 # Function to check if a command exists
 command_exists() {
@@ -88,10 +121,10 @@ if [ -f /etc/os-release ] && grep -qi "raspbian" /etc/os-release; then
     if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
         echo -e "${RED}❌ 32-bit Raspberry Pi OS detected!${NC}"
         echo ""
-        echo "ALP Experimental requires a 64-bit operating system."
+        echo "ESC requires a 64-bit operating system."
         echo "Your current architecture: $ARCH (32-bit)"
         echo ""
-        echo "To use ALP Experimental on Raspberry Pi, you need to:"
+        echo "To use ESC on Raspberry Pi, you need to:"
         echo "1. Download the 64-bit version of Raspberry Pi OS from:"
         echo "   https://www.raspberrypi.com/software/operating-systems/"
         echo "2. Flash it to your SD card"
@@ -126,29 +159,110 @@ elif ! docker compose version >/dev/null 2>&1 && command_exists docker-compose; 
     DOCKER_COMPOSE_CMD="docker-compose"
 fi
 
-# Clone or update repository
-echo -e "\n${YELLOW}Setting up repository...${NC}"
-if [ -d "$REPO_DIR" ]; then
-    echo "Repository already exists. Updating to latest version..."
-    cd "$REPO_DIR"
+# Handle directory rename from alp-experimental to esc
+echo -e "\n${YELLOW}Checking for repository directories...${NC}"
+RENAMED=false
+if [ -d "$OLD_REPO_DIR" ] && [ ! -d "$NEW_REPO_DIR" ]; then
+    echo -e "${BLUE}Found 'alp-experimental' directory. Renaming to 'esc' to match new repository name...${NC}"
+    mv "$OLD_REPO_DIR" "$NEW_REPO_DIR"
+    RENAMED=true
+    echo -e "${GREEN}✓ Renamed directory from 'alp-experimental' to 'esc'${NC}"
+fi
+
+# Handle repository/source code
+if [ "$FORCE_DOWNLOAD" = true ]; then
+    echo -e "\n${YELLOW}Force download requested. Setting up repository...${NC}"
     
-    # Stash any local changes
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        echo "Stashing local changes..."
-        git stash push -m "Auto-stash before update $(date +%Y%m%d_%H%M%S)"
+    # Remove existing directory if force download is requested
+    if [ -d "$NEW_REPO_DIR" ]; then
+        echo "Removing existing repository directory..."
+        rm -rf "$NEW_REPO_DIR"
     fi
     
-    # Fetch and pull latest changes
-    git fetch origin
-    git checkout "$BRANCH"
-    git pull origin "$BRANCH"
-    echo -e "${GREEN}✓ Repository updated${NC}"
-else
     echo "Cloning repository..."
-    git clone "$REPO_URL" "$REPO_DIR"
-    cd "$REPO_DIR"
+    git clone "$REPO_URL" "$NEW_REPO_DIR"
+    cd "$NEW_REPO_DIR"
     git checkout "$BRANCH"
     echo -e "${GREEN}✓ Repository cloned${NC}"
+else
+    # Check if repository exists
+    if [ -d "$NEW_REPO_DIR" ]; then
+        echo -e "\n${YELLOW}Source code directory exists.${NC}"
+        cd "$NEW_REPO_DIR"
+        
+        # Only try to update if it's a git repository
+        if [ -d ".git" ]; then
+            echo "Updating to latest version..."
+            
+            # Stash any local changes
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+                echo "Stashing local changes..."
+                git stash push -m "Auto-stash before update $(date +%Y%m%d_%H%M%S)"
+            fi
+            
+            # Fetch and pull latest changes
+            git fetch origin
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+            echo -e "${GREEN}✓ Repository updated${NC}"
+        else
+            echo -e "${YELLOW}Note: Directory exists but is not a git repository. Proceeding with existing files.${NC}"
+        fi
+    else
+        echo -e "\n${BLUE}No source code directory found.${NC}"
+        echo "The application will run using pre-built Docker images."
+        echo "Use --force-download if you want to download the source code."
+        
+        # Create a minimal working directory
+        mkdir -p "$NEW_REPO_DIR"
+        cd "$NEW_REPO_DIR"
+    fi
+fi
+
+# Create docker-compose.ghcr.yml if it doesn't exist
+if [ ! -f docker-compose.ghcr.yml ]; then
+    echo -e "\n${YELLOW}Creating docker-compose.ghcr.yml...${NC}"
+    cat > docker-compose.ghcr.yml << 'EOF'
+version: '3.8'
+
+services:
+  ui:
+    image: ghcr.io/astrophotograph/esc-ui:latest
+    container_name: esc-ui
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://localhost:8000
+    depends_on:
+      - server
+    restart: unless-stopped
+    network_mode: host
+
+  server:
+    image: ghcr.io/astrophotograph/esc-server:latest
+    container_name: esc-server
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - telescope-data:/app/data
+    restart: unless-stopped
+    network_mode: host
+
+  redis:
+    image: redis:7-alpine
+    container_name: esc-redis
+    network_mode: host
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  redis-data:
+    driver: local
+  telescope-data:
+    driver: local
+EOF
+    echo -e "${GREEN}✓ Created docker-compose.ghcr.yml${NC}"
 fi
 
 # Create .env file if it doesn't exist
@@ -172,7 +286,7 @@ $DOCKER_CMD system prune -f --volumes 2>/dev/null || true
 echo -e "${GREEN}✓ Docker cleanup completed${NC}"
 
 # Start the application
-echo -e "\n${YELLOW}Starting ALP Experimental...${NC}"
+echo -e "\n${YELLOW}Starting ESC...${NC}"
 echo "Pulling pre-built images from GitHub Container Registry..."
 echo ""
 
@@ -185,8 +299,14 @@ echo -e "\n${YELLOW}Waiting for services to start...${NC}"
 sleep 5
 
 # Check if services are running
-if $DOCKER_CMD ps | grep -q alp-experimental; then
-    echo -e "\n${GREEN}✅ ALP Experimental is running!${NC}"
+if $DOCKER_CMD ps | grep -q esc; then
+    echo -e "\n${GREEN}✅ ESC is running!${NC}"
+    
+    # Show rename notice if applicable
+    if [ "$RENAMED" = true ]; then
+        echo -e "\n${BLUE}Note: The 'alp-experimental' directory has been renamed to 'esc' to match the new repository name.${NC}"
+    fi
+    
     echo ""
     
     # Get the host IP address

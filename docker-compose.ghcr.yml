@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   ui:
-    image: ghcr.io/astrophotograph/alp-experimental-ui:latest
-    container_name: alp-ui
+    image: ghcr.io/astrophotograph/esc-ui:latest
+    container_name: esc-ui
     environment:
       - NODE_ENV=production
       - BACKEND_URL=http://localhost:8000
@@ -13,8 +13,8 @@ services:
     network_mode: host
 
   server:
-    image: ghcr.io/astrophotograph/alp-experimental-server:latest
-    container_name: alp-server
+    image: ghcr.io/astrophotograph/esc-server:latest
+    container_name: esc-server
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
@@ -24,7 +24,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: alp-redis
+    container_name: esc-redis
     network_mode: host
     volumes:
       - redis-data:/data
