@@ -48,6 +48,10 @@ ENV PYTHONUNBUFFERED=1
 # Copy application code
 COPY --chown=telescope:telescope . .
 
+# Create necessary directories with correct permissions
+RUN mkdir -p uploads processed data sky_tiles \
+    && chown -R telescope:telescope uploads processed data sky_tiles
+
 # Ensure the restart script is executable
 RUN chmod +x /app/start_with_restart.sh
 

@@ -34,7 +34,11 @@ router = APIRouter(prefix="/api/skymap", tags=["skymap"])
 
 # Create cache directory for tiles
 TILE_CACHE_DIR = Path("sky_tiles")
-TILE_CACHE_DIR.mkdir(exist_ok=True)
+try:
+    TILE_CACHE_DIR.mkdir(exist_ok=True)
+except PermissionError:
+    # Directory creation handled by Docker, just use existing directory
+    pass
 
 # Constants for sky tiling
 TILE_WIDTH = 256 * 2   # pixels

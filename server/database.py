@@ -20,7 +20,11 @@ class TelescopeDatabase:
             self.db_path = Path(db_path)
 
         # Ensure the directory exists
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            # Directory creation handled by Docker, just use existing directory
+            pass
         self._initialized = False
 
     async def initialize(self):

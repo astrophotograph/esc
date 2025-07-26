@@ -32,11 +32,19 @@ router = APIRouter(prefix="/api/processing", tags=["processing"])
 
 # Create uploads directory
 UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+try:
+    UPLOAD_DIR.mkdir(exist_ok=True)
+except PermissionError:
+    # Directory creation handled by Docker, just use existing directory
+    pass
 
 # Create processed images directory
 PROCESSED_DIR = Path("processed")
-PROCESSED_DIR.mkdir(exist_ok=True)
+try:
+    PROCESSED_DIR.mkdir(exist_ok=True)
+except PermissionError:
+    # Directory creation handled by Docker, just use existing directory
+    pass
 
 
 class EnhancementSettings(BaseModel):
