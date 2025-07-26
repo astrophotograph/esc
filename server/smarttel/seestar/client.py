@@ -23,7 +23,7 @@ from smarttel.seestar.commands.responses import (
     MessageAnalytics,
 )
 from smarttel.seestar.commands.settings import SetUserLocation, SetUserLocationParameters, PiSetTime, \
-    PiSetTimeParameter, SetSetting, SettingParameters, SetStackSetting, SetStackSettingParameters, PiOutputSet2
+    PiSetTimeParameter, SetSetting, SettingParameters
 from smarttel.seestar.commands.simple import (
     GetTime,
     GetDeviceState,
@@ -31,7 +31,7 @@ from smarttel.seestar.commands.simple import (
     GetFocuserPosition,
     GetDiskVolume,
     ScopeGetEquCoord,
-    ScopeSync, PiIsVerified, ScopePark,
+    ScopeSync, PiIsVerified,
 )
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import (
@@ -142,6 +142,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     connection_timeout: float = 10.0
     read_timeout: float = 30.0
     write_timeout: float = 10.0
+    
+    # Connection monitoring
+    connection_monitor_task: asyncio.Task | None = None
+    _last_successful_read: float = 0.0
+    _connection_check_interval: float = 10.0
+    _reconnect_in_progress: bool = False
 
     def __init__(
             self,
@@ -171,6 +177,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             connection_timeout=connection_timeout,
             read_timeout=read_timeout,
             write_timeout=write_timeout,
+            should_reconnect_callback=self._should_attempt_reconnection,
         )
 
     async def _reader(self):
@@ -178,16 +185,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
-                # Check if connection is still valid
-                if not self.connection.is_connected():
-                    logging.warning(
-                        f"Connection lost for {self}, attempting to reconnect..."
-                    )
-                    await asyncio.sleep(1.0)  # Wait before next iteration
-                    continue
-
                 response_str = await self.connection.read()
                 if response_str is not None:
+                    # Update last successful read timestamp
+                    import time
+                    self._last_successful_read = time.time()
+                    
                     # Log received message
                     self.message_history.append(
                         TelescopeMessage(
@@ -213,13 +216,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                                 f"Error parsing response from {self}: {response_str} {parse_error}"
                             )
                 else:
-                    # response_str is None, which could mean connection issues handled by connection layer
-                    # Check if we're still connected and continue
-                    if not self.connection.is_connected():
-                        logging.debug(
-                            f"Connection not available for {self}, will retry"
-                        )
-                        await asyncio.sleep(0.5)
+                    # response_str is None - connection layer handles reconnection automatically
+                    # Just continue the loop, no need for manual reconnection here
+                    await asyncio.sleep(0.1)
                     continue
             except Exception as e:
                 logging.error(f"Unexpected error in reader task for {self}: {e}")
@@ -306,16 +305,18 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         logging.debug(f"Pattern monitor task stopped for {self}")
 
     async def _heartbeat(self):
-        # todo : properly check if is_connected!!
+        """Background task that sends periodic heartbeat messages."""
         await asyncio.sleep(5)
-        while True:
-            if self.is_connected:
-                logging.trace(f"Pinging {self}")
-                _ = await self.send_and_recv(GetTime())
-            # todo : add reschedulable heartbeat
-            # todo : decrease sleep time to 1 second and, instead, check next heartbeat time
-            # todo : add different protocol handler.  specifies heartbeat message and read message.
-            await asyncio.sleep(5)
+        while self.is_connected:
+            try:
+                if self.connection.is_connected() and not self._reconnect_in_progress:
+                    logging.trace(f"Pinging {self}")
+                    _ = await self.send_and_recv(GetTime())
+                await asyncio.sleep(5)
+            except Exception as e:
+                logging.trace(f"Heartbeat failed for {self}: {e}")
+                await asyncio.sleep(5)
+                continue
 
     async def _view_refresher(self):
         """Background task that refreshes the view state periodically."""
@@ -475,10 +476,13 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         self.status.reset()
 
         # Start background tasks
+        import time
+        self._last_successful_read = time.time()
         self.background_task = asyncio.create_task(self._heartbeat())
         self.reader_task = asyncio.create_task(self._reader())
         self.pattern_monitor_task = asyncio.create_task(self._pattern_monitor())
         self.view_refresh_task = asyncio.create_task(self._view_refresher())
+        self.connection_monitor_task = asyncio.create_task(self._connection_monitor())
 
         # Upon connect, grab current status
 
@@ -532,6 +536,22 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             except asyncio.CancelledError:
                 pass
             self.pattern_monitor_task = None
+
+        if self.view_refresh_task:
+            self.view_refresh_task.cancel()
+            try:
+                await self.view_refresh_task
+            except asyncio.CancelledError:
+                pass
+            self.view_refresh_task = None
+
+        if self.connection_monitor_task:
+            self.connection_monitor_task.cancel()
+            try:
+                await self.connection_monitor_task
+            except asyncio.CancelledError:
+                pass
+            self.connection_monitor_task = None
 
         await self.connection.close()
         logging.info(f"Disconnected from {self}")
@@ -869,6 +889,42 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         #     save_discrete_frame=True,
         # )))
         # await self.send_and_recv(ScopePark(params={"equ_mode": self.is_EQ_mode}))
+
+    async def _connection_monitor(self):
+        """Background task that monitors connection health and manages reconnection."""
+        logging.info(f"Starting connection monitor task for {self}")
+        
+        while self.is_connected:
+            try:
+                await asyncio.sleep(self._connection_check_interval)
+                
+                if not self.is_connected:
+                    break
+                    
+                # Check if we should attempt reconnection
+                if not self.connection.is_connected() and self._should_attempt_reconnection():
+                    if not self._reconnect_in_progress:
+                        self._reconnect_in_progress = True
+                        logging.info(f"Connection monitor initiating reconnection for {self}")
+                        try:
+                            # The connection layer will handle the actual reconnection with backoff
+                            await self.connection.open()
+                            logging.info(f"Connection monitor successfully reconnected {self}")
+                        except Exception as e:
+                            logging.warning(f"Connection monitor failed to reconnect {self}: {e}")
+                        finally:
+                            self._reconnect_in_progress = False
+                            
+            except Exception as e:
+                logging.error(f"Error in connection monitor task for {self}: {e}")
+                await asyncio.sleep(5.0)  # Wait before retrying
+                
+        logging.debug(f"Connection monitor task stopped for {self}")
+    
+    def _should_attempt_reconnection(self) -> bool:
+        """Determine if reconnection should be attempted based on client state."""
+        # Always attempt reconnection for main client unless explicitly disconnected
+        return self.is_connected
 
     def __str__(self):
         return f"{self.host}:{self.port}"

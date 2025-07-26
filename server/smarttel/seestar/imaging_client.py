@@ -1,6 +1,6 @@
 import asyncio
 import collections
-from typing import TypeVar, Literal, Any, Optional
+from typing import TypeVar, Literal, Optional
 import threading
 import time
 
@@ -19,7 +19,6 @@ from smarttel.seestar.events import (
     EventTypes,
     AnnotateResult,
     BaseEvent,
-    StackEvent,
     InternalEvent,
 )
 from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
@@ -88,6 +87,12 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     connection_timeout: float = 10.0
     read_timeout: float = 30.0
     write_timeout: float = 10.0
+    
+    # Connection monitoring
+    connection_monitor_task: asyncio.Task | None = None
+    _last_successful_read: float = 0.0
+    _connection_check_interval: float = 15.0
+    _reconnect_in_progress: bool = False
 
     def __init__(
         self,
@@ -126,32 +131,16 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
-                # Check if connection is still valid
-                if not self.connection.is_connected():
-                    # Only attempt reconnection if client_mode is not Idle or None
-                    if self.client_mode in ["Idle", None]:
-                        logging.info(
-                            f"Connection lost for {self}, but client_mode is {self.client_mode}. Skipping reconnection."
-                        )
-                        await asyncio.sleep(1.0)  # Wait before next iteration
-                        continue
-                    else:
-                        logging.warning(
-                            f"Connection lost for {self}, attempting to reconnect..."
-                        )
-                        await asyncio.sleep(1.0)  # Wait before next iteration
-                        continue
-
                 header = await self.connection.read_exactly(80)
                 if header is None:
-                    # Connection issue handled by connection layer, check status and continue
-                    if not self.connection.is_connected():
-                        logging.debug(
-                            f"Connection not available for {self}, will retry"
-                        )
-                        await asyncio.sleep(0.5)
+                    # Connection issue handled by connection layer, just continue
+                    await asyncio.sleep(0.1)
                     continue
 
+                # Update last successful read timestamp
+                import time
+                self._last_successful_read = time.time()
+                
                 size, id, width, height = self.binary_protocol.parse_header(header)
                 logging.trace(
                     f"imaging receive header: {size=} {width=} {height=} {id=}"
@@ -161,12 +150,8 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                 if size is not None:
                     data = await self.connection.read_exactly(size)
                     if data is None:
-                        # Connection issue during data read, check status and continue
-                        if not self.connection.is_connected():
-                            logging.debug(
-                                f"Connection lost during data read for {self}"
-                            )
-                            await asyncio.sleep(0.5)
+                        # Connection issue during data read, continue
+                        await asyncio.sleep(0.1)
                         continue
 
                 if data is not None:
@@ -192,29 +177,64 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Reader task stopped for {self}")
 
     async def _heartbeat(self):
+        """Background task that sends periodic heartbeat messages."""
         await asyncio.sleep(5)
-        while True:
-            if self.is_connected:
-                logging.trace(f"Pinging {self}")
-                await self.send(TestConnection())
-            await asyncio.sleep(5)
+        while self.is_connected:
+            try:
+                if self.connection.is_connected() and not self._reconnect_in_progress:
+                    logging.trace(f"Pinging {self}")
+                    await self.send(TestConnection())
+                await asyncio.sleep(5)
+            except Exception as e:
+                logging.trace(f"Heartbeat failed for {self}: {e}")
+                await asyncio.sleep(5)
+                continue
 
     async def connect(self):
         await self.connection.open()
         self.is_connected = True
         self.status.reset()
 
+        self._last_successful_read = time.time()
         self.background_task = asyncio.create_task(self._heartbeat())
         self.reader_task = asyncio.create_task(self._reader())
+        self.connection_monitor_task = asyncio.create_task(self._connection_monitor())
 
         logging.info(f"Connected to {self}")
 
     async def disconnect(self):
         """Disconnect from Seestar."""
+        self.is_connected = False
+        
         if self.status.is_streaming:
             await self.stop_streaming()
+            
+        # Cancel background tasks
+        if self.background_task:
+            self.background_task.cancel()
+            try:
+                await self.background_task
+            except asyncio.CancelledError:
+                pass
+            self.background_task = None
+            
+        if self.reader_task:
+            self.reader_task.cancel()
+            try:
+                await self.reader_task
+            except asyncio.CancelledError:
+                pass
+            self.reader_task = None
+            
+        if self.connection_monitor_task:
+            self.connection_monitor_task.cancel()
+            try:
+                await self.connection_monitor_task
+            except asyncio.CancelledError:
+                pass
+            self.connection_monitor_task = None
+            
         await self.connection.close()
-        self.is_connected = False
         logging.info(f"Disconnected from {self}")
 
     async def send(self, data: str | BaseModel):
@@ -300,11 +320,15 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             if existing in ["Idle", None] and new_mode not in ["Idle", None]:
                 if not self.connection.is_connected():
                     logging.info(f"Client mode changing from {existing} to {new_mode}, attempting reconnection")
-                    try:
-                        await self.connection.open()
-                        logging.info(f"Successfully reconnected for mode change to {new_mode}")
-                    except Exception as e:
-                        logging.error(f"Failed to reconnect when changing to {new_mode}: {e}")
+                    if not self._reconnect_in_progress:
+                        self._reconnect_in_progress = True
+                        try:
+                            await self.connection.open()
+                            logging.info(f"Successfully reconnected for mode change to {new_mode}")
+                        except Exception as e:
+                            logging.error(f"Failed to reconnect when changing to {new_mode}: {e}")
+                        finally:
+                            self._reconnect_in_progress = False
 
             match new_mode:
                 case "ContinuousExposure":
@@ -335,7 +359,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             logging.warning(f"Not streaming from {self}")
             return
 
-        response = await self.send(StopStreaming())
+        await self.send(StopStreaming())
         self.status.is_streaming = False
 
     async def start_rtsp(self):
@@ -357,6 +381,37 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         with self.cached_raw_image_lock:
             return self.cached_raw_image.copy() if self.cached_raw_image and hasattr(self.cached_raw_image, 'copy') else self.cached_raw_image
 
+    async def _connection_monitor(self):
+        """Background task that monitors connection health and manages reconnection."""
+        logging.info(f"Starting connection monitor task for {self}")
+        
+        while self.is_connected:
+            try:
+                await asyncio.sleep(self._connection_check_interval)
+                
+                if not self.is_connected:
+                    break
+                    
+                # Check if we should attempt reconnection
+                if not self.connection.is_connected() and self._should_attempt_reconnection():
+                    if not self._reconnect_in_progress:
+                        self._reconnect_in_progress = True
+                        logging.info(f"Connection monitor initiating reconnection for {self}")
+                        try:
+                            # The connection layer will handle the actual reconnection with backoff
+                            await self.connection.open()
+                            logging.info(f"Connection monitor successfully reconnected {self}")
+                        except Exception as e:
+                            logging.warning(f"Connection monitor failed to reconnect {self}: {e}")
+                        finally:
+                            self._reconnect_in_progress = False
+                            
+            except Exception as e:
+                logging.error(f"Error in connection monitor task for {self}: {e}")
+                await asyncio.sleep(5.0)  # Wait before retrying
+                
+        logging.debug(f"Connection monitor task stopped for {self}")
+    
     def _should_attempt_reconnection(self) -> bool:
         """Check if reconnection should be attempted based on client_mode."""
         return self.client_mode not in ["Idle", None]

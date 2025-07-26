@@ -2,6 +2,7 @@
 
 import asyncio
 from asyncio import StreamReader, StreamWriter, IncompleteReadError
+from typing import Callable, Optional
 from pydantic import BaseModel
 from loguru import logger as logging
 import random
@@ -20,10 +21,13 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
     _reconnect_attempts: int = 0
     _max_reconnect_attempts: int = 5
     _base_reconnect_delay: float = 1.0
+    _max_reconnect_delay: float = 60.0
     connection_timeout: float = 10.0
     read_timeout: float = 30.0
     write_timeout: float = 10.0
-    _should_reconnect_callback: callable = None
+    _should_reconnect_callback: Optional[Callable[[], bool]] = None
+    _last_reconnect_log: float = 0.0
+    _reconnect_log_interval: float = 30.0
 
     def __init__(
         self,
@@ -32,7 +36,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         connection_timeout: float = 10.0,
         read_timeout: float = 30.0,
         write_timeout: float = 10.0,
-        should_reconnect_callback: callable = None,
+        should_reconnect_callback: Optional[Callable[[], bool]] = None,
         **kwargs,
     ):
         super().__init__(
@@ -54,6 +58,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             )
             self._is_connected = True
             self._reconnect_attempts = 0
+            self._last_reconnect_log = 0.0
             logging.info(
                 f"Successfully connected to Seestar at {self.host}:{self.port}"
             )
@@ -84,6 +89,18 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         return (
             self._is_connected and self.reader is not None and self.writer is not None
         )
+    
+    def get_connection_stats(self) -> dict:
+        """Get connection statistics."""
+        return {
+            "is_connected": self.is_connected(),
+            "reconnect_attempts": self._reconnect_attempts,
+            "max_reconnect_attempts": self._max_reconnect_attempts,
+            "written_messages": self.written_messages,
+            "read_messages": self.read_messages,
+            "host": self.host,
+            "port": self.port
+        }
 
     def _is_connection_reset_error(self, error: Exception) -> bool:
         """Check if the error indicates a connection reset."""
@@ -115,24 +132,42 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             return False
 
         self._reconnect_attempts += 1
-        delay = self._base_reconnect_delay * (
-            2 ** (self._reconnect_attempts - 1)
+        delay = min(
+            self._base_reconnect_delay * (2 ** (self._reconnect_attempts - 1)),
+            self._max_reconnect_delay
         ) + random.uniform(0, 1)
 
-        logging.info(
-            f"Attempting reconnection {self._reconnect_attempts}/{self._max_reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
-        )
+        # Only log reconnection attempts periodically to avoid spam
+        import time
+        current_time = time.time()
+        if current_time - self._last_reconnect_log > self._reconnect_log_interval:
+            logging.info(
+                f"Attempting reconnection {self._reconnect_attempts}/{self._max_reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
+            )
+            self._last_reconnect_log = current_time
+        else:
+            logging.debug(
+                f"Reconnection attempt {self._reconnect_attempts}/{self._max_reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
+            )
+            
         await asyncio.sleep(delay)
 
         try:
             await self.close()  # Ensure clean state
             await self.open()
             logging.info(f"Successfully reconnected to {self.host}:{self.port}")
+            self._last_reconnect_log = 0.0  # Reset log throttling on success
             return True
         except Exception as e:
-            logging.error(
-                f"Reconnection attempt {self._reconnect_attempts} failed: {e}"
-            )
+            # Only log detailed error every few attempts to avoid spam
+            if self._reconnect_attempts <= 2 or self._reconnect_attempts % 3 == 0:
+                logging.error(
+                    f"Reconnection attempt {self._reconnect_attempts} failed: {e}"
+                )
+            else:
+                logging.debug(
+                    f"Reconnection attempt {self._reconnect_attempts} failed: {e}"
+                )
             return False
 
     async def write(self, data: str):
@@ -155,10 +190,9 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
                 # Attempt reconnection
                 if await self._reconnect_with_backoff():
-                    logging.info(f"Reconnection successful, retrying write operation")
+                    logging.debug("Reconnection successful, retrying write operation")
                     # Retry the write operation once after reconnection
                     logging.trace(f"Retrying write to {self}: {data.strip()}")
-                    data += "\r\n"
                     self.writer.write(data.encode())
                     await asyncio.wait_for(
                         self.writer.drain(), timeout=self.write_timeout
@@ -166,7 +200,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
                     self.written_messages += 1
                 else:
                     logging.error(
-                        f"Failed to reconnect after connection reset during write"
+                        "Failed to reconnect after connection reset during write"
                     )
                     raise ConnectionError("Failed to reconnect after connection reset")
             else:
@@ -194,11 +228,11 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
                 # Attempt reconnection
                 if await self._reconnect_with_backoff():
-                    logging.info(f"Reconnection successful, retrying read operation")
+                    logging.debug("Reconnection successful after read failure")
                     # Don't retry the read here, let the caller handle it
                     return None
                 else:
-                    logging.error(f"Failed to reconnect after connection reset")
+                    logging.debug("Failed to reconnect after connection reset")
                     return None
             else:
                 logging.error(f"Unexpected error while reading from {self}: {e}")
@@ -225,13 +259,13 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
                 # Attempt reconnection
                 if await self._reconnect_with_backoff():
-                    logging.info(
-                        f"Reconnection successful, retrying read_exactly operation"
+                    logging.debug(
+                        "Reconnection successful after read_exactly failure"
                     )
                     # Don't retry the read here, let the caller handle it
                     return None
                 else:
-                    logging.error(f"Failed to reconnect after connection reset")
+                    logging.debug("Failed to reconnect after connection reset")
                     return None
             else:
                 logging.error(

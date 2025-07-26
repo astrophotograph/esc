@@ -4,6 +4,7 @@ import inspect
 import json
 import logging as orig_logging
 import os
+import signal
 import tempfile
 from typing import Optional, AsyncGenerator
 
@@ -2199,6 +2200,124 @@ class Controller:
                 f"New telescope connection complete: {connected_count}/{len(connection_tasks)} telescopes connected"
             )
 
+    async def disconnect_all_telescopes(self):
+        """Disconnect from all telescopes gracefully."""
+        if not self.telescopes:
+            logging.info("No telescopes to disconnect from")
+            return
+
+        logging.info(f"Disconnecting from {len(self.telescopes)} telescopes...")
+
+        # Create disconnection tasks for all telescopes
+        disconnection_tasks = []
+        telescope_names = []
+
+        for telescope in self.telescopes.values():
+            # Skip test telescopes that don't have real connections
+            if isinstance(telescope, TestTelescope) or telescope.port == 9999:
+                continue
+
+            if (
+                hasattr(telescope, "client")
+                and hasattr(telescope, "imaging")
+                and telescope.client
+                and telescope.imaging
+            ):
+                telescope_names.append(telescope.name)
+
+                async def disconnect_telescope_clients(tel=telescope):
+                    try:
+                        logging.info(f"Disconnecting telescope {tel.name}")
+
+                        # Disconnect both clients in parallel
+                        tasks = []
+                        if tel.client.is_connected:
+                            tasks.append(tel.client.disconnect())
+                        if tel.imaging.is_connected:
+                            tasks.append(tel.imaging.disconnect())
+
+                        if tasks:
+                            await asyncio.gather(*tasks, return_exceptions=True)
+
+                        return tel.name, True
+                    except Exception as e:
+                        logging.error(f"Failed to disconnect telescope {tel.name}: {e}")
+                        return tel.name, False
+
+                disconnection_tasks.append(disconnect_telescope_clients())
+
+        if disconnection_tasks:
+            # Execute all disconnections in parallel with a timeout
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*disconnection_tasks, return_exceptions=True),
+                    timeout=10.0  # 10 second timeout for all disconnections
+                )
+
+                # Log results
+                disconnected_count = 0
+                for result in results:
+                    if isinstance(result, Exception):
+                        logging.error(f"Disconnection task failed: {result}")
+                    else:
+                        telescope_name, success = result
+                        if success:
+                            disconnected_count += 1
+                            logging.info(f"Successfully disconnected telescope: {telescope_name}")
+                        else:
+                            logging.error(f"Failed to disconnect telescope: {telescope_name}")
+
+                logging.info(f"Telescope disconnection complete: {disconnected_count}/{len(disconnection_tasks)} telescopes disconnected")
+
+            except asyncio.TimeoutError:
+                logging.warning("Telescope disconnection timed out after 10 seconds")
+                # Cancel any remaining tasks
+                for task in disconnection_tasks:
+                    if not task.done():
+                        task.cancel()
+
+    async def cleanup_background_tasks(self):
+        """Clean up any remaining background tasks."""
+        try:
+            logging.info("Cleaning up remaining background tasks...")
+            
+            # Get all running tasks
+            tasks = [task for task in asyncio.all_tasks() if not task.done()]
+            
+            if not tasks:
+                logging.info("No background tasks to clean up")
+                return
+                
+            logging.info(f"Found {len(tasks)} running tasks to clean up")
+            
+            # Cancel all tasks except the current one and critical system tasks
+            current_task = asyncio.current_task()
+            tasks_to_cancel = []
+            
+            for task in tasks:
+                if task != current_task and not task.cancelled():
+                    # Skip tasks that are already being cancelled or are critical
+                    task_name = getattr(task, '_name', str(task))
+                    if 'lifespan' not in task_name and 'shutdown' not in task_name:
+                        tasks_to_cancel.append(task)
+                        task.cancel()
+                        
+            # Wait for tasks to finish with a timeout, but handle cancellation gracefully
+            if tasks_to_cancel:
+                try:
+                    await asyncio.wait_for(
+                        asyncio.gather(*tasks_to_cancel, return_exceptions=True),
+                        timeout=3.0
+                    )
+                    logging.info("All background tasks cleaned up successfully")
+                except (asyncio.TimeoutError, asyncio.CancelledError):
+                    logging.info("Background task cleanup completed (some tasks were cancelled)")
+                    
+        except Exception as e:
+            # Don't let cleanup errors break the shutdown process
+            logging.warning(f"Error during background task cleanup: {e}")
+            logging.info("Continuing with shutdown despite cleanup error")
+
     async def add_test_telescope(self):
         """Add a dummy test telescope for WebRTC testing."""
         try:
@@ -2340,26 +2459,48 @@ class Controller:
 
                 asyncio.create_task(delayed_connect())
 
-        # Add shutdown handler for WebRTC cleanup
+        # Add shutdown handler for graceful cleanup
         @self.app.on_event("shutdown")
         async def shutdown_event():
-            # Stop WebSocket manager
-            from websocket_manager import get_websocket_manager
+            try:
+                logging.info("Starting graceful shutdown...")
+                
+                # First, disconnect all telescopes to stop their background tasks
+                await self.disconnect_all_telescopes()
+                
+                # Stop WebSocket manager
+                try:
+                    from websocket_manager import get_websocket_manager
+                    websocket_manager = get_websocket_manager()
+                    await websocket_manager.stop()
+                    logging.info("WebSocket manager stopped")
+                except Exception as e:
+                    logging.warning(f"Error stopping WebSocket manager: {e}")
 
-            websocket_manager = get_websocket_manager()
+                # Cleanup WebRTC
+                try:
+                    from webrtc_router import cleanup_webrtc_service
+                    await cleanup_webrtc_service()
+                    logging.info("WebRTC service cleaned up")
+                except Exception as e:
+                    logging.warning(f"Error cleaning up WebRTC: {e}")
 
-            await websocket_manager.stop()
-            logging.info("WebSocket manager stopped")
-
-            from webrtc_router import cleanup_webrtc_service
-
-            await cleanup_webrtc_service()
-
-            # Shutdown image processing thread pool
-            from services.async_image_processing import shutdown_cpu_executor
-
-            shutdown_cpu_executor()
-            logging.info("Image processing thread pool shutdown")
+                # Shutdown image processing thread pool
+                try:
+                    from services.async_image_processing import shutdown_cpu_executor
+                    shutdown_cpu_executor()
+                    logging.info("Image processing thread pool shutdown")
+                except Exception as e:
+                    logging.warning(f"Error shutting down thread pool: {e}")
+                
+                # Cancel any remaining background tasks (do this last)
+                await self.cleanup_background_tasks()
+                
+                logging.info("Graceful shutdown completed")
+                
+            except Exception as e:
+                logging.error(f"Error during shutdown: {e}")
+                logging.info("Shutdown completed with errors")
 
         # Add our own endpoints
         @self.app.get("/", response_class=HTMLResponse)
@@ -3293,6 +3434,14 @@ class Controller:
                 "remote_controllers_count": len(self.remote_controllers),
             }
 
+        # Set up signal handlers for graceful shutdown
+        def handle_signal(signum, frame):
+            logging.info(f"Received signal {signum}, initiating graceful shutdown...")
+            # The signal will be handled by uvicorn's shutdown process
+            
+        signal.signal(signal.SIGINT, handle_signal)
+        signal.signal(signal.SIGTERM, handle_signal)
+        
         config = uvicorn.Config(
             self.app,
             host="0.0.0.0",
@@ -3300,9 +3449,17 @@ class Controller:
             log_level="trace",
             log_config=None,
             reload=self.reload,
+            # Enable graceful shutdown with timeout
+            timeout_graceful_shutdown=30,
         )
         server = uvicorn.Server(config)
-        await server.serve()
+        
+        try:
+            await server.serve()
+        except KeyboardInterrupt:
+            logging.info("KeyboardInterrupt received, shutting down gracefully...")
+        finally:
+            logging.info("Server shutdown complete")
 
 
 @click.group()
@@ -3733,7 +3890,7 @@ def test_command(host, port, action, target_name, ra, dec, ra_str, dec_str, star
             # Execute the command
             result = await ws_manager._execute_telescope_command(client, action, parameters)
             
-            click.echo(f"📊 Command result:")
+            click.echo("📊 Command result:")
             click.echo(json.dumps(result, indent=2))
             
             # Check if result indicates success or error
@@ -3745,7 +3902,7 @@ def test_command(host, port, action, target_name, ra, dec, ra_str, dec_str, star
                 else:
                     click.echo(f"ℹ️  Command completed with result: {result}")
             else:
-                click.echo(f"✅ Command completed successfully")
+                click.echo("✅ Command completed successfully")
                 
         except Exception as e:
             click.echo(f"❌ Error: {e}")
