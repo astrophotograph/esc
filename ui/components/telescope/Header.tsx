@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState } from "react"
-import { Camera, CogIcon as Cog6Tooth, Mountain, MessageSquare, HelpCircle, ImageIcon } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import React, {useState} from "react"
+import {Camera, CogIcon as Cog6Tooth, Mountain, MessageSquare, HelpCircle, ImageIcon, Shield} from "lucide-react"
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
+import {Button} from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,18 +14,18 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useTelescope } from "@/components/telescope/TelescopeProvider"
-import { useTelescopeContext } from "../../context/TelescopeContext"
+import {useTelescope} from "@/components/telescope/TelescopeProvider"
+import {useTelescopeContext} from "../../context/TelescopeContext"
 import {useTheme} from "next-themes"
-import { TelescopeSelector } from "@/components/telescope/TelescopeSelector"
-import { useRouter } from "next/navigation"
-import { SystemAdminDialog } from "./modals/SystemAdminDialog"
+import {TelescopeSelector} from "@/components/telescope/TelescopeSelector"
+import {useRouter} from "next/navigation"
+import {SystemAdminDialog} from "./modals/SystemAdminDialog"
 
 export function Header() {
   const router = useRouter()
-  const { theme: _theme, setTheme: _setTheme } = useTheme()
-  const { showPiP, setShowPiP } = useTelescope()
-  const { handleSceneryMode, setShowDocumentation, setShowConfiguration } = useTelescopeContext()
+  const {theme: _theme, setTheme: _setTheme} = useTheme()
+  const {showPiP, setShowPiP} = useTelescope()
+  const {handleSceneryMode, setShowDocumentation, setShowConfiguration} = useTelescopeContext()
 
   const [sceneryMode, setSceneryMode] = useState(false)
   const [showSystemAdmin, setShowSystemAdmin] = useState(false)
@@ -36,7 +36,7 @@ export function Header() {
 
     // Send scenery mode command through context
     try {
-      console.log('Sending scenery mode message:', { mode: "scenery" })
+      console.log('Sending scenery mode message:', {mode: "scenery"})
       await handleSceneryMode()
       console.log('Scenery mode message sent successfully')
     } catch (error) {
@@ -49,7 +49,7 @@ export function Header() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4">
-        <TelescopeSelector />
+        <TelescopeSelector/>
         <div className="ml-auto flex items-center space-x-4">
           {/* Notification Bell - Hidden */}
           {/* <Button
@@ -84,7 +84,7 @@ export function Header() {
             title="Toggle Picture-in-Picture View (Ctrl+I)"
             data-tour="pip-toggle"
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-4 h-4"/>
             PiP
           </Button>
 
@@ -97,7 +97,7 @@ export function Header() {
             title="Toggle Scenery Mode"
             data-tour="scenery-mode"
           >
-            <Mountain className="w-4 h-4" />
+            <Mountain className="w-4 h-4"/>
             Scenery
           </Button>
 
@@ -109,7 +109,7 @@ export function Header() {
             className="flex items-center gap-2"
             title="Image Processing"
           >
-            <ImageIcon className="w-4 h-4" />
+            <ImageIcon className="w-4 h-4"/>
             Processing
           </Button>
 
@@ -133,7 +133,7 @@ export function Header() {
             className="flex items-center gap-2"
             title="View Telescope Messages"
           >
-            <MessageSquare className="w-4 h-4" />
+            <MessageSquare className="w-4 h-4"/>
             Messages
           </Button>
 
@@ -145,7 +145,7 @@ export function Header() {
             className="flex items-center gap-2"
             title="Open Documentation (F1)"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-4 h-4"/>
             Help
           </Button>
 
@@ -153,14 +153,14 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-tour="user-menu">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatars/01.png" alt="Avatar" />
+                  <AvatarImage src="/avatars/01.png" alt="Avatar"/>
                   <AvatarFallback>OM</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" forceMount>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator/>
               <DropdownMenuGroup>
                 {/* Profile - Hidden */}
                 {/* <DropdownMenuItem>
@@ -175,30 +175,30 @@ export function Header() {
                   <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
                 </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={() => setShowConfiguration(true)}>
-                  <Cog6Tooth className="mr-2 h-4 w-4" />
+                  <Cog6Tooth className="mr-2 h-4 w-4"/>
                   <span>Settings</span>
                   <DropdownMenuShortcut>F10</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   window.dispatchEvent(new CustomEvent('restart-tour'))
                 }}>
-                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <HelpCircle className="mr-2 h-4 w-4"/>
                   <span>Start Tour</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
-              {/* System Admin - Hidden */}
-              {/* <DropdownMenuSeparator />
+              {/* System Admin */}
+              <DropdownMenuSeparator/>
               <DropdownMenuItem onClick={() => setShowSystemAdmin(true)}>
-                <Shield className="mr-2 h-4 w-4" />
+                <Shield className="mr-2 h-4 w-4"/>
                 <span>System Admin</span>
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               {/* Log out - Hidden */}
-              {/* <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-                <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-              </DropdownMenuItem> */}
+              {/*<DropdownMenuSeparator/>*/}
+              {/*<DropdownMenuItem>*/}
+              {/*  <LogOut className="mr-2 h-4 w-4"/>*/}
+              {/*  <span>Log out</span>*/}
+              {/*  <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>*/}
+              {/*</DropdownMenuItem>*/}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
