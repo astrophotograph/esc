@@ -276,12 +276,41 @@ EOF
     echo -e "${GREEN}✓ Created .env file${NC}"
 fi
 
-# Stop any running containers
+# Stop any running containers (both old and new naming)
 echo -e "\n${YELLOW}Stopping any existing containers...${NC}"
+
+# Stop new containers (esc-*)
 $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml down 2>/dev/null || true
+
+# Stop old containers with alp-experimental naming
+echo "Stopping legacy alp-experimental containers..."
+$DOCKER_CMD stop alp-ui alp-server alp-redis 2>/dev/null || true
+$DOCKER_CMD rm alp-ui alp-server alp-redis 2>/dev/null || true
+
+# Stop any other containers that might contain "alp" or "experimental" in their names
+echo "Checking for other legacy containers..."
+LEGACY_CONTAINERS=$($DOCKER_CMD ps -a --format "{{.Names}}" | grep -E "(alp|experimental)" || true)
+if [ ! -z "$LEGACY_CONTAINERS" ]; then
+    echo "Found legacy containers: $LEGACY_CONTAINERS"
+    echo "$LEGACY_CONTAINERS" | xargs -r $DOCKER_CMD stop 2>/dev/null || true
+    echo "$LEGACY_CONTAINERS" | xargs -r $DOCKER_CMD rm 2>/dev/null || true
+fi
+
+# Also try to stop any containers that might be running from the old compose file
+if [ -f docker-compose.ghcr.yml.backup ]; then
+    $DOCKER_COMPOSE_CMD -f docker-compose.ghcr.yml.backup down 2>/dev/null || true
+fi
+
+echo -e "${GREEN}✓ Stopped all existing containers${NC}"
 
 # Clean up Docker resources
 echo -e "\n${YELLOW}Cleaning up Docker resources...${NC}"
+
+# Remove legacy images
+echo "Removing legacy alp-experimental images..."
+$DOCKER_CMD images --format "{{.Repository}}:{{.Tag}}" | grep -E "(alp-experimental|alp_experimental)" | xargs -r $DOCKER_CMD rmi 2>/dev/null || true
+
+# General cleanup
 $DOCKER_CMD system prune -f --volumes 2>/dev/null || true
 echo -e "${GREEN}✓ Docker cleanup completed${NC}"
 
