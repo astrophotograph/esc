@@ -27,7 +27,8 @@ import {
   Minimize,
   Search,
   Map,
-  Sparkles
+  Sparkles,
+  Pen
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -48,6 +49,7 @@ import { generateStreamingUrl } from "../../utils/streaming"
 import { WebRTCLiveView } from "./WebRTCLiveView"
 import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
+import { ChalkboardPanel } from "./panels/ChalkboardPanel"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -113,6 +115,8 @@ export function CameraView() {
     liveViewFullscreen,
     setLiveViewFullscreen,
     setShowCelestialSearch,
+    showChalkboard,
+    setShowChalkboard,
   } = useTelescopeContext()
 
   // Sample annotations for demonstration
@@ -1207,6 +1211,15 @@ export function CameraView() {
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                   )}
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowChalkboard(!showChalkboard)}
+                  className={`${showChalkboard ? "text-orange-400 hover:text-orange-300" : "text-gray-400 hover:text-white"}`}
+                  title={showChalkboard ? "Hide Chalkboard (Ctrl+Shift+C)" : "Show Chalkboard (Ctrl+Shift+C)"}
+                >
+                  <Pen className={`h-4 w-4 ${showChalkboard ? "" : "opacity-50"}`} />
+                </Button>
                 {/* Star Map Toggle - Hidden */}
                 {/* <Button
                   variant="ghost"
@@ -1357,7 +1370,7 @@ export function CameraView() {
 
             {/* Status Stream Overlay */}
             {localStreamStatus && showStreamStatus && (
-              <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-sm">
+              <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-sm" style={{ zIndex: 20 }}>
                 <h3 className="font-semibold mb-1 text-blue-400">Stream Status</h3>
                 <div className="text-xs text-gray-300">
                   {Object.entries(localStreamStatus).map(([key, value]) => (
@@ -1371,7 +1384,7 @@ export function CameraView() {
             )}
 
             {/* Zoom Controls */}
-            <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center">
+            <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center" style={{ zIndex: 20 }}>
               <Button
                 variant="outline"
                 size="sm"
@@ -1446,6 +1459,18 @@ export function CameraView() {
               isVisible={showImageEnhancement}
               onToggle={() => setShowImageEnhancement(!showImageEnhancement)}
               onClose={() => setShowImageEnhancement(false)}
+            />
+
+            {/* Chalkboard Panel */}
+            <ChalkboardPanel
+              visible={showChalkboard}
+              onToggle={() => setShowChalkboard(!showChalkboard)}
+              containerWidth={containerDimensions.width || 800}
+              containerHeight={containerDimensions.height || 600}
+              zoom={zoomLevel}
+              rotation={rotationAngle}
+              offsetX={panPosition.x}
+              offsetY={panPosition.y}
             />
           </div>
         </CardContent>

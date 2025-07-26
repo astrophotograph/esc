@@ -280,6 +280,8 @@ interface TelescopeContextType {
     setShowStarmap: (show: boolean) => void
     starmapSize: "small" | "medium" | "large" | "extra-large"
     setStarmapSize: (size: "small" | "medium" | "large" | "extra-large") => void
+    showChalkboard: boolean
+    setShowChalkboard: (show: boolean) => void
     starmapFullscreen: boolean
     setStarmapFullscreen: (fullscreen: boolean) => void
     starmapMinimized: boolean
@@ -2078,6 +2080,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           setShowAnnotations(!showAnnotations)
         }
         break
+      case "c":
+        if (event.ctrlKey && event.shiftKey) {
+          preventDefault()
+          setShowChalkboard(!showChalkboard)
+        }
+        break
       case "k":
         if (event.ctrlKey || event.metaKey) {
           preventDefault()
@@ -2127,6 +2135,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [starmapSize, setStarmapSize] = useState<"small" | "medium" | "large" | "extra-large">("medium")
   const [starmapFullscreen, setStarmapFullscreen] = useState(false)
   const [starmapMinimized, setStarmapMinimized] = useState(false)
+  const [showChalkboard, setShowChalkboard] = useState(false)
   const [starmapPosition, setStarmapPosition] = usePersistentState(STORAGE_KEYS.UI_STATE + "-starmap-position", { x: 20, y: 80 })
   const [annotationSettings, setAnnotationSettings] = useState<AnnotationSettings>({
     enabled: false,
@@ -2400,6 +2409,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setStarmapMinimized,
     starmapPosition,
     setStarmapPosition,
+    showChalkboard,
+    setShowChalkboard,
 
     // Functions
     addStatusAlert,
