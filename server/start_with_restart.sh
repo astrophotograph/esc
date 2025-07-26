@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# ALP Experimental Server Start Script with Auto-Restart
+# ESC Server Start Script with Auto-Restart
 # This script runs the server and automatically restarts it when requested
 
-echo "Starting ALP Experimental server with auto-restart capability..."
+echo "Starting ESC server with auto-restart capability..."
 
-# Default command
-COMMAND="uv run python main.py server"
+# Default command - use python from virtual environment directly
+COMMAND="python main.py server"
 
 # Add any command line arguments passed to this script
 if [ $# -gt 0 ]; then
