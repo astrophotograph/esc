@@ -23,6 +23,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
     connection_timeout: float = 10.0
     read_timeout: float = 30.0
     write_timeout: float = 10.0
+    _should_reconnect_callback: callable = None
 
     def __init__(
         self,
@@ -31,6 +32,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         connection_timeout: float = 10.0,
         read_timeout: float = 30.0,
         write_timeout: float = 10.0,
+        should_reconnect_callback: callable = None,
         **kwargs,
     ):
         super().__init__(
@@ -39,6 +41,7 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             connection_timeout=connection_timeout,
             read_timeout=read_timeout,
             write_timeout=write_timeout,
+            _should_reconnect_callback=should_reconnect_callback,
             **kwargs,
         )
 
@@ -98,6 +101,13 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
     async def _reconnect_with_backoff(self) -> bool:
         """Attempt to reconnect with exponential backoff."""
+        # Check if reconnection is allowed via callback
+        if self._should_reconnect_callback and not self._should_reconnect_callback():
+            logging.info(
+                f"Reconnection skipped for {self.host}:{self.port} due to callback check"
+            )
+            return False
+            
         if self._reconnect_attempts >= self._max_reconnect_attempts:
             logging.error(
                 f"Max reconnection attempts ({self._max_reconnect_attempts}) reached for {self.host}:{self.port}"

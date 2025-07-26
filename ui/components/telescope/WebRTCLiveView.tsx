@@ -18,6 +18,7 @@ interface WebRTCLiveViewProps {
   zoomLevel: number;
   panPosition: { x: number; y: number };
   isPortrait: boolean;
+  stage?: string | null; // Add stage prop to control streaming behavior
   onLoad?: () => void;
   onError?: () => void;
   onConnectionStateChange?: (state: 'webrtc' | 'mjpeg' | 'disconnected') => void;
@@ -33,6 +34,7 @@ export function WebRTCLiveView({
   zoomLevel,
   panPosition,
   isPortrait,
+  stage,
   onLoad,
   onError,
   onConnectionStateChange,
@@ -60,14 +62,14 @@ export function WebRTCLiveView({
   } = useWebRTC({
     telescopeName: telescope?.name || telescope?.serial_number || 'default',
     streamType: 'live',
-    autoConnect: enableWebRTC && !!telescope,
+    autoConnect: enableWebRTC && !!telescope && stage !== 'Idle',
     autoReconnect: false, // Disable auto-reconnect for faster fallback
     maxReconnectAttempts: 1, // Only try once
   });
 
   // Generate MJPEG fallback URL
   useEffect(() => {
-    if (telescope) {
+    if (telescope && stage !== 'Idle') {
       // Check if this is a test telescope
       const isTestTelescope = (
         telescope.serial_number?.toLowerCase().includes('test') ||
@@ -88,8 +90,13 @@ export function WebRTCLiveView({
       
       setMjpegUrl(url);
       console.log('Setting MJPEG fallback URL:', url);
+    } else if (stage === 'Idle') {
+      // Clear URL when telescope is idle
+      setMjpegUrl('');
+      setConnectionType('disconnected');
+      onConnectionStateChange?.('disconnected');
     }
-  }, [telescope]);
+  }, [telescope, stage, onConnectionStateChange]);
 
   // Handle WebRTC stream assignment to video element
   useEffect(() => {
@@ -180,6 +187,11 @@ export function WebRTCLiveView({
     objectPosition: 'center',
     ...style,
   };
+
+  // Don't render any stream components when stage is Idle - let the parent component handle the test pattern
+  if (stage === 'Idle') {
+    return null;
+  }
 
   // Render Simple WebRTC if enabled
   if (useSimpleWebRTC) {

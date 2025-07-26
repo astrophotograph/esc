@@ -1261,14 +1261,29 @@ export function CameraView() {
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
             >
-              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) */}
-              {connectionLost && connectionType === 'disconnected' && (
-                <div className="w-full h-full flex items-center justify-center bg-black">
+              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) or when client mode is Idle */}
+              {((connectionLost && connectionType === 'disconnected') || localStreamStatus?.status?.stage === 'Idle' || (!localStreamStatus?.status?.stage && currentTelescope)) && (
+                <div className="w-full h-full flex items-center justify-center bg-black relative">
                   <RandomTestPattern
                     width={containerDimensions.width || 800}
                     height={containerDimensions.height || 600}
                     className="w-full h-full"
                   />
+                  {(localStreamStatus?.status?.stage === 'Idle' || (!localStreamStatus?.status?.stage && currentTelescope)) && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                      <div className="text-white text-center space-y-4">
+                        <div className="w-20 h-20 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-gray-500 rounded"></div>
+                        </div>
+                        <div className="text-xl font-semibold">Camera Idle</div>
+                        <div className="text-sm text-gray-300">
+                          {localStreamStatus?.status?.stage === 'Idle' 
+                            ? 'Telescope is not currently imaging or streaming'
+                            : 'Waiting for telescope status...'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1302,6 +1317,7 @@ export function CameraView() {
                 zoomLevel={zoomLevel}
                 panPosition={panPosition}
                 isPortrait={isPortrait}
+                stage={localStreamStatus?.status?.stage}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
                 onConnectionStateChange={setConnectionType}
