@@ -1,11 +1,12 @@
 {
-  "version": "25.07.26-pre-alpha.36",
-  "buildDate": "2025-07-26T18:02:01.862Z",
-  "buildNumber": "local",
+  "version": "25.07.26-pre-alpha.43",
+  "buildDate": "2025-07-26T20:26:24.466Z",
+  "buildNumber": "123",
+  "buildTime": "2025-07-26T20:26:24.466Z",
   "git": {
-    "hash": "a4de68b",
+    "hash": "de35f12",
     "isDirty": true,
     "latestTag": "build-20250719-202829",
-    "commitsSinceTag": 36
+    "commitsSinceTag": 43
   }
 }

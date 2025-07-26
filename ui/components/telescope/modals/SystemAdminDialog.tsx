@@ -23,18 +23,12 @@ interface SystemAdminDialogProps {
 }
 
 export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps) {
-  const [adminToken, setAdminToken] = useState("")
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartReason, setRestartReason] = useState("Manual restart from UI")
   
   const { versionInfo, isChecking, checkForUpdates } = useVersionCheck()
 
   const handleRestart = async () => {
-    if (!adminToken) {
-      toast.error("Please enter admin token")
-      return
-    }
-
     setIsRestarting(true)
     
     try {
@@ -42,7 +36,6 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Token": adminToken,
         },
         body: JSON.stringify({
           delay_seconds: 3,
@@ -65,7 +58,6 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
       // Close dialog after successful request
       setTimeout(() => {
         onOpenChange(false)
-        setAdminToken("")
       }, 1000)
       
     } catch (error) {
@@ -78,11 +70,6 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
   }
 
   const handleShutdown = async () => {
-    if (!adminToken) {
-      toast.error("Please enter admin token")
-      return
-    }
-
     if (!confirm("Are you sure you want to shutdown the server? It will need to be manually restarted.")) {
       return
     }
@@ -91,7 +78,7 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
       const response = await fetch("/api/system/shutdown?delay_seconds=3", {
         method: "POST",
         headers: {
-          "X-Admin-Token": adminToken,
+          "Content-Type": "application/json",
         },
       })
 
@@ -121,7 +108,7 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
         <DialogHeader>
           <DialogTitle>System Administration</DialogTitle>
           <DialogDescription>
-            Restart or shutdown the server. Requires admin authentication.
+            Restart or shutdown the server. Available for localhost connections.
           </DialogDescription>
         </DialogHeader>
         
@@ -133,20 +120,6 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
               The server will automatically restart if using the start_with_restart.sh script.
             </AlertDescription>
           </Alert>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="admin-token" className="text-right">
-              Admin Token
-            </Label>
-            <Input
-              id="admin-token"
-              type="password"
-              value={adminToken}
-              onChange={(e) => setAdminToken(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter admin token"
-            />
-          </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="restart-reason" className="text-right">
@@ -236,14 +209,14 @@ export function SystemAdminDialog({ open, onOpenChange }: SystemAdminDialogProps
           <Button
             variant="destructive"
             onClick={handleShutdown}
-            disabled={isRestarting || !adminToken}
+            disabled={isRestarting}
           >
             <Power className="w-4 h-4 mr-2" />
             Shutdown
           </Button>
           <Button
             onClick={handleRestart}
-            disabled={isRestarting || !adminToken}
+            disabled={isRestarting}
           >
             {isRestarting ? (
               <>

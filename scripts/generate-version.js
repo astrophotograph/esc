@@ -116,12 +116,13 @@ function determineVersionFromGit(gitInfo) {
 
 function generateBuildInfo(version, gitInfo) {
   const buildDate = new Date().toISOString();
-  const buildNumber = process.env.GITHUB_RUN_NUMBER || 'local';
+  const buildNumber = process.env.GITHUB_RUN_NUMBER || process.env.BUILD_NUMBER || 'local';
   
   return {
     version,
     buildDate,
     buildNumber,
+    buildTime: new Date().toISOString(),
     git: gitInfo.hasGit ? {
       hash: gitInfo.hash,
       isDirty: gitInfo.isDirty,

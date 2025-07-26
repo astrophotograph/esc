@@ -33,8 +33,22 @@ export function VersionFooter() {
   const buildDate = buildInfo?.buildDate 
     ? new Date(buildInfo.buildDate).toISOString().split('T')[0]
     : (process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString().split('T')[0])
+  const buildTime = buildInfo?.buildDate 
+    ? new Date(buildInfo.buildDate).toTimeString().split(' ')[0].slice(0, 5) // HH:MM format
+    : null
   const buildNumber = buildInfo?.buildNumber || 'local'
   const gitHash = buildInfo?.git?.hash
+  
+  // Format build info for display
+  const formatBuildInfo = () => {
+    const parts = []
+    if (buildTime && buildNumber !== 'local') {
+      parts.push(`${buildDate} ${buildTime}`)
+    } else {
+      parts.push(buildDate)
+    }
+    return parts.join(' ')
+  }
   
   // Format version display - show phase prominently if present
   const formatVersionDisplay = (ver: string) => {
@@ -67,17 +81,17 @@ export function VersionFooter() {
             )}
           </div>
           <span className="hidden sm:inline">•</span>
-          <span className="hidden sm:inline">Build: {buildDate}</span>
-          {gitHash && (
-            <>
-              <span className="hidden md:inline">•</span>
-              <span className="hidden md:inline font-mono">{gitHash}</span>
-            </>
-          )}
+          <span className="hidden sm:inline">{formatBuildInfo()}</span>
           {buildNumber !== 'local' && (
             <>
+              <span className="hidden md:inline">•</span>
+              <span className="hidden md:inline">#{buildNumber}</span>
+            </>
+          )}
+          {gitHash && (
+            <>
               <span className="hidden lg:inline">•</span>
-              <span className="hidden lg:inline">#{buildNumber}</span>
+              <span className="hidden lg:inline font-mono">{gitHash}</span>
             </>
           )}
         </div>

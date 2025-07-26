@@ -88,12 +88,12 @@ async def get_system_status():
     )
 
 
-@router.post("/restart", response_model=RestartResponse, dependencies=[Depends(verify_admin_token)])
+@router.post("/restart", response_model=RestartResponse)
 async def restart_server(request: RestartRequest):
     """
     Restart the server after a specified delay.
     
-    Requires admin authentication token in X-Admin-Token header.
+    Note: Authentication removed for localhost deployment.
     """
     logger.warning(f"Server restart requested: {request.reason}")
     
@@ -121,12 +121,12 @@ async def restart_server(request: RestartRequest):
     )
 
 
-@router.post("/shutdown", dependencies=[Depends(verify_admin_token)])
+@router.post("/shutdown")
 async def shutdown_server(delay_seconds: int = 2):
     """
     Shutdown the server after a specified delay.
     
-    Requires admin authentication token in X-Admin-Token header.
+    Note: Authentication removed for localhost deployment.
     """
     logger.warning(f"Server shutdown requested, will shutdown in {delay_seconds} seconds")
     
