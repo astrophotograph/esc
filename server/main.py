@@ -6,6 +6,7 @@ import logging as orig_logging
 import os
 import signal
 import tempfile
+import time
 from typing import Optional, AsyncGenerator
 
 import click
@@ -2472,6 +2473,7 @@ class Controller:
         # Add shutdown handler for graceful cleanup
         @self.app.on_event("shutdown")
         async def shutdown_event():
+            nonlocal shutdown_initiated
             try:
                 logging.info("Starting graceful shutdown...")
                 
@@ -2507,10 +2509,12 @@ class Controller:
                 await self.cleanup_background_tasks()
                 
                 logging.info("Graceful shutdown completed")
+                shutdown_initiated = False  # Mark shutdown as completed successfully
                 
             except Exception as e:
                 logging.error(f"Error during shutdown: {e}")
                 logging.info("Shutdown completed with errors")
+                shutdown_initiated = False  # Mark shutdown as completed (even with errors)
 
         # Add our own endpoints
         @self.app.get("/", response_class=HTMLResponse)
@@ -3444,10 +3448,29 @@ class Controller:
                 "remote_controllers_count": len(self.remote_controllers),
             }
 
-        # Set up signal handlers for graceful shutdown
+        # Set up signal handlers for graceful shutdown with forced exit backup
+        shutdown_initiated = False
+        
         def handle_signal(signum, frame):
+            nonlocal shutdown_initiated
+            if shutdown_initiated:
+                logging.warning(f"Received second signal {signum}, forcing immediate exit!")
+                os._exit(1)
+            
+            shutdown_initiated = True
             logging.info(f"Received signal {signum}, initiating graceful shutdown...")
-            # The signal will be handled by uvicorn's shutdown process
+            
+            # Set up a backup timer to force exit after 5 seconds
+            def force_exit_timer():
+                time.sleep(5)
+                if shutdown_initiated:  # Check if we're still shutting down
+                    logging.error("Graceful shutdown timeout exceeded (5s), forcing exit!")
+                    os._exit(1)
+            
+            # Start the force exit timer in a separate thread
+            import threading
+            timer_thread = threading.Thread(target=force_exit_timer, daemon=True)
+            timer_thread.start()
             
         signal.signal(signal.SIGINT, handle_signal)
         signal.signal(signal.SIGTERM, handle_signal)
@@ -3459,8 +3482,8 @@ class Controller:
             log_level="trace",
             log_config=None,
             reload=self.reload,
-            # Enable graceful shutdown with timeout
-            timeout_graceful_shutdown=30,
+            # Enable graceful shutdown with 5-second timeout
+            timeout_graceful_shutdown=5,
         )
         server = uvicorn.Server(config)
         
