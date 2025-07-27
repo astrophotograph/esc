@@ -38,7 +38,7 @@ from smarttel.imaging.upscaler import (
 )
 from smarttel.seestar.client import SeestarClient
 from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.discovery import discover_seestars
+from smarttel.seestar.commands.discovery import discover_seestars, remove_telescope_from_known
 from smarttel.seestar.commands.parameterized import (
     GotoTargetParameters,
     GotoTarget,
@@ -1383,6 +1383,9 @@ class Controller:
         if telescope:
             logging.info(f"Removed local telescope {telescope.name}")
 
+            # Remove from discovery tracking to allow re-discovery logging
+            remove_telescope_from_known(telescope.host)
+
             # Remove from database if it was manually added
             if telescope.discovery_method == "manual":
                 asyncio.create_task(self.db.delete_telescope_by_name(name))
@@ -1394,6 +1397,11 @@ class Controller:
         remote_telescope = self.remote_telescopes.pop(name, None)
         if remote_telescope:
             logging.info(f"Removed remote telescope {name}")
+            
+            # Remove from discovery tracking if it has a host
+            if "host" in remote_telescope:
+                remove_telescope_from_known(remote_telescope["host"])
+            
             # todo : need to remove proxy router
             return
 

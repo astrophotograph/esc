@@ -120,20 +120,20 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         """Attempt to reconnect with exponential backoff."""
         # Check if reconnection is allowed via callback
         if self._should_reconnect_callback and not self._should_reconnect_callback():
-            logging.info(
+            logging.debug(
                 f"Reconnection skipped for {self.host}:{self.port} due to callback check"
-            )
-            return False
-            
-        if self._reconnect_attempts >= self._max_reconnect_attempts:
-            logging.error(
-                f"Max reconnection attempts ({self._max_reconnect_attempts}) reached for {self.host}:{self.port}"
             )
             return False
 
         self._reconnect_attempts += 1
+        
+        # Use exponential backoff but cap at max delay, don't give up after max attempts
+        # Reset attempts counter periodically to prevent overflow and allow fresh logging
+        if self._reconnect_attempts > 50:  # Reset after many attempts to refresh logging
+            self._reconnect_attempts = 10
+            
         delay = min(
-            self._base_reconnect_delay * (2 ** (self._reconnect_attempts - 1)),
+            self._base_reconnect_delay * (2 ** min(self._reconnect_attempts - 1, 6)),  # Cap exponential growth
             self._max_reconnect_delay
         ) + random.uniform(0, 1)
 
@@ -142,12 +142,12 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         current_time = time.time()
         if current_time - self._last_reconnect_log > self._reconnect_log_interval:
             logging.info(
-                f"Attempting reconnection {self._reconnect_attempts}/{self._max_reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
+                f"Attempting reconnection #{self._reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
             )
             self._last_reconnect_log = current_time
         else:
             logging.debug(
-                f"Reconnection attempt {self._reconnect_attempts}/{self._max_reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
+                f"Reconnection attempt #{self._reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
             )
             
         await asyncio.sleep(delay)
@@ -155,18 +155,18 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         try:
             await self.close()  # Ensure clean state
             await self.open()
-            logging.info(f"Successfully reconnected to {self.host}:{self.port}")
+            logging.info(f"Successfully reconnected to {self.host}:{self.port} (after {self._reconnect_attempts} attempts)")
             self._last_reconnect_log = 0.0  # Reset log throttling on success
             return True
         except Exception as e:
             # Only log detailed error every few attempts to avoid spam
-            if self._reconnect_attempts <= 2 or self._reconnect_attempts % 3 == 0:
-                logging.error(
-                    f"Reconnection attempt {self._reconnect_attempts} failed: {e}"
+            if self._reconnect_attempts <= 3 or self._reconnect_attempts % 5 == 0:
+                logging.warning(
+                    f"Reconnection attempt #{self._reconnect_attempts} failed: {e}"
                 )
             else:
                 logging.debug(
-                    f"Reconnection attempt {self._reconnect_attempts} failed: {e}"
+                    f"Reconnection attempt #{self._reconnect_attempts} failed: {e}"
                 )
             return False
 

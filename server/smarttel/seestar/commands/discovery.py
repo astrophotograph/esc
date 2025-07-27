@@ -4,8 +4,12 @@ import asyncio
 import json
 import socket
 import ipaddress
-from typing import List, Tuple
+from typing import List, Tuple, Set
 from loguru import logger as logging
+
+# Global registry to track known telescopes and avoid duplicate logging
+_known_telescopes: Set[str] = set()
+_initial_discovery_complete = False
 
 
 def get_all_network_interfaces() -> List[Tuple[str, str]]:
@@ -68,6 +72,8 @@ def get_network_info():
 
 async def discover_seestars(timeout=10):
     """Discover Seestars using asyncio for asynchronous UDP broadcasting on all network interfaces."""
+    global _initial_discovery_complete
+    
     discovered_devices = []
     discovered_ips = set()  # Track unique device IPs
 
@@ -78,7 +84,11 @@ async def discover_seestars(timeout=10):
         logging.warning("No network interfaces found for discovery")
         return discovered_devices
 
-    logging.info(f"Discovering on {len(interfaces)} network interface(s)")
+    # Only log interface info during initial discovery
+    if not _initial_discovery_complete:
+        logging.info(f"Discovering on {len(interfaces)} network interface(s)")
+    else:
+        logging.debug(f"Discovering on {len(interfaces)} network interface(s)")
 
     # Create tasks for parallel discovery on all interfaces
     tasks = []
@@ -91,9 +101,27 @@ async def discover_seestars(timeout=10):
     # Run all discoveries in parallel
     await asyncio.gather(*tasks, return_exceptions=True)
 
-    logging.info(
-        f"Discovery complete. Found {len(discovered_devices)} unique device(s)"
-    )
+    # Count new devices found in this scan
+    new_devices_count = 0
+    for device in discovered_devices:
+        if device["address"] not in _known_telescopes:
+            new_devices_count += 1
+
+    # Log discovery results
+    if not _initial_discovery_complete:
+        logging.info(
+            f"Initial discovery complete. Found {len(discovered_devices)} unique device(s)"
+        )
+        _initial_discovery_complete = True
+    elif new_devices_count > 0:
+        logging.info(
+            f"Discovery found {new_devices_count} new device(s) ({len(discovered_devices)} total)"
+        )
+    else:
+        logging.trace(
+            f"Discovery complete. Found {len(discovered_devices)} device(s) (no new devices)"
+        )
+    
     return discovered_devices
 
 
@@ -105,7 +133,7 @@ async def discover_on_interface(
     discovered_ips: set,
 ):
     """Discover Seestars on a specific network interface."""
-    logging.debug(f"Discovering on interface {local_ip} -> {broadcast_ip}")
+    logging.trace(f"Discovering on interface {local_ip} -> {broadcast_ip}")
 
     broadcast_message = (
         json.dumps(
@@ -133,11 +161,13 @@ async def discover_on_interface(
                 self.transport = transport
 
             def datagram_received(self, data, addr):
+                global _known_telescopes, _initial_discovery_complete
+                
                 device_ip = addr[0]
                 logging.trace(f"Received response from {addr}: {data.decode('utf-8')}")
                 try:
                     response = json.loads(data.decode("utf-8"))
-                    # Only add if we haven't seen this device before
+                    # Only add if we haven't seen this device in this discovery session
                     if device_ip not in discovered_ips:
                         discovered_ips.add(device_ip)
                         discovered_devices.append(
@@ -147,9 +177,23 @@ async def discover_on_interface(
                                 "discovered_via": local_ip,
                             }
                         )
-                        logging.info(
-                            f"Found new device at {device_ip} via interface {local_ip}"
-                        )
+                        
+                        # Only log if this is a truly new device (not seen in any previous discovery)
+                        if device_ip not in _known_telescopes:
+                            _known_telescopes.add(device_ip)
+                            logging.info(
+                                f"Found new telescope at {device_ip} via interface {local_ip}"
+                            )
+                        elif not _initial_discovery_complete:
+                            # During initial discovery, log all found devices
+                            logging.info(
+                                f"Found device at {device_ip} via interface {local_ip}"
+                            )
+                        else:
+                            # Known device found again - only log at debug level
+                            logging.trace(
+                                f"Re-discovered known device at {device_ip} via interface {local_ip}"
+                            )
                 except json.JSONDecodeError:
                     logging.error(f"Received non-JSON response from {addr}: {data}")
 
@@ -160,7 +204,7 @@ async def discover_on_interface(
 
         port = 4720
         transport.sendto(message, (broadcast_ip, port))
-        logging.debug(
+        logging.trace(
             f"Sent discovery message from {local_ip} to {broadcast_ip}:{port}"
         )
 
@@ -173,3 +217,22 @@ async def discover_on_interface(
     except Exception as e:
         logging.error(f"Error during discovery on interface {local_ip}: {e}")
         sock.close()
+
+
+def mark_telescope_as_known(device_ip: str):
+    """Mark a telescope as known to avoid duplicate logging in future discoveries."""
+    global _known_telescopes
+    _known_telescopes.add(device_ip)
+
+
+def remove_telescope_from_known(device_ip: str):
+    """Remove a telescope from the known list (e.g., when manually removed)."""
+    global _known_telescopes
+    _known_telescopes.discard(device_ip)
+
+
+def reset_discovery_state():
+    """Reset discovery state for testing or reinitialization."""
+    global _known_telescopes, _initial_discovery_complete
+    _known_telescopes.clear()
+    _initial_discovery_complete = False
