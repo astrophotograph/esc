@@ -31,7 +31,7 @@ from smarttel.seestar.commands.simple import (
     GetFocuserPosition,
     GetDiskVolume,
     ScopeGetEquCoord,
-    ScopeSync, PiIsVerified,
+    ScopeSync, PiIsVerified, BalanceSensorInfo, GetDeviceStateResponse,
 )
 from smarttel.seestar.connection import SeestarConnection
 from smarttel.seestar.events import (
@@ -78,6 +78,7 @@ class SeestarStatus(BaseModel):
     totalMB: int | None = None
     ra: float | None = None
     dec: float | None = None
+    balance_sensor: BalanceSensorInfo | None = None
 
     def reset(self):
         self.temp = None
@@ -658,9 +659,16 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     return None
 
     async def update_current_coords(self) -> bool:
-        """Update telescope position.
+        """Update telescope position and balance sensor.
 
         Returns True if the position changed, False otherwise."""
+        response: CommandResponse = await self.send_and_recv(GetDeviceState(params={
+            "keys": ["balance_sensor"]
+        }))
+        if response is not None:
+            dev_balance_sensor = GetDeviceStateResponse(**response.result)
+            self.status.balance_sensor = dev_balance_sensor.balance_sensor
+
         response = await self.send_and_recv(ScopeGetEquCoord())
         logging.trace(f"Received ScopeGetEquCoord: {response}")
         if response is not None:
@@ -843,6 +851,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         Sends a series of commands to initialize the telescope."""
 
+        # get device state.  if device.is_verified == False, initialize
         tz_name = tzlocal.get_localzone_name()
         tz = tzlocal.get_localzone()
         now = datetime.now(tz)

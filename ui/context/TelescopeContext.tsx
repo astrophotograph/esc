@@ -623,7 +623,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showPipStatus, setShowPipStatus] = useState(true)
 
   // Show stream status in main view
-  const [showStreamStatus, setShowStreamStatus] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-stream-status", true)
+  const [showStreamStatus, setShowStreamStatus] = usePersistentState(STORAGE_KEYS.UI_STATE + "-show-stream-status", false)
 
   // Stream status
   const [streamStatus, setStreamStatus] = useState<any>(null)
@@ -1182,8 +1182,35 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Add a status alert using toast system
+  // Store recent alerts for deduplication
+  const recentAlertsRef = useRef<Map<string, number>>(new Map())
+  
+  // Add a status alert using toast system with debouncing
   const addStatusAlert = (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => {
+    // Create a unique key for this alert based on type, title, and message
+    const alertKey = `${alert.type}-${alert.title}-${alert.message || ''}`
+    const now = Date.now()
+    const lastShown = recentAlertsRef.current.get(alertKey)
+    
+    // Debounce duplicate messages within 2 seconds
+    const DEBOUNCE_TIME = 2000
+    
+    if (lastShown && (now - lastShown) < DEBOUNCE_TIME) {
+      // Skip this duplicate alert
+      return
+    }
+    
+    // Update the last shown time for this alert
+    recentAlertsRef.current.set(alertKey, now)
+    
+    // Clean up old entries to prevent memory leak (remove entries older than 5 seconds)
+    const CLEANUP_TIME = 5000
+    for (const [key, timestamp] of recentAlertsRef.current.entries()) {
+      if (now - timestamp > CLEANUP_TIME) {
+        recentAlertsRef.current.delete(key)
+      }
+    }
+    
     // Use Sonner toast with appropriate styling based on alert type
     if (alert.type === "error") {
       toast.error(alert.title, {

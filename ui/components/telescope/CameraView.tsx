@@ -28,7 +28,16 @@ import {
   Search,
   Map,
   Sparkles,
-  Pen
+  Pen,
+  Target,
+  Focus,
+  Compass,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Cpu,
+  Zap
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -1290,7 +1299,7 @@ export function CameraView() {
                         </div>
                         <div className="text-xl font-semibold">Camera Idle</div>
                         <div className="text-sm text-gray-300">
-                          {localStreamStatus?.status?.stage === 'Idle' 
+                          {localStreamStatus?.status?.stage === 'Idle'
                             ? 'Telescope is not currently imaging or streaming'
                             : 'Waiting for telescope status...'}
                         </div>
@@ -1368,17 +1377,327 @@ export function CameraView() {
               isPortrait={isPortrait}
             />
 
-            {/* Status Stream Overlay */}
+            {/* Comprehensive Status Stream Overlay */}
             {localStreamStatus && showStreamStatus && (
-              <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-sm" style={{ zIndex: 20 }}>
-                <h3 className="font-semibold mb-1 text-blue-400">Stream Status</h3>
-                <div className="text-xs text-gray-300">
-                  {Object.entries(localStreamStatus).map(([key, value]) => (
-                    <div key={key} className="flex justify-between gap-4">
-                      <span className="font-medium">{key}:</span>
-                      <span>{String(value)}</span>
+              <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-4 text-sm max-w-sm max-h-[560px] overflow-y-auto" style={{ zIndex: 20 }}>
+                <h3 className="font-semibold mb-3 text-blue-400 flex items-center gap-2">
+                  <Cpu className="w-4 h-4" />
+                  Telescope Status
+                </h3>
+                <div className="space-y-3 text-xs">
+
+                  {/* Power & Temperature Section */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-green-400 border-b border-green-400/30 pb-1">Power & Thermal</h4>
+
+                    {/* Battery */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {localStreamStatus?.status?.charger_status === "Charging" ? (
+                          <BatteryCharging className="w-4 h-4 text-green-400" />
+                        ) : localStreamStatus?.status?.charger_status === "Full" ? (
+                          <BatteryFull className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <Battery className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-gray-300">Battery</span>
+                      </div>
+                      <span className="text-white font-mono">
+                        {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
+                        {localStreamStatus?.status?.charger_status && ` (${localStreamStatus.status.charger_status})`}
+                      </span>
                     </div>
-                  ))}
+
+                    {/* Charger Online */}
+                    {localStreamStatus?.status?.charge_online !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-yellow-400" />
+                          <span className="text-gray-300">Charger</span>
+                        </div>
+                        <span className={`font-mono ${localStreamStatus.status.charge_online ? 'text-green-400' : 'text-red-400'}`}>
+                          {localStreamStatus.status.charge_online ? 'Connected' : 'Disconnected'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Temperature */}
+                    {localStreamStatus?.status?.temp !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Thermometer className={`w-4 h-4 ${localStreamStatus.status.temp < 30 ? 'text-blue-400' : 'text-orange-400'}`} />
+                          <span className="text-gray-300">Temperature</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Imaging Section */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-purple-400 border-b border-purple-400/30 pb-1">Imaging</h4>
+
+                    {/* Stage */}
+                    {localStreamStatus?.status?.stage && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Cpu className="w-4 h-4 text-blue-400" />
+                          <span className="text-gray-300">Stage</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.stage}</span>
+                      </div>
+                    )}
+
+                    {/* Target */}
+                    {/*{localStreamStatus?.status?.target_name && (*/}
+                    {/*  <div className="flex items-center justify-between gap-3">*/}
+                    {/*    <div className="flex items-center gap-2">*/}
+                    {/*      <Target className="w-4 h-4 text-red-400" />*/}
+                    {/*      <span className="text-gray-300">Target</span>*/}
+                    {/*    </div>*/}
+                    {/*    <span className="text-white font-mono truncate max-w-32">{localStreamStatus.status.target_name}</span>*/}
+                    {/*  </div>*/}
+                    {/*)}*/}
+
+                    {/* Stacked Frames */}
+                    {/*<div className="flex items-center justify-between gap-3">*/}
+                    {/*  <div className="flex items-center gap-2">*/}
+                    {/*    <Layers className={`w-4 h-4 ${(localStreamStatus?.status?.stacked_frame || 0) > 0 ? 'text-blue-400' : 'text-gray-400'}`} />*/}
+                    {/*    <span className="text-gray-300">Stacked</span>*/}
+                    {/*  </div>*/}
+                    {/*  <span className="text-white font-mono">{localStreamStatus?.status?.stacked_frame || 0}</span>*/}
+                    {/*</div>*/}
+
+                    {/* Dropped Frames */}
+                    {/*<div className="flex items-center justify-between gap-3">*/}
+                    {/*  <div className="flex items-center gap-2">*/}
+                    {/*    <XCircle className={`w-4 h-4 ${(localStreamStatus?.status?.dropped_frame || 0) > 0 ? 'text-red-400' : 'text-gray-400'}`} />*/}
+                    {/*    <span className="text-gray-300">Dropped</span>*/}
+                    {/*  </div>*/}
+                    {/*  <span className="text-white font-mono">{localStreamStatus?.status?.dropped_frame || 0}</span>*/}
+                    {/*</div>*/}
+
+                    {/* Gain */}
+                    {/*{localStreamStatus?.status?.gain !== undefined && (*/}
+                    {/*  <div className="flex items-center justify-between gap-3">*/}
+                    {/*    <div className="flex items-center gap-2">*/}
+                    {/*      <Settings className="w-4 h-4 text-purple-400" />*/}
+                    {/*      <span className="text-gray-300">Gain</span>*/}
+                    {/*    </div>*/}
+                    {/*    <span className="text-white font-mono">{localStreamStatus.status.gain}</span>*/}
+                    {/*  </div>*/}
+                    {/*)}*/}
+
+                    {/* LP Filter */}
+                    {/*<div className="flex items-center justify-between gap-3">*/}
+                    {/*  <div className="flex items-center gap-2">*/}
+                    {/*    <Filter className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? 'text-amber-400' : 'text-gray-400'}`} />*/}
+                    {/*    <span className="text-gray-300">LP Filter</span>*/}
+                    {/*  </div>*/}
+                    {/*  <span className={`font-mono ${localStreamStatus?.status?.lp_filter ? 'text-green-400' : 'text-gray-400'}`}>*/}
+                    {/*    {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}*/}
+                    {/*  </span>*/}
+                    {/*</div>*/}
+
+                    {/* Focus Position */}
+                    {localStreamStatus?.status?.focus_position !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Focus className="w-4 h-4 text-cyan-400" />
+                          <span className="text-gray-300">Focus</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Coordinates Section */}
+                  {(localStreamStatus?.status?.ra !== undefined || localStreamStatus?.status?.dec !== undefined) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
+
+                      {localStreamStatus?.status?.ra !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">RA</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus?.status?.dec !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">Dec</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Storage Section */}
+                  {/*{(localStreamStatus?.status?.freeMB !== undefined || localStreamStatus?.status?.totalMB !== undefined) && (*/}
+                  {/*  <div className="space-y-2">*/}
+                  {/*    <h4 className="font-medium text-yellow-400 border-b border-yellow-400/30 pb-1">Storage</h4>*/}
+
+                  {/*    <div className="flex items-center justify-between gap-3">*/}
+                  {/*      <div className="flex items-center gap-2">*/}
+                  {/*        <HardDrive className="w-4 h-4 text-yellow-400" />*/}
+                  {/*        <span className="text-gray-300">Disk Usage</span>*/}
+                  {/*      </div>*/}
+                  {/*      <span className="text-white font-mono">*/}
+                  {/*        {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB*/}
+                  {/*          ? `${Math.round(((localStreamStatus.status.totalMB - localStreamStatus.status.freeMB) / localStreamStatus.status.totalMB) * 100)}%`*/}
+                  {/*          : 'N/A'}*/}
+                  {/*      </span>*/}
+                  {/*    </div>*/}
+
+                  {/*    {localStreamStatus?.status?.freeMB !== undefined && (*/}
+                  {/*      <div className="flex items-center justify-between gap-3">*/}
+                  {/*        <span className="text-gray-400 ml-6">Free</span>*/}
+                  {/*        <span className="text-gray-300 font-mono">{Math.round(localStreamStatus.status.freeMB)}MB</span>*/}
+                  {/*      </div>*/}
+                  {/*    )}*/}
+
+                  {/*    {localStreamStatus?.status?.totalMB !== undefined && (*/}
+                  {/*      <div className="flex items-center justify-between gap-3">*/}
+                  {/*        <span className="text-gray-400 ml-6">Total</span>*/}
+                  {/*        <span className="text-gray-300 font-mono">{Math.round(localStreamStatus.status.totalMB)}MB</span>*/}
+                  {/*      </div>*/}
+                  {/*    )}*/}
+                  {/*  </div>*/}
+                  {/*)}*/}
+
+                  {/* Pattern Monitoring Section */}
+                  {(localStreamStatus?.status?.pattern_match_found !== undefined ||
+                    localStreamStatus?.status?.pattern_match_file ||
+                    localStreamStatus?.status?.pattern_match_last_check) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-orange-400 border-b border-orange-400/30 pb-1">Pattern Monitor</h4>
+
+                      {localStreamStatus?.status?.pattern_match_found !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            {localStreamStatus.status.pattern_match_found ? (
+                              <CheckCircle className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                            )}
+                            <span className="text-gray-300">Pattern</span>
+                          </div>
+                          <span className={`font-mono ${localStreamStatus.status.pattern_match_found ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {localStreamStatus.status.pattern_match_found ? 'Found' : 'Not Found'}
+                          </span>
+                        </div>
+                      )}
+
+                      {localStreamStatus?.status?.pattern_match_file && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-300">File</span>
+                          </div>
+                          <span className="text-gray-300 font-mono text-xs truncate max-w-32">
+                            {localStreamStatus.status.pattern_match_file.split('/').pop() || localStreamStatus.status.pattern_match_file}
+                          </span>
+                        </div>
+                      )}
+
+                      {localStreamStatus?.status?.pattern_match_last_check && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-300">Last Check</span>
+                          </div>
+                          <span className="text-gray-300 font-mono text-xs">
+                            {new Date(localStreamStatus.status.pattern_match_last_check).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Balance Sensor Section */}
+                  {localStreamStatus?.status?.balance_sensor && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-indigo-400 border-b border-indigo-400/30 pb-1">Balance Sensor</h4>
+
+                      {localStreamStatus.status.balance_sensor.data?.angle !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-indigo-400" />
+                            <span className="text-gray-300">Angle</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.balance_sensor.data.angle.toFixed(2)}°</span>
+                        </div>
+                      )}
+
+                      {/* Calculated angle from X and Y */}
+                      {localStreamStatus.status.balance_sensor.data?.x !== undefined &&
+                       localStreamStatus.status.balance_sensor.data?.y !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">XY Angle</span>
+                          </div>
+                          <span className="text-white font-mono">
+                            {(() => {
+                              const angle = Math.atan2(
+                                localStreamStatus.status.balance_sensor.data.y,
+                                localStreamStatus.status.balance_sensor.data.x
+                              ) * 180 / Math.PI;
+                              // Normalize to 0-360 range
+                              return ((angle + 360) % 360).toFixed(1);
+                            })()}°
+                          </span>
+                        </div>
+                      )}
+
+                      {localStreamStatus.status.balance_sensor.data?.x !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-400 ml-6">X</span>
+                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.x * 100).toFixed(1)}</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus.status.balance_sensor.data?.y !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-400 ml-6">Y</span>
+                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.y * 100).toFixed(1)}</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus.status.balance_sensor.data?.z !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-400 ml-6">Z</span>
+                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.z * 100).toFixed(1)}</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus.status.balance_sensor.code !== undefined && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-400 ml-6">Code</span>
+                          <span className="text-gray-300 font-mono">{localStreamStatus.status.balance_sensor.code}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Annotation Results Section */}
+                  {localStreamStatus?.status?.annotate && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-pink-400 border-b border-pink-400/30 pb-1">Annotations</h4>
+                      <div className="text-xs text-gray-300 bg-gray-800/50 rounded p-2 max-h-20 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap font-mono text-xs">
+                          {JSON.stringify(localStreamStatus.status.annotate, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
             )}

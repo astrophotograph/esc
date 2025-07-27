@@ -7,11 +7,6 @@ from pydantic import BaseModel
 from smarttel.seestar.commands.common import BaseCommand
 
 
-class GetDiskVolume(BaseCommand):
-    """Get the disk volume from the Seestar."""
-
-    method: Literal["get_disk_volume"] = "get_disk_volume"
-
 class PiReboot(BaseCommand):
     """Reboot the Seestar."""
     method: Literal["pi_reboot"] = "pi_reboot"
@@ -57,11 +52,11 @@ class GetDeviceState(BaseCommand):
     """Get the device state from the Seestar."""
 
     method: Literal["get_device_state"] = "get_device_state"
+    params: Optional[dict[str, Any]] = None
 
 
 class GetDiskVolume(BaseCommand):
     """Get the disk volume from the Seestar."""
-
     method: Literal["get_disk_volume"] = "get_disk_volume"
 
 
@@ -463,18 +458,19 @@ class PiStatusInfo(BaseModel):
 
 
 class GetDeviceStateResponse(BaseModel):
-    """Response from GetDeviceState."""
+    """Response from GetDeviceState.
 
-    device: DeviceInfo
-    setting: DeviceSettings
-    location_lon_lat: List[float]
-    camera: CameraInfo
+    All fields are optional because during the request, the response keys may be specified."""
+    device: Optional[DeviceInfo] = None
+    setting: Optional[DeviceSettings] = None
+    location_lon_lat: Optional[List[float]] = None
+    camera: Optional[CameraInfo] = None
     second_camera: Optional[CameraInfo] | None = None  # only S30
-    focuser: FocuserInfo
-    ap: ApInfo
-    station: StationInfo
-    storage: StorageInfo
-    balance_sensor: BalanceSensorInfo
-    compass_sensor: CompassSensorInfo
-    mount: MountInfo
-    pi_status: PiStatusInfo
+    focuser: Optional[FocuserInfo] = None
+    ap: Optional[ApInfo] = None
+    station: Optional[StationInfo] = None
+    storage: Optional[StorageInfo] = None
+    balance_sensor: Optional[BalanceSensorInfo] = None
+    compass_sensor: Optional[CompassSensorInfo] = None
+    mount: Optional[MountInfo] = None
+    pi_status: Optional[PiStatusInfo] = None
