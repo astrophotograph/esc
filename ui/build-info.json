@@ -1,12 +1,12 @@
 {
-  "version": "25.07.26-pre-alpha.47",
-  "buildDate": "2025-07-27T00:32:59.112Z",
+  "version": "25.07.27-pre-alpha.53",
+  "buildDate": "2025-07-27T05:07:08.308Z",
   "buildNumber": "local",
-  "buildTime": "2025-07-27T00:32:59.112Z",
+  "buildTime": "2025-07-27T05:07:08.308Z",
   "git": {
-    "hash": "5f098e6",
+    "hash": "cc07bd9",
     "isDirty": true,
     "latestTag": "build-20250719-202829",
-    "commitsSinceTag": 47
+    "commitsSinceTag": 53
   }
 }

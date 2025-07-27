@@ -3,9 +3,9 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { useWebRTC } from '../../hooks/useWebRTC';
-import type { TelescopeInfo } from '../../types/telescope-types';
-import { generateStreamingUrl } from '../../utils/streaming';
+import { useWebRTC } from '@/hooks/useWebRTC';
+import type { TelescopeInfo } from '@/types/telescope-types';
+// import { generateStreamingUrl } from '../../utils/streaming';
 import SimpleWebRTC from './SimpleWebRTC';
 
 interface WebRTCLiveViewProps {
@@ -55,10 +55,10 @@ export function WebRTCLiveView({
     isConnected,
     error: webrtcError,
     stream,
-    connect: connectWebRTC,
-    disconnect: disconnectWebRTC,
+    // connect: connectWebRTC,
+    // disconnect: disconnectWebRTC,
     retry: retryWebRTC,
-    service,
+    // service,
   } = useWebRTC({
     telescopeName: telescope?.name || telescope?.serial_number || 'default',
     streamType: 'live',
@@ -76,7 +76,7 @@ export function WebRTCLiveView({
         telescope.name?.toLowerCase().includes('test') ||
         telescope.product_model?.toLowerCase().includes('test')
       );
-      
+
       let newUrl;
       if (isTestTelescope) {
         // Use WebRTC test endpoint for test telescopes
@@ -87,7 +87,7 @@ export function WebRTCLiveView({
         newUrl = `/api/${telescope.name}/stream`;
         console.log('Using real telescope stream endpoint for:', telescope.name);
       }
-      
+
       // Only update URL if it's actually different to prevent duplicate requests
       if (newUrl !== mjpegUrl) {
         setMjpegUrl(newUrl);
@@ -215,7 +215,7 @@ export function WebRTCLiveView({
           onError={onError}
           onConnectionStateChange={onConnectionStateChange}
         />
-        
+
         {/* Controls overlay - hidden for cleaner UI */}
         {false && (
           <div className="absolute bottom-2 right-2 flex gap-2">
@@ -246,7 +246,7 @@ export function WebRTCLiveView({
           draggable="false"
           onDragStart={(e) => e.preventDefault()}
         />
-        
+
         {/* WebRTC Loading/Error Overlay */}
         {(isConnecting || webrtcError) && (
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
@@ -257,7 +257,7 @@ export function WebRTCLiveView({
                   <span>Connecting via WebRTC...</span>
                 </div>
               )}
-              
+
               {webrtcError && (
                 <div className="space-y-2">
                   <div className="text-red-400">WebRTC Failed</div>
@@ -298,20 +298,22 @@ export function WebRTCLiveView({
   // Render MJPEG fallback
   return (
     <div className="relative w-full h-full bg-black">
-      <img
-        ref={imgRef}
-        src={mjpegUrl}
-        alt="Telescope view"
-        className={`w-full h-full transition-transform duration-200 select-none ${
-          mjpegError ? 'hidden' : ''
-        } ${className}`}
-        style={transformStyle}
-        onLoad={handleMjpegLoad}
-        onError={handleMjpegError}
-        onLoadStart={handleMjpegLoadStart}
-        draggable="false"
-        onDragStart={(e) => e.preventDefault()}
-      />
+      {!!mjpegUrl && (
+        <img
+          ref={imgRef}
+          src={mjpegUrl}
+          alt="Telescope view"
+          className={`w-full h-full transition-transform duration-200 select-none ${
+            mjpegError ? 'hidden' : ''
+          } ${className}`}
+          style={transformStyle}
+          onLoad={handleMjpegLoad}
+          onError={handleMjpegError}
+          onLoadStart={handleMjpegLoadStart}
+          draggable="false"
+          onDragStart={(e) => e.preventDefault()}
+        />
+      )}
 
       {/* MJPEG Loading/Error Overlay */}
       {(mjpegLoading || mjpegError) && (
@@ -323,7 +325,7 @@ export function WebRTCLiveView({
                 <span>Loading MJPEG stream...</span>
               </div>
             )}
-            
+
             {mjpegError && (
               <div className="space-y-2">
                 <div className="text-red-400">Stream Error</div>

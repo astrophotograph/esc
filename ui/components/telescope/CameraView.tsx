@@ -251,7 +251,7 @@ export function CameraView() {
   const [connectionLost, setConnectionLost] = useState(false);
   const [showImageEnhancement, setShowImageEnhancement] = useState(false);
   const [lastSuccessfulLoad, setLastSuccessfulLoad] = useState<number>(Date.now());
-  const [lastImageData, setLastImageData] = useState<string>('');
+  // const [lastImageData, setLastImageData] = useState<string>(''); // DISABLED - image change detection disabled
   const [streamActive, setStreamActive] = useState(false);
   const [sseConnected, setSseConnected] = useState(false);
   const [lastSSEMessage, setLastSSEMessage] = useState<number>(Date.now());
@@ -259,7 +259,7 @@ export function CameraView() {
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null); // DISABLED - image change detection disabled
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // WebSocket hook for real-time telescope status and control
@@ -343,33 +343,33 @@ export function CameraView() {
     return url;
   };
 
-  // Function to capture a small sample of the image for change detection
-  const captureImageSample = (): string => {
-    if (!imageRef.current || imageRef.current.naturalWidth === 0) return '';
+  // Function to capture a small sample of the image for change detection - DISABLED
+  // const captureImageSample = (): string => {
+  //   if (!imageRef.current || imageRef.current.naturalWidth === 0) return '';
 
-    try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return '';
+  //   try {
+  //     const canvas = document.createElement('canvas');
+  //     const ctx = canvas.getContext('2d');
+  //     if (!ctx) return '';
 
-      // Use a small sample size for performance (16x16 pixels from center)
-      const sampleSize = 16;
-      canvas.width = sampleSize;
-      canvas.height = sampleSize;
+  //     // Use a small sample size for performance (16x16 pixels from center)
+  //     const sampleSize = 16;
+  //     canvas.width = sampleSize;
+  //     canvas.height = sampleSize;
 
-      const img = imageRef.current;
-      const centerX = img.naturalWidth / 2 - sampleSize / 2;
-      const centerY = img.naturalHeight / 2 - sampleSize / 2;
+  //     const img = imageRef.current;
+  //     const centerX = img.naturalWidth / 2 - sampleSize / 2;
+  //     const centerY = img.naturalHeight / 2 - sampleSize / 2;
 
-      ctx.drawImage(img, centerX, centerY, sampleSize, sampleSize, 0, 0, sampleSize, sampleSize);
+  //     ctx.drawImage(img, centerX, centerY, sampleSize, sampleSize, 0, 0, sampleSize, sampleSize);
 
-      // Get image data as a base64 string
-      return canvas.toDataURL('image/png');
-    } catch (error) {
-      console.warn('Failed to capture image sample:', error);
-      return '';
-    }
-  };
+  //     // Get image data as a base64 string
+  //     return canvas.toDataURL('image/png');
+  //   } catch (error) {
+  //     console.warn('Failed to capture image sample:', error);
+  //     return '';
+  //   }
+  // };
 
   // Update video URL when telescope changes
   useEffect(() => {
@@ -384,7 +384,7 @@ export function CameraView() {
     setStreamActive(false);
     setSseConnected(false);
     setLastSuccessfulLoad(Date.now());
-    setLastImageData('');
+    // setLastImageData(''); // DISABLED - image change detection disabled
     setLastSSEMessage(Date.now());
 
     // Clear any pending retry timeout
@@ -399,11 +399,11 @@ export function CameraView() {
       connectionTimeoutRef.current = null;
     }
 
-    // Clear stream monitoring interval
-    if (streamCheckIntervalRef.current) {
-      clearInterval(streamCheckIntervalRef.current);
-      streamCheckIntervalRef.current = null;
-    }
+    // Clear stream monitoring interval - DISABLED
+    // if (streamCheckIntervalRef.current) {
+    //   clearInterval(streamCheckIntervalRef.current);
+    //   streamCheckIntervalRef.current = null;
+    // }
 
     // Clear SSE monitoring interval
     if (sseCheckIntervalRef.current) {
@@ -414,54 +414,54 @@ export function CameraView() {
     console.log(`Updated video URL for telescope: ${currentTelescope?.name || 'default'} -> ${newUrl}`);
   }, [currentTelescope]);
 
-  // Monitor stream activity - detect if the live stream is still changing
-  useEffect(() => {
-    if (!streamActive || !imageRef.current) return;
+  // Monitor stream activity - detect if the live stream is still changing - DISABLED
+  // useEffect(() => {
+  //   if (!streamActive || !imageRef.current) return;
 
-    const STREAM_TIMEOUT = 30000; // 30 seconds - increased for better stability
-    const CHECK_INTERVAL = 1000; // Check every second
+  //   const STREAM_TIMEOUT = 30000; // 30 seconds - increased for better stability
+  //   const CHECK_INTERVAL = 1000; // Check every second
 
-    const checkStreamActivity = () => {
-      const currentSample = captureImageSample();
+  //   const checkStreamActivity = () => {
+  //     const currentSample = captureImageSample();
 
-      if (currentSample && lastImageData) {
-        if (currentSample === lastImageData) {
-          // Image hasn't changed, check if timeout exceeded
-          const now = Date.now();
-          const timeSinceLastChange = now - lastSuccessfulLoad;
+  //     if (currentSample && lastImageData) {
+  //       if (currentSample === lastImageData) {
+  //         // Image hasn't changed, check if timeout exceeded
+  //         const now = Date.now();
+  //         const timeSinceLastChange = now - lastSuccessfulLoad;
 
-          if (timeSinceLastChange > STREAM_TIMEOUT && !connectionLost) {
-            console.log(`Stream appears frozen - ${timeSinceLastChange}ms since last change`);
-            setConnectionLost(true);
-          }
-        } else {
-          // Image has changed, update timestamp and sample
-          setLastSuccessfulLoad(Date.now());
-          setLastImageData(currentSample);
+  //         if (timeSinceLastChange > STREAM_TIMEOUT && !connectionLost) {
+  //           console.log(`Stream appears frozen - ${timeSinceLastChange}ms since last change`);
+  //           setConnectionLost(true);
+  //         }
+  //       } else {
+  //         // Image has changed, update timestamp and sample
+  //         setLastSuccessfulLoad(Date.now());
+  //         setLastImageData(currentSample);
 
-          // Only restore connection if both video stream and SSE are healthy
-          if (connectionLost && sseConnected) {
-            console.log('Stream activity detected - connection restored');
-            setConnectionLost(false);
-          }
-        }
-      } else if (currentSample) {
-        // First sample capture
-        setLastImageData(currentSample);
-        setLastSuccessfulLoad(Date.now());
-      }
-    };
+  //         // Only restore connection if both video stream and SSE are healthy
+  //         if (connectionLost && sseConnected) {
+  //           console.log('Stream activity detected - connection restored');
+  //           setConnectionLost(false);
+  //         }
+  //       }
+  //     } else if (currentSample) {
+  //       // First sample capture
+  //       setLastImageData(currentSample);
+  //       setLastSuccessfulLoad(Date.now());
+  //     }
+  //   };
 
-    // Start monitoring stream activity
-    streamCheckIntervalRef.current = setInterval(checkStreamActivity, CHECK_INTERVAL);
+  //   // Start monitoring stream activity
+  //   streamCheckIntervalRef.current = setInterval(checkStreamActivity, CHECK_INTERVAL);
 
-    return () => {
-      if (streamCheckIntervalRef.current) {
-        clearInterval(streamCheckIntervalRef.current);
-        streamCheckIntervalRef.current = null;
-      }
-    };
-  }, [streamActive, connectionLost, lastImageData, lastSuccessfulLoad]);
+  //   return () => {
+  //     if (streamCheckIntervalRef.current) {
+  //       clearInterval(streamCheckIntervalRef.current);
+  //       streamCheckIntervalRef.current = null;
+  //     }
+  //   };
+  // }, [streamActive, connectionLost, lastImageData, lastSuccessfulLoad]);
 
   // Monitor SSE status stream health
   useEffect(() => {
@@ -504,11 +504,11 @@ export function CameraView() {
       setStreamActive(true); // Mark stream as active
       setLastSuccessfulLoad(Date.now()); // Update last successful load time
 
-      // Initialize image monitoring
-      setTimeout(() => {
-        const initialSample = captureImageSample();
-        setLastImageData(initialSample);
-      }, 100); // Small delay to ensure image is fully rendered
+      // Initialize image monitoring - DISABLED
+      // setTimeout(() => {
+      //   const initialSample = captureImageSample();
+      //   setLastImageData(initialSample);
+      // }, 100); // Small delay to ensure image is fully rendered
 
       // Clear any pending retry timeout
       if (retryTimeoutRef.current) {
@@ -601,9 +601,9 @@ export function CameraView() {
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
       }
-      if (streamCheckIntervalRef.current) {
-        clearInterval(streamCheckIntervalRef.current);
-      }
+      // if (streamCheckIntervalRef.current) { // DISABLED - image change detection disabled
+      //   clearInterval(streamCheckIntervalRef.current);
+      // }
       if (sseCheckIntervalRef.current) {
         clearInterval(sseCheckIntervalRef.current);
       }
@@ -916,14 +916,10 @@ export function CameraView() {
     if (wsConnected) {
       setReconnectCounter(0);
 
-      // If connection was restored and both streams are healthy
+      // If connection was restored and both streams are healthy - IMAGE CHANGE DETECTION DISABLED
       if (connectionLost && streamActive) {
-        const now = Date.now();
-        const timeSinceLastImageChange = now - lastSuccessfulLoad;
-
-        if (timeSinceLastImageChange < 30000) {
-          setConnectionLost(false);
-        }
+        // Simplified connection restoration without image change detection
+        setConnectionLost(false);
       }
     } else {
       // Only mark connection as lost after multiple failures
@@ -931,7 +927,7 @@ export function CameraView() {
         setConnectionLost(true);
       }
     }
-  }, [wsConnected, connectionLost, streamActive, lastSuccessfulLoad, reconnectCounter]);
+  }, [wsConnected, connectionLost, streamActive, reconnectCounter]);
 
   // Update last message timestamp when WebSocket receives data
   useEffect(() => {
