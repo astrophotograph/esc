@@ -1290,22 +1290,14 @@ export function CameraView() {
                     width={containerDimensions.width || 800}
                     height={containerDimensions.height || 600}
                     className="w-full h-full"
+                    statusText={
+                      localStreamStatus?.status?.stage === 'Idle'
+                        ? 'Telescope is not currently imaging or streaming'
+                        : (!localStreamStatus?.status?.stage && currentTelescope)
+                        ? 'Waiting for telescope status...'
+                        : undefined
+                    }
                   />
-                  {(localStreamStatus?.status?.stage === 'Idle' || (!localStreamStatus?.status?.stage && currentTelescope)) && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                      <div className="text-white text-center space-y-4">
-                        <div className="w-20 h-20 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
-                          <div className="w-8 h-8 bg-gray-500 rounded"></div>
-                        </div>
-                        <div className="text-xl font-semibold">Camera Idle</div>
-                        <div className="text-sm text-gray-300">
-                          {localStreamStatus?.status?.stage === 'Idle'
-                            ? 'Telescope is not currently imaging or streaming'
-                            : 'Waiting for telescope status...'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 

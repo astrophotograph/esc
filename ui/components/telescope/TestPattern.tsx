@@ -6,9 +6,10 @@ interface TestPatternProps {
   width?: number
   height?: number
   className?: string
+  statusText?: string
 }
 
-export function TestPattern({ width = 800, height = 600, className = "" }: TestPatternProps) {
+export function TestPattern({ width = 800, height = 600, className = "", statusText }: TestPatternProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -127,9 +128,15 @@ export function TestPattern({ width = 800, height = 600, className = "" }: TestP
     
     ctx.fillText("PLEASE STAND BY", width * 0.5, height * 0.85)
     
-    // Add smaller subtitle
-    ctx.font = "24px Arial, sans-serif"
-    ctx.fillText("Connection Lost - Attempting to Reconnect", width * 0.5, height * 0.92)
+    // Add status text if provided
+    if (statusText) {
+      ctx.font = "24px Arial, sans-serif"
+      ctx.fillText(statusText, width * 0.5, height * 0.92)
+    } else {
+      // Add default subtitle
+      ctx.font = "24px Arial, sans-serif"
+      ctx.fillText("Connection Lost - Attempting to Reconnect", width * 0.5, height * 0.92)
+    }
 
     // Reset shadow
     ctx.shadowColor = "transparent"
@@ -137,7 +144,7 @@ export function TestPattern({ width = 800, height = 600, className = "" }: TestP
     ctx.shadowOffsetX = 0
     ctx.shadowOffsetY = 0
 
-  }, [width, height])
+  }, [width, height, statusText])
 
   return (
     <canvas

@@ -8,9 +8,10 @@ interface RandomTestPatternProps {
   width?: number
   height?: number
   className?: string
+  statusText?: string
 }
 
-export function RandomTestPattern({ width = 800, height = 600, className = "" }: RandomTestPatternProps) {
+export function RandomTestPattern({ width = 800, height = 600, className = "", statusText }: RandomTestPatternProps) {
   const [useVintage, setUseVintage] = useState<boolean>(false)
 
   // Randomly select pattern on mount
@@ -20,21 +21,23 @@ export function RandomTestPattern({ width = 800, height = 600, className = "" }:
     console.log(`Selected ${isVintage ? 'vintage' : 'modern'} test pattern`)
   }, [])
 
-  if (useVintage) {
+  // if (useVintage) {
     return (
-      <VintageTestPattern 
-        width={width} 
-        height={height} 
+      <VintageTestPattern
+        width={width}
+        height={height}
         className={className}
+        statusText={statusText}
       />
     )
-  } else {
-    return (
-      <TestPattern 
-        width={width} 
-        height={height} 
-        className={className}
-      />
-    )
-  }
+  // } else {
+  //   return (
+  //     <TestPattern
+  //       width={width}
+  //       height={height}
+  //       className={className}
+  //       statusText={statusText}
+  //     />
+  //   )
+  // }
 }
