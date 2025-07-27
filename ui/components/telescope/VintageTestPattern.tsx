@@ -6,10 +6,9 @@ interface VintageTestPatternProps {
   width?: number
   height?: number
   className?: string
-  statusText?: string
 }
 
-export function VintageTestPattern({ width = 800, height = 600, className = "", statusText }: VintageTestPatternProps) {
+export function VintageTestPattern({ width = 800, height = 600, className = "" }: VintageTestPatternProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -27,100 +26,93 @@ export function VintageTestPattern({ width = 800, height = 600, className = "", 
     ctx.fillStyle = "#000000"
     ctx.fillRect(0, 0, width, height)
 
-    // Draw white background (Indian head pattern was typically white background)
-    ctx.fillStyle = "#FFFFFF"
+    // Draw vintage monoscope pattern background
+    ctx.fillStyle = "#404040"
     ctx.fillRect(0, 0, width, height)
 
+    // Draw center circle (like old TV test patterns)
     const centerX = width / 2
     const centerY = height / 2
-    const maxRadius = Math.min(width, height) * 0.35
+    const maxRadius = Math.min(width, height) * 0.4
 
-    // Draw the main circle (Indian head silhouette area)
-    ctx.strokeStyle = "#000000"
-    ctx.lineWidth = 4
+    // Outer circle
+    ctx.strokeStyle = "#FFFFFF"
+    ctx.lineWidth = 3
     ctx.beginPath()
     ctx.arc(centerX, centerY, maxRadius, 0, 2 * Math.PI)
     ctx.stroke()
 
-    // Draw inner concentric circles (classic Indian head pattern feature)
-    for (let i = 1; i <= 6; i++) {
-      ctx.lineWidth = i === 6 ? 3 : 2
+    // Inner circles (bullseye pattern)
+    for (let i = 1; i <= 4; i++) {
       ctx.beginPath()
-      ctx.arc(centerX, centerY, (maxRadius * i) / 7, 0, 2 * Math.PI)
+      ctx.arc(centerX, centerY, (maxRadius * i) / 5, 0, 2 * Math.PI)
       ctx.stroke()
     }
 
-    // Draw the "Indian head" silhouette (simplified geometric representation)
-    drawIndianHeadSilhouette(ctx, centerX, centerY, maxRadius * 0.6)
-
-    // Draw resolution wedges in corners (classic test pattern feature)
-    drawResolutionWedge(ctx, 50, 50, 80, "TOP-LEFT")
-    drawResolutionWedge(ctx, width - 130, 50, 80, "TOP-RIGHT")
-    drawResolutionWedge(ctx, 50, height - 130, 80, "BOTTOM-LEFT")
-    drawResolutionWedge(ctx, width - 130, height - 130, 80, "BOTTOM-RIGHT")
-
-    // Draw horizontal and vertical registration marks
+    // Draw crosshairs
     ctx.lineWidth = 2
-    ctx.strokeStyle = "#000000"
-    
-    // Horizontal center line
     ctx.beginPath()
-    ctx.moveTo(centerX - maxRadius * 1.3, centerY)
-    ctx.lineTo(centerX - maxRadius * 1.1, centerY)
-    ctx.moveTo(centerX + maxRadius * 1.1, centerY)
-    ctx.lineTo(centerX + maxRadius * 1.3, centerY)
-    ctx.stroke()
-    
-    // Vertical center line
-    ctx.beginPath()
-    ctx.moveTo(centerX, centerY - maxRadius * 1.3)
-    ctx.lineTo(centerX, centerY - maxRadius * 1.1)
-    ctx.moveTo(centerX, centerY + maxRadius * 1.1)
-    ctx.lineTo(centerX, centerY + maxRadius * 1.3)
+    // Horizontal line
+    ctx.moveTo(centerX - maxRadius * 1.2, centerY)
+    ctx.lineTo(centerX + maxRadius * 1.2, centerY)
+    // Vertical line
+    ctx.moveTo(centerX, centerY - maxRadius * 1.2)
+    ctx.lineTo(centerX, centerY + maxRadius * 1.2)
     ctx.stroke()
 
-    // Draw frequency response bars (top and bottom)
-    drawFrequencyBars(ctx, centerX - 150, 20, 300, 25)
-    drawFrequencyBars(ctx, centerX - 150, height - 45, 300, 25)
-    
-    // Draw alignment marks in corners
-    drawAlignmentMark(ctx, 20, 20)
-    drawAlignmentMark(ctx, width - 40, 20)
-    drawAlignmentMark(ctx, 20, height - 40)
-    drawAlignmentMark(ctx, width - 40, height - 40)
+    // Draw corner resolution charts (like vintage TV patterns)
+    const cornerSize = 60
+    const cornerOffset = 40
 
-    // Add classic test pattern text at bottom
-    ctx.fillStyle = "#000000"
-    ctx.font = "bold 24px serif"
+    // Top-left corner pattern
+    drawResolutionChart(ctx, cornerOffset, cornerOffset, cornerSize)
+    // Top-right corner pattern
+    drawResolutionChart(ctx, width - cornerOffset - cornerSize, cornerOffset, cornerSize)
+    // Bottom-left corner pattern
+    drawResolutionChart(ctx, cornerOffset, height - cornerOffset - cornerSize, cornerSize)
+    // Bottom-right corner pattern
+    drawResolutionChart(ctx, width - cornerOffset - cornerSize, height - cornerOffset - cornerSize, cornerSize)
+
+    // Draw frequency bars on the sides (like old test patterns)
+    drawFrequencyBars(ctx, 20, height * 0.25, 30, height * 0.5, true) // Left side
+    drawFrequencyBars(ctx, width - 50, height * 0.25, 30, height * 0.5, true) // Right side
+    
+    // Draw geometric patterns in corners
+    drawGeometricPattern(ctx, centerX - maxRadius * 0.7, centerY - maxRadius * 0.7, 40)
+    drawGeometricPattern(ctx, centerX + maxRadius * 0.7, centerY - maxRadius * 0.7, 40)
+    drawGeometricPattern(ctx, centerX - maxRadius * 0.7, centerY + maxRadius * 0.7, 40)
+    drawGeometricPattern(ctx, centerX + maxRadius * 0.7, centerY + maxRadius * 0.7, 40)
+
+    // Add vintage-style text
+    ctx.fillStyle = "#FFFFFF"
+    ctx.font = "bold 36px monospace"
     ctx.textAlign = "center"
     ctx.textBaseline = "middle"
     
-    // Main "PLEASE STAND BY" text
-    ctx.fillText("PLEASE STAND BY", centerX, height * 0.85)
+    // Add text shadow for better visibility
+    ctx.shadowColor = "#000000"
+    ctx.shadowBlur = 3
+    ctx.shadowOffsetX = 2
+    ctx.shadowOffsetY = 2
     
-    // Add status text if provided, otherwise use default subtitle
-    ctx.font = "16px serif"
-    if (statusText) {
-      ctx.fillText(statusText, centerX, height * 0.9)
-    } else {
-      ctx.fillText("TELESCOPE SIGNAL INTERRUPTED", centerX, height * 0.9)
-    }
+    ctx.fillText("PLEASE STAND BY", centerX, height * 0.8)
     
-    // Add technical info in corners (classic test pattern style)
-    ctx.font = "12px monospace"
+    // Add smaller subtitle in vintage style
+    ctx.font = "20px monospace"
+    ctx.fillText("• TELESCOPE SIGNAL INTERRUPTED •", centerX, height * 0.87)
+    
+    // Add technical info like old test patterns
+    ctx.font = "14px monospace"
     ctx.textAlign = "left"
-    ctx.fillText("RESOLUTION", 20, height - 40)
-    ctx.fillText("1920×1080", 20, height - 25)
+    ctx.fillText("RESOLUTION: 1920×1080", 20, height - 60)
+    ctx.fillText("ASPECT: 16:9", 20, height - 40)
+    ctx.fillText("PATTERN: MONOSCOPE", 20, height - 20)
     
     ctx.textAlign = "right"
-    ctx.fillText("MONOSCOPE", width - 20, height - 40)
+    ctx.fillText("TECHNICAL DIFFICULTIES", width - 20, height - 60)
+    ctx.fillText("RECONNECTING...", width - 20, height - 40)
     const currentTime = new Date().toLocaleTimeString()
-    ctx.fillText(currentTime, width - 20, height - 25)
-    
-    // Center identification
-    ctx.textAlign = "center"
-    ctx.font = "14px serif"
-    ctx.fillText("TEST PATTERN", centerX, height * 0.95)
+    ctx.fillText(`TIME: ${currentTime}`, width - 20, height - 20)
 
     // Reset shadow
     ctx.shadowColor = "transparent"
@@ -128,125 +120,72 @@ export function VintageTestPattern({ width = 800, height = 600, className = "", 
     ctx.shadowOffsetX = 0
     ctx.shadowOffsetY = 0
 
-  }, [width, height, statusText])
+  }, [width, height])
 
-  // Helper function to draw Indian head silhouette (simplified geometric representation)
-  function drawIndianHeadSilhouette(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, radius: number) {
-    ctx.fillStyle = "#000000"
-    ctx.strokeStyle = "#000000"
-    ctx.lineWidth = 2
-    
-    // Draw a simplified profile silhouette
-    ctx.beginPath()
-    
-    // Face profile (right-facing)
-    const faceStartX = centerX - radius * 0.3
-    const faceStartY = centerY - radius * 0.6
-    
-    // Forehead
-    ctx.moveTo(faceStartX, faceStartY)
-    ctx.lineTo(faceStartX + radius * 0.4, faceStartY)
-    
-    // Nose
-    ctx.lineTo(faceStartX + radius * 0.5, centerY - radius * 0.1)
-    ctx.lineTo(faceStartX + radius * 0.4, centerY + radius * 0.1)
-    
-    // Chin and neck
-    ctx.lineTo(faceStartX + radius * 0.2, centerY + radius * 0.4)
-    ctx.lineTo(faceStartX - radius * 0.1, centerY + radius * 0.5)
-    
-    // Back of head
-    ctx.lineTo(faceStartX - radius * 0.4, centerY + radius * 0.2)
-    ctx.lineTo(faceStartX - radius * 0.5, centerY - radius * 0.2)
-    ctx.lineTo(faceStartX - radius * 0.3, faceStartY)
-    
-    ctx.closePath()
-    ctx.fill()
-    
-    // Draw feather pattern (simplified)
-    drawFeatherPattern(ctx, centerX - radius * 0.7, centerY - radius * 0.5, radius * 0.3)
-  }
-
-  // Helper function to draw feather pattern
-  function drawFeatherPattern(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
-    ctx.strokeStyle = "#000000"
-    ctx.lineWidth = 2
-    
-    for (let i = 0; i < 3; i++) {
-      const featherX = x + i * size * 0.15
-      const featherY = y + i * size * 0.1
-      
-      // Main feather stem
-      ctx.beginPath()
-      ctx.moveTo(featherX, featherY)
-      ctx.lineTo(featherX, featherY + size * 0.8)
-      ctx.stroke()
-      
-      // Feather barbs
-      for (let j = 0; j < 5; j++) {
-        const barbY = featherY + (j + 1) * size * 0.15
-        ctx.beginPath()
-        ctx.moveTo(featherX - size * 0.1, barbY)
-        ctx.lineTo(featherX + size * 0.1, barbY)
-        ctx.stroke()
-      }
-    }
-  }
-
-  // Helper function to draw resolution wedges (classic test pattern element)
-  function drawResolutionWedge(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, label: string) {
-    ctx.strokeStyle = "#000000"
-    ctx.fillStyle = "#000000"
+  // Helper function to draw resolution test charts
+  function drawResolutionChart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+    ctx.strokeStyle = "#FFFFFF"
     ctx.lineWidth = 1
     
-    // Draw wedge pattern with increasing line density
-    for (let i = 0; i < 12; i++) {
-      const lineSpacing = size / (i + 2)
-      const startX = x + (i * size) / 12
+    // Draw grid pattern
+    const gridSize = size / 8
+    for (let i = 0; i <= 8; i++) {
+      // Horizontal lines
+      ctx.beginPath()
+      ctx.moveTo(x, y + i * gridSize)
+      ctx.lineTo(x + size, y + i * gridSize)
+      ctx.stroke()
       
-      for (let j = 0; j < size; j += lineSpacing) {
-        ctx.beginPath()
-        ctx.moveTo(startX, y + j)
-        ctx.lineTo(startX + size / 12, y + j)
-        ctx.stroke()
-      }
+      // Vertical lines
+      ctx.beginPath()
+      ctx.moveTo(x + i * gridSize, y)
+      ctx.lineTo(x + i * gridSize, y + size)
+      ctx.stroke()
     }
-    
-    // Add label
-    ctx.font = "8px monospace"
-    ctx.textAlign = "center"
-    ctx.fillText(label, x + size / 2, y + size + 12)
   }
 
-  // Helper function to draw frequency response bars
-  function drawFrequencyBars(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-    const barCount = 15
-    const barWidth = width / barCount
+  // Helper function to draw frequency bars
+  function drawFrequencyBars(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, vertical: boolean) {
+    ctx.fillStyle = "#FFFFFF"
+    
+    const barCount = 10
+    const barHeight = height / barCount
     
     for (let i = 0; i < barCount; i++) {
-      // Alternate between black and white bars with varying widths
-      const intensity = Math.sin((i / barCount) * Math.PI * 2) * 0.5 + 0.5
-      ctx.fillStyle = `rgb(${Math.floor(intensity * 255)}, ${Math.floor(intensity * 255)}, ${Math.floor(intensity * 255)})`
-      ctx.fillRect(x + i * barWidth, y, barWidth, height)
+      const alpha = (i + 1) / barCount
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
+      
+      if (vertical) {
+        ctx.fillRect(x, y + i * barHeight, width, barHeight)
+      } else {
+        ctx.fillRect(x + i * (width / barCount), y, width / barCount, height)
+      }
     }
   }
 
-  // Helper function to draw alignment marks
-  function drawAlignmentMark(ctx: CanvasRenderingContext2D, x: number, y: number) {
-    ctx.strokeStyle = "#000000"
-    ctx.lineWidth = 2
+  // Helper function to draw geometric patterns
+  function drawGeometricPattern(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+    ctx.strokeStyle = "#FFFFFF"
+    ctx.lineWidth = 1
     
-    // Draw crosshair
+    // Draw diamond pattern
     ctx.beginPath()
-    ctx.moveTo(x - 10, y)
-    ctx.lineTo(x + 10, y)
-    ctx.moveTo(x, y - 10)
-    ctx.lineTo(x, y + 10)
+    ctx.moveTo(x + size / 2, y)
+    ctx.lineTo(x + size, y + size / 2)
+    ctx.lineTo(x + size / 2, y + size)
+    ctx.lineTo(x, y + size / 2)
+    ctx.closePath()
     ctx.stroke()
     
-    // Draw circle
+    // Inner diamond
+    const innerSize = size * 0.6
+    const offset = (size - innerSize) / 2
     ctx.beginPath()
-    ctx.arc(x, y, 8, 0, 2 * Math.PI)
+    ctx.moveTo(x + offset + innerSize / 2, y + offset)
+    ctx.lineTo(x + offset + innerSize, y + offset + innerSize / 2)
+    ctx.lineTo(x + offset + innerSize / 2, y + offset + innerSize)
+    ctx.lineTo(x + offset, y + offset + innerSize / 2)
+    ctx.closePath()
     ctx.stroke()
   }
 
