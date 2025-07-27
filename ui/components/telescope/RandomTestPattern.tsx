@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { TestPattern } from "./TestPattern"
 import { VintageTestPattern } from "./VintageTestPattern"
+import { VintageColorTestPattern } from "@/components/telescope/VintageColorTestPattern"
+import { RCAIndianHeadTestPattern } from "@/components/telescope/RCAIndianHeadTestPattern"
 
 interface RandomTestPatternProps {
   width?: number
@@ -12,32 +14,63 @@ interface RandomTestPatternProps {
 }
 
 export function RandomTestPattern({ width = 800, height = 600, className = "", statusText }: RandomTestPatternProps) {
-  const [useVintage, setUseVintage] = useState<boolean>(false)
+  const [patternType, setPatternType] = useState<'modern' | 'vintage' | 'vintageColor' | 'rcaIndianHead'>('modern')
 
   // Randomly select pattern on mount
   useEffect(() => {
-    const isVintage = Math.random() < 0.5 // 50/50 chance
-    setUseVintage(isVintage)
-    console.log(`Selected ${isVintage ? 'vintage' : 'modern'} test pattern`)
+    const random = Math.random()
+    let selectedPattern: 'modern' | 'vintage' | 'vintageColor' | 'rcaIndianHead'
+    
+    if (random < 0.25) {
+      selectedPattern = 'modern'
+    } else if (random < 0.5) {
+      selectedPattern = 'vintage'
+    } else if (random < 0.75) {
+      selectedPattern = 'vintageColor'
+    } else {
+      selectedPattern = 'rcaIndianHead'
+    }
+    
+    setPatternType(selectedPattern)
+    console.log(`Selected ${selectedPattern} test pattern`)
   }, [])
 
-  // if (useVintage) {
-    return (
-      <VintageTestPattern
-        width={width}
-        height={height}
-        className={className}
-        statusText={statusText}
-      />
-    )
-  // } else {
-  //   return (
-  //     <TestPattern
-  //       width={width}
-  //       height={height}
-  //       className={className}
-  //       statusText={statusText}
-  //     />
-  //   )
-  // }
+  switch (patternType) {
+    case 'vintage':
+      return (
+        <VintageTestPattern
+          width={width}
+          height={height}
+          className={className}
+          statusText={statusText}
+        />
+      )
+    case 'vintageColor':
+      return (
+        <VintageColorTestPattern
+          width={width}
+          height={height}
+          className={className}
+          statusText={statusText}
+        />
+      )
+    case 'rcaIndianHead':
+      return (
+        <RCAIndianHeadTestPattern
+          width={width}
+          height={height}
+          className={className}
+          statusText={statusText}
+        />
+      )
+    default:
+      return (
+        <TestPattern
+          width={width}
+          height={height}
+          className={className}
+          statusText={statusText}
+        />
+      )
+  }
 }

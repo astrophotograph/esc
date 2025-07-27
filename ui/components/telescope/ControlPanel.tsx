@@ -1,15 +1,17 @@
 "use client"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TelescopeControls } from "./panels/TelescopeControls"
-import { EnvironmentPanel } from "./panels/EnvironmentPanel"
-import { LocationPanel } from "./panels/LocationPanel"
-import { ImageControls } from "./panels/ImageControls"
-import { TabIndicator } from "./TabIndicator"
-import { ScrollableTabs } from "./ScrollableTabs"
-import { useTelescopeContext } from "../../context/TelescopeContext"
-import { Settings, Cloud, BarChart3, MapPin } from "lucide-react"
-import { ImagingMetrics } from "./panels/ImagingMetrics"
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import {TelescopeControls} from "./panels/TelescopeControls"
+import {LocationPanel} from "./panels/LocationPanel"
+import {ImageControls} from "./panels/ImageControls"
+import {TabIndicator} from "./TabIndicator"
+import {ScrollableTabs} from "./ScrollableTabs"
+import {useTelescopeContext} from "@/context/TelescopeContext"
+import {BarChart3, MapPin, RotateCcw, Settings} from "lucide-react"
+import {ImagingMetrics} from "./panels/ImagingMetrics"
+import {Card, CardContent} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {CommandAction, getWebSocketService} from "@/services/websocket-service"
 
 export function ControlPanel() {
   const {
@@ -19,12 +21,12 @@ export function ControlPanel() {
     observationNotes: _observationNotes,
     observationRating: _observationRating,
     equipment,
-    maintenanceRecords: _maintenanceRecords,
     showPiP: _showPiP,
     showAnnotations: _showAnnotations,
     isImaging,
-    setShowLocationManager,
     currentObservingLocation,
+    addStatusAlert,
+    currentTelescope,
   } = useTelescopeContext()
 
   // Calculate dynamic indicators based on current state
@@ -106,6 +108,35 @@ export function ControlPanel() {
       indicators.push(<TabIndicator key="active" type="active" />)
     }
     return indicators
+  }
+
+  const handleReboot = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before rebooting",
+      })
+      return
+    }
+
+    try {
+      const wsService = getWebSocketService()
+      await wsService.sendCommand(CommandAction.REBOOT, {}, currentTelescope.id)
+
+      addStatusAlert({
+        type: "warning",
+        title: "Reboot Command Sent",
+        message: "Telescope reboot command has been sent",
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      addStatusAlert({
+        type: "error",
+        title: "Reboot Failed",
+        message: errorMessage,
+      })
+    }
   }
 
   return (
@@ -223,6 +254,24 @@ export function ControlPanel() {
             <TabsContent value="telescope" className="space-y-4 mt-4">
               <TelescopeControls />
               <ImageControls />
+              {/* System Control Section - positioned below Image Controls */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="space-y-3 border-2 border-red-600 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-300">System Control</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReboot}
+                      className="w-full border-red-600 text-red-400 hover:bg-red-900 hover:text-red-300"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2"/>
+                      Reboot Telescope
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
             </TabsContent>
 
             {/*<TabsContent value="environment" className="space-y-4 mt-4">*/}
