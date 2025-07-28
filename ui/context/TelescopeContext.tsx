@@ -979,14 +979,15 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
                 setCurrentTelescope(transformedTelescopes[0])
                 console.log(`Auto-selected first available telescope (initial load): ${transformedTelescopes[0].name}`)
 
-                // Show notification about telescope change
-                setTimeout(() => {
-                  addStatusAlert({
-                    type: 'warning',
-                    title: 'Telescope Changed',
-                    message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
-                  })
-                }, 1000)
+                // Don't show toast notification for telescope changes
+                // The change is already visible in the UI
+                // setTimeout(() => {
+                //   addStatusAlert({
+                //     type: 'warning',
+                //     title: 'Telescope Changed',
+                //     message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
+                //   })
+                // }, 1000)
               } else {
                 // Keep current selection even if telescope temporarily disappears
                 console.log(`Keeping current telescope selection despite temporary unavailability`)
