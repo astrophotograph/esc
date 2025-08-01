@@ -61,6 +61,8 @@ from database import TelescopeDatabase
 from webrtc_router import router as webrtc_router
 from websocket_router import router as websocket_router
 from remote_websocket_client import RemoteController
+from middleware.error_handler import setup_error_handling
+from utils.logging_config import setup_logging, log_telescope_event, log_performance, log_error
 
 
 class InterceptHandler(orig_logging.Handler):
@@ -3649,6 +3651,15 @@ def panorama(
 )
 def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery, reload):
     """Start a FastAPI server for controlling a Seestar device."""
+    
+    # Set up enhanced logging
+    log_level = os.environ.get("LOG_LEVEL", "INFO")
+    log_file = os.environ.get("LOG_FILE", "server.log")
+    setup_logging(
+        log_level=log_level,
+        log_file=log_file,
+        enable_json=os.environ.get("LOG_JSON", "false").lower() == "true"
+    )
 
     click.echo(f"Starting Seestar API server on port {server_port}")
     if no_discovery:
@@ -3657,8 +3668,13 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
         click.echo("Auto-reload enabled - server will restart when code changes")
 
     app = FastAPI(
-        title="Seestar API", description="API for controlling Seestar devices"
+        title="Seestar API", 
+        description="API for controlling Seestar devices",
+        version="1.0.0"
     )
+    
+    # Set up error handling middleware
+    setup_error_handling(app)
 
     # Add starmap endpoint to main API
     @app.get("/api/starmap")
@@ -3751,6 +3767,8 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
             )
 
     controller = Controller(app, service_port=server_port, discover=not no_discovery, reload=reload)
+    # Store controller in app state for access from endpoints
+    app.state.controller = controller
 
     async def run_server():
         if seestar_host and seestar_port:
