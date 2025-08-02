@@ -60,6 +60,7 @@ import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 import { ChalkboardPanel } from "./panels/ChalkboardPanel"
 import { useIsMobile } from "../../hooks/use-mobile"
+import { ImageErrorBoundary } from "./ImageErrorBoundary"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -1335,21 +1336,33 @@ export function CameraView() {
                 </div>
               )}
 
-              {/* WebRTC Live View with MJPEG fallback - handles its own error states */}
-              <WebRTCLiveView
-                telescope={currentTelescope}
-                className=""
-                brightness={brightness}
-                contrast={contrast}
-                rotationAngle={rotationAngle}
-                zoomLevel={zoomLevel}
-                panPosition={panPosition}
-                isPortrait={isPortrait}
-                stage={localStreamStatus?.status?.stage}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                onConnectionStateChange={setConnectionType}
-              />
+              {/* WebRTC Live View with MJPEG fallback - wrapped in error boundary */}
+              <ImageErrorBoundary
+                fallbackTitle="Camera Feed Error"
+                fallbackDescription="There was an issue connecting to the telescope camera. Please check your connection and try again."
+                onRetry={() => {
+                  // Reset connection state and retry
+                  setConnectionLost(false)
+                  setImageError(false)
+                  setRetryCount(0)
+                  handleImageLoad()
+                }}
+              >
+                <WebRTCLiveView
+                  telescope={currentTelescope}
+                  className=""
+                  brightness={brightness}
+                  contrast={contrast}
+                  rotationAngle={rotationAngle}
+                  zoomLevel={zoomLevel}
+                  panPosition={panPosition}
+                  isPortrait={isPortrait}
+                  stage={localStreamStatus?.status?.stage}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  onConnectionStateChange={setConnectionType}
+                />
+              </ImageErrorBoundary>
             </div>
 
             {/* Starmap Window */}

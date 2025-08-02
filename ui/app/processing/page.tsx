@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Upload, Download, RefreshCw, Image as ImageIcon, AlertCircle, Loader2, Clock, FileImage, Trash2 } from "lucide-react"
 import { ImageEnhancementControls } from "@/components/telescope/ImageEnhancementControls"
+import { LazyImage } from "@/components/telescope/LazyImage"
 
 interface ProcessingState {
   isProcessing: boolean
@@ -614,10 +615,15 @@ export default function ImageProcessingPage() {
                         <div className="overflow-auto max-h-[60vh] bg-gray-100 dark:bg-gray-900 rounded-b-lg p-4 pt-2">
                           {state.originalImage && (
                             <div style={{ transform: `scale(${previewScale / 100})`, transformOrigin: 'top left' }}>
-                              <img
+                              <LazyImage
                                 src={state.originalImage}
-                                alt="Original"
+                                alt="Original FITS image"
                                 className="max-w-none"
+                                showTimestamp={false}
+                                maxRetries={2}
+                                showRetryButton={true}
+                                staleThreshold={15}
+                                onError={(error) => setState(prev => ({ ...prev, error }))}
                               />
                             </div>
                           )}
@@ -683,10 +689,17 @@ export default function ImageProcessingPage() {
                           <div className="overflow-auto max-h-[60vh] bg-gray-100 dark:bg-gray-900 rounded-b-lg p-4 pt-2">
                             {state.processedImage && (
                               <div style={{ transform: `scale(${getProcessedImageScale() / 100})`, transformOrigin: 'top left' }}>
-                                <img
+                                <LazyImage
                                   src={state.processedImage}
-                                  alt="Processed"
+                                  alt="Processed FITS image"
                                   className="max-w-none"
+                                  showTimestamp={true}
+                                  maxRetries={3}
+                                  showRetryButton={true}
+                                  staleThreshold={10}
+                                  autoRefresh={false}
+                                  onError={(error) => setState(prev => ({ ...prev, error }))}
+                                  onLoad={() => console.log('Processed image loaded successfully')}
                                 />
                               </div>
                             )}
@@ -717,10 +730,14 @@ export default function ImageProcessingPage() {
                           >
                             {state.originalImage && (
                               <div style={{ transform: `scale(${previewScale / 100})`, transformOrigin: 'top left' }}>
-                                <img
+                                <LazyImage
                                   src={state.originalImage}
-                                  alt="Original"
+                                  alt="Original FITS image for comparison"
                                   className="max-w-none"
+                                  showTimestamp={false}
+                                  maxRetries={2}
+                                  showRetryButton={false}
+                                  staleThreshold={15}
                                 />
                               </div>
                             )}
@@ -752,10 +769,15 @@ export default function ImageProcessingPage() {
                           >
                             {state.processedImage && (
                               <div style={{ transform: `scale(${getProcessedImageScale() / 100})`, transformOrigin: 'top left' }}>
-                                <img
+                                <LazyImage
                                   src={state.processedImage}
-                                  alt="Processed"
+                                  alt="Processed FITS image for comparison"
                                   className="max-w-none"
+                                  showTimestamp={false}
+                                  maxRetries={3}
+                                  showRetryButton={false}
+                                  staleThreshold={10}
+                                  autoRefresh={false}
                                 />
                               </div>
                             )}

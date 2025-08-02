@@ -2493,10 +2493,29 @@ class Controller:
         # Add WebSocket router
         self.app.include_router(websocket_router, prefix="/api")
 
+        # Add network simulation middleware
+        from middleware.network_simulation import NetworkSimulationMiddleware
+        self.app.add_middleware(NetworkSimulationMiddleware)
+
+        # Add static file serving for processed images and uploads
+        from fastapi.staticfiles import StaticFiles
+        import os
+        
+        # Mount static directories if they exist
+        if os.path.exists("processed"):
+            self.app.mount("/processed", StaticFiles(directory="processed"), name="processed")
+        if os.path.exists("uploads"):
+            self.app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
         # Add image processing router
         from api.routers.processing import router as processing_router
 
         self.app.include_router(processing_router)
+
+        # Add network simulation router
+        from api.routers.network_simulation import router as network_simulation_router
+
+        self.app.include_router(network_simulation_router)
 
         # Add system administration router
         from api.routers.system import router as system_router
@@ -3508,11 +3527,22 @@ class Controller:
                 for t in self.telescopes.values()
                 if not (isinstance(t, TestTelescope) or t.port == 9999)
             )
+            
+            # Include network simulation status
+            from middleware.network_simulation import get_simulation_status
+            network_simulation = get_simulation_status()
+            
             return {
                 "status": "ok",
                 "timestamp": datetime.datetime.now().isoformat(),
                 "telescopes_count": local_telescope_count + len(self.remote_telescopes),
                 "remote_controllers_count": len(self.remote_controllers),
+                "network_simulation": {
+                    "enabled": network_simulation["config"]["enabled"],
+                    "requests_processed": network_simulation["stats"]["requests_processed"],
+                    "requests_delayed": network_simulation["stats"]["requests_delayed"],
+                    "requests_dropped": network_simulation["stats"]["requests_dropped"],
+                }
             }
 
         # Set up signal handlers for graceful shutdown with forced exit backup
@@ -3714,7 +3744,31 @@ def panorama(
 @click.option(
     "--reload", is_flag=True, help="Enable auto-reload on code changes (development mode)"
 )
-def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery, reload):
+@click.option(
+    "--network-sim",
+    type=click.Choice([
+        'slow_3g', 'slow_4g', 'unstable_wifi', 'satellite', 
+        'dial_up', 'extreme_poor', 'intermittent'
+    ]),
+    help="Enable network simulation with the specified preset"
+)
+@click.option(
+    "--network-sim-delay",
+    type=float,
+    help="Custom network simulation delay in milliseconds (overrides preset)"
+)
+@click.option(
+    "--network-sim-packet-loss",
+    type=float,
+    help="Custom network simulation packet loss rate 0.0-1.0 (overrides preset)"
+)
+@click.option(
+    "--network-sim-bandwidth",
+    type=float,
+    help="Custom network simulation bandwidth limit in KB/s (overrides preset)"
+)
+def server(server_port, seestar_host, seestar_port, remote_controller, no_discovery, reload,
+          network_sim, network_sim_delay, network_sim_packet_loss, network_sim_bandwidth):
     """Start a FastAPI server for controlling a Seestar device."""
     
     # Set up enhanced logging
@@ -3834,6 +3888,66 @@ def server(server_port, seestar_host, seestar_port, remote_controller, no_discov
     controller = Controller(app, service_port=server_port, discover=not no_discovery, reload=reload)
     # Store controller in app state for access from endpoints
     app.state.controller = controller
+
+    # Configure network simulation if requested
+    if network_sim or network_sim_delay or network_sim_packet_loss or network_sim_bandwidth:
+        from middleware.network_simulation import (
+            get_simulation_state, 
+            enable_simulation,
+            NetworkSimulationConfig
+        )
+        from api.routers.network_simulation import SIMULATION_PRESETS
+        
+        # Start with preset if specified
+        if network_sim:
+            if network_sim in SIMULATION_PRESETS:
+                config = SIMULATION_PRESETS[network_sim]
+                click.echo(f"🌐 Network simulation enabled: {network_sim}")
+                click.echo(f"   - Base delay: {config.base_delay_ms}ms")
+                click.echo(f"   - Packet loss: {config.packet_loss_rate*100:.1f}%")
+                if config.bandwidth_limit_kbps:
+                    click.echo(f"   - Bandwidth limit: {config.bandwidth_limit_kbps} KB/s")
+            else:
+                config = NetworkSimulationConfig()
+        else:
+            config = NetworkSimulationConfig()
+        
+        # Override with custom values if provided
+        custom_applied = False
+        if network_sim_delay is not None:
+            config.base_delay_ms = network_sim_delay
+            config.delay_variation_ms = network_sim_delay * 0.3  # 30% variation
+            custom_applied = True
+        
+        if network_sim_packet_loss is not None:
+            config.packet_loss_rate = network_sim_packet_loss
+            custom_applied = True
+        
+        if network_sim_bandwidth is not None:
+            config.bandwidth_limit_kbps = network_sim_bandwidth
+            custom_applied = True
+        
+        # Enable the simulation
+        config.enabled = True
+        state = get_simulation_state()
+        state.config = config
+        
+        # Display configuration if custom settings were used
+        if not network_sim:
+            click.echo("🌐 Network simulation enabled with custom settings")
+            click.echo(f"   - Base delay: {config.base_delay_ms}ms")
+            click.echo(f"   - Packet loss: {config.packet_loss_rate*100:.1f}%")
+            if config.bandwidth_limit_kbps:
+                click.echo(f"   - Bandwidth limit: {config.bandwidth_limit_kbps} KB/s")
+        elif custom_applied:
+            click.echo("   Custom overrides applied:")
+            click.echo(f"   - Base delay: {config.base_delay_ms}ms")
+            click.echo(f"   - Packet loss: {config.packet_loss_rate*100:.1f}%")
+            if config.bandwidth_limit_kbps:
+                click.echo(f"   - Bandwidth limit: {config.bandwidth_limit_kbps} KB/s")
+        
+        click.echo("   - Applies to: /api/processing/*, /processed/*, /uploads/*, image files")
+        click.echo()
 
     async def run_server():
         if seestar_host and seestar_port:

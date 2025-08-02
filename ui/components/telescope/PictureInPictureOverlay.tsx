@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Settings, X, Minimize2, Maximize2, Camera, Eye, Expand, Minimize } from "lucide-react"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { PipOverlays } from "./PipOverlays"
+import { EnhancedImage } from "./EnhancedImage"
 
 export function PictureInPictureOverlay() {
   const {
@@ -338,7 +339,7 @@ export function PictureInPictureOverlay() {
           pipFullscreen ? "rounded-none" : "rounded-b-lg"
         }`}>
           {/* Camera Feed */}
-          <img
+          <EnhancedImage
             src={getCameraFeed() || "/placeholder.svg"}
             alt={`${pipCamera} camera feed`}
             className="w-full h-full object-cover"
@@ -346,6 +347,14 @@ export function PictureInPictureOverlay() {
               width: currentSize.width,
               height: currentSize.height,
             }}
+            showTimestamp={true}
+            staleThreshold={2}
+            autoRefresh={true}
+            refreshInterval={10}
+            maxRetries={2}
+            showRetryButton={false}
+            showProgress={false}
+            fallbackSrc="/placeholder.svg?height=240&width=320&text=Camera+Offline"
           />
 
           {/* Overlays */}
