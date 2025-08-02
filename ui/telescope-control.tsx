@@ -27,6 +27,7 @@ import { Calendar as CalendarIcon, Settings, Search } from "lucide-react"
 import { AppTour } from "./components/telescope/AppTour"
 import { VersionFooter } from "./components/telescope/VersionFooter"
 import { VersionUpdateNotification } from "./components/telescope/VersionUpdateNotification"
+import { useIsMobile } from "./hooks/use-mobile"
 
 function TelescopeControlContent() {
   const {
@@ -58,6 +59,8 @@ function TelescopeControlContent() {
     setShowTelescopeManagement,
   } = useTelescopeContext()
 
+  const isMobile = useIsMobile()
+
   // Check if running in Electron
   const isElectron = typeof window !== 'undefined' && window.navigator.userAgent.includes('Electron')
 
@@ -78,7 +81,7 @@ function TelescopeControlContent() {
         </div>
       )}
 
-      <div className="p-2 pb-12">
+      <div className={`${isMobile ? 'p-1 pb-16' : 'p-2 pb-12'}`}>
         <div className="max-w-7xl mx-auto">
           <Header />
 
@@ -113,16 +116,31 @@ function TelescopeControlContent() {
           {/*  </Button>*/}
           {/*</div>*/}
 
-        <div className={`grid gap-6 ${isControlsCollapsed ? "grid-cols-1" : "lg:grid-cols-4"}`}>
-          <div className={`${isControlsCollapsed ? "col-span-1" : "lg:col-span-3"}`}>
+        <div className={`grid gap-2 md:gap-6 ${
+          isControlsCollapsed || isMobile 
+            ? "grid-cols-1" 
+            : "grid-cols-1 lg:grid-cols-4"
+        }`}>
+          <div className={`${
+            isControlsCollapsed || isMobile 
+              ? "col-span-1" 
+              : "col-span-1 lg:col-span-3"
+          }`}>
             <CameraView />
           </div>
-          {!isControlsCollapsed && (
+          {!isControlsCollapsed && !isMobile && (
             <div className="lg:col-span-1">
               <ControlPanel />
             </div>
           )}
         </div>
+
+        {/* Mobile Controls Panel - Show as overlay when on mobile */}
+        {isMobile && !isControlsCollapsed && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 max-h-80 overflow-y-auto">
+            <ControlPanel />
+          </div>
+        )}
 
         {/* Modals */}
         {showPlanningPanel && <PlanningPanel />}

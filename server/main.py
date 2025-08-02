@@ -448,15 +448,80 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         @router.post("/goto")
         async def goto(goto_params: GotoTargetParameters):
-            """Goto a target."""
+            """
+            Goto a target with enhanced coordinate conversion and error handling.
+            
+            This endpoint automatically converts J2000 coordinates to current epoch
+            when is_j2000=True, provides detailed error messages, and tracks progress.
+            """
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
+            
             try:
-                response = await self.client.send_and_recv(
-                    GotoTarget(params=goto_params.model_dump())
-                )
-                return {"goto_target": response}
+                # Import the enhanced goto service
+                from services.goto_service import EnhancedGotoService
+                
+                # Create goto service instance
+                goto_service = EnhancedGotoService(self.client)
+                
+                # Execute enhanced goto with coordinate conversion
+                result = await goto_service.goto_target(goto_params)
+                
+                return result
+                
             except Exception as e:
+                # Import exception types for better error handling
+                from exceptions.telescope_exceptions import (
+                    TelescopeError, InvalidCoordinatesError, TelescopeTimeoutError
+                )
+                
+                # Map specific exceptions to appropriate HTTP status codes
+                if isinstance(e, InvalidCoordinatesError):
+                    raise HTTPException(status_code=400, detail=str(e))
+                elif isinstance(e, TelescopeTimeoutError):
+                    raise HTTPException(status_code=504, detail=str(e))
+                elif isinstance(e, TelescopeError):
+                    raise HTTPException(status_code=500, detail=str(e))
+                else:
+                    # Log unexpected errors
+                    logging.error(f"Unexpected error in goto endpoint: {e}")
+                    raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        
+        @router.get("/goto/progress")
+        async def get_goto_progress():
+            """Get current goto operation progress."""
+            try:
+                from services.goto_service import EnhancedGotoService
+                
+                # Create goto service instance to check current operation
+                goto_service = EnhancedGotoService(self.client)
+                current_op = goto_service.get_current_operation()
+                
+                if current_op:
+                    return current_op.model_dump()
+                else:
+                    return {"status": "idle", "message": "No goto operation in progress"}
+                    
+            except Exception as e:
+                logging.error(f"Error getting goto progress: {e}")
+                raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        
+        @router.post("/goto/cancel")
+        async def cancel_goto():
+            """Cancel the current goto operation."""
+            try:
+                from services.goto_service import EnhancedGotoService
+                
+                goto_service = EnhancedGotoService(self.client)
+                cancelled = await goto_service.cancel_current_operation()
+                
+                return {
+                    "success": cancelled,
+                    "message": "Goto operation cancelled" if cancelled else "No goto operation to cancel"
+                }
+                
+            except Exception as e:
+                logging.error(f"Error cancelling goto: {e}")
                 raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
         @router.post("/move")

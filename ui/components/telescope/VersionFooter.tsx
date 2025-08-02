@@ -3,6 +3,7 @@
 import { useTelescopeContext } from "@/context/TelescopeContext"
 import { useVersionCheck } from "@/context/VersionCheckContext"
 import { Badge } from "@/components/ui/badge"
+import { MessageCircle } from "lucide-react"
 
 // Try to import build info, fallback to package.json
 let buildInfo: any = null;
@@ -96,6 +97,17 @@ export function VersionFooter() {
           )}
         </div>
         <div className="flex items-center gap-4">
+          <a 
+            href="https://discord.gg/4Wb2tMSEF8" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+            title="Join our Discord community"
+          >
+            <MessageCircle className="w-3 h-3" />
+            <span className="hidden sm:inline">Discord</span>
+          </a>
+          <span className="hidden sm:inline">•</span>
           <a 
             href="https://github.com/astrophotograph/esc" 
             target="_blank" 

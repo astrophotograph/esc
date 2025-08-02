@@ -12,6 +12,7 @@ import {ImagingMetrics} from "./panels/ImagingMetrics"
 import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {CommandAction, getWebSocketService} from "@/services/websocket-service"
+import {useIsMobile} from "@/hooks/use-mobile"
 
 export function ControlPanel() {
   const {
@@ -28,6 +29,8 @@ export function ControlPanel() {
     addStatusAlert,
     currentTelescope,
   } = useTelescopeContext()
+
+  const isMobile = useIsMobile()
 
   // Calculate dynamic indicators based on current state
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -140,10 +143,10 @@ export function ControlPanel() {
   }
 
   return (
-    <div className="space-y-4" data-tour="control-panel">
+    <div className={`${isMobile ? 'space-y-2' : 'space-y-4'}`} data-tour="control-panel">
       <Tabs defaultValue={isImaging ? "imaging" : "telescope"} className="w-full">
         <ScrollableTabs className="bg-gray-800 border-gray-700 rounded-md">
-          <TabsList className="flex bg-transparent border-0 p-1">
+          <TabsList className={`flex bg-transparent border-0 ${isMobile ? 'p-0.5' : 'p-1'}`}>
             {/*<TabsTrigger*/}
             {/*  value="session"*/}
             {/*  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"*/}
@@ -172,11 +175,13 @@ export function ControlPanel() {
               <>
                 <TabsTrigger
                   value="telescope"
-                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-gray-700 ${
+                    isMobile ? 'px-2 py-3 text-xs' : 'px-4 py-2'
+                  }`}
                   data-tour="telescope-controls-tab"
                 >
-                  <Settings className="w-4 h-4" />
-                  Telescope
+                  <Settings className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  {isMobile ? 'Ctrl' : 'Telescope'}
                   {getTelescopeIndicators()}
                 </TabsTrigger>
                 {/*<TabsTrigger*/}
@@ -190,11 +195,13 @@ export function ControlPanel() {
                 {/*</TabsTrigger>*/}
                 <TabsTrigger
                   value="location"
-                  className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-gray-700 ${
+                    isMobile ? 'px-2 py-3 text-xs' : 'px-4 py-2'
+                  }`}
                   data-tour="location-tab"
                 >
-                  <MapPin className="w-4 h-4" />
-                  Location
+                  <MapPin className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  {isMobile ? 'Loc' : 'Location'}
                   {currentObservingLocation ? <TabIndicator type="active" /> : <TabIndicator type="warning" />}
                 </TabsTrigger>
               </>
@@ -202,11 +209,13 @@ export function ControlPanel() {
             {isImaging && (
               <TabsTrigger
                 value="imaging"
-                className="flex items-center gap-2 text-sm whitespace-nowrap px-4 py-2 min-w-fit data-[state=active]:bg-gray-700"
+                className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-gray-700 ${
+                  isMobile ? 'px-2 py-3 text-xs' : 'px-4 py-2'
+                }`}
                 data-tour="imaging-metrics-tab"
               >
-                <BarChart3 className="w-4 h-4" />
-                Quality Metrics
+                <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                {isMobile ? 'Metrics' : 'Quality Metrics'}
               </TabsTrigger>
             )}
             {/*<TabsTrigger*/}

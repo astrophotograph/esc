@@ -59,6 +59,7 @@ import { WebRTCLiveView } from "./WebRTCLiveView"
 import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
 import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 import { ChalkboardPanel } from "./panels/ChalkboardPanel"
+import { useIsMobile } from "../../hooks/use-mobile"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -127,6 +128,8 @@ export function CameraView() {
     showChalkboard,
     setShowChalkboard,
   } = useTelescopeContext()
+
+  const isMobile = useIsMobile()
 
   // Sample annotations for demonstration
   const [annotations] = useState<ScreenAnnotation[]>([
@@ -1007,9 +1010,9 @@ export function CameraView() {
                 </div>
               )}
             </CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               {/* System Status Indicators */}
-              <div className="flex items-center gap-3 text-sm">
+              <div className={`flex items-center gap-1 md:gap-3 text-xs md:text-sm ${isMobile ? 'overflow-x-auto' : ''}`}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={`flex items-center gap-1 cursor-default ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
@@ -1184,91 +1187,106 @@ export function CameraView() {
                 </Tooltip>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1 md:gap-2 ${isMobile ? 'overflow-x-auto' : ''}`}>
+                {/* Primary actions - always visible */}
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={() => setShowCelestialSearch(true)}
-                  className="border-gray-600 text-white hover:bg-gray-700"
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
                   title="Search Celestial Objects (⌘K)"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                 </Button>
+                
+                {/* Secondary actions - hide some on mobile */}
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowStreamStatus(!showStreamStatus)}
+                    className="text-gray-400 hover:text-white"
+                    title={showStreamStatus ? "Hide Stream Status" : "Show Stream Status"}
+                  >
+                    {showStreamStatus ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  </Button>
+                )}
+                
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setShowStreamStatus(!showStreamStatus)}
-                  className="text-gray-400 hover:text-white"
-                  title={showStreamStatus ? "Hide Stream Status" : "Show Stream Status"}
-                >
-                  {showStreamStatus ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={() => _setShowAnnotations(!_showAnnotations)}
-                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"}`}
-                  title={_showAnnotations ? "Hide Annotations (Ctrl+A)" : "Show Annotations (Ctrl+A)"}
+                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"} ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  title={_showAnnotations ? "Hide Annotations" : "Show Annotations"}
                 >
-                  <Crosshair className={`h-4 w-4 ${_showAnnotations ? "" : "opacity-50"}`} />
+                  <Crosshair className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} ${_showAnnotations ? "" : "opacity-50"}`} />
                   {/* Indicator dot when annotations are available */}
                   {currentAnnotations.length > 0 && (
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowChalkboard(!showChalkboard)}
-                  className={`${showChalkboard ? "text-orange-400 hover:text-orange-300" : "text-gray-400 hover:text-white"}`}
-                  title={showChalkboard ? "Hide Chalkboard (Ctrl+Shift+C)" : "Show Chalkboard (Ctrl+Shift+C)"}
-                >
-                  <Pen className={`h-4 w-4 ${showChalkboard ? "" : "opacity-50"}`} />
-                </Button>
-                {/* Star Map Toggle - Hidden */}
-                {/* <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowStarmap(!showStarmap)}
-                  className={`${showStarmap ? "text-blue-400 hover:text-blue-300" : "text-gray-400 hover:text-white"}`}
-                  title={showStarmap ? "Hide Star Map" : "Show Star Map"}
-                >
-                  <Map className={`h-4 w-4 ${showStarmap ? "" : "opacity-50"}`} />
-                </Button> */}
+                
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowChalkboard(!showChalkboard)}
+                    className={`${showChalkboard ? "text-orange-400 hover:text-orange-300" : "text-gray-400 hover:text-white"}`}
+                    title={showChalkboard ? "Hide Chalkboard" : "Show Chalkboard"}
+                  >
+                    <Pen className={`h-4 w-4 ${showChalkboard ? "" : "opacity-50"}`} />
+                  </Button>
+                )}
+                
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={() => {
                     // Rotate by 90 degrees on each click
                     setRotationAngle((prevAngle) => (prevAngle + 90) % 360);
                   }}
-                  className="border-gray-600 text-white hover:bg-gray-700"
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  title="Rotate"
                 >
-                  <RotateCw className="w-4 h-4" />
+                  <RotateCw className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                 </Button>
+                
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={() => setLiveViewFullscreen(!liveViewFullscreen)}
-                  className="border-gray-600 text-white hover:bg-gray-700"
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
                   title={liveViewFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 >
-                  {liveViewFullscreen ? <Minimize className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+                  {liveViewFullscreen ? 
+                    <Minimize className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} /> : 
+                    <Expand className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  }
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-                  className="border-gray-600 text-white hover:bg-gray-700"
-                >
-                  {isControlsCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </Button>
+                
+                {/* Controls collapse toggle - hide on mobile since we handle it differently */}
+                {!isMobile && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
+                    className="border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    {isControlsCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 relative">
-          <div className={`w-full bg-black overflow-hidden relative ${liveViewFullscreen ? 'h-screen rounded-none' : 'h-[calc(100vh-200px)] rounded-lg'}`} ref={imageContainerRef}>
+          <div className={`w-full bg-black overflow-hidden relative ${
+            liveViewFullscreen 
+              ? 'h-screen rounded-none' 
+              : isMobile 
+                ? 'h-[calc(100vh-120px)] rounded-lg' 
+                : 'h-[calc(100vh-200px)] rounded-lg'
+          }`} ref={imageContainerRef}>
             {/* Image container with zoom and pan */}
             <div
               className="w-full h-full cursor-grab"
@@ -1500,11 +1518,12 @@ export function CameraView() {
                   </div>
 
                   {/* Coordinates Section */}
-                  {(localStreamStatus?.status?.ra !== undefined || localStreamStatus?.status?.dec !== undefined) && (
+                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) || 
+                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
                     <div className="space-y-2">
                       <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
 
-                      {localStreamStatus?.status?.ra !== undefined && (
+                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
                             <Compass className="w-4 h-4 text-cyan-400" />
@@ -1514,7 +1533,7 @@ export function CameraView() {
                         </div>
                       )}
 
-                      {localStreamStatus?.status?.dec !== undefined && (
+                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
                             <Compass className="w-4 h-4 text-cyan-400" />
@@ -1691,18 +1710,22 @@ export function CameraView() {
             )}
 
             {/* Zoom Controls */}
-            <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center" style={{ zIndex: 20 }}>
+            <div className={`absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center ${
+              isMobile ? 'p-1 gap-1' : ''
+            }`} style={{ zIndex: 20 }}>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={zoomIn}
-                className="border-gray-600 text-white hover:bg-gray-700 w-8 h-8 p-0"
+                className={`border-gray-600 text-white hover:bg-gray-700 p-0 ${
+                  isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8'
+                }`}
                 title="Zoom In"
               >
-                <ZoomIn className="w-4 h-4" />
+                <ZoomIn className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
               </Button>
 
-              <div className="h-24 px-2 flex flex-col items-center">
+              <div className={`px-2 flex flex-col items-center ${isMobile ? 'h-20' : 'h-24'}`}>
                 <Slider
                   value={[zoomLevel]}
                   min={1}
@@ -1723,32 +1746,36 @@ export function CameraView() {
                 variant="outline"
                 size="sm"
                 onClick={zoomOut}
-                className="border-gray-600 text-white hover:bg-gray-700 w-8 h-8 p-0"
+                className={`border-gray-600 text-white hover:bg-gray-700 p-0 ${
+                  isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8'
+                }`}
                 title="Zoom Out"
               >
-                <ZoomOut className="w-4 h-4" />
+                <ZoomOut className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={resetZoomAndPan}
-                className="border-gray-600 text-white hover:bg-gray-700 w-8 h-8 p-0 mt-2"
+                className={`border-gray-600 text-white hover:bg-gray-700 p-0 mt-1 ${
+                  isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8 mt-2'
+                }`}
                 title="Reset View"
               >
-                <Maximize className="w-4 h-4" />
+                <Maximize className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowImageEnhancement(!showImageEnhancement)}
-                className={`border-gray-600 text-white hover:bg-gray-700 w-8 h-8 p-0 mt-2 ${
-                  showImageEnhancement ? 'bg-purple-600 border-purple-500' : ''
-                }`}
+                className={`border-gray-600 text-white hover:bg-gray-700 p-0 mt-1 ${
+                  isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8 mt-2'
+                } ${showImageEnhancement ? 'bg-purple-600 border-purple-500' : ''}`}
                 title="Image Enhancement"
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
               </Button>
             </div>
 

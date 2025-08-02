@@ -20,6 +20,7 @@ import {useTheme} from "next-themes"
 import {TelescopeSelector} from "@/components/telescope/TelescopeSelector"
 import {useRouter} from "next/navigation"
 import {SystemAdminDialog} from "./modals/SystemAdminDialog"
+import {useIsMobile} from "../../hooks/use-mobile"
 
 export function Header() {
   const router = useRouter()
@@ -29,6 +30,7 @@ export function Header() {
 
   const [sceneryMode, setSceneryMode] = useState(false)
   const [showSystemAdmin, setShowSystemAdmin] = useState(false)
+  const isMobile = useIsMobile()
 
   const handleSceneryToggle = async () => {
     const newSceneryMode = !sceneryMode
@@ -48,9 +50,9 @@ export function Header() {
 
   return (
     <div className="border-b">
-      <div className="flex h-16 items-center px-4">
+      <div className={`flex items-center ${isMobile ? 'h-12 px-2' : 'h-16 px-4'}`}>
         <TelescopeSelector/>
-        <div className="ml-auto flex items-center space-x-4">
+        <div className={`ml-auto flex items-center ${isMobile ? 'space-x-1' : 'space-x-4'}`}>
           {/* Notification Bell - Hidden */}
           {/* <Button
             variant="ghost"
@@ -78,40 +80,42 @@ export function Header() {
           {/* Picture-in-Picture Test Button */}
           <Button
             variant={showPiP ? "default" : "outline"}
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             onClick={() => setShowPiP(!showPiP)}
-            className="flex items-center gap-2"
+            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}
             title="Toggle Picture-in-Picture View (Ctrl+I)"
             data-tour="pip-toggle"
           >
-            <Camera className="w-4 h-4"/>
-            PiP
+            <Camera className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
+            {!isMobile && 'PiP'}
           </Button>
 
           {/* Scenery Mode Button */}
           <Button
             variant={sceneryMode ? "default" : "outline"}
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             onClick={handleSceneryToggle}
-            className="flex items-center gap-2"
+            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}
             title="Toggle Scenery Mode"
             data-tour="scenery-mode"
           >
-            <Mountain className="w-4 h-4"/>
-            Scenery
+            <Mountain className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
+            {!isMobile && 'Scenery'}
           </Button>
 
-          {/* Image Processing Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/processing')}
-            className="flex items-center gap-2"
-            title="Image Processing"
-          >
-            <ImageIcon className="w-4 h-4"/>
-            Processing
-          </Button>
+          {/* Image Processing Button - Hide on mobile */}
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/processing')}
+              className="flex items-center gap-2"
+              title="Image Processing"
+            >
+              <ImageIcon className="w-4 h-4"/>
+              Processing
+            </Button>
+          )}
 
           {/* Sky Map Button - Hidden */}
           {/* <Button
@@ -125,28 +129,30 @@ export function Header() {
             Sky Map
           </Button> */}
 
-          {/* Messages Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/messages')}
-            className="flex items-center gap-2"
-            title="View Telescope Messages"
-          >
-            <MessageSquare className="w-4 h-4"/>
-            Messages
-          </Button>
+          {/* Messages Button - Hide on mobile */}
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/messages')}
+              className="flex items-center gap-2"
+              title="View Telescope Messages"
+            >
+              <MessageSquare className="w-4 h-4"/>
+              Messages
+            </Button>
+          )}
 
           {/* Help/Documentation Button */}
           <Button
             variant="outline"
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             onClick={() => setShowDocumentation(true)}
-            className="flex items-center gap-2"
+            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}
             title="Open Documentation (F1)"
           >
-            <HelpCircle className="w-4 h-4"/>
-            Help
+            <HelpCircle className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
+            {!isMobile && 'Help'}
           </Button>
 
           <DropdownMenu>
