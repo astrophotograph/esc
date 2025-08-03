@@ -355,3 +355,230 @@ This document outlines the implementation plan for all Beta milestone issues in 
 6. **Week 8**: Beta release preparation
 
 Post-beta items can be scheduled based on user feedback and priorities.
+
+## Test Coverage Plan for Server Component
+
+### Current State
+- **Overall Coverage**: 21.68% (1813/8364 statements)
+- **Target Coverage**: 100%
+- **Missing Coverage**: 6551 statements
+
+### Coverage Analysis by Module
+
+#### Core Application (main.py)
+- **Current**: 15.76% (262/1662 statements)
+- **Priority**: CRITICAL
+- **Key Areas to Test**:
+  - FastAPI application initialization and startup
+  - All API endpoints (telescope control, imaging, status, etc.)
+  - WebSocket connection handling
+  - Server-Sent Events (SSE) streaming
+  - Error handling and recovery
+  - Command-line argument parsing
+  - Network simulation features
+
+#### WebSocket Components (10-11% coverage)
+- **websocket_manager.py**: 10.97% (69/629)
+- **websocket_router.py**: 32.89% (25/76)
+- **websocket_protocol.py**: 74.13% (106/143)
+- **Priority**: CRITICAL
+- **Key Areas to Test**:
+  - WebSocket lifecycle (connect, message handling, disconnect)
+  - Message routing and protocol handling
+  - Error scenarios and reconnection logic
+  - Multiple concurrent connections
+  - Authentication and authorization
+
+#### Database Layer (database.py)
+- **Current**: 10.45% (21/201)
+- **Priority**: HIGH
+- **Key Areas to Test**:
+  - All CRUD operations
+  - Transaction handling
+  - Error scenarios (connection failures, constraints)
+  - Concurrent access patterns
+  - Schema migrations
+
+#### Services (0-36% coverage)
+- **astrometry_client.py**: 0% (0/179) - Plate solving service
+- **async_image_processing.py**: 0% (0/99) - Image processing pipeline
+- **coordinate_service.py**: 0% (0/116) - Coordinate transformations
+- **goto_service.py**: 0% (0/137) - Telescope movement
+- **version_check.py**: 0% (0/101) - Version compatibility
+- **Priority**: HIGH
+- **Refactoring Needed**: Yes - These services need dependency injection for better testability
+
+#### Smarttel/Seestar Components (21-44% coverage)
+- **client.py**: 21.28% (113/531) - Main telescope client
+- **connection.py**: 24.31% (35/144) - TCP connection handling
+- **imaging_client.py**: 27.78% (75/270) - Imaging operations
+- **protocol_handlers.py**: 26.35% (39/148) - Protocol parsing
+- **Priority**: CRITICAL
+- **Refactoring Needed**: Yes - Need to mock hardware dependencies
+
+#### Utility Modules (0% coverage)
+- **cli/ui.py**: 0% (0/94) - Terminal UI
+- **utils/performance_monitor.py**: 0% (0/128) - Performance monitoring
+- **utils/logging_config.py**: 27.27% (9/33) - Logging setup
+- **Priority**: MEDIUM
+
+#### Middleware (0-22% coverage)
+- **error_handler.py**: 22.41% (13/58)
+- **network_simulation.py**: 0% (0/152)
+- **Priority**: MEDIUM
+
+### Test Implementation Strategy
+
+#### Phase 1: Critical Path Testing (Weeks 1-2)
+1. **Fix Failing Tests**
+   - Resolve mock/assertion issues in controller tests
+   - Update tests for recent code changes
+   
+2. **Core API Testing**
+   - Test all FastAPI endpoints with pytest-asyncio
+   - Use httpx for async HTTP testing
+   - Mock external dependencies (telescope hardware)
+   
+3. **WebSocket Testing**
+   - Use pytest-asyncio-websocket for WebSocket tests
+   - Test connection lifecycle, message flow, error handling
+   - Simulate network issues and reconnection
+
+#### Phase 2: Service Layer Testing (Weeks 3-4)
+1. **Refactor Services for Testability**
+   - Add dependency injection to all services
+   - Create interfaces for external dependencies
+   - Implement mock/stub versions for testing
+   
+2. **Service Tests**
+   - Unit tests for each service method
+   - Integration tests with mocked dependencies
+   - Edge case and error scenario testing
+
+#### Phase 3: Database and Integration (Week 5)
+1. **Database Testing**
+   - Use pytest fixtures for test database setup
+   - Test all CRUD operations
+   - Test concurrent access patterns
+   - Test migration scripts
+   
+2. **Integration Testing**
+   - End-to-end tests with all components
+   - Performance testing under load
+   - Memory leak detection
+
+#### Phase 4: UI and Utilities (Week 6)
+1. **CLI Testing**
+   - Mock terminal interactions
+   - Test all command flows
+   
+2. **Utility Testing**
+   - Test performance monitoring
+   - Test logging configuration
+   - Test error handling middleware
+
+### Files Requiring Major Refactoring
+
+#### High Priority Refactoring
+1. **main.py** (1662 lines)
+   - Split into smaller modules (app factory, routes, startup)
+   - Extract business logic from route handlers
+   - Add dependency injection for services
+   
+2. **websocket_manager.py** (629 lines)
+   - Split connection management from message handling
+   - Add interface for easier mocking
+   - Improve error handling and logging
+   
+3. **Services Module**
+   - All services need dependency injection
+   - Create abstract base classes for external dependencies
+   - Add configuration management
+
+#### Medium Priority Refactoring
+1. **smarttel/seestar/client.py** (531 lines)
+   - Extract protocol handling to separate class
+   - Add state machine for connection management
+   - Improve error handling and recovery
+   
+2. **remote_websocket_client.py** (307 lines)
+   - Split WebSocket handling from business logic
+   - Add retry logic with exponential backoff
+   - Improve error reporting
+
+### Testing Tools and Infrastructure
+
+#### Required Testing Libraries
+```toml
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+pytest-timeout = "^2.2.0"
+httpx = "^0.26.0"
+pytest-asyncio-websocket = "^0.2.0"
+factory-boy = "^3.3.0"
+freezegun = "^1.4.0"
+```
+
+#### Test Organization
+```
+tests/
+├── unit/
+│   ├── test_services/
+│   ├── test_models/
+│   ├── test_utils/
+│   └── test_middleware/
+├── integration/
+│   ├── test_api/
+│   ├── test_websocket/
+│   └── test_database/
+├── e2e/
+│   └── test_scenarios/
+└── fixtures/
+    ├── database.py
+    ├── telescope.py
+    └── websocket.py
+```
+
+### Success Metrics
+1. **Coverage Goals**
+   - Week 1-2: 40% coverage
+   - Week 3-4: 60% coverage
+   - Week 5: 80% coverage
+   - Week 6: 95%+ coverage
+   
+2. **Quality Metrics**
+   - All tests pass in CI/CD
+   - Test execution time < 5 minutes
+   - No flaky tests
+   - Clear test documentation
+
+### Continuous Integration
+1. **GitHub Actions Workflow**
+   - Run tests on every PR
+   - Generate coverage reports
+   - Fail if coverage drops below threshold
+   - Run different test suites in parallel
+   
+2. **Pre-commit Hooks**
+   - Run unit tests before commit
+   - Check coverage for modified files
+   - Enforce code style with ruff
+
+### Risk Mitigation
+1. **Hardware Dependencies**
+   - Create comprehensive mock telescope
+   - Record real telescope responses for replay
+   - Build hardware simulation mode
+   
+2. **Async Complexity**
+   - Use pytest-asyncio consistently
+   - Proper cleanup in fixtures
+   - Test timeout handling
+   
+3. **External Services**
+   - Mock all external API calls
+   - Test offline scenarios
+   - Implement circuit breakers
