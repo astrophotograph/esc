@@ -73,16 +73,25 @@ class TestControllerAsyncMethods:
 
             # First telescope
             args1, kwargs1 = call_args_list[0]
-            assert args1 == ("192.168.1.100", 4700)
+            assert args1 == ()  # No positional arguments
+            assert kwargs1["host"] == "192.168.1.100"
+            assert kwargs1["port"] == 4700
             assert kwargs1["serial_number"] == "SN123456"
             assert kwargs1["product_model"] == "Seestar S50"
+            assert kwargs1["ssid"] is None  # Not provided in test data
             assert kwargs1["location"] == "Test Location"
+            assert kwargs1["discover"] == False
 
             # Second telescope
             args2, kwargs2 = call_args_list[1]
-            assert args2 == ("192.168.1.101", 4700)
+            assert args2 == ()  # No positional arguments
+            assert kwargs2["host"] == "192.168.1.101"
+            assert kwargs2["port"] == 4700
             assert kwargs2["serial_number"] == "SN789012"
+            assert kwargs2["product_model"] == "Seestar S50"
+            assert kwargs2["ssid"] is None  # Not provided in test data
             assert kwargs2["location"] == "Another Location"
+            assert kwargs2["discover"] == False
 
     @pytest.mark.asyncio
     async def test_load_saved_telescopes_empty_database(self, controller):
