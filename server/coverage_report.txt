@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-8.4.1, pluggy-1.6.0
+rootdir: /Users/erewhon/Projects/erewhon/alp-experimental/main/server
+configfile: pyproject.toml
+testpaths: ., tests
+plugins: anyio-4.9.0, cov-6.2.1, asyncio-1.0.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 362 items
+
+tests/test_command_error_conversion.py ...                               [  0%]
+tests/test_controller_async_methods.py F..FFF..FFF..F....                [  5%]
+tests/test_controller_endpoints.py ..F........                           [  8%]
+tests/test_controller_runner.py ...................                      [ 14%]
+tests/test_coordinate_service.py ......F..........                       [ 18%]
+tests/test_database.py ................                                  [ 23%]
+tests/test_database_comprehensive.py ..........................          [ 30%]
+tests/test_goto_service.py .

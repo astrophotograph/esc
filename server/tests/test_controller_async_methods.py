@@ -142,34 +142,35 @@ class TestControllerAsyncMethods:
 
         controller.db.load_remote_controllers.return_value = saved_controllers
 
-        with patch("main.RemoteController") as mock_remote_controller_class:
-            mock_controller_instance = AsyncMock()
-            mock_remote_controller_class.return_value = mock_controller_instance
-            mock_controller_instance.connect.return_value = True
-            mock_controller_instance.get_telescopes.return_value = []
-
+        # Mock the add_remote_controller method to avoid real network calls
+        with patch.object(controller, 'add_remote_controller', new_callable=AsyncMock) as mock_add:
+            # Simulate successful connection for first controller, failure for second
+            mock_add.side_effect = [True, False]
+            
             await controller.load_saved_remote_controllers()
 
-            # Should have created remote controller instances
-            assert mock_remote_controller_class.call_count == 2
+            # Should have called add_remote_controller for each saved controller
+            assert mock_add.call_count == 2
 
-            # Check controller creation calls
-            call_args_list = mock_remote_controller_class.call_args_list
+            # Check add_remote_controller calls
+            call_args_list = mock_add.call_args_list
 
             # First controller
             args1, kwargs1 = call_args_list[0]
-            assert kwargs1["host"] == "controller1.com"
-            assert kwargs1["port"] == 8000
-            assert kwargs1["name"] == "Primary Controller"
+            assert args1[0] == "controller1.com"
+            assert args1[1] == 8000
+            assert kwargs1['persist'] is False
 
-            # Second controller
+            # Second controller  
             args2, kwargs2 = call_args_list[1]
-            assert kwargs2["host"] == "controller2.com"
-            assert kwargs2["port"] == 8001
-            assert kwargs2["name"] == "Secondary Controller"
+            assert args2[0] == "controller2.com"
+            assert args2[1] == 8001
+            assert kwargs2['persist'] is False
 
-            # Should have attempted to connect
-            assert mock_controller_instance.connect.call_count == 2
+            # Verify db update was called for failed connection
+            controller.db.update_remote_controller_status.assert_called_once_with(
+                "controller2.com", 8001, "disconnected"
+            )
 
     @pytest.mark.asyncio
     async def test_load_saved_remote_controllers_connection_failure(self, controller):

@@ -1,12 +1,12 @@
 {
-  "version": "25.08.01-alpha.78",
-  "buildDate": "2025-08-02T02:58:29.119Z",
+  "version": "25.08.01-alpha.79",
+  "buildDate": "2025-08-02T04:23:52.196Z",
   "buildNumber": "local",
-  "buildTime": "2025-08-02T02:58:29.119Z",
+  "buildTime": "2025-08-02T04:23:52.196Z",
   "git": {
-    "hash": "4c225d3",
+    "hash": "b64cf62",
     "isDirty": true,
     "latestTag": "build-20250719-202829",
-    "commitsSinceTag": 78
+    "commitsSinceTag": 79
   }
 }
