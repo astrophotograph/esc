@@ -262,7 +262,7 @@ export function ControlPanel() {
           <>
             <TabsContent value="telescope" className="space-y-4 mt-4">
               <TelescopeControls />
-              <ImageControls />
+              {/*<ImageControls />*/}
               {/* System Control Section - positioned below Image Controls */}
               <Card className="bg-gray-800 border-gray-700">
                 <CardContent className="pt-6">

@@ -10,7 +10,7 @@ class StopStage(str, Enum):
     """Stop stage."""
 
     DARK_LIBRARY = "DarkLibrary"
-    STACK = "AutoGoto"
+    STACK = "Stack"
     AUTO_GOTO = "AutoGoto"
 
 

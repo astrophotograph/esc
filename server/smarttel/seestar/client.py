@@ -754,6 +754,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         """Stop goto."""
         return self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
 
+    def stop_stack(self):
+        """Stop stack."""
+        return self.send_and_recv(IscopeStopView(params={"stage": "Stack"}))
+
     def scope_sync(self, in_ra: float, in_dec: float):
         """Scope sync."""
         return self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
