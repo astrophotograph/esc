@@ -11,6 +11,16 @@ import {useTelescopeContext} from "@/context/TelescopeContext"
 import {formatRaDec} from "@/utils/telescope-utils"
 import {type PlateSolveResult, PlateSolveSyncDialog} from "../modals/PlateSolveSyncDialog"
 import {getWebSocketService, MessageType, PlateSolveResultMessage} from "@/services/websocket-service"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function TelescopeControls() {
   const {
@@ -35,6 +45,9 @@ export function TelescopeControls() {
   // State for plate solve sync dialog
   const [showPlateSolveDialog, setShowPlateSolveDialog] = useState(false)
   const [plateSolveResult, setPlateSolveResult] = useState<PlateSolveResult | null>(null)
+  
+  // State for stop imaging confirmation dialog
+  const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
 
   // Listen for plate solve results from WebSocket
   useEffect(() => {
@@ -235,6 +248,19 @@ export function TelescopeControls() {
     setPlateSolveResult(null)
   }
 
+  const handleStopImagingClick = () => {
+    setShowStopImagingConfirm(true)
+  }
+
+  const handleConfirmStopImaging = async () => {
+    setShowStopImagingConfirm(false)
+    await handleStopImaging()
+  }
+
+  const handleCancelStopImaging = () => {
+    setShowStopImagingConfirm(false)
+  }
+
   return (
     <>
       <Card className="bg-gray-800 border-gray-700">
@@ -282,7 +308,7 @@ export function TelescopeControls() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleStopImaging}
+                  onClick={handleStopImagingClick}
                   className="w-full"
                 >
                   <StopCircle className="w-4 h-4 mr-2" />
@@ -520,6 +546,32 @@ export function TelescopeControls() {
         onSync={handleSync}
         onCancel={handleDialogCancel}
       />
+
+      {/* Stop Imaging Confirmation Dialog */}
+      <AlertDialog open={showStopImagingConfirm} onOpenChange={setShowStopImagingConfirm}>
+        <AlertDialogContent className="bg-gray-800 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Stop Imaging?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              Are you sure you want to stop the current stacking process? This will end the imaging session and you won't be able to resume from where you left off.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={handleCancelStopImaging}
+              className="border-gray-600 text-white hover:bg-gray-700"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmStopImaging}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Stop Imaging
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -565,6 +565,8 @@ class WebSocketManager:
                 return await self._execute_goto_command(client, parameters)
             elif action == "scenery":
                 return await self._execute_scenery_command(client, parameters)
+            elif action == "stop_imaging":
+                return await self._execute_stop_imaging_command(client, parameters)
             elif action == "set_image_enhancement":
                 return await self._execute_set_image_enhancement_command(client, parameters)
             elif action == "get_image_enhancement":
@@ -1064,6 +1066,32 @@ class WebSocketManager:
 
         except Exception as e:
             logger.error(f"Error executing scenery command: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_stop_imaging_command(
+            self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute stop imaging command to stop stacking."""
+        stage = parameters.get("stage", "Stack")
+
+        try:
+            logger.info(
+                f"Stop imaging command received: stage={stage}, parameters={parameters}"
+            )
+
+            # Use the SeestarClient's stop_stack method
+            response = client.stop_stack()
+
+            return {
+                "status": "success",
+                "action": "stop_imaging",
+                "stage": stage,
+                "message": "Stacking stopped successfully",
+                "response": response.to_dict() if hasattr(response, "to_dict") else str(response),
+            }
+
+        except Exception as e:
+            logger.error(f"Error executing stop imaging command: {e}")
             return {"status": "error", "message": str(e)}
 
     async def _execute_reboot_command(
