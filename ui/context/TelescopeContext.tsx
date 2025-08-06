@@ -29,7 +29,7 @@ import type {
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
 import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
-import { getWebSocketService, MessageType } from "../services/websocket-service"
+import { getWebSocketService, MessageType, CommandAction } from "../services/websocket-service"
 
 export interface Annotation {
   type: string;
@@ -299,6 +299,7 @@ interface TelescopeContextType {
   handleFocusAdjust: (direction: "in" | "out") => void
   handleGotoTarget: (targetName: string, ra: number, dec: number, startImaging?: boolean, targetType?: string, magnitude?: number, description?: string) => Promise<void>
   handleSceneryMode: () => Promise<void>
+  handleStopImaging: () => Promise<void>
   handleTargetSelect: (target: CelestialObject) => void
   handlePlateSolve: (apiKey?: string) => Promise<any>
   handleSyncTelescope: (ra: number, dec: number) => Promise<any>
@@ -1606,6 +1607,51 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const handleStopImaging = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before stopping imaging",
+      })
+      return
+    }
+
+    if (!wsIsConnected) {
+      addStatusAlert({
+        type: "error",
+        title: "WebSocket Not Connected",
+        message: `Cannot stop imaging - WebSocket connection state: ${wsConnectionState}`,
+      })
+      return
+    }
+
+    try {
+      const wsService = getWebSocketService()
+      await wsService.sendCommand(
+        CommandAction.STOP_IMAGING,
+        { stage: "Stack" },
+        currentTelescope.id
+      )
+
+      addStatusAlert({
+        type: "success",
+        title: "Imaging Stopped",
+        message: "Stacking process has been stopped",
+      })
+      
+      // Reset client mode
+      setClientMode(null)
+    } catch (error) {
+      console.error('Error stopping imaging via WebSocket:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Stop Imaging Failed",
+        message: `Failed to stop imaging: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
+  }
+
   const handleTargetSelect = (target: CelestialObject) => {
     setSelectedTarget(target)
 
@@ -2472,6 +2518,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     handleFocusAdjust,
     handleGotoTarget,
     handleSceneryMode,
+    handleStopImaging,
     handleTargetSelect,
     handlePlateSolve,
     handleSyncTelescope,

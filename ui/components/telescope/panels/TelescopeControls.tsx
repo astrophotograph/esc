@@ -6,7 +6,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Slider} from "@/components/ui/slider"
 import {Switch} from "@/components/ui/switch"
 import {Separator} from "@/components/ui/separator"
-import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Settings, Target} from "lucide-react"
+import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Settings, Target, StopCircle} from "lucide-react"
 import {useTelescopeContext} from "@/context/TelescopeContext"
 import {formatRaDec} from "@/utils/telescope-utils"
 import {type PlateSolveResult, PlateSolveSyncDialog} from "../modals/PlateSolveSyncDialog"
@@ -29,6 +29,7 @@ export function TelescopeControls() {
     handlePlateSolve,
     handleSyncTelescope,
     clientMode,
+    handleStopImaging,
   } = useTelescopeContext()
 
   // State for plate solve sync dialog
@@ -272,6 +273,24 @@ export function TelescopeControls() {
               </div>
             </div>
           </div>
+
+          {/* Stop Imaging Button - Only visible when in Stack mode */}
+          {clientMode === "Stack" && (
+            <>
+              <Separator className="bg-gray-700" />
+              <div className="space-y-3">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleStopImaging}
+                  className="w-full"
+                >
+                  <StopCircle className="w-4 h-4 mr-2" />
+                  Stop Imaging
+                </Button>
+              </div>
+            </>
+          )}
 
           <Separator
             className={`bg-gray-700 transition-all duration-300 ease-in-out ${
