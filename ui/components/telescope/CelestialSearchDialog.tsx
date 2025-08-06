@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, MapPin, Clock, Navigation, Camera } from "lucide-react"
+import { Search, MapPin, Clock, Navigation, Camera, Compass, Eye } from "lucide-react"
 import { toast } from "sonner"
 import {
   CommandDialog,
@@ -31,6 +31,7 @@ import {
   DEFAULT_OBSERVER_LOCATION,
   type CelestialObjectWithHorizon 
 } from "../../utils/celestial-calculations"
+import { formatCoordinates } from "../../utils/astronomical-calculations"
 import { catalogAPI, CatalogAPI } from "../../services/catalog-api"
 
 interface CelestialSearchDialogProps {
@@ -39,7 +40,7 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { currentObservingLocation, handleTargetSelect, streamStatus, handleGotoTarget } = useTelescopeContext()
+  const { currentObservingLocation, handleTargetSelect, streamStatus, handleGotoTarget, handleStopImaging } = useTelescopeContext()
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
   const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
@@ -329,8 +330,10 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     setShowStopImagingConfirm(false)
     
     if (pendingGotoAction) {
-      // TODO: Add stop imaging command here if needed
-      // For now, just proceed with the goto
+      // Stop the current imaging session first
+      await handleStopImaging()
+      
+      // Then proceed with the goto
       await executeGoto(pendingGotoAction.startImaging)
       setPendingGotoAction(null)
     }
@@ -450,19 +453,74 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       {selectedObject && (
         <div className="border-t p-4 bg-muted/50">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20">
+            {/* Object Header */}
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/20 mt-1">
                 {getObjectTypeIcon(selectedObject.type)}
               </div>
-              <div>
-                <span className="font-medium text-sm">{selectedObject.name}</span>
-                <div className="text-xs text-muted-foreground">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-base">{selectedObject.name}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {getGroupTitle(getDisplayGroup(selectedObject.type))}
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground mb-2">
                   {selectedObject.description}
+                </div>
+                
+                {/* Object Details Grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {/* Coordinates */}
+                  <div className="flex items-center gap-1">
+                    <Compass className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">RA:</span>
+                    <span className="font-mono">{formatCoordinates({ ra: selectedObject.ra, dec: selectedObject.dec }).ra}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Compass className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Dec:</span>
+                    <span className="font-mono">{formatCoordinates({ ra: selectedObject.ra, dec: selectedObject.dec }).dec}</span>
+                  </div>
+                  
+                  {/* Altitude and Magnitude */}
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Altitude:</span>
+                    <span className={selectedObject.altitude > 0 ? "" : "text-destructive"}>
+                      {selectedObject.altitude.toFixed(1)}°
+                    </span>
+                  </div>
+                  {selectedObject.magnitude !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Magnitude:</span>
+                      <span>{selectedObject.magnitude.toFixed(1)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Additional info for specific types */}
+                  {selectedObject.bestSeenIn && (
+                    <div className="col-span-2 flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Best seen in:</span>
+                      <span>{selectedObject.bestSeenIn}</span>
+                    </div>
+                  )}
+                  
+                  {/* Moon phase info */}
+                  {selectedObject.id === 'moon' && selectedObject._moonPhase !== undefined && (
+                    <div className="col-span-2 flex items-center gap-1 mt-1">
+                      <span className="text-muted-foreground">Illumination:</span>
+                      <span>{Math.round(selectedObject._moonPhase * 100)}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2">
               <Button
                 variant="outline"
                 size="sm"
