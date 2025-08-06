@@ -271,18 +271,15 @@ export function EnhancedImage({
         ref={imgRef}
         src={state.error && fallbackSrc ? fallbackSrc : src}
         alt={alt}
-        className={cn(
-          "w-full h-full object-cover",
-          state.loading && "opacity-0" // Hide image while loading
-        )}
+        className="w-full h-full object-cover"
         style={getTransformStyle()}
         onLoad={handleLoad}
         onError={handleError}
         onLoadStart={handleLoadStart}
       />
 
-      {/* Show loading overlay when loading */}
-      {state.loading && (
+      {/* Only show loading overlay on initial load, not on refresh */}
+      {state.loading && !state.lastLoadTime && showProgress && (
         <div className="absolute inset-0">
           <ImageSkeleton 
             type="loading" 
