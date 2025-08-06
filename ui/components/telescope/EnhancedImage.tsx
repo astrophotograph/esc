@@ -264,55 +264,54 @@ export function EnhancedImage({
     }
   }
 
-  // Show loading skeleton
-  if (state.loading && !imgRef.current?.complete) {
-    return (
-      <div className={cn("relative", className)}>
-        <ImageSkeleton 
-          type="loading" 
-          showProgress={showProgress}
-          progress={state.progress}
-          message={state.retryCount > 0 ? `Retrying... (${state.retryCount}/${maxRetries})` : undefined}
-        />
-      </div>
-    )
-  }
-
-  // Show error state
-  if (state.error && !fallbackSrc) {
-    return (
-      <div className={cn("relative", className)}>
-        <ImageSkeleton type="error" message={state.error} />
-        {showRetryButton && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="bg-gray-800/80 backdrop-blur-sm border-red-500/50 text-red-400 hover:bg-red-500/10"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
-            </Button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div className={cn("relative", className)}>
-      {/* Main image */}
+      {/* Always render the image element */}
       <img
         ref={imgRef}
-        src={src}
+        src={state.error && fallbackSrc ? fallbackSrc : src}
         alt={alt}
-        className="w-full h-full object-cover"
+        className={cn(
+          "w-full h-full object-cover",
+          state.loading && "opacity-0" // Hide image while loading
+        )}
         style={getTransformStyle()}
         onLoad={handleLoad}
         onError={handleError}
         onLoadStart={handleLoadStart}
       />
+
+      {/* Show loading overlay when loading */}
+      {state.loading && (
+        <div className="absolute inset-0">
+          <ImageSkeleton 
+            type="loading" 
+            showProgress={showProgress}
+            progress={state.progress}
+            message={state.retryCount > 0 ? `Retrying... (${state.retryCount}/${maxRetries})` : undefined}
+          />
+        </div>
+      )}
+
+      {/* Show error overlay when error occurs and no fallback */}
+      {state.error && !fallbackSrc && (
+        <div className="absolute inset-0">
+          <ImageSkeleton type="error" message={state.error} />
+          {showRetryButton && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                className="bg-gray-800/80 backdrop-blur-sm border-red-500/50 text-red-400 hover:bg-red-500/10"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Timestamp and status indicators */}
       {showTimestamp && state.lastLoadTime && (

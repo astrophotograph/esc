@@ -160,7 +160,8 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     )
                     
                     # Cache the raw image for instant processing
-                    if self.image is not None:
+                    # Only cache if we have valid image data (both the ScopeImage and its image field)
+                    if self.image is not None and self.image.image is not None:
                         with self.cached_raw_image_lock:
                             self.cached_raw_image = self.image.copy() if hasattr(self.image, 'copy') else self.image
                             self.cached_raw_image_timestamp = time.time()
