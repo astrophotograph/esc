@@ -230,19 +230,19 @@ export function PlateSolveSyncDialog({
                     <CardTitle className="text-gray-300 text-sm">Additional Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-1 text-xs">
-                    {plateSolveResult.orientation !== undefined && (
+                    {plateSolveResult.orientation != null && (
                       <div>
                         <span className="text-gray-400">Orientation:</span>
                         <span className="ml-2 text-gray-300">{plateSolveResult.orientation.toFixed(2)}°</span>
                       </div>
                     )}
-                    {plateSolveResult.pixscale !== undefined && (
+                    {plateSolveResult.pixscale != null && (
                       <div>
                         <span className="text-gray-400">Pixel Scale:</span>
                         <span className="ml-2 text-gray-300">{plateSolveResult.pixscale.toFixed(2)}" per pixel</span>
                       </div>
                     )}
-                    {plateSolveResult.field_width !== undefined && plateSolveResult.field_height !== undefined && (
+                    {plateSolveResult.field_width != null && plateSolveResult.field_height != null && (
                       <div>
                         <span className="text-gray-400">Field Size:</span>
                         <span className="ml-2 text-gray-300">
