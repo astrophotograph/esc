@@ -275,14 +275,14 @@ export function TelescopeControls() {
 
           <Separator
             className={`bg-gray-700 transition-all duration-300 ease-in-out ${
-              clientMode === "Stacking" ? "opacity-0 h-0" : "opacity-100"
+              clientMode === "Stack" ? "opacity-0 h-0" : "opacity-100"
             }`}
           />
 
           {/* Movement Controls */}
           <div
             className={`space-y-3 transition-all duration-300 ease-in-out overflow-hidden ${
-              clientMode === "Stacking"
+              clientMode === "Stack"
                 ? "max-h-0 opacity-0 pointer-events-none"
                 : "max-h-[1000px] opacity-100"
             }`}
@@ -379,14 +379,14 @@ export function TelescopeControls() {
 
           <Separator
             className={`bg-gray-700 transition-all duration-300 ease-in-out ${
-              clientMode === "Stacking" ? "opacity-0 h-0" : "opacity-100"
+              clientMode === "Stack" ? "opacity-0 h-0" : "opacity-100"
             }`}
           />
 
           {/* Focus Controls */}
           <div
             className={`space-y-3 transition-all duration-300 ease-in-out overflow-hidden ${
-              clientMode === "Stacking"
+              clientMode === "Stack"
                 ? "max-h-0 opacity-0 pointer-events-none"
                 : "max-h-[1000px] opacity-100"
             }`}
