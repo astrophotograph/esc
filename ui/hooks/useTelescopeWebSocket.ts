@@ -474,7 +474,8 @@ export function useTelescopeWebSocket(
     targetType?: string,
     magnitude?: number,
     description?: string,
-    telescope?: TelescopeInfo
+    telescope?: TelescopeInfo,
+    coordinateEpoch: 'J2000' | 'JNow' = 'J2000'
   ) => {
     const targetTelescope = telescope || currentTelescope;
     
@@ -482,11 +483,15 @@ export function useTelescopeWebSocket(
       throw new Error('WebSocket not connected or no telescope selected');
     }
     
+    // Note: The coordinates are sent as-is to the backend
+    // The backend should be configured to expect either J2000 or JNow coordinates
+    // In the future, we may want to add epoch information to the message
     const gotoMessage = {
       target_name: targetName,
       coordinates: {
         ra: ra,
-        dec: dec
+        dec: dec,
+        epoch: coordinateEpoch // Add epoch information for backend
       },
       start_imaging: startImaging,
       target_type: targetType,
