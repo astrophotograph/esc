@@ -31,7 +31,6 @@ import {
   DEFAULT_OBSERVER_LOCATION,
   type CelestialObjectWithHorizon 
 } from "../../utils/celestial-calculations"
-import { formatCoordinates } from "../../utils/astronomical-calculations"
 import { catalogAPI, CatalogAPI } from "../../services/catalog-api"
 
 interface CelestialSearchDialogProps {
@@ -475,12 +474,12 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                   <div className="flex items-center gap-1">
                     <Compass className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">RA:</span>
-                    <span className="font-mono">{formatCoordinates({ ra: selectedObject.ra, dec: selectedObject.dec }).ra}</span>
+                    <span className="font-mono">{selectedObject.ra}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Compass className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">Dec:</span>
-                    <span className="font-mono">{formatCoordinates({ ra: selectedObject.ra, dec: selectedObject.dec }).dec}</span>
+                    <span className="font-mono">{selectedObject.dec}</span>
                   </div>
                   
                   {/* Altitude and Magnitude */}
