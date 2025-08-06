@@ -735,11 +735,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         return list(reversed(events))
 
     # Helper methods
-    def goto(
+    async def goto(
             self, target_name: str, in_ra: float, in_dec: float, lp_filter: bool = False
     ):
         """Generalized goto."""
-        return self.send_and_recv(
+        return await self.send_and_recv(
             IscopeStartView(
                 params=IscopeStartViewParams(
                     mode="star",
@@ -750,17 +750,17 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             )
         )
 
-    def stop_goto(self):
+    async def stop_goto(self):
         """Stop goto."""
-        return self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
+        return await self.send_and_recv(IscopeStopView(params={"stage": "AutoGoto"}))
 
-    def stop_stack(self):
+    async def stop_stack(self):
         """Stop stack."""
-        return self.send_and_recv(IscopeStopView(params={"stage": "Stack"}))
+        return await self.send_and_recv(IscopeStopView(params={"stage": "Stack"}))
 
-    def scope_sync(self, in_ra: float, in_dec: float):
+    async def scope_sync(self, in_ra: float, in_dec: float):
         """Scope sync."""
-        return self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
+        return await self.send_and_recv(ScopeSync(params=(in_ra, in_dec)))
 
     async def wait_for_event_completion(
             self, event_type: str, timeout: float = 60.0

@@ -1080,7 +1080,7 @@ class WebSocketManager:
             )
 
             # Use the SeestarClient's stop_stack method
-            response = client.stop_stack()
+            response = await client.stop_stack()
 
             return {
                 "status": "success",

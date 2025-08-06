@@ -1105,7 +1105,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
                 # Perform sync
                 logging.info(f"Syncing telescope to RA={ra}, Dec={dec}")
-                self.client.scope_sync(ra, dec)
+                await self.client.scope_sync(ra, dec)
 
                 return {
                     "success": True,
