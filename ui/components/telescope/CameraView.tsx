@@ -128,6 +128,7 @@ export function CameraView() {
     setShowCelestialSearch,
     showChalkboard,
     setShowChalkboard,
+    setClientMode,
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
@@ -910,8 +911,13 @@ export function CameraView() {
       if (wsStatus.focus_position !== undefined && wsStatus.focus_position !== null) {
         setFocusPosition([wsStatus.focus_position]);
       }
+
+      // Update client mode from status stage if available
+      if (wsStatus.stage !== undefined) {
+        setClientMode(wsStatus.stage);
+      }
     }
-  }, [wsStatus, setStreamStatus, setFocusPosition]);
+  }, [wsStatus, setStreamStatus, setFocusPosition, setClientMode]);
 
   // Handle WebSocket connection state
   useEffect(() => {
