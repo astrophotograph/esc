@@ -29,8 +29,12 @@ import {
   filterVisibleObjects, 
   getDynamicCelestialObjects,
   DEFAULT_OBSERVER_LOCATION,
+  parseRA,
+  parseDec,
   type CelestialObjectWithHorizon 
 } from "../../utils/celestial-calculations"
+import { j2000ToJNow } from "../../utils/coordinate-precession"
+import { formatCoordinates } from "../../utils/astronomical-calculations"
 import { catalogAPI, CatalogAPI } from "../../services/catalog-api"
 
 interface CelestialSearchDialogProps {
@@ -470,8 +474,11 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 
                 {/* Object Details Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  {/* Coordinates */}
-                  <div className="flex items-center gap-1">
+                  {/* J2000 Coordinates */}
+                  <div className="col-span-2 flex items-center gap-1">
+                    <span className="font-semibold text-muted-foreground">J2000 Coordinates:</span>
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
                     <Compass className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">RA:</span>
                     <span className="font-mono">{selectedObject.ra}</span>
@@ -482,7 +489,38 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                     <span className="font-mono">{selectedObject.dec}</span>
                   </div>
                   
+                  {/* JNow Coordinates */}
+                  {(() => {
+                    const jNowCoords = j2000ToJNow({
+                      ra: parseRA(selectedObject.ra),
+                      dec: parseDec(selectedObject.dec)
+                    })
+                    const formattedJNow = formatCoordinates(jNowCoords)
+                    const currentYear = new Date().getFullYear()
+                    const currentMonth = new Date().getMonth() + 1
+                    const epochLabel = `J${currentYear}.${Math.floor((currentMonth - 1) / 12 * 10)}`
+                    
+                    return (
+                      <>
+                        <div className="col-span-2 flex items-center gap-1 mt-1">
+                          <span className="font-semibold text-muted-foreground">{epochLabel} Coordinates:</span>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <Compass className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">RA:</span>
+                          <span className="font-mono">{formattedJNow.ra}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Compass className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Dec:</span>
+                          <span className="font-mono">{formattedJNow.dec}</span>
+                        </div>
+                      </>
+                    )
+                  })()}
+                  
                   {/* Altitude and Magnitude */}
+                  <div className="col-span-2 border-t border-border/50 mt-1 pt-1"></div>
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">Altitude:</span>
