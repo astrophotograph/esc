@@ -707,11 +707,19 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     # Create a status object with current client information
                     status = {
                         "timestamp": asyncio.get_event_loop().time(),
-                        "connected": self.client.is_connected,
+                        "connected": self.client.is_connected if self.client else False,
                         "host": self.host,
                         "port": self.port,
-                        "status": self.client.status.model_dump(),
                     }
+                    
+                    # Safely add status if available
+                    if self.client and hasattr(self.client, 'status') and self.client.status:
+                        try:
+                            status["status"] = self.client.status.model_dump()
+                        except Exception as e:
+                            status["status_error"] = f"Error getting status: {str(e)}"
+                    else:
+                        status["status"] = None
 
                     # If connected, add recent events and messages
                     # if client.is_connected:
@@ -724,18 +732,34 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     #     except Exception as e:
                     #         status["view_state_error"] = str(e)
 
-                    # Send the status as a Server-Sent Event
-                    yield f"data: {json.dumps(status)}\n\n"
+                    try:
+                        # Send the status as a Server-Sent Event
+                        yield f"data: {json.dumps(status)}\n\n"
 
-                    # Send a heartbeat comment every 10 updates to keep connection alive
-                    if update_count % 10 == 0:
-                        yield f": heartbeat at {datetime.datetime.now().isoformat()}\n\n"
+                        # Send a heartbeat comment every 10 updates to keep connection alive
+                        if update_count % 10 == 0:
+                            yield f": heartbeat at {datetime.datetime.now().isoformat()}\n\n"
+                    except Exception as e:
+                        # If we can't serialize the status, send an error message
+                        error_status = {
+                            "timestamp": asyncio.get_event_loop().time(),
+                            "error": f"Failed to serialize status: {str(e)}"
+                        }
+                        yield f"data: {json.dumps(error_status)}\n\n"
 
                     # Wait for 1 seconds before sending next update
                     await asyncio.sleep(1)
             except asyncio.CancelledError:
                 # Handle client disconnection gracefully
                 yield f"data: {json.dumps({'status': 'stream_closed'})}\n\n"
+            except Exception as e:
+                # Handle any other unexpected errors
+                logging.error(f"Error in status stream generator: {e}")
+                try:
+                    yield f"data: {json.dumps({'error': str(e), 'status': 'stream_error'})}\n\n"
+                except:
+                    # If we can't even send the error, just log it
+                    logging.error("Failed to send error message in status stream")
 
         def build_frame_bytes(image: np.ndarray, width: int, height: int):
             # font = cv2.FONT_HERSHEY_COMPLEX
@@ -775,29 +799,41 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
             # Use the shared image processor instance
             star_processors = [self.image_processor]
-            yield b"\r\n--frame\r\n"
+            
+            try:
+                yield b"\r\n--frame\r\n"
 
-            async for image in self.imaging.get_next_image(camera_id):
-                is_streaming = self.imaging.client_mode == "Streaming"
+                async for image in self.imaging.get_next_image(camera_id):
+                    try:
+                        is_streaming = self.imaging.client_mode == "Streaming"
 
-                if image is not None and image.image is not None:
-                    img = image.image
-                    if not is_streaming:
-                        # We don't want to run processors when in streaming mode!
-                        for processor in star_processors:
-                            img = processor.process(img)
-                        # Apply comprehensive enhancements
-                        img = self.enhancement_processor.process(img)
-                    frame = build_frame_bytes(img, image.width, image.height)
-                    yield frame
+                        if image is not None and image.image is not None:
+                            img = image.image
+                            if not is_streaming:
+                                # We don't want to run processors when in streaming mode!
+                                for processor in star_processors:
+                                    img = processor.process(img)
+                                # Apply comprehensive enhancements
+                                img = self.enhancement_processor.process(img)
+                            frame = build_frame_bytes(img, image.width, image.height)
+                            yield frame
 
-                    if not is_streaming:
-                        # We send an extra frame if not streaming to deal with some browser's buffering issues!
-                        yield frame
-                else:
-                    # yield b"\r\ndata: empty!\r\n"
-                    delay = 0.001 if is_streaming else 0.1
-                    await asyncio.sleep(delay)
+                            if not is_streaming:
+                                # We send an extra frame if not streaming to deal with some browser's buffering issues!
+                                yield frame
+                        else:
+                            # yield b"\r\ndata: empty!\r\n"
+                            delay = 0.001 if is_streaming else 0.1
+                            await asyncio.sleep(delay)
+                    except Exception as e:
+                        logging.error(f"Error processing image frame: {e}")
+                        # Continue to next frame instead of breaking the stream
+                        await asyncio.sleep(0.1)
+            except asyncio.CancelledError:
+                # Client disconnected, this is normal
+                logging.debug("Image stream cancelled by client")
+            except Exception as e:
+                logging.error(f"Error in image stream generator: {e}")
 
         @router.get("/upscaling", response_model=UpscalingSettingsResponse)
         async def get_upscaling_settings():
