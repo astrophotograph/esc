@@ -454,11 +454,20 @@ class OptimizedController:
                 if hasattr(telescope, 'port') and telescope.port == 9999:
                     continue
                     
+                # Get location if available (it's an async property)
+                location = None
+                if hasattr(telescope, 'location'):
+                    try:
+                        location = await telescope.location
+                    except Exception as e:
+                        logging.debug(f"Failed to get telescope location: {e}")
+                        location = None
+                
                 result.append({
                     "name": telescope.name,
                     "host": telescope.host,
                     "port": telescope.port,
-                    "location": await telescope.location if hasattr(telescope, 'location') else None,
+                    "location": location,
                     "connected": telescope.client.is_connected if hasattr(telescope, 'client') else False,
                     "serial_number": telescope.serial_number if hasattr(telescope, 'serial_number') else None,
                     "product_model": telescope.product_model if hasattr(telescope, 'product_model') else None,
