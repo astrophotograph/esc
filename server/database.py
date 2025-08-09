@@ -5,6 +5,7 @@ import aiosqlite
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from loguru import logger as logging
+import time
 
 
 class TelescopeDatabase:
@@ -27,14 +28,20 @@ class TelescopeDatabase:
             pass
         self._initialized = False
         self._pending_operations = []
+        self._startup_time = time.time()
 
     async def initialize(self):
         """Initialize the database and create tables if needed."""
         if self._initialized:
             return
 
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
+        # Give the event loop a moment to stabilize during startup
+        if time.time() - self._startup_time < 0.5:
+            await asyncio.sleep(0.1)
+
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("""
                 CREATE TABLE IF NOT EXISTS telescopes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     host TEXT NOT NULL,
@@ -75,10 +82,19 @@ class TelescopeDatabase:
                     UNIQUE(host, port)
                 )
             """)
-            await db.commit()
+                await db.commit()
 
-        self._initialized = True
-        logging.info(f"Telescope database initialized at {self.db_path}")
+            self._initialized = True
+            logging.info(f"Telescope database initialized at {self.db_path}")
+        except RuntimeError as e:
+            if "Event loop is closed" in str(e):
+                logging.warning("Database initialization skipped - event loop not ready")
+                # Don't mark as initialized, will retry later
+            else:
+                raise
+        except Exception as e:
+            logging.error(f"Failed to initialize database: {e}")
+            raise
 
     async def save_telescope(self, telescope_data: Dict[str, Any]) -> bool:
         """Save a telescope to the database. Only saves if discovery_method is 'manual'."""
@@ -120,7 +136,11 @@ class TelescopeDatabase:
 
     async def load_telescopes(self) -> List[Dict[str, Any]]:
         """Load all manually added telescopes from the database."""
-        await self.initialize()
+        try:
+            await self.initialize()
+        except Exception as e:
+            logging.warning(f"Failed to initialize database during load_telescopes: {e}")
+            return []  # Return empty list if database isn't ready
 
         try:
             async with aiosqlite.connect(self.db_path) as db:
@@ -360,7 +380,11 @@ class TelescopeDatabase:
 
     async def load_remote_controllers(self) -> List[Dict[str, Any]]:
         """Load all remote controllers from the database."""
-        await self.initialize()
+        try:
+            await self.initialize()
+        except Exception as e:
+            logging.warning(f"Failed to initialize database during load_remote_controllers: {e}")
+            return []  # Return empty list if database isn't ready
 
         try:
             async with aiosqlite.connect(self.db_path) as db:
