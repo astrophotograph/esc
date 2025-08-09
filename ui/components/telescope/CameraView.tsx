@@ -37,7 +37,8 @@ import {
   AlertTriangle,
   Clock,
   Cpu,
-  Zap
+  Zap,
+  HardDrive
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -1532,6 +1533,58 @@ export function CameraView() {
                           <span className="text-gray-300">Focus</span>
                         </div>
                         <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
+                      </div>
+                    )}
+                    
+                    {/* Image Retrieval Timing */}
+                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-yellow-400" />
+                          <span className="text-gray-300">Image Time</span>
+                        </div>
+                        <span className="text-white font-mono">
+                          {localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Average Image Time */}
+                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-yellow-300" />
+                          <span className="text-gray-300">Avg Time</span>
+                        </div>
+                        <span className="text-white font-mono">
+                          {localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Image Size */}
+                    {localStreamStatus?.imaging_status?.last_image_size_bytes !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-300">Image Size</span>
+                        </div>
+                        <span className="text-white font-mono">
+                          {(localStreamStatus.imaging_status.last_image_size_bytes / 1024).toFixed(1)}KB
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Last Image Timestamp */}
+                    {localStreamStatus?.imaging_status?.last_image_end_time !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-300">Last Image</span>
+                        </div>
+                        <span className="text-white font-mono text-xs">
+                          {new Date(localStreamStatus.imaging_status.last_image_end_time * 1000).toLocaleTimeString()}
+                        </span>
                       </div>
                     )}
                   </div>

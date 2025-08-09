@@ -934,6 +934,19 @@ class Controller:
                                                 for attr in dir(tel.client.status)
                                                 if not attr.startswith("_")
                                             }
+                                        
+                                        # Add imaging status if available
+                                        if hasattr(tel, "imaging") and tel.imaging and tel.imaging.status:
+                                            if hasattr(tel.imaging.status, "model_dump"):
+                                                imaging_status = tel.imaging.status.model_dump()
+                                            elif hasattr(tel.imaging.status, "__dict__"):
+                                                imaging_status = vars(tel.imaging.status)
+                                            else:
+                                                imaging_status = {}
+                                            
+                                            # Add imaging status to the main status dict
+                                            status_dict["imaging_status"] = imaging_status
+                                        
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
@@ -1167,6 +1180,19 @@ class Controller:
                                                 for attr in dir(tel.client.status)
                                                 if not attr.startswith("_")
                                             }
+                                        
+                                        # Add imaging status if available
+                                        if hasattr(tel, "imaging") and tel.imaging and tel.imaging.status:
+                                            if hasattr(tel.imaging.status, "model_dump"):
+                                                imaging_status = tel.imaging.status.model_dump()
+                                            elif hasattr(tel.imaging.status, "__dict__"):
+                                                imaging_status = vars(tel.imaging.status)
+                                            else:
+                                                imaging_status = {}
+                                            
+                                            # Add imaging status to the main status dict
+                                            status_dict["imaging_status"] = imaging_status
+                                        
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )

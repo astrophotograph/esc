@@ -41,6 +41,13 @@ class SeestarImagingStatus(BaseModel):
     annotate: AnnotateResult | None = None
     is_streaming: bool = False
     is_fetching_images: bool = False
+    
+    # Image retrieval timing
+    last_image_start_time: float | None = None  # Timestamp when image started being received
+    last_image_end_time: float | None = None    # Timestamp when image was fully received
+    last_image_elapsed_ms: float | None = None  # Time taken to receive the image in milliseconds
+    last_image_size_bytes: int | None = None    # Size of the last image in bytes
+    avg_image_elapsed_ms: float | None = None   # Rolling average of image retrieval times
 
     def reset(self):
         self.temp = None
@@ -52,6 +59,13 @@ class SeestarImagingStatus(BaseModel):
         self.target_name = ""
         self.annotate = None
         self.is_streaming = False
+        self.is_fetching_images = False
+        # Reset timing fields
+        self.last_image_start_time = None
+        self.last_image_end_time = None
+        self.last_image_elapsed_ms = None
+        self.last_image_size_bytes = None
+        self.avg_image_elapsed_ms = None
 
 
 class ParsedEvent(BaseModel):
@@ -93,6 +107,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
     _last_successful_read: float = 0.0
     _connection_check_interval: float = 15.0
     _reconnect_in_progress: bool = False
+    _image_timing_history: collections.deque = collections.deque(maxlen=20)  # Keep last 20 timings for average
 
     def __init__(
         self,
@@ -131,6 +146,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
+                # Start timing when we begin receiving header
+                import time
+                image_start_time = time.time()
+                
                 header = await self.connection.read_exactly(80)
                 if header is None:
                     # Connection issue handled by connection layer, just continue
@@ -138,7 +157,6 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     continue
 
                 # Update last successful read timestamp
-                import time
                 self._last_successful_read = time.time()
                 
                 size, id, width, height = self.binary_protocol.parse_header(header)
@@ -148,6 +166,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
                 data = None
                 if size is not None:
+                    # Track that we're starting to receive the image data
+                    self.status.last_image_start_time = image_start_time
+                    self.status.last_image_size_bytes = size
+                    
                     data = await self.connection.read_exactly(size)
                     if data is None:
                         # Connection issue during data read, continue
@@ -155,6 +177,21 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                         continue
 
                 if data is not None:
+                    # Calculate timing before processing
+                    image_end_time = time.time()
+                    elapsed_ms = (image_end_time - image_start_time) * 1000
+                    
+                    # Update status with timing information
+                    self.status.last_image_end_time = image_end_time
+                    self.status.last_image_elapsed_ms = elapsed_ms
+                    
+                    # Update rolling average
+                    self._image_timing_history.append(elapsed_ms)
+                    if self._image_timing_history:
+                        self.status.avg_image_elapsed_ms = sum(self._image_timing_history) / len(self._image_timing_history)
+                    
+                    logging.trace(f"Image received in {elapsed_ms:.1f}ms (avg: {self.status.avg_image_elapsed_ms:.1f}ms)")
+                    
                     self.image = await self.binary_protocol.handle_incoming_message(
                         width, height, data, id
                     )
