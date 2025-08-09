@@ -15,7 +15,8 @@ import {
   MoveRight,
   Trash2,
   EyeOff,
-  RotateCcw
+  RotateCcw,
+  Move
 } from "lucide-react"
 
 interface DrawingPoint {
@@ -65,12 +66,18 @@ export function ChalkboardPanel({
   offsetY
 }: ChalkboardPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [selectedTool, setSelectedTool] = useState<'draw' | 'circle' | 'arrow'>('draw')
   const [selectedColor, setSelectedColor] = useState('#ff0000')
   const [currentPath, setCurrentPath] = useState<DrawingPoint[]>([])
   const [drawings, setDrawings] = useState<DrawingPath[]>([])
   const [startPoint, setStartPoint] = useState<DrawingPoint | null>(null)
+  
+  // Panel dragging state
+  const [isPanelDragging, setIsPanelDragging] = useState(false)
+  const [panelPosition, setPanelPosition] = useState({ x: 20, y: 80 })
+  const [dragPanelOffset, setDragPanelOffset] = useState({ x: 0, y: 0 })
   
   // Animated transform values for smooth transitions
   const [animatedZoom, setAnimatedZoom] = useState(zoom)
@@ -454,6 +461,54 @@ export function ChalkboardPanel({
     setSelectedColor(color)
   }, [])
 
+  // Handle panel dragging
+  const handlePanelMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsPanelDragging(true)
+    const rect = panelRef.current?.getBoundingClientRect()
+    if (rect) {
+      setDragPanelOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      })
+    }
+  }
+
+  const handlePanelMouseMove = useCallback((e: MouseEvent) => {
+    if (!isPanelDragging) return
+
+    const newX = e.clientX - dragPanelOffset.x
+    const newY = e.clientY - dragPanelOffset.y
+
+    // Keep within viewport bounds
+    const panelWidth = 250 // Approximate width of the panel
+    const panelHeight = 400 // Approximate height of the panel
+    const maxX = window.innerWidth - panelWidth
+    const maxY = window.innerHeight - panelHeight
+
+    setPanelPosition({
+      x: Math.max(0, Math.min(maxX, newX)),
+      y: Math.max(0, Math.min(maxY, newY)),
+    })
+  }, [isPanelDragging, dragPanelOffset.x, dragPanelOffset.y])
+
+  const handlePanelMouseUp = () => {
+    setIsPanelDragging(false)
+  }
+
+  useEffect(() => {
+    if (isPanelDragging) {
+      document.addEventListener("mousemove", handlePanelMouseMove)
+      document.addEventListener("mouseup", handlePanelMouseUp)
+
+      return () => {
+        document.removeEventListener("mousemove", handlePanelMouseMove)
+        document.removeEventListener("mouseup", handlePanelMouseUp)
+      }
+    }
+  }, [isPanelDragging, handlePanelMouseMove])
+
   if (!visible) return null
 
   return (
@@ -487,12 +542,28 @@ export function ChalkboardPanel({
           }}
         />
         
-        {/* Tool panel - positioned to avoid zoom controls with higher z-index */}
-        <Card className="absolute top-20 right-4 bg-black/70 backdrop-blur-sm border-gray-600" style={{ zIndex: 20, pointerEvents: 'auto' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-white text-sm flex items-center gap-2">
-              <Pen className="w-4 h-4" />
-              Chalkboard Tools
+        {/* Tool panel - movable like PIP window */}
+        <Card 
+          ref={panelRef}
+          className="absolute bg-black/70 backdrop-blur-sm border-gray-600" 
+          style={{ 
+            zIndex: 20, 
+            pointerEvents: 'auto',
+            left: panelPosition.x,
+            top: panelPosition.y,
+            cursor: isPanelDragging ? "grabbing" : "default"
+          }}
+        >
+          <CardHeader 
+            className="pb-2 cursor-grab active:cursor-grabbing"
+            onMouseDown={handlePanelMouseDown}
+          >
+            <CardTitle className="text-white text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Pen className="w-4 h-4" />
+                Chalkboard Tools
+              </div>
+              <Move className="w-3 h-3 text-gray-400" />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

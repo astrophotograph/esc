@@ -1517,7 +1517,9 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     startImaging: boolean = false,
     targetType?: string,
     magnitude?: number,
-    description?: string
+    description?: string,
+    gain?: number,
+    lightPollutionFilter?: boolean
   ) => {
     if (!currentTelescope) {
       addStatusAlert({
@@ -1538,7 +1540,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await wsSendGotoMessage(targetName, ra, dec, startImaging, targetType, magnitude, description, currentTelescope)
+      await wsSendGotoMessage(targetName, ra, dec, startImaging, targetType, magnitude, description, currentTelescope, 'J2000', gain, lightPollutionFilter)
 
       addStatusAlert({
         type: "success",

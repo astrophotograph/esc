@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ImagingParametersDialog } from "./ImagingParametersDialog"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
 import { 
@@ -43,15 +44,16 @@ interface CelestialSearchDialogProps {
 }
 
 export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDialogProps) {
-  const { currentObservingLocation, handleTargetSelect, streamStatus, handleGotoTarget, handleStopImaging } = useTelescopeContext()
+  const { currentObservingLocation, handleTargetSelect, streamStatus, handleGotoTarget, handleStopImaging, currentTelescope } = useTelescopeContext()
   const [visibleObjects, setVisibleObjects] = useState<CelestialObjectWithHorizon[]>([])
   const [selectedObject, setSelectedObject] = useState<CelestialObjectWithHorizon | null>(null)
   const [isPerformingAction, setIsPerformingAction] = useState(false)
   const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
-  const [pendingGotoAction, setPendingGotoAction] = useState<{ startImaging: boolean } | null>(null)
+  const [pendingGotoAction, setPendingGotoAction] = useState<{ startImaging: boolean; gain?: number; lightPollutionFilter?: boolean } | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showImagingParametersDialog, setShowImagingParametersDialog] = useState(false)
 
   // Debounce search query
   useEffect(() => {
@@ -259,7 +261,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     await executeGoto(startImaging)
   }
 
-  const executeGoto = async (startImaging: boolean = false) => {
+  const executeGoto = async (startImaging: boolean = false, gain?: number, lightPollutionFilter?: boolean) => {
     if (!selectedObject) return
     
     setIsPerformingAction(true)
@@ -288,7 +290,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         start_imaging: startImaging,
         target_type: selectedObject.type,
         magnitude: selectedObject.magnitude,
-        description: selectedObject.description
+        description: selectedObject.description,
+        gain: gain,
+        light_pollution_filter: lightPollutionFilter
       })
       
       // Close dialog immediately for better UX
@@ -302,7 +306,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         startImaging,
         selectedObject.type,
         selectedObject.magnitude,
-        selectedObject.description
+        selectedObject.description,
+        gain,
+        lightPollutionFilter
       )
     } catch (error) {
       console.error('Failed to initiate goto command:', error)
@@ -321,8 +327,33 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   }
 
   const handleGotoAndImage = async () => {
-    // Call handleGoto with startImaging=true
-    await handleGoto(true)
+    // Show the imaging parameters dialog instead of directly starting
+    setShowImagingParametersDialog(true)
+  }
+  
+  const handleImagingParametersConfirm = async (params: { gain: number; lightPollutionFilter: boolean }) => {
+    setShowImagingParametersDialog(false)
+    
+    // Check if currently imaging
+    const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
+    
+    if (isCurrentlyImaging) {
+      // Store the pending action with parameters and show confirmation dialog
+      setPendingGotoAction({ 
+        startImaging: true, 
+        gain: params.gain, 
+        lightPollutionFilter: params.lightPollutionFilter 
+      })
+      setShowStopImagingConfirm(true)
+      return
+    }
+    
+    // Proceed with goto and imaging with parameters
+    await executeGoto(true, params.gain, params.lightPollutionFilter)
+  }
+  
+  const handleImagingParametersCancel = () => {
+    setShowImagingParametersDialog(false)
   }
 
   const handleCancel = () => {
@@ -336,8 +367,12 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       // Stop the current imaging session first
       await handleStopImaging()
       
-      // Then proceed with the goto
-      await executeGoto(pendingGotoAction.startImaging)
+      // Then proceed with the goto with parameters if provided
+      await executeGoto(
+        pendingGotoAction.startImaging, 
+        pendingGotoAction.gain, 
+        pendingGotoAction.lightPollutionFilter
+      )
       setPendingGotoAction(null)
     }
   }
@@ -578,17 +613,20 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 <Navigation className="w-4 h-4 mr-1" />
                 Goto
               </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleGotoAndImage}
-                disabled={isPerformingAction}
-                className="flex-1"
-                title='Navigate telescope and start imaging'
-              >
-                <Camera className="w-4 h-4 mr-1" />
-                Goto & Image
-              </Button>
+              {/* Only show Goto & Image for non-Moon objects */}
+              {selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleGotoAndImage}
+                  disabled={isPerformingAction}
+                  className="flex-1"
+                  title='Navigate telescope and start imaging'
+                >
+                  <Camera className="w-4 h-4 mr-1" />
+                  Goto & Image
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -630,6 +668,16 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    
+    {/* Imaging Parameters Dialog */}
+    <ImagingParametersDialog
+      open={showImagingParametersDialog}
+      onOpenChange={setShowImagingParametersDialog}
+      telescopeModel={currentTelescope?.product_model}
+      targetName={selectedObject?.name || ""}
+      onConfirm={handleImagingParametersConfirm}
+      onCancel={handleImagingParametersCancel}
+    />
     </>
   )
 }

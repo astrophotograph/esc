@@ -738,23 +738,23 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 yield f"data: {json.dumps({'status': 'stream_closed'})}\n\n"
 
         def build_frame_bytes(image: np.ndarray, width: int, height: int):
-            font = cv2.FONT_HERSHEY_COMPLEX
+            # font = cv2.FONT_HERSHEY_COMPLEX
             BOUNDARY = b"\r\n--frame\r\n"
 
-            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
-
-            w = width or 1080
-            h = height or 1920
-            image = cv2.putText(
-                np.copy(image),
-                dt,  # f'{dt} {self.received_frame}',
-                (int(w / 2 - 240), h - 70),
-                font,
-                1,
-                (210, 210, 210),
-                4,
-                cv2.LINE_8,
-            )
+            # dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-4]
+            #
+            # w = width or 1080
+            # h = height or 1920
+            # image = cv2.putText(
+            #     np.copy(image),
+            #     dt,  # f'{dt} {self.received_frame}',
+            #     (int(w / 2 - 240), h - 70),
+            #     font,
+            #     1,
+            #     (210, 210, 210),
+            #     4,
+            #     cv2.LINE_8,
+            # )
             imgencode = cv2.imencode(".jpeg", image)[1]
             stringData = imgencode.tobytes()
             frame = b"Content-Type: image/jpeg\r\n\r\n" + stringData + BOUNDARY
@@ -2425,7 +2425,22 @@ class Controller:
             logging.error(f"Failed to add test telescope: {e}")
 
     async def runner(self):
-        """Create and run the Uvicorn server."""
+        """Create and run the Uvicorn server with optimized background initialization."""
+        
+        # Check if we should use optimized startup
+        use_optimized = os.environ.get("OPTIMIZED_STARTUP", "true").lower() == "true"
+        
+        if use_optimized:
+            # Use the new optimized startup manager
+            from async_startup import OptimizedController
+            optimized = OptimizedController(self)
+            await optimized.run_optimized()
+        else:
+            # Fall back to original sequential startup
+            await self._sequential_runner()
+    
+    async def _sequential_runner(self):
+        """Original sequential runner for compatibility."""
 
         # Load saved telescopes first
         await self.load_saved_telescopes()

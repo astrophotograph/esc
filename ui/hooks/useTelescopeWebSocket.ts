@@ -475,7 +475,9 @@ export function useTelescopeWebSocket(
     magnitude?: number,
     description?: string,
     telescope?: TelescopeInfo,
-    coordinateEpoch: 'J2000' | 'JNow' = 'J2000'
+    coordinateEpoch: 'J2000' | 'JNow' = 'J2000',
+    gain?: number,
+    lightPollutionFilter?: boolean
   ) => {
     const targetTelescope = telescope || currentTelescope;
     
@@ -485,8 +487,8 @@ export function useTelescopeWebSocket(
     
     // Note: The coordinates are sent as-is to the backend
     // The backend should be configured to expect either J2000 or JNow coordinates
-    // In the future, we may want to add epoch information to the message
-    const gotoMessage = {
+    // Build the message with optional imaging parameters
+    const gotoMessage: any = {
       target_name: targetName,
       coordinates: {
         ra: ra,
@@ -498,6 +500,14 @@ export function useTelescopeWebSocket(
       magnitude: magnitude,
       description: description
     };
+    
+    // Add imaging parameters if provided
+    if (gain !== undefined) {
+      gotoMessage.gain = gain;
+    }
+    if (lightPollutionFilter !== undefined) {
+      gotoMessage.light_pollution_filter = lightPollutionFilter;
+    }
     
     return await wsServiceRef.current.sendCommand(
       CommandAction.GOTO,

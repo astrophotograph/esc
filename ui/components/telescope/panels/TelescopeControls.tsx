@@ -6,7 +6,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Slider} from "@/components/ui/slider"
 import {Switch} from "@/components/ui/switch"
 import {Separator} from "@/components/ui/separator"
-import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Settings, Target, StopCircle} from "lucide-react"
+import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Settings, Target, StopCircle, Moon, ZoomIn} from "lucide-react"
 import {useTelescopeContext} from "@/context/TelescopeContext"
 import {formatRaDec} from "@/utils/telescope-utils"
 import {type PlateSolveResult, PlateSolveSyncDialog} from "../modals/PlateSolveSyncDialog"
@@ -40,6 +40,7 @@ export function TelescopeControls() {
     handleSyncTelescope,
     clientMode,
     handleStopImaging,
+    selectedTarget,
   } = useTelescopeContext()
 
   // State for plate solve sync dialog
@@ -261,6 +262,40 @@ export function TelescopeControls() {
     setShowStopImagingConfirm(false)
   }
 
+  // Handle Moon zoom levels
+  const handleMoonZoom = async (zoomLevel: '1x' | '2x' | '4x') => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before adjusting zoom",
+      })
+      return
+    }
+
+    try {
+      const wsService = getWebSocketService()
+      const zoomValue = zoomLevel === '1x' ? 1 : zoomLevel === '2x' ? 2 : 4
+      
+      // Send zoom command to telescope
+      // TODO: Replace with actual command when backend is ready
+      console.log(`Setting Moon zoom to ${zoomLevel} (value: ${zoomValue})`)
+      
+      addStatusAlert({
+        type: "success",
+        title: "Zoom Adjusted",
+        message: `Moon zoom set to ${zoomLevel}`,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      addStatusAlert({
+        type: "error",
+        title: "Zoom Adjustment Failed",
+        message: errorMessage,
+      })
+    }
+  }
+
   return (
     <>
       <Card className="bg-gray-800 border-gray-700">
@@ -299,6 +334,48 @@ export function TelescopeControls() {
               </div>
             </div>
           </div>
+
+          {/* Moon Zoom Controls - Only visible when Moon is the current target */}
+          {selectedTarget && (selectedTarget.id === 'moon' || selectedTarget.name?.toLowerCase() === 'moon') && (
+            <>
+              <Separator className="bg-gray-700" />
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                  <Moon className="w-4 h-4" />
+                  Moon Zoom Controls
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMoonZoom('1x')}
+                    className="border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    <ZoomIn className="w-3 h-3 mr-1" />
+                    1x
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMoonZoom('2x')}
+                    className="border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    <ZoomIn className="w-3 h-3 mr-1" />
+                    2x
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMoonZoom('4x')}
+                    className="border-gray-600 text-white hover:bg-gray-700"
+                  >
+                    <ZoomIn className="w-3 h-3 mr-1" />
+                    4x
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Stop Imaging Button - Only visible when in Stack mode */}
           {clientMode === "Stack" && (

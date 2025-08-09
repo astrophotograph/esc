@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import './globals.css'
 import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/sonner"
+import SentryErrorBoundary from "@/components/SentryErrorBoundary"
 
 export const metadata: Metadata = {
   title: 'ESC',
@@ -21,7 +22,9 @@ export default function RootLayout({
       defaultTheme="dark"
       disableTransitionOnChange
     >
-      {children}
+      <SentryErrorBoundary>
+        {children}
+      </SentryErrorBoundary>
       <Toaster />
     </ThemeProvider>
     </body>
