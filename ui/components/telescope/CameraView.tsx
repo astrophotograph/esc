@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Activity,
-  ArrowUpDown,
   Battery,
   BatteryCharging,
   BatteryFull,
@@ -29,19 +28,14 @@ import {
   Expand,
   Minimize,
   Search,
-  Map,
   Sparkles,
   Pen,
-  Target,
   Focus,
   Compass,
-  FileText,
-  CheckCircle,
   AlertTriangle,
   Clock,
   Cpu,
   TrendingUp,
-  Zap,
   X
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
@@ -51,20 +45,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useTelescopeContext } from "../../context/TelescopeContext"
+import { useTelescopeContext } from "@/context/TelescopeContext"
 import { StatsPanel } from "./panels/StatsPanel"
 import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
 import { AnnotationOverlay } from "./AnnotationOverlay"
 import { StarmapWindow } from "./StarmapOverlay"
 import { RandomTestPattern } from "./RandomTestPattern"
-import type { ScreenAnnotation } from "../../types/telescope-types"
-import { generateStreamingUrl } from "../../utils/streaming"
+import type { ScreenAnnotation } from "@/types/telescope-types"
+import { generateStreamingUrl } from "@/utils/streaming"
 import { WebRTCLiveView } from "./WebRTCLiveView"
-import { useTelescopeWebSocket } from "../../hooks/useTelescopeWebSocket"
+import { useTelescopeWebSocket } from "@/hooks/useTelescopeWebSocket"
 import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 import { ChalkboardPanel } from "./panels/ChalkboardPanel"
-import { useIsMobile } from "../../hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { ImageErrorBoundary } from "./ImageErrorBoundary"
 
 export function CameraView() {
@@ -91,20 +85,14 @@ export function CameraView() {
   const {
     isControlsCollapsed,
     selectedTarget,
-    showOverlay: _showOverlay,
-    setShowOverlay: _setShowOverlay,
     showStatsPanel: _showStatsPanel,
-    setShowStatsPanel: _setShowStatsPanel,
     showLogPanel: _showLogPanel,
-    setShowLogPanel: _setShowLogPanel,
     setIsControlsCollapsed,
-    isTracking: _isTracking,
     systemStats,
     brightness,
     contrast,
     connectionType,
     setConnectionType,
-    imageStats: _imageStats,
     showAnnotations: _showAnnotations,
     setShowAnnotations: _setShowAnnotations,
     currentAnnotations,
@@ -138,115 +126,6 @@ export function CameraView() {
 
   const isMobile = useIsMobile()
 
-  // Sample annotations for demonstration
-  const [annotations] = useState<ScreenAnnotation[]>([
-    {
-      id: "vega",
-      name: "Vega",
-      type: "star",
-      x: 25,
-      y: 30,
-      magnitude: 0.03,
-      constellation: "Lyra",
-      description: "Brightest star in Lyra, former pole star",
-      catalogId: "α Lyr",
-      isVisible: true,
-      confidence: 0.95,
-      metadata: {
-        spectralClass: "A0V",
-        distance: "25.04 ly",
-        discoverer: "Ancient",
-      },
-    },
-    {
-      id: "altair",
-      name: "Altair",
-      type: "star",
-      x: 70,
-      y: 45,
-      magnitude: 0.77,
-      constellation: "Aquila",
-      description: "Brightest star in Aquila",
-      catalogId: "α Aql",
-      isVisible: true,
-      confidence: 0.92,
-      metadata: {
-        spectralClass: "A7V",
-        distance: "16.73 ly",
-      },
-    },
-    {
-      id: "m57",
-      name: "Ring Nebula",
-      type: "nebula",
-      x: 35,
-      y: 25,
-      magnitude: 8.8,
-      constellation: "Lyra",
-      description: "Famous planetary nebula",
-      catalogId: "M57",
-      isVisible: true,
-      confidence: 0.88,
-      metadata: {
-        distance: "2,300 ly",
-        size: "1.4' × 1.0'",
-        discoverer: "Antoine Darquier",
-        discoveryDate: "1779",
-      },
-    },
-    {
-      id: "m13",
-      name: "Great Globular Cluster",
-      type: "cluster",
-      x: 60,
-      y: 20,
-      magnitude: 5.8,
-      constellation: "Hercules",
-      description: "Magnificent globular cluster",
-      catalogId: "M13",
-      isVisible: true,
-      confidence: 0.91,
-      metadata: {
-        distance: "25,100 ly",
-        size: "20'",
-        discoverer: "Edmond Halley",
-        discoveryDate: "1714",
-      },
-    },
-    {
-      id: "jupiter",
-      name: "Jupiter",
-      type: "planet",
-      x: 80,
-      y: 60,
-      magnitude: -2.5,
-      constellation: "Sagittarius",
-      description: "Largest planet in our solar system",
-      isVisible: true,
-      confidence: 0.99,
-      metadata: {
-        distance: "4.2 AU",
-        size: '44.8"',
-      },
-    },
-    {
-      id: "double-star-1",
-      name: "Albireo",
-      type: "double-star",
-      x: 45,
-      y: 70,
-      magnitude: 3.1,
-      constellation: "Cygnus",
-      description: "Beautiful double star with contrasting colors",
-      catalogId: "β Cyg",
-      isVisible: true,
-      confidence: 0.87,
-      metadata: {
-        spectralClass: "K3II + B8V",
-        distance: "430 ly",
-      },
-    },
-  ])
   // Existing state variables and context
 
   // Image aspect ratio detection
@@ -1670,6 +1549,34 @@ export function CameraView() {
                     )}
                   </div>
 
+                  {/* Coordinates Section */}
+                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) ||
+                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
+
+                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">RA</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">Dec</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Imaging Section */}
                   <div className="space-y-2">
                     <h4 className="font-medium text-purple-400 border-b border-purple-400/30 pb-1">Imaging</h4>
@@ -1712,7 +1619,7 @@ export function CameraView() {
                                 <span className="text-gray-500">•</span>
                                 <span className="text-green-400">
                                   {(
-                                    (localStreamStatus.imaging_status.last_image_size_bytes * 8) / 
+                                    (localStreamStatus.imaging_status.last_image_size_bytes * 8) /
                                     (localStreamStatus.imaging_status.last_image_elapsed_ms * 1000)
                                   ).toFixed(1)} Mbps
                                 </span>
@@ -1790,7 +1697,7 @@ export function CameraView() {
                               <span className="text-gray-500">•</span>
                               <span className="text-green-400">
                                 {(
-                                  (localStreamStatus.imaging_status.last_image_size_bytes * 8) / 
+                                  (localStreamStatus.imaging_status.last_image_size_bytes * 8) /
                                   (localStreamStatus.imaging_status.avg_image_elapsed_ms * 1000)
                                 ).toFixed(1)} Mbps
                               </span>
@@ -1817,7 +1724,7 @@ export function CameraView() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-blue-400" />
-                        <span className="text-gray-300">Frames</span>
+                        <span className="text-gray-300">Skipped Frames</span>
                       </div>
                       <div className="flex items-center gap-3 text-white font-mono">
                         <span className="text-blue-400" title="Stacked frames">{stackedFrames}</span>
@@ -1919,33 +1826,6 @@ export function CameraView() {
                     </div>
                   )}
 
-                  {/* Coordinates Section */}
-                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) ||
-                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
-
-                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">RA</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">Dec</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
