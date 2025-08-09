@@ -385,7 +385,9 @@ class Controller:
                 "location": telescope._location,
                 "discovery_method": telescope.discovery_method,
             }
-            asyncio.create_task(self.db.save_telescope(telescope_data))
+            # Track the database operation
+            task = asyncio.create_task(self.db.save_telescope(telescope_data))
+            self.db._pending_operations.append(task)
 
         self.app.include_router(
             telescope.create_telescope_api(),
@@ -404,7 +406,8 @@ class Controller:
 
             # Remove from database if it was manually added
             if telescope.discovery_method == "manual":
-                asyncio.create_task(self.db.delete_telescope_by_name(name))
+                task = asyncio.create_task(self.db.delete_telescope_by_name(name))
+                self.db._pending_operations.append(task)
 
             # todo : need to remove from router and shut down connection...
             return
@@ -1553,6 +1556,13 @@ class Controller:
                     logging.info("Image processing thread pool shutdown")
                 except Exception as e:
                     logging.warning(f"Error shutting down thread pool: {e}")
+                
+                # Close database connections
+                try:
+                    await self.db.close()
+                    logging.info("Database connections closed")
+                except Exception as e:
+                    logging.warning(f"Error closing database: {e}")
                 
                 # Cancel any remaining background tasks (do this last)
                 await self.cleanup_background_tasks()

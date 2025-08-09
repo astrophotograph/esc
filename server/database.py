@@ -26,6 +26,7 @@ class TelescopeDatabase:
             # Directory creation handled by Docker, just use existing directory
             pass
         self._initialized = False
+        self._pending_operations = []
 
     async def initialize(self):
         """Initialize the database and create tables if needed."""
@@ -449,3 +450,18 @@ class TelescopeDatabase:
         except Exception as e:
             logging.error(f"Failed to update remote controller status: {e}")
             return False
+    
+    async def close(self):
+        """Close the database and wait for pending operations to complete."""
+        try:
+            # Wait for any pending operations
+            if self._pending_operations:
+                logging.debug(f"Waiting for {len(self._pending_operations)} pending database operations...")
+                await asyncio.gather(*self._pending_operations, return_exceptions=True)
+                self._pending_operations.clear()
+            
+            # Force any remaining connections to close
+            # aiosqlite uses connection pooling, so we don't need to explicitly close
+            logging.debug("Database cleanup completed")
+        except Exception as e:
+            logging.error(f"Error during database cleanup: {e}")
