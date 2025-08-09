@@ -57,31 +57,31 @@ class TelescopeDatabase:
                 )
             """)
 
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS configurations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
-                    description TEXT,
-                    config_data TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS configurations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL UNIQUE,
+                        description TEXT,
+                        config_data TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
 
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS remote_controllers (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    host TEXT NOT NULL,
-                    port INTEGER NOT NULL,
-                    name TEXT,
-                    description TEXT,
-                    status TEXT DEFAULT 'disconnected',
-                    last_connected TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(host, port)
-                )
-            """)
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS remote_controllers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        host TEXT NOT NULL,
+                        port INTEGER NOT NULL,
+                        name TEXT,
+                        description TEXT,
+                        status TEXT DEFAULT 'disconnected',
+                        last_connected TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(host, port)
+                    )
+                """)
                 await db.commit()
 
             self._initialized = True
