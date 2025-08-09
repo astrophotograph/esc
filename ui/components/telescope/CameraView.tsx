@@ -1506,7 +1506,7 @@ export function CameraView() {
               </Button>
             </div>
             {/* Content */}
-            <div className="p-4 max-h-[500px] overflow-y-auto">
+            <div className="p-4 max-h-[700px] overflow-y-auto">
               {!localStreamStatus ? (
                 <div className="text-center text-gray-400 py-8">
                   <p className="text-sm">Waiting for telescope status...</p>
