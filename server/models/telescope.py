@@ -593,19 +593,22 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         async def get_next_image(camera_id: int = 0):
             """Get the next image from the Seestar imaging server."""
-            if not self.imaging.is_connected:
-                raise HTTPException(status_code=503, detail="Not connected to Seestar")
-
+            # Check connection before starting the generator
+            if not self.imaging or not self.imaging.is_connected:
+                logging.warning("Image stream requested but imaging not connected")
+                return
+            
             # Use the shared image processor instance
             star_processors = [self.image_processor]
             
             try:
+                # Send initial boundary
                 yield b"\r\n--frame\r\n"
-
+                
                 async for image in self.imaging.get_next_image(camera_id):
                     try:
                         is_streaming = self.imaging.client_mode == "Streaming"
-
+                        
                         if image is not None and image.image is not None:
                             img = image.image
                             if not is_streaming:
@@ -616,23 +619,32 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                                 img = self.enhancement_processor.process(img)
                             frame = build_frame_bytes(img, image.width, image.height)
                             yield frame
-
+                            
                             if not is_streaming:
                                 # We send an extra frame if not streaming to deal with some browser's buffering issues!
                                 yield frame
                         else:
-                            # yield b"\r\ndata: empty!\r\n"
+                            # No image available, wait a bit
                             delay = 0.001 if is_streaming else 0.1
                             await asyncio.sleep(delay)
+                            
+                    except (GeneratorExit, asyncio.CancelledError):
+                        # Client disconnected, stop the generator cleanly
+                        logging.debug("Image stream client disconnected")
+                        return
                     except Exception as e:
+                        # Log error but continue streaming
                         logging.error(f"Error processing image frame: {e}")
-                        # Continue to next frame instead of breaking the stream
                         await asyncio.sleep(0.1)
-            except asyncio.CancelledError:
-                # Client disconnected, this is normal
-                logging.debug("Image stream cancelled by client")
+                        
+            except (GeneratorExit, asyncio.CancelledError):
+                # Normal termination
+                logging.debug("Image stream generator terminated")
+                return
             except Exception as e:
-                logging.error(f"Error in image stream generator: {e}")
+                # Unexpected error - log and terminate cleanly
+                logging.error(f"Unexpected error in image stream generator: {e}")
+                return
 
         @router.get("/upscaling")
         async def get_upscaling_settings():
@@ -778,9 +790,23 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.get("/stream/{camera_id:int}")
         async def stream_image(camera_id: int = 0):
             """Stream images from the Seestar imaging server."""
+            # Pre-check connection to avoid starting a broken stream
+            if not self.imaging or not self.imaging.is_connected:
+                raise HTTPException(
+                    status_code=503, 
+                    detail="Imaging service not connected to telescope"
+                )
+            
             return StreamingResponse(
                 get_next_image(camera_id),
                 media_type="multipart/x-mixed-replace; boundary=frame",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",  # Disable Nginx buffering
+                }
             )
 
         @router.post("/plate-solve")
