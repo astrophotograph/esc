@@ -594,9 +594,12 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         async def get_next_image(camera_id: int = 0):
             """Get the next image from the Seestar imaging server."""
             # Check connection before starting the generator
-            if not self.imaging or not self.imaging.is_connected:
-                logging.warning("Image stream requested but imaging not connected")
+            if not self.imaging:
+                logging.warning("Image stream requested but imaging not initialized")
                 return
+            
+            # The connection check and reconnect is handled by the endpoint
+            # If we get here, we should be connected
             
             # Use the shared image processor instance
             star_processors = [self.image_processor]
@@ -791,11 +794,28 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         async def stream_image(camera_id: int = 0):
             """Stream images from the Seestar imaging server."""
             # Pre-check connection to avoid starting a broken stream
-            if not self.imaging or not self.imaging.is_connected:
+            # Check both the is_connected flag and the underlying connection state
+            if not self.imaging:
                 raise HTTPException(
                     status_code=503, 
-                    detail="Imaging service not connected to telescope"
+                    detail="Imaging service not initialized"
                 )
+            
+            # Check the actual connection state, not just the flag
+            if not self.imaging.is_connected or (
+                self.imaging.connection and not self.imaging.connection.is_connected()
+            ):
+                # Try to reconnect if not connected
+                try:
+                    logging.info(f"Imaging not connected, attempting to reconnect to {self.host}:{self.imaging_port}")
+                    await self.imaging.connect()
+                    logging.info(f"Successfully reconnected imaging client")
+                except Exception as e:
+                    logging.error(f"Failed to reconnect imaging client: {e}")
+                    raise HTTPException(
+                        status_code=503, 
+                        detail=f"Imaging service not connected to telescope at {self.host}:{self.imaging_port}"
+                    )
             
             return StreamingResponse(
                 get_next_image(camera_id),
