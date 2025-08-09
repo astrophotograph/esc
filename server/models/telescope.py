@@ -524,10 +524,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         if update_count % 10 == 0:
                             yield f": heartbeat at {datetime.datetime.now().isoformat()}\n\n"
 
-                    except (GeneratorExit, asyncio.CancelledError):
+                    except asyncio.CancelledError:
                         # Client disconnected, stop the generator cleanly
                         logging.debug("SSE client disconnected")
-                        return
+                        break
+                    except GeneratorExit:
+                        # Generator is being closed, this is normal
+                        logging.debug("SSE generator closed")
+                        raise  # Re-raise GeneratorExit as required by Python
                     except Exception as e:
                         # Log error but continue streaming
                         logging.error(f"Error generating status update: {e}")
@@ -537,22 +541,24 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                                 "error": f"Failed to generate status: {str(e)}"
                             }
                             yield f"data: {json.dumps(error_status)}\n\n"
-                        except (GeneratorExit, asyncio.CancelledError):
-                            return
                         except Exception:
                             logging.error("Failed to send error message in status stream")
 
                     # Wait for 1 seconds before sending next update
                     await asyncio.sleep(1)
                     
-            except (GeneratorExit, asyncio.CancelledError):
-                # Normal termination
-                logging.debug("Status stream generator terminated")
-                return
+            except asyncio.CancelledError:
+                # Normal termination - client disconnected
+                logging.debug("Status stream cancelled")
+                pass  # Just exit cleanly
+            except GeneratorExit:
+                # Normal generator closure
+                logging.debug("Status stream generator exiting")
+                raise  # Must re-raise GeneratorExit
             except Exception as e:
-                # Unexpected error - log and terminate cleanly
+                # Unexpected error - log but exit cleanly
                 logging.error(f"Unexpected error in status stream generator: {e}")
-                return
+                pass  # Exit cleanly without breaking the stream
 
         def build_frame_bytes(image: np.ndarray, width: int, height: int):
             # font = cv2.FONT_HERSHEY_COMPLEX
@@ -593,20 +599,22 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
         async def get_next_image(camera_id: int = 0):
             """Get the next image from the Seestar imaging server."""
-            # Check connection before starting the generator
-            if not self.imaging:
-                logging.warning("Image stream requested but imaging not initialized")
-                return
-            
             # The connection check and reconnect is handled by the endpoint
-            # If we get here, we should be connected
+            # If we get here, we should have a valid imaging client
             
             # Use the shared image processor instance
             star_processors = [self.image_processor]
             
             try:
-                # Send initial boundary
+                # Send initial boundary - this is required for multipart streams
                 yield b"\r\n--frame\r\n"
+                
+                # Safety check inside the generator
+                if not self.imaging:
+                    logging.warning("Image stream requested but imaging not initialized")
+                    # Still need to yield something for the stream to work
+                    yield b"Content-Type: text/plain\r\n\r\nImaging not initialized\r\n--frame\r\n"
+                    return
                 
                 async for image in self.imaging.get_next_image(camera_id):
                     try:
@@ -631,23 +639,32 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                             delay = 0.001 if is_streaming else 0.1
                             await asyncio.sleep(delay)
                             
-                    except (GeneratorExit, asyncio.CancelledError):
-                        # Client disconnected, stop the generator cleanly
+                    except asyncio.CancelledError:
+                        # Client disconnected, this is normal - just stop
                         logging.debug("Image stream client disconnected")
-                        return
+                        break
+                    except GeneratorExit:
+                        # Generator is being closed, this is normal
+                        logging.debug("Image stream generator closed")
+                        raise  # Re-raise GeneratorExit as required by Python
                     except Exception as e:
                         # Log error but continue streaming
                         logging.error(f"Error processing image frame: {e}")
                         await asyncio.sleep(0.1)
+                        # Continue to next iteration
                         
-            except (GeneratorExit, asyncio.CancelledError):
-                # Normal termination
-                logging.debug("Image stream generator terminated")
-                return
+            except asyncio.CancelledError:
+                # Normal termination - client disconnected
+                logging.debug("Image stream cancelled")
+                pass  # Just exit cleanly
+            except GeneratorExit:
+                # Normal generator closure
+                logging.debug("Image stream generator exiting")
+                raise  # Must re-raise GeneratorExit
             except Exception as e:
-                # Unexpected error - log and terminate cleanly
+                # Unexpected error - log but exit cleanly
                 logging.error(f"Unexpected error in image stream generator: {e}")
-                return
+                pass  # Exit cleanly without breaking the stream
 
         @router.get("/upscaling")
         async def get_upscaling_settings():
