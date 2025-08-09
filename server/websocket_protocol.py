@@ -35,6 +35,8 @@ class MessageType(str, Enum):
     ERROR = "error"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"
+    ECHO_REQUEST = "echo_request"
+    ECHO_RESPONSE = "echo_response"
 
 
 class CommandAction(str, Enum):
@@ -353,6 +355,39 @@ class ErrorMessage(WebSocketMessage):
         )
 
 
+class EchoRequestMessage(WebSocketMessage):
+    """Echo request message for measuring round-trip time."""
+    
+    type: MessageType = MessageType.ECHO_REQUEST
+    
+    def __init__(self, telescope_id: str, **data):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "timestamp": time.time(),
+                "sequence": data.get("sequence", 0),
+            },
+            **data,
+        )
+
+
+class EchoResponseMessage(WebSocketMessage):
+    """Echo response message from client."""
+    
+    type: MessageType = MessageType.ECHO_RESPONSE
+    
+    def __init__(self, telescope_id: str, request_timestamp: float, sequence: int = 0, **data):
+        super().__init__(
+            telescope_id=telescope_id,
+            payload={
+                "request_timestamp": request_timestamp,
+                "response_timestamp": time.time(),
+                "sequence": sequence,
+            },
+            **data,
+        )
+
+
 # Type aliases for convenience
 WebSocketMessageUnion = Union[
     StatusUpdateMessage,
@@ -367,6 +402,8 @@ WebSocketMessageUnion = Union[
     UnsubscribeMessage,
     HeartbeatMessage,
     ErrorMessage,
+    EchoRequestMessage,
+    EchoResponseMessage,
 ]
 
 
@@ -419,6 +456,21 @@ class MessageFactory:
             )
         elif message_type == MessageType.HEARTBEAT:
             return HeartbeatMessage(id=data.get("id"), timestamp=data.get("timestamp"))
+        elif message_type == MessageType.ECHO_REQUEST:
+            return EchoRequestMessage(
+                telescope_id=data.get("telescope_id"),
+                id=data.get("id"),
+                timestamp=data.get("timestamp"),
+                sequence=payload.get("sequence", 0)
+            )
+        elif message_type == MessageType.ECHO_RESPONSE:
+            return EchoResponseMessage(
+                telescope_id=data.get("telescope_id"),
+                request_timestamp=payload.get("request_timestamp"),
+                sequence=payload.get("sequence", 0),
+                id=data.get("id"),
+                timestamp=data.get("timestamp")
+            )
         else:
             # Default to base WebSocket message
             return WebSocketMessage.model_validate(data)

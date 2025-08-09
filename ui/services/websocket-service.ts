@@ -22,7 +22,9 @@ export enum MessageType {
   UNSUBSCRIBE = 'unsubscribe',
   ALERT = 'alert',
   PLATE_SOLVE_RESULT = 'plate_solve_result',
-  CLIENT_MODE_CHANGED = 'client_mode_changed'
+  CLIENT_MODE_CHANGED = 'client_mode_changed',
+  ECHO_REQUEST = 'echo_request',
+  ECHO_RESPONSE = 'echo_response'
 }
 
 export enum CommandAction {
@@ -142,6 +144,23 @@ export interface ClientModeChangedMessage extends WebSocketMessage {
   }
 }
 
+export interface EchoRequestMessage extends WebSocketMessage {
+  type: MessageType.ECHO_REQUEST
+  payload: {
+    timestamp: number
+    sequence: number
+  }
+}
+
+export interface EchoResponseMessage extends WebSocketMessage {
+  type: MessageType.ECHO_RESPONSE
+  payload: {
+    request_timestamp: number
+    response_timestamp: number
+    sequence: number
+  }
+}
+
 export type WebSocketMessageUnion =
   | StatusUpdateMessage
   | ControlCommandMessage
@@ -152,6 +171,8 @@ export type WebSocketMessageUnion =
   | AlertMessage
   | PlateSolveResultMessage
   | ClientModeChangedMessage
+  | EchoRequestMessage
+  | EchoResponseMessage
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',
@@ -500,6 +521,12 @@ export class WebSocketService extends EventEmitter {
         // The client sends its own heartbeats on a timer
         return
       }
+      
+      // Handle echo request - immediately respond
+      if (message.type === MessageType.ECHO_REQUEST) {
+        this.handleEchoRequest(message as EchoRequestMessage)
+        return
+      }
 
       // Emit message to listeners
       this.emit('message', message)
@@ -535,6 +562,34 @@ export class WebSocketService extends EventEmitter {
       pendingCommand.resolve(message.payload.result)
     } else {
       pendingCommand.reject(new Error(message.payload.error || 'Command failed'))
+    }
+  }
+  
+  /**
+   * Handle echo request and send echo response
+   */
+  private handleEchoRequest(message: EchoRequestMessage): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+    
+    // Send echo response back to server
+    const response: EchoResponseMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.ECHO_RESPONSE,
+      telescope_id: message.telescope_id,
+      timestamp: Date.now() / 1000,
+      payload: {
+        request_timestamp: message.payload.timestamp,
+        response_timestamp: Date.now() / 1000,
+        sequence: message.payload.sequence
+      }
+    }
+    
+    try {
+      this.ws.send(JSON.stringify(response))
+    } catch (error) {
+      console.error('Failed to send echo response:', error)
     }
   }
 

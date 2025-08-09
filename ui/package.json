@@ -1,6 +1,6 @@
 {
   "name": "experimental-scope-creep",
-  "version": "25.08.08-alpha.97",
+  "version": "25.08.09-alpha.140",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -78,6 +78,7 @@
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",
+    "react-draggable": "^4.5.0",
     "react-hook-form": "^7.60.0",
     "react-i18next": "latest",
     "react-markdown": "^10.1.0",

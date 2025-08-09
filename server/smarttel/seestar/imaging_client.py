@@ -177,24 +177,34 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                         continue
 
                 if data is not None:
-                    # Calculate timing before processing
-                    image_end_time = time.time()
-                    elapsed_ms = (image_end_time - image_start_time) * 1000
-                    
-                    # Update status with timing information
-                    self.status.last_image_end_time = image_end_time
-                    self.status.last_image_elapsed_ms = elapsed_ms
-                    
-                    # Update rolling average
-                    self._image_timing_history.append(elapsed_ms)
-                    if self._image_timing_history:
-                        self.status.avg_image_elapsed_ms = sum(self._image_timing_history) / len(self._image_timing_history)
-                    
-                    logging.trace(f"Image received in {elapsed_ms:.1f}ms (avg: {self.status.avg_image_elapsed_ms:.1f}ms)")
-                    
+                    # Process the incoming message
                     self.image = await self.binary_protocol.handle_incoming_message(
                         width, height, data, id
                     )
+                    
+                    # Only update timing statistics for actual image data
+                    # Skip small control messages (like TestConnection responses)
+                    # Actual images should have reasonable dimensions and data size
+                    if width and height and width > 0 and height > 0 and size and size > 1000:
+                        # Calculate timing for actual images
+                        image_end_time = time.time()
+                        elapsed_ms = (image_end_time - image_start_time) * 1000
+                        
+                        # Ensure minimum of 0.1ms to avoid showing 0 for very fast operations
+                        # (can happen with cached or local images)
+                        if elapsed_ms < 0.1:
+                            elapsed_ms = 0.1
+                        
+                        # Update status with timing information
+                        self.status.last_image_end_time = image_end_time
+                        self.status.last_image_elapsed_ms = elapsed_ms
+                        
+                        # Update rolling average
+                        self._image_timing_history.append(elapsed_ms)
+                        if self._image_timing_history:
+                            self.status.avg_image_elapsed_ms = sum(self._image_timing_history) / len(self._image_timing_history)
+                        
+                        logging.trace(f"Image received in {elapsed_ms:.1f}ms (avg: {self.status.avg_image_elapsed_ms:.1f}ms, size: {size} bytes)")
                     
                     # Cache the raw image for instant processing
                     # Only cache if we have valid image data (both the ScopeImage and its image field)

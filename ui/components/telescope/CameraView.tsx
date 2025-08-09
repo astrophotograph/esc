@@ -1,10 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import Draggable from 'react-draggable'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Activity,
+  ArrowUpDown,
   Battery,
   BatteryCharging,
   BatteryFull,
@@ -37,7 +40,9 @@ import {
   AlertTriangle,
   Clock,
   Cpu,
-  Zap
+  TrendingUp,
+  Zap,
+  X
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -266,6 +271,7 @@ export function CameraView() {
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null); // DISABLED - image change detection disabled
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const draggableNodeRef = useRef<HTMLDivElement>(null);
 
   // WebSocket hook for real-time telescope status and control
   const {
@@ -716,6 +722,10 @@ export function CameraView() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [localStreamStatus, setLocalStreamStatus] = useState<any>(null);
   const [reconnectCounter, setReconnectCounter] = useState(0);
+  // Initialize position to right side of screen (will be calculated on mount)
+  const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined);
+  const [imageTimingHistory, setImageTimingHistory] = useState<number[]>([]);
+  const [rttHistory, setRttHistory] = useState<number[]>([]);
 
   // Simplified zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -881,6 +891,16 @@ export function CameraView() {
     }
   }, [liveViewFullscreen, setLiveViewFullscreen])
 
+  // Initialize overlay position to right side of screen
+  useEffect(() => {
+    if (overlayPosition === undefined && typeof window !== 'undefined') {
+      // Position it 100px from the right and 100px from the top
+      // Since Draggable uses transform, we need to calculate from left
+      const rightOffset = window.innerWidth - 420; // 320px width + 100px from right
+      setOverlayPosition({ x: rightOffset, y: 0 });
+    }
+  }, [overlayPosition])
+
   // Setup WebSocket connection for streaming status
   useEffect(() => {
     if (!currentTelescope) {
@@ -903,8 +923,52 @@ export function CameraView() {
   // Handle WebSocket status updates
   useEffect(() => {
     if (wsStatus) {
-      setLocalStreamStatus({ status: wsStatus });
-      setStreamStatus({ status: wsStatus });
+      // Filter out zero values from imaging_status before setting
+      let filteredImagingStatus = wsStatus.imaging_status;
+      if (filteredImagingStatus) {
+        // Debug log to see what values are coming in
+        if (filteredImagingStatus.last_image_elapsed_ms !== undefined && 
+            filteredImagingStatus.last_image_elapsed_ms <= 0) {
+          console.warn('Received zero or negative image timing:', filteredImagingStatus.last_image_elapsed_ms);
+        }
+        
+        // If the timing values are 0, null, or undefined, don't include them
+        if (!filteredImagingStatus.last_image_elapsed_ms || 
+            filteredImagingStatus.last_image_elapsed_ms <= 0) {
+          filteredImagingStatus = {
+            ...filteredImagingStatus,
+            last_image_elapsed_ms: undefined
+          };
+        }
+        if (!filteredImagingStatus.avg_image_elapsed_ms || 
+            filteredImagingStatus.avg_image_elapsed_ms <= 0) {
+          filteredImagingStatus = {
+            ...filteredImagingStatus,
+            avg_image_elapsed_ms: undefined
+          };
+        }
+      }
+      
+      // wsStatus contains the full status including imaging_status at the top level
+      const statusData = {
+        status: wsStatus,
+        imaging_status: filteredImagingStatus  // Use filtered imaging status
+      };
+      
+      // Update timing history if we have valid timing data (not zero or undefined)
+      if (wsStatus.imaging_status?.last_image_elapsed_ms && 
+          wsStatus.imaging_status.last_image_elapsed_ms > 0) {
+        setImageTimingHistory(prev => {
+          // Filter out any zeros that might have snuck in
+          const validPrev = prev.filter(v => v > 0);
+          const newHistory = [...validPrev, wsStatus.imaging_status.last_image_elapsed_ms];
+          // Keep only last 30 values for the sparkline
+          return newHistory.slice(-30);
+        });
+      }
+      
+      setLocalStreamStatus(statusData);
+      setStreamStatus(statusData);
       setLastSSEMessage(Date.now());
 
       // Update focus position from WebSocket status if available
@@ -915,6 +979,17 @@ export function CameraView() {
       // Update client mode from status stage if available
       if (wsStatus.stage !== undefined) {
         setClientMode(wsStatus.stage);
+      }
+      
+      // Update RTT history if we have valid RTT data
+      if (wsStatus.server_browser_rtt_ms !== undefined && 
+          wsStatus.server_browser_rtt_ms !== null &&
+          wsStatus.server_browser_rtt_ms > 0) {
+        setRttHistory(prev => {
+          const newHistory = [...prev, wsStatus.server_browser_rtt_ms];
+          // Keep only last 30 values for the sparkline
+          return newHistory.slice(-30);
+        });
       }
     }
   }, [wsStatus, setStreamStatus, setFocusPosition, setClientMode]);
@@ -985,6 +1060,7 @@ export function CameraView() {
   const targetName = selectedTarget?.name || localStreamStatus?.status?.target_name;
 
   return (
+    <>
     <TooltipProvider>
       <div className={liveViewFullscreen ?
         "fixed inset-0 z-50 bg-gray-800" :
@@ -1401,385 +1477,6 @@ export function CameraView() {
               offsetY={panPosition.y}
               isPortrait={isPortrait}
             />
-
-            {/* Comprehensive Status Stream Overlay */}
-            {localStreamStatus && showStreamStatus && (
-              <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-4 text-sm max-w-sm max-h-[560px] overflow-y-auto" style={{ zIndex: 20 }}>
-                <h3 className="font-semibold mb-3 text-blue-400 flex items-center gap-2">
-                  <Cpu className="w-4 h-4" />
-                  Telescope Status
-                </h3>
-                <div className="space-y-3 text-xs">
-
-                  {/* Power & Temperature Section */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-green-400 border-b border-green-400/30 pb-1">Power & Thermal</h4>
-
-                    {/* Battery */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        {localStreamStatus?.status?.charger_status === "Charging" ? (
-                          <BatteryCharging className="w-4 h-4 text-green-400" />
-                        ) : localStreamStatus?.status?.charger_status === "Full" ? (
-                          <BatteryFull className="w-4 h-4 text-green-400" />
-                        ) : (
-                          <Battery className="w-4 h-4 text-gray-400" />
-                        )}
-                        <span className="text-gray-300">Battery</span>
-                      </div>
-                      <span className="text-white font-mono">
-                        {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
-                        {localStreamStatus?.status?.charger_status && ` (${localStreamStatus.status.charger_status})`}
-                      </span>
-                    </div>
-
-                    {/* Charger Online */}
-                    {localStreamStatus?.status?.charge_online !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Zap className="w-4 h-4 text-yellow-400" />
-                          <span className="text-gray-300">Charger</span>
-                        </div>
-                        <span className={`font-mono ${localStreamStatus.status.charge_online ? 'text-green-400' : 'text-red-400'}`}>
-                          {localStreamStatus.status.charge_online ? 'Connected' : 'Disconnected'}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Temperature */}
-                    {localStreamStatus?.status?.temp !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Thermometer className={`w-4 h-4 ${localStreamStatus.status.temp < 30 ? 'text-blue-400' : 'text-orange-400'}`} />
-                          <span className="text-gray-300">Temperature</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Imaging Section */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-purple-400 border-b border-purple-400/30 pb-1">Imaging</h4>
-
-                    {/* Stage */}
-                    {localStreamStatus?.status?.stage && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Cpu className="w-4 h-4 text-blue-400" />
-                          <span className="text-gray-300">Stage</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.stage}</span>
-                      </div>
-                    )}
-
-                    {/* Target */}
-                    {/*{localStreamStatus?.status?.target_name && (*/}
-                    {/*  <div className="flex items-center justify-between gap-3">*/}
-                    {/*    <div className="flex items-center gap-2">*/}
-                    {/*      <Target className="w-4 h-4 text-red-400" />*/}
-                    {/*      <span className="text-gray-300">Target</span>*/}
-                    {/*    </div>*/}
-                    {/*    <span className="text-white font-mono truncate max-w-32">{localStreamStatus.status.target_name}</span>*/}
-                    {/*  </div>*/}
-                    {/*)}*/}
-
-                    {/* Stacked Frames */}
-                    {/*<div className="flex items-center justify-between gap-3">*/}
-                    {/*  <div className="flex items-center gap-2">*/}
-                    {/*    <Layers className={`w-4 h-4 ${(localStreamStatus?.status?.stacked_frame || 0) > 0 ? 'text-blue-400' : 'text-gray-400'}`} />*/}
-                    {/*    <span className="text-gray-300">Stacked</span>*/}
-                    {/*  </div>*/}
-                    {/*  <span className="text-white font-mono">{localStreamStatus?.status?.stacked_frame || 0}</span>*/}
-                    {/*</div>*/}
-
-                    {/* Dropped Frames */}
-                    {/*<div className="flex items-center justify-between gap-3">*/}
-                    {/*  <div className="flex items-center gap-2">*/}
-                    {/*    <XCircle className={`w-4 h-4 ${(localStreamStatus?.status?.dropped_frame || 0) > 0 ? 'text-red-400' : 'text-gray-400'}`} />*/}
-                    {/*    <span className="text-gray-300">Dropped</span>*/}
-                    {/*  </div>*/}
-                    {/*  <span className="text-white font-mono">{localStreamStatus?.status?.dropped_frame || 0}</span>*/}
-                    {/*</div>*/}
-
-                    {/* Gain */}
-                    {/*{localStreamStatus?.status?.gain !== undefined && (*/}
-                    {/*  <div className="flex items-center justify-between gap-3">*/}
-                    {/*    <div className="flex items-center gap-2">*/}
-                    {/*      <Settings className="w-4 h-4 text-purple-400" />*/}
-                    {/*      <span className="text-gray-300">Gain</span>*/}
-                    {/*    </div>*/}
-                    {/*    <span className="text-white font-mono">{localStreamStatus.status.gain}</span>*/}
-                    {/*  </div>*/}
-                    {/*)}*/}
-
-                    {/* LP Filter */}
-                    {/*<div className="flex items-center justify-between gap-3">*/}
-                    {/*  <div className="flex items-center gap-2">*/}
-                    {/*    <Filter className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? 'text-amber-400' : 'text-gray-400'}`} />*/}
-                    {/*    <span className="text-gray-300">LP Filter</span>*/}
-                    {/*  </div>*/}
-                    {/*  <span className={`font-mono ${localStreamStatus?.status?.lp_filter ? 'text-green-400' : 'text-gray-400'}`}>*/}
-                    {/*    {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}*/}
-                    {/*  </span>*/}
-                    {/*</div>*/}
-
-                    {/* Focus Position */}
-                    {localStreamStatus?.status?.focus_position !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Focus className="w-4 h-4 text-cyan-400" />
-                          <span className="text-gray-300">Focus</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
-                      </div>
-                    )}
-                    
-                    {/* Image Retrieval Timing */}
-                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-yellow-400" />
-                          <span className="text-gray-300">Image Time</span>
-                        </div>
-                        <span className="text-white font-mono">
-                          {localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Average Image Time */}
-                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-yellow-300" />
-                          <span className="text-gray-300">Avg Time</span>
-                        </div>
-                        <span className="text-white font-mono">
-                          {localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Image Size */}
-                    {localStreamStatus?.imaging_status?.last_image_size_bytes !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <HardDrive className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-300">Image Size</span>
-                        </div>
-                        <span className="text-white font-mono">
-                          {(localStreamStatus.imaging_status.last_image_size_bytes / 1024).toFixed(1)}KB
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Last Image Timestamp */}
-                    {localStreamStatus?.imaging_status?.last_image_end_time !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-300">Last Image</span>
-                        </div>
-                        <span className="text-white font-mono text-xs">
-                          {new Date(localStreamStatus.imaging_status.last_image_end_time * 1000).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Coordinates Section */}
-                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) || 
-                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
-
-                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">RA</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">Dec</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Storage Section */}
-                  {/*{(localStreamStatus?.status?.freeMB !== undefined || localStreamStatus?.status?.totalMB !== undefined) && (*/}
-                  {/*  <div className="space-y-2">*/}
-                  {/*    <h4 className="font-medium text-yellow-400 border-b border-yellow-400/30 pb-1">Storage</h4>*/}
-
-                  {/*    <div className="flex items-center justify-between gap-3">*/}
-                  {/*      <div className="flex items-center gap-2">*/}
-                  {/*        <HardDrive className="w-4 h-4 text-yellow-400" />*/}
-                  {/*        <span className="text-gray-300">Disk Usage</span>*/}
-                  {/*      </div>*/}
-                  {/*      <span className="text-white font-mono">*/}
-                  {/*        {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB*/}
-                  {/*          ? `${Math.round(((localStreamStatus.status.totalMB - localStreamStatus.status.freeMB) / localStreamStatus.status.totalMB) * 100)}%`*/}
-                  {/*          : 'N/A'}*/}
-                  {/*      </span>*/}
-                  {/*    </div>*/}
-
-                  {/*    {localStreamStatus?.status?.freeMB !== undefined && (*/}
-                  {/*      <div className="flex items-center justify-between gap-3">*/}
-                  {/*        <span className="text-gray-400 ml-6">Free</span>*/}
-                  {/*        <span className="text-gray-300 font-mono">{Math.round(localStreamStatus.status.freeMB)}MB</span>*/}
-                  {/*      </div>*/}
-                  {/*    )}*/}
-
-                  {/*    {localStreamStatus?.status?.totalMB !== undefined && (*/}
-                  {/*      <div className="flex items-center justify-between gap-3">*/}
-                  {/*        <span className="text-gray-400 ml-6">Total</span>*/}
-                  {/*        <span className="text-gray-300 font-mono">{Math.round(localStreamStatus.status.totalMB)}MB</span>*/}
-                  {/*      </div>*/}
-                  {/*    )}*/}
-                  {/*  </div>*/}
-                  {/*)}*/}
-
-                  {/* Pattern Monitoring Section */}
-                  {(localStreamStatus?.status?.pattern_match_found !== undefined ||
-                    localStreamStatus?.status?.pattern_match_file ||
-                    localStreamStatus?.status?.pattern_match_last_check) && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-orange-400 border-b border-orange-400/30 pb-1">Pattern Monitor</h4>
-
-                      {localStreamStatus?.status?.pattern_match_found !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            {localStreamStatus.status.pattern_match_found ? (
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                            ) : (
-                              <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                            )}
-                            <span className="text-gray-300">Pattern</span>
-                          </div>
-                          <span className={`font-mono ${localStreamStatus.status.pattern_match_found ? 'text-green-400' : 'text-yellow-400'}`}>
-                            {localStreamStatus.status.pattern_match_found ? 'Found' : 'Not Found'}
-                          </span>
-                        </div>
-                      )}
-
-                      {localStreamStatus?.status?.pattern_match_file && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">File</span>
-                          </div>
-                          <span className="text-gray-300 font-mono text-xs truncate max-w-32">
-                            {localStreamStatus.status.pattern_match_file.split('/').pop() || localStreamStatus.status.pattern_match_file}
-                          </span>
-                        </div>
-                      )}
-
-                      {localStreamStatus?.status?.pattern_match_last_check && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">Last Check</span>
-                          </div>
-                          <span className="text-gray-300 font-mono text-xs">
-                            {new Date(localStreamStatus.status.pattern_match_last_check).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Balance Sensor Section */}
-                  {localStreamStatus?.status?.balance_sensor && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-indigo-400 border-b border-indigo-400/30 pb-1">Balance Sensor</h4>
-
-                      {localStreamStatus.status.balance_sensor.data?.angle !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-indigo-400" />
-                            <span className="text-gray-300">Angle</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.balance_sensor.data.angle.toFixed(2)}°</span>
-                        </div>
-                      )}
-
-                      {/* Calculated angle from X and Y */}
-                      {localStreamStatus.status.balance_sensor.data?.x !== undefined &&
-                       localStreamStatus.status.balance_sensor.data?.y !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">XY Angle</span>
-                          </div>
-                          <span className="text-white font-mono">
-                            {(() => {
-                              const angle = Math.atan2(
-                                localStreamStatus.status.balance_sensor.data.y,
-                                localStreamStatus.status.balance_sensor.data.x
-                              ) * 180 / Math.PI;
-                              // Normalize to 0-360 range
-                              return ((angle + 360) % 360).toFixed(1);
-                            })()}°
-                          </span>
-                        </div>
-                      )}
-
-                      {localStreamStatus.status.balance_sensor.data?.x !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-gray-400 ml-6">X</span>
-                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.x * 100).toFixed(1)}</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus.status.balance_sensor.data?.y !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-gray-400 ml-6">Y</span>
-                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.y * 100).toFixed(1)}</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus.status.balance_sensor.data?.z !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-gray-400 ml-6">Z</span>
-                          <span className="text-gray-300 font-mono">{(localStreamStatus.status.balance_sensor.data.z * 100).toFixed(1)}</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus.status.balance_sensor.code !== undefined && (
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-gray-400 ml-6">Code</span>
-                          <span className="text-gray-300 font-mono">{localStreamStatus.status.balance_sensor.code}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Annotation Results Section */}
-                  {localStreamStatus?.status?.annotate && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-pink-400 border-b border-pink-400/30 pb-1">Annotations</h4>
-                      <div className="text-xs text-gray-300 bg-gray-800/50 rounded p-2 max-h-20 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap font-mono text-xs">
-                          {JSON.stringify(localStreamStatus.status.annotate, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-            )}
-
             {/* Zoom Controls */}
             <div className={`absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center ${
               isMobile ? 'p-1 gap-1' : ''
@@ -1882,5 +1579,319 @@ export function CameraView() {
       </Card>
       </div>
     </TooltipProvider>
+    
+    {/* Comprehensive Status Stream Overlay - Draggable - At root level */}
+    {console.log('Telescope Status Overlay Debug:', { 
+      showStreamStatus, 
+      isRendering: !!showStreamStatus,
+      localStreamStatus,
+      hasImagingStatus: !!localStreamStatus?.imaging_status,
+      imagingStatusData: localStreamStatus?.imaging_status
+    })}
+    {showStreamStatus && overlayPosition && (
+      <Draggable
+          handle=".drag-handle"
+          position={overlayPosition}
+          onDrag={(e, data) => {
+            setOverlayPosition({ x: data.x, y: data.y });
+          }}
+          nodeRef={draggableNodeRef}
+        >
+          <div ref={draggableNodeRef} className="fixed bg-black/90 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-gray-700" style={{ zIndex: 9999, minHeight: '200px', top: '100px', left: '100px' }}>
+            {/* Header with drag handle */}
+            <div className="drag-handle cursor-move bg-gray-900/80 px-4 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-blue-400 flex items-center gap-2 select-none">
+                <Cpu className="w-4 h-4" />
+                Telescope Status
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowStreamStatus(false)}
+                className="h-6 w-6 p-0 hover:bg-gray-700"
+              >
+                <X className="h-4 w-4 text-gray-400" />
+              </Button>
+            </div>
+            {/* Content */}
+            <div className="p-4 max-h-[500px] overflow-y-auto">
+              {!localStreamStatus ? (
+                <div className="text-center text-gray-400 py-8">
+                  <p className="text-sm">Waiting for telescope status...</p>
+                  <p className="text-xs mt-2">Make sure a telescope is connected</p>
+                </div>
+              ) : (
+                <div className="space-y-3 text-xs">
+
+                  {/* Power & Temperature Section */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-green-400 border-b border-green-400/30 pb-1">Power & Thermal</h4>
+
+                    {/* Battery */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {localStreamStatus?.status?.charger_status === "Charging" ? (
+                          <BatteryCharging className="w-4 h-4 text-green-400" />
+                        ) : localStreamStatus?.status?.charger_status === "Full" ? (
+                          <BatteryFull className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <Battery className="w-4 h-4 text-gray-400" />
+                        )}
+                        <span className="text-gray-300">Battery</span>
+                      </div>
+                      <span className="text-white font-mono">
+                        {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
+                        {localStreamStatus?.status?.charger_status && ` (${localStreamStatus.status.charger_status})`}
+                      </span>
+                    </div>
+
+                    {/* Temperature */}
+                    {localStreamStatus?.status?.temp !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Thermometer className={`w-4 h-4 ${localStreamStatus.status.temp < 30 ? 'text-blue-400' : 'text-orange-400'}`} />
+                          <span className="text-gray-300">Temperature</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Imaging Section */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-purple-400 border-b border-purple-400/30 pb-1">Imaging</h4>
+
+                    {/* Stage */}
+                    {localStreamStatus?.status?.stage && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Cpu className="w-4 h-4 text-blue-400" />
+                          <span className="text-gray-300">Stage</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.stage}</span>
+                      </div>
+                    )}
+
+                    {/* Focus Position */}
+                    {localStreamStatus?.status?.focus_position !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Focus className="w-4 h-4 text-cyan-400" />
+                          <span className="text-gray-300">Focus</span>
+                        </div>
+                        <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
+                      </div>
+                    )}
+                    
+                    {/* Image Timing Stats with Sparkline */}
+                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined && 
+                     localStreamStatus.imaging_status.last_image_elapsed_ms > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-yellow-400" />
+                            <span className="text-gray-300">Image Time</span>
+                          </div>
+                          <span className="text-white font-mono">
+                            {localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms
+                          </span>
+                        </div>
+                        {/* Sparkline with min/max labels */}
+                        {(() => {
+                          // Filter out any zeros from the history for display
+                          const validHistory = imageTimingHistory.filter(v => v > 0);
+                          if (validHistory.length <= 1) return null;
+                          
+                          return (
+                            <div className="space-y-1">
+                              <div className="h-8 w-full bg-gray-800/50 rounded px-1 relative">
+                                <svg className="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                  <polyline
+                                    fill="none"
+                                    stroke="rgb(250, 204, 21)"
+                                    strokeWidth="1"
+                                    points={validHistory.map((value, index) => {
+                                      const x = (index / (validHistory.length - 1)) * 100;
+                                      const max = Math.max(...validHistory);
+                                      const min = Math.min(...validHistory);
+                                      const range = max - min || 1;
+                                      const y = 20 - ((value - min) / range) * 18;
+                                      return `${x},${y}`;
+                                    }).join(' ')}
+                                  />
+                                  {/* Add dots for the last few points */}
+                                  {validHistory.slice(-3).map((value, index) => {
+                                    const actualIndex = validHistory.length - 3 + index;
+                                    const x = (actualIndex / (validHistory.length - 1)) * 100;
+                                    const max = Math.max(...validHistory);
+                                    const min = Math.min(...validHistory);
+                                    const range = max - min || 1;
+                                    const y = 20 - ((value - min) / range) * 18;
+                                    return (
+                                      <circle
+                                        key={actualIndex}
+                                        cx={x}
+                                        cy={y}
+                                        r="1.5"
+                                        fill="rgb(250, 204, 21)"
+                                      />
+                                    );
+                                  })}
+                                </svg>
+                              </div>
+                              <div className="flex justify-between text-xs text-gray-500">
+                                <span>Min: {Math.min(...validHistory).toFixed(0)}ms</span>
+                                <span>Max: {Math.max(...validHistory).toFixed(0)}ms</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    
+                    {/* Average Image Time */}
+                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined && 
+                     localStreamStatus.imaging_status.avg_image_elapsed_ms > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-yellow-300" />
+                          <span className="text-gray-300">Avg Time</span>
+                        </div>
+                        <span className="text-white font-mono">
+                          {localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Image Size */}
+                    {localStreamStatus?.imaging_status?.last_image_size_bytes !== undefined && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-300">Image Size</span>
+                        </div>
+                        <span className="text-white font-mono">
+                          {(localStreamStatus.imaging_status.last_image_size_bytes / 1024).toFixed(1)}KB
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Network Section */}
+                  {(localStreamStatus?.status?.server_browser_rtt_ms !== undefined || 
+                    localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-blue-400 border-b border-blue-400/30 pb-1">Network (Server ↔ Browser)</h4>
+                      
+                      {/* Current RTT with Sparkline */}
+                      {localStreamStatus?.status?.server_browser_rtt_ms !== undefined && localStreamStatus.status.server_browser_rtt_ms !== null && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <Activity className="w-4 h-4 text-blue-400" />
+                              <span className="text-gray-300">Round Trip Time</span>
+                            </div>
+                            <span className="text-white font-mono">
+                              {localStreamStatus.status.server_browser_rtt_ms.toFixed(1)}ms
+                            </span>
+                          </div>
+                          
+                          {/* RTT Sparkline */}
+                          {rttHistory.length > 1 && (
+                            <div className="space-y-1">
+                              <div className="h-8 w-full bg-gray-800/50 rounded px-1 relative">
+                                <svg className="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                  <polyline
+                                    fill="none"
+                                    stroke="rgb(59, 130, 246)"
+                                    strokeWidth="1"
+                                    points={rttHistory.map((value, index) => {
+                                      const x = (index / (rttHistory.length - 1)) * 100;
+                                      const max = Math.max(...rttHistory);
+                                      const min = Math.min(...rttHistory);
+                                      const range = max - min || 1;
+                                      const y = 20 - ((value - min) / range) * 18;
+                                      return `${x},${y}`;
+                                    }).join(' ')}
+                                  />
+                                  {/* Add dots for the last few points */}
+                                  {rttHistory.slice(-3).map((value, index) => {
+                                    const actualIndex = rttHistory.length - 3 + index;
+                                    const x = (actualIndex / (rttHistory.length - 1)) * 100;
+                                    const max = Math.max(...rttHistory);
+                                    const min = Math.min(...rttHistory);
+                                    const range = max - min || 1;
+                                    const y = 20 - ((value - min) / range) * 18;
+                                    return (
+                                      <circle
+                                        key={actualIndex}
+                                        cx={x}
+                                        cy={y}
+                                        r="1.5"
+                                        fill="rgb(59, 130, 246)"
+                                      />
+                                    );
+                                  })}
+                                </svg>
+                              </div>
+                              <div className="flex justify-between text-xs text-gray-500">
+                                <span>Min: {Math.min(...rttHistory).toFixed(1)}ms</span>
+                                <span>Max: {Math.max(...rttHistory).toFixed(1)}ms</span>
+                                <span>Last {rttHistory.length}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Average RTT */}
+                      {localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined && localStreamStatus.status.server_browser_avg_rtt_ms !== null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-300">Avg RTT</span>
+                          </div>
+                          <span className="text-white font-mono">
+                            {localStreamStatus.status.server_browser_avg_rtt_ms.toFixed(1)}ms
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Coordinates Section */}
+                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) || 
+                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
+
+                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">RA</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
+                        </div>
+                      )}
+
+                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Compass className="w-4 h-4 text-cyan-400" />
+                            <span className="text-gray-300">Dec</span>
+                          </div>
+                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+      </Draggable>
+    )}
+    </>
   )
 }

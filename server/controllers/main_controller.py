@@ -947,6 +947,14 @@ class Controller:
                                             # Add imaging status to the main status dict
                                             status_dict["imaging_status"] = imaging_status
                                         
+                                        # Add RTT data from WebSocket manager
+                                        rtt_data = websocket_manager.get_telescope_rtt(telescope_id)
+                                        status_dict.update(rtt_data)
+                                        
+                                        # Debug: Log if RTT data is present
+                                        if rtt_data.get('server_browser_rtt_ms') is not None:
+                                            logging.trace(f"Including RTT data in status: {rtt_data}")
+                                        
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
@@ -1192,6 +1200,14 @@ class Controller:
                                             
                                             # Add imaging status to the main status dict
                                             status_dict["imaging_status"] = imaging_status
+                                        
+                                        # Add RTT data from WebSocket manager
+                                        rtt_data = websocket_manager.get_telescope_rtt(telescope_id)
+                                        status_dict.update(rtt_data)
+                                        
+                                        # Debug: Log if RTT data is present
+                                        if rtt_data.get('server_browser_rtt_ms') is not None:
+                                            logging.trace(f"Including RTT data in status: {rtt_data}")
                                         
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict

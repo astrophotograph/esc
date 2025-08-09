@@ -7,6 +7,7 @@ and coordinates between telescope clients and web clients.
 
 import asyncio
 import json
+import time
 from typing import Dict, List, Set, Optional, Any
 
 from fastapi import WebSocket
@@ -31,6 +32,8 @@ from websocket_protocol import (
     UnsubscribeMessage,
     AnnotationEventMessage,
     ClientModeChangedMessage,
+    EchoRequestMessage,
+    EchoResponseMessage,
 )
 
 
@@ -131,6 +134,13 @@ class WebSocketManager:
         self.heartbeat_task: Optional[asyncio.Task] = None
         self._running = False
         self.telescope_getter = telescope_getter  # Function to get telescope by ID
+        
+        # RTT tracking for each telescope
+        self.rtt_data: Dict[str, Dict[str, Any]] = {}  # telescope_id -> RTT data
+        self.echo_task: Optional[asyncio.Task] = None
+        self.echo_interval = 1  # Check every 1 second
+        self.echo_timeout = 5  # Consider echo lost after 5 seconds
+        self.echo_sequence = 0
 
         # Initialize remote WebSocket manager
         self.remote_manager = RemoteWebSocketManager(self._handle_remote_message)
@@ -142,7 +152,8 @@ class WebSocketManager:
 
         self._running = True
         self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
-        logger.info("WebSocket manager started")
+        self.echo_task = asyncio.create_task(self._echo_loop())
+        logger.info("WebSocket manager started with echo loop enabled")
 
     async def stop(self):
         """Stop the WebSocket manager and clean up resources."""
@@ -152,6 +163,13 @@ class WebSocketManager:
             self.heartbeat_task.cancel()
             try:
                 await self.heartbeat_task
+            except asyncio.CancelledError:
+                pass
+                
+        if self.echo_task:
+            self.echo_task.cancel()
+            try:
+                await self.echo_task
             except asyncio.CancelledError:
                 pass
 
@@ -168,6 +186,10 @@ class WebSocketManager:
             self, websocket: WebSocket, connection_id: str, skip_accept: bool = False
     ) -> WebSocketConnection:
         """Handle a new WebSocket connection."""
+        # Ensure the manager is started
+        if not self._running:
+            await self.start()
+        
         if not skip_accept:
             try:
                 await websocket.accept()
@@ -238,6 +260,8 @@ class WebSocketManager:
                 # Don't echo heartbeat back - each side sends its own heartbeats
                 logger.debug(f"Received heartbeat from {connection_id}")
                 # Just update the last heartbeat time (already done above)
+            elif isinstance(message, EchoResponseMessage):
+                await self._handle_echo_response(connection, message)
             else:
                 logger.warning(f"Unhandled message type: {message.type}")
 
@@ -1362,6 +1386,132 @@ class WebSocketManager:
             except Exception as e:
                 logger.error(f"Error in heartbeat loop: {e}")
                 await asyncio.sleep(5)  # Wait before retrying
+    
+    async def _echo_loop(self):
+        """Background task to send echo requests to measure RTT."""
+        logger.info("Echo loop started - will send echo requests every second (if none pending)")
+        while self._running:
+            try:
+                current_time = time.time()
+                
+                # For each telescope that has active connections
+                telescope_ids = set()
+                for connection in self.connections.values():
+                    telescope_ids.update(connection.subscriptions.keys())
+                
+                for telescope_id in telescope_ids:
+                    # Initialize RTT data if needed
+                    if telescope_id not in self.rtt_data:
+                        self.rtt_data[telescope_id] = {
+                            'pending_echoes': {},
+                            'last_rtt_ms': None,
+                            'avg_rtt_ms': None,
+                            'min_rtt_ms': None,
+                            'max_rtt_ms': None,
+                            'rtt_history': []
+                        }
+                    
+                    # Clean up old pending echoes (older than timeout)
+                    rtt_data = self.rtt_data[telescope_id]
+                    expired_sequences = []
+                    for seq, sent_time in rtt_data['pending_echoes'].items():
+                        if current_time - sent_time > self.echo_timeout:
+                            expired_sequences.append(seq)
+                    
+                    for seq in expired_sequences:
+                        del rtt_data['pending_echoes'][seq]
+                        logger.trace(f"Echo request seq={seq} timed out for telescope {telescope_id}")
+                    
+                    # Only send new echo if no echoes are pending
+                    if not rtt_data['pending_echoes']:
+                        # Send echo request
+                        self.echo_sequence += 1
+                        echo_request = EchoRequestMessage(
+                            telescope_id=telescope_id,
+                            sequence=self.echo_sequence
+                        )
+                        
+                        # Store the sent timestamp for RTT calculation
+                        rtt_data['pending_echoes'][self.echo_sequence] = echo_request.timestamp
+                        
+                        # Send to all connections subscribed to this telescope
+                        sent_count = 0
+                        for connection in self.connections.values():
+                            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                                await connection.send_message(echo_request)
+                                sent_count += 1
+                        
+                        if sent_count > 0:
+                            logger.trace(f"Sent echo request seq={self.echo_sequence} to {sent_count} connection(s) for telescope {telescope_id}")
+                    else:
+                        # Echo still pending
+                        pending_count = len(rtt_data['pending_echoes'])
+                        oldest_pending = min(rtt_data['pending_echoes'].values())
+                        age = current_time - oldest_pending
+                        logger.trace(f"Skipping echo for telescope {telescope_id}: {pending_count} pending (oldest: {age:.1f}s ago)")
+                
+                await asyncio.sleep(self.echo_interval)
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in echo loop: {e}")
+                await asyncio.sleep(5)  # Wait before retrying
+    
+    async def _handle_echo_response(self, connection: WebSocketConnection, message: EchoResponseMessage):
+        """Handle echo response and calculate RTT."""
+        telescope_id = message.telescope_id
+        request_timestamp = message.payload.get('request_timestamp')
+        sequence = message.payload.get('sequence', 0)
+        
+        if telescope_id not in self.rtt_data:
+            logger.warning(f"Received echo response for unknown telescope: {telescope_id}")
+            return
+        
+        rtt_data = self.rtt_data[telescope_id]
+        
+        # Check if we have this echo in pending
+        if sequence in rtt_data['pending_echoes']:
+            sent_time = rtt_data['pending_echoes'][sequence]
+            current_time = time.time()
+            rtt_ms = (current_time - sent_time) * 1000
+            
+            # Remove from pending
+            del rtt_data['pending_echoes'][sequence]
+            
+            # Update RTT statistics
+            rtt_data['last_rtt_ms'] = rtt_ms
+            rtt_data['rtt_history'].append(rtt_ms)
+            
+            # Keep only last 20 RTT measurements
+            if len(rtt_data['rtt_history']) > 20:
+                rtt_data['rtt_history'] = rtt_data['rtt_history'][-20:]
+            
+            # Calculate statistics
+            if rtt_data['rtt_history']:
+                rtt_data['avg_rtt_ms'] = sum(rtt_data['rtt_history']) / len(rtt_data['rtt_history'])
+                rtt_data['min_rtt_ms'] = min(rtt_data['rtt_history'])
+                rtt_data['max_rtt_ms'] = max(rtt_data['rtt_history'])
+            
+            logger.trace(f"RTT for telescope {telescope_id}: {rtt_ms:.1f}ms (avg: {rtt_data['avg_rtt_ms']:.1f}ms)")
+        else:
+            logger.warning(f"Received echo response for unknown sequence {sequence} from telescope {telescope_id}")
+    
+    def get_telescope_rtt(self, telescope_id: str) -> Dict[str, Any]:
+        """Get RTT data for a telescope."""
+        if telescope_id in self.rtt_data:
+            return {
+                'server_browser_rtt_ms': self.rtt_data[telescope_id]['last_rtt_ms'],
+                'server_browser_avg_rtt_ms': self.rtt_data[telescope_id]['avg_rtt_ms'],
+                'server_browser_min_rtt_ms': self.rtt_data[telescope_id]['min_rtt_ms'],
+                'server_browser_max_rtt_ms': self.rtt_data[telescope_id]['max_rtt_ms'],
+            }
+        return {
+            'server_browser_rtt_ms': None,
+            'server_browser_avg_rtt_ms': None,
+            'server_browser_min_rtt_ms': None,
+            'server_browser_max_rtt_ms': None,
+        }
 
 
 # Global WebSocket manager instance (initialized later)
@@ -1373,6 +1523,14 @@ def get_websocket_manager():
     global _websocket_manager
     if _websocket_manager is None:
         _websocket_manager = WebSocketManager()
+    # Ensure the manager is started (will be a no-op if already running)
+    try:
+        loop = asyncio.get_running_loop()
+        if not _websocket_manager._running:
+            asyncio.create_task(_websocket_manager.start())
+    except RuntimeError:
+        # No event loop running yet, will start when first used in async context
+        pass
     return _websocket_manager
 
 
@@ -1380,4 +1538,12 @@ def initialize_websocket_manager(telescope_getter=None):
     """Initialize the WebSocket manager with a telescope getter function."""
     global _websocket_manager
     _websocket_manager = WebSocketManager(telescope_getter=telescope_getter)
+    # Try to start if in async context
+    try:
+        loop = asyncio.get_running_loop()
+        if not _websocket_manager._running:
+            asyncio.create_task(_websocket_manager.start())
+    except RuntimeError:
+        # No event loop running yet, will start when first used in async context
+        pass
     return _websocket_manager
