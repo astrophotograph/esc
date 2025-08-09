@@ -131,7 +131,7 @@ async def _handle_websocket_connection(
             try:
                 # Wait for incoming message
                 message = await websocket.receive_text()
-                logger.info(f"Received message on {connection_id}: {message[:200]}...")
+                logger.trace(f"Received message on {connection_id}: {message[:200]}...")
 
                 # Check if connection is still alive before handling message
                 if not connection.is_alive:

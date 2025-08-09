@@ -238,13 +238,13 @@ class WebSocketManager:
             return
 
         connection = self.connections[connection_id]
-        logger.debug(f"Handling message from {connection_id}: {message_data[:100]}...")
+        logger.trace(f"Handling message from {connection_id}: {message_data[:100]}...")
 
         try:
             # Parse JSON message
             data = json.loads(message_data)
             message = MessageFactory.parse_message(data)
-            logger.debug(f"Parsed message type: {message.type} from {connection_id}")
+            logger.trace(f"Parsed message type: {message.type} from {connection_id}")
 
             # Update heartbeat
             connection.last_heartbeat = asyncio.get_event_loop().time()
@@ -258,7 +258,7 @@ class WebSocketManager:
                 await self._handle_unsubscribe(connection, message)
             elif isinstance(message, HeartbeatMessage):
                 # Don't echo heartbeat back - each side sends its own heartbeats
-                logger.debug(f"Received heartbeat from {connection_id}")
+                logger.trace(f"Received heartbeat from {connection_id}")
                 # Just update the last heartbeat time (already done above)
             elif isinstance(message, EchoResponseMessage):
                 await self._handle_echo_response(connection, message)

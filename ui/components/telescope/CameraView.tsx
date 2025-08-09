@@ -927,20 +927,20 @@ export function CameraView() {
       let filteredImagingStatus = wsStatus.imaging_status;
       if (filteredImagingStatus) {
         // Debug log to see what values are coming in
-        if (filteredImagingStatus.last_image_elapsed_ms !== undefined && 
+        if (filteredImagingStatus.last_image_elapsed_ms !== undefined &&
             filteredImagingStatus.last_image_elapsed_ms <= 0) {
           console.warn('Received zero or negative image timing:', filteredImagingStatus.last_image_elapsed_ms);
         }
-        
+
         // If the timing values are 0, null, or undefined, don't include them
-        if (!filteredImagingStatus.last_image_elapsed_ms || 
+        if (!filteredImagingStatus.last_image_elapsed_ms ||
             filteredImagingStatus.last_image_elapsed_ms <= 0) {
           filteredImagingStatus = {
             ...filteredImagingStatus,
             last_image_elapsed_ms: undefined
           };
         }
-        if (!filteredImagingStatus.avg_image_elapsed_ms || 
+        if (!filteredImagingStatus.avg_image_elapsed_ms ||
             filteredImagingStatus.avg_image_elapsed_ms <= 0) {
           filteredImagingStatus = {
             ...filteredImagingStatus,
@@ -948,15 +948,15 @@ export function CameraView() {
           };
         }
       }
-      
+
       // wsStatus contains the full status including imaging_status at the top level
       const statusData = {
         status: wsStatus,
         imaging_status: filteredImagingStatus  // Use filtered imaging status
       };
-      
+
       // Update timing history if we have valid timing data (not zero or undefined)
-      if (wsStatus.imaging_status?.last_image_elapsed_ms && 
+      if (wsStatus.imaging_status?.last_image_elapsed_ms &&
           wsStatus.imaging_status.last_image_elapsed_ms > 0) {
         setImageTimingHistory(prev => {
           // Filter out any zeros that might have snuck in
@@ -966,7 +966,7 @@ export function CameraView() {
           return newHistory.slice(-30);
         });
       }
-      
+
       setLocalStreamStatus(statusData);
       setStreamStatus(statusData);
       setLastSSEMessage(Date.now());
@@ -980,9 +980,9 @@ export function CameraView() {
       if (wsStatus.stage !== undefined) {
         setClientMode(wsStatus.stage);
       }
-      
+
       // Update RTT history if we have valid RTT data
-      if (wsStatus.server_browser_rtt_ms !== undefined && 
+      if (wsStatus.server_browser_rtt_ms !== undefined &&
           wsStatus.server_browser_rtt_ms !== null &&
           wsStatus.server_browser_rtt_ms > 0) {
         setRttHistory(prev => {
@@ -1281,7 +1281,7 @@ export function CameraView() {
                 >
                   <Search className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                 </Button>
-                
+
                 {/* Secondary actions - hide some on mobile */}
                 {!isMobile && (
                   <Button
@@ -1294,7 +1294,7 @@ export function CameraView() {
                     {showStreamStatus ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </Button>
                 )}
-                
+
                 <Button
                   variant="ghost"
                   size={isMobile ? "sm" : "sm"}
@@ -1308,7 +1308,7 @@ export function CameraView() {
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
                   )}
                 </Button>
-                
+
                 {!isMobile && (
                   <Button
                     variant="ghost"
@@ -1320,7 +1320,7 @@ export function CameraView() {
                     <Pen className={`h-4 w-4 ${showChalkboard ? "" : "opacity-50"}`} />
                   </Button>
                 )}
-                
+
                 <Button
                   variant="outline"
                   size={isMobile ? "sm" : "sm"}
@@ -1333,7 +1333,7 @@ export function CameraView() {
                 >
                   <RotateCw className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size={isMobile ? "sm" : "sm"}
@@ -1341,12 +1341,12 @@ export function CameraView() {
                   className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
                   title={liveViewFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 >
-                  {liveViewFullscreen ? 
-                    <Minimize className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} /> : 
+                  {liveViewFullscreen ?
+                    <Minimize className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} /> :
                     <Expand className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   }
                 </Button>
-                
+
                 {/* Controls collapse toggle - hide on mobile since we handle it differently */}
                 {!isMobile && (
                   <Button
@@ -1579,15 +1579,8 @@ export function CameraView() {
       </Card>
       </div>
     </TooltipProvider>
-    
+
     {/* Comprehensive Status Stream Overlay - Draggable - At root level */}
-    {console.log('Telescope Status Overlay Debug:', { 
-      showStreamStatus, 
-      isRendering: !!showStreamStatus,
-      localStreamStatus,
-      hasImagingStatus: !!localStreamStatus?.imaging_status,
-      imagingStatusData: localStreamStatus?.imaging_status
-    })}
     {showStreamStatus && overlayPosition && (
       <Draggable
           handle=".drag-handle"
@@ -1682,9 +1675,9 @@ export function CameraView() {
                         <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
                       </div>
                     )}
-                    
+
                     {/* Image Timing Stats with Sparkline */}
-                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined && 
+                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined &&
                      localStreamStatus.imaging_status.last_image_elapsed_ms > 0 && (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between gap-3">
@@ -1701,7 +1694,7 @@ export function CameraView() {
                           // Filter out any zeros from the history for display
                           const validHistory = imageTimingHistory.filter(v => v > 0);
                           if (validHistory.length <= 1) return null;
-                          
+
                           return (
                             <div className="space-y-1">
                               <div className="h-8 w-full bg-gray-800/50 rounded px-1 relative">
@@ -1748,9 +1741,9 @@ export function CameraView() {
                         })()}
                       </div>
                     )}
-                    
+
                     {/* Average Image Time */}
-                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined && 
+                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined &&
                      localStreamStatus.imaging_status.avg_image_elapsed_ms > 0 && (
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
@@ -1762,7 +1755,7 @@ export function CameraView() {
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Image Size */}
                     {localStreamStatus?.imaging_status?.last_image_size_bytes !== undefined && (
                       <div className="flex items-center justify-between gap-3">
@@ -1778,11 +1771,11 @@ export function CameraView() {
                   </div>
 
                   {/* Network Section */}
-                  {(localStreamStatus?.status?.server_browser_rtt_ms !== undefined || 
+                  {(localStreamStatus?.status?.server_browser_rtt_ms !== undefined ||
                     localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined) && (
                     <div className="space-y-2">
                       <h4 className="font-medium text-blue-400 border-b border-blue-400/30 pb-1">Network (Server ↔ Browser)</h4>
-                      
+
                       {/* Current RTT with Sparkline */}
                       {localStreamStatus?.status?.server_browser_rtt_ms !== undefined && localStreamStatus.status.server_browser_rtt_ms !== null && (
                         <div className="space-y-2">
@@ -1795,7 +1788,7 @@ export function CameraView() {
                               {localStreamStatus.status.server_browser_rtt_ms.toFixed(1)}ms
                             </span>
                           </div>
-                          
+
                           {/* RTT Sparkline */}
                           {rttHistory.length > 1 && (
                             <div className="space-y-1">
@@ -1843,7 +1836,7 @@ export function CameraView() {
                           )}
                         </div>
                       )}
-                      
+
                       {/* Average RTT */}
                       {localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined && localStreamStatus.status.server_browser_avg_rtt_ms !== null && (
                         <div className="flex items-center justify-between gap-3">
@@ -1860,7 +1853,7 @@ export function CameraView() {
                   )}
 
                   {/* Coordinates Section */}
-                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) || 
+                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) ||
                     (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
                     <div className="space-y-2">
                       <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
