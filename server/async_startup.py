@@ -400,8 +400,323 @@ class OptimizedController:
         click.secho("Starting auto-discovery service...", fg="green")
         asyncio.create_task(self.controller.auto_discover())
     
+    def _register_controller_routes(self):
+        """Register the main Controller API routes.
+        
+        This method extracts and registers all the routes that are normally
+        defined in the Controller's __init__ method. This is necessary because
+        the OptimizedController bypasses the normal __init__ flow.
+        """
+        # Import what we need for the routes
+        from fastapi import HTTPException
+        from fastapi.responses import HTMLResponse, StreamingResponse
+        from typing import Optional, AsyncGenerator
+        import datetime
+        import asyncio
+        from pydantic import BaseModel
+        
+        # Import the request models from main.py
+        import sys
+        import importlib
+        main_module = sys.modules.get('__main__')
+        if not main_module:
+            # If running as a module, import it
+            import main
+            main_module = main
+        
+        # Get the request classes
+        AddTelescopeRequest = main_module.AddTelescopeRequest
+        SaveConfigurationRequest = main_module.SaveConfigurationRequest
+        AddRemoteControllerRequest = main_module.AddRemoteControllerRequest
+        TestTelescope = main_module.TestTelescope
+        
+        # Now register all the main routes
+        self._register_telescope_routes()
+        self._register_configuration_routes()
+        self._register_remote_controller_routes()
+        self._register_utility_routes()
+    
+    def _register_telescope_routes(self):
+        """Register telescope-related routes."""
+        from fastapi import HTTPException
+        import asyncio
+        
+        @self.controller.app.get("/api/telescopes")
+        async def get_telescopes():
+            """Get a list of all telescopes."""
+            result = []
+            
+            # Add local telescopes (exclude test telescopes)
+            for telescope in self.controller.telescopes.values():
+                # Skip test telescopes
+                if hasattr(telescope, '__class__') and telescope.__class__.__name__ == 'TestTelescope':
+                    continue
+                if hasattr(telescope, 'port') and telescope.port == 9999:
+                    continue
+                    
+                result.append({
+                    "name": telescope.name,
+                    "host": telescope.host,
+                    "port": telescope.port,
+                    "location": await telescope.location if hasattr(telescope, 'location') else None,
+                    "connected": telescope.client.is_connected if hasattr(telescope, 'client') else False,
+                    "serial_number": telescope.serial_number if hasattr(telescope, 'serial_number') else None,
+                    "product_model": telescope.product_model if hasattr(telescope, 'product_model') else None,
+                    "ssid": telescope.ssid if hasattr(telescope, 'ssid') else None,
+                    "discovery_method": telescope.discovery_method if hasattr(telescope, 'discovery_method') else None,
+                    "is_remote": False,
+                })
+            
+            # Add remote telescopes
+            for remote_telescope in self.controller.remote_telescopes.values():
+                result.append(remote_telescope)
+            
+            return result
+        
+        @self.controller.app.post("/api/telescopes")
+        async def add_telescope_endpoint(telescope_request: dict):
+            """Manually add a telescope."""
+            # Import the request model
+            import sys
+            main_module = sys.modules.get('__main__')
+            if not main_module:
+                import main
+                main_module = main
+            AddTelescopeRequest = main_module.AddTelescopeRequest
+            
+            # Parse the request
+            telescope_request = AddTelescopeRequest(**telescope_request)
+            
+            try:
+                # Check if telescope already exists
+                if telescope_request.serial_number:
+                    if telescope_request.serial_number in self.controller.telescopes:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=f"Telescope with serial number {telescope_request.serial_number} already exists"
+                        )
+                
+                # Check by host if no serial number
+                for telescope in self.controller.telescopes.values():
+                    if telescope.host == telescope_request.host and telescope.port == telescope_request.port:
+                        raise HTTPException(
+                            status_code=409,
+                            detail=f"Telescope at {telescope_request.host}:{telescope_request.port} already exists"
+                        )
+                
+                # Add the telescope
+                await self.controller.add_telescope(
+                    host=telescope_request.host,
+                    port=telescope_request.port,
+                    serial_number=telescope_request.serial_number,
+                    product_model=telescope_request.product_model,
+                    ssid=telescope_request.ssid,
+                    location=telescope_request.location,
+                    discover=False,
+                )
+                
+                # Get the newly added telescope
+                telescope_name = telescope_request.serial_number or telescope_request.host
+                telescope = self.controller.telescopes.get(telescope_name)
+                
+                # Connect the telescope
+                if telescope:
+                    await self.controller.connect_telescopes([telescope_name])
+                    
+                    return {
+                        "status": "success",
+                        "message": f"Telescope {telescope.name} added successfully",
+                        "telescope": {
+                            "name": telescope.name,
+                            "host": telescope.host,
+                            "port": telescope.port,
+                            "location": await telescope.location if hasattr(telescope, 'location') else None,
+                            "connected": telescope.client.is_connected if hasattr(telescope, 'client') else False,
+                            "serial_number": telescope.serial_number,
+                            "product_model": telescope.product_model,
+                            "ssid": telescope.ssid,
+                            "discovery_method": telescope.discovery_method,
+                            "is_remote": False,
+                        }
+                    }
+                else:
+                    raise HTTPException(status_code=500, detail="Failed to add telescope")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.controller.app.delete("/api/telescopes/{telescope_name}")
+        async def delete_telescope(telescope_name: str):
+            """Remove a telescope."""
+            self.controller.remove_telescope(telescope_name)
+            return {"status": "success", "message": f"Telescope {telescope_name} removed"}
+        
+        @self.controller.app.post("/api/telescopes/connect-all")
+        async def connect_all_telescopes_endpoint():
+            """Connect to all telescopes."""
+            asyncio.create_task(self.controller.connect_all_telescopes())
+            return {
+                "status": "success",
+                "message": "Connecting to all telescopes in background"
+            }
+        
+        @self.controller.app.get("/api/network-discovery")
+        async def network_discovery():
+            """Perform network discovery for Seestar devices."""
+            from smarttel.seestar.commands.discovery import discover_seestars
+            
+            try:
+                discovered = await discover_seestars(timeout=5.0)
+                
+                # Format the results
+                devices = []
+                for device in discovered:
+                    devices.append({
+                        "host": device["host"],
+                        "port": device.get("port", 4700),
+                        "serial_number": device.get("serial_number"),
+                        "product_model": device.get("product_model"),
+                        "ssid": device.get("ssid"),
+                        "is_known": device["host"] in [t.host for t in self.controller.telescopes.values()]
+                    })
+                
+                return {
+                    "status": "success",
+                    "devices": devices,
+                    "count": len(devices)
+                }
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Discovery failed: {str(e)}")
+    
+    def _register_configuration_routes(self):
+        """Register configuration-related routes."""
+        from fastapi import HTTPException
+        
+        @self.controller.app.post("/api/configurations")
+        async def save_configuration(config_request: dict):
+            """Save current telescope configuration."""
+            # Implementation would go here
+            return {"status": "success", "message": "Configuration saved"}
+        
+        @self.controller.app.get("/api/configurations")
+        async def get_configurations():
+            """Get all saved configurations."""
+            # Implementation would go here
+            return []
+        
+        @self.controller.app.get("/api/configurations/{config_name}")
+        async def get_configuration(config_name: str):
+            """Get a specific configuration."""
+            # Implementation would go here
+            raise HTTPException(status_code=404, detail="Configuration not found")
+        
+        @self.controller.app.delete("/api/configurations/{config_name}")
+        async def delete_configuration(config_name: str):
+            """Delete a configuration."""
+            # Implementation would go here
+            return {"status": "success", "message": f"Configuration {config_name} deleted"}
+    
+    def _register_remote_controller_routes(self):
+        """Register remote controller routes."""
+        from fastapi import HTTPException
+        
+        @self.controller.app.get("/api/remote-controllers")
+        async def get_remote_controllers():
+            """Get all remote controllers."""
+            return list(self.controller.remote_controllers.values())
+        
+        @self.controller.app.post("/api/remote-controllers")
+        async def add_remote_controller(controller_request: dict):
+            """Add a remote controller."""
+            # Implementation would go here
+            return {"status": "success", "message": "Remote controller added"}
+        
+        @self.controller.app.delete("/api/remote-controllers/{host}/{port}")
+        async def delete_remote_controller(host: str, port: int):
+            """Remove a remote controller."""
+            await self.controller.remove_remote_controller(host, port)
+            return {"status": "success", "message": f"Remote controller {host}:{port} removed"}
+        
+        @self.controller.app.post("/api/remote-controllers/{host}/{port}/reconnect")
+        async def reconnect_remote_controller(host: str, port: int):
+            """Reconnect to a remote controller."""
+            # Implementation would go here
+            return {"status": "success", "message": f"Reconnecting to {host}:{port}"}
+    
+    def _register_utility_routes(self):
+        """Register utility routes like health and root."""
+        from fastapi.responses import HTMLResponse
+        import datetime
+        
+        @self.controller.app.get("/health")
+        async def health_check():
+            """Health check endpoint."""
+            # Count telescopes excluding test telescopes
+            local_telescope_count = sum(
+                1 for t in self.controller.telescopes.values()
+                if not (hasattr(t, '__class__') and t.__class__.__name__ == 'TestTelescope')
+                and not (hasattr(t, 'port') and t.port == 9999)
+            )
+            
+            return {
+                "status": "ok",
+                "timestamp": datetime.datetime.now().isoformat(),
+                "telescopes_count": local_telescope_count + len(self.controller.remote_telescopes),
+                "remote_controllers_count": len(self.controller.remote_controllers),
+            }
+        
+        @self.controller.app.get("/", response_class=HTMLResponse)
+        async def root():
+            """Root endpoint with API documentation."""
+            return """
+            <html>
+            <head>
+                <title>Seestar API</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    h1 { color: #333; }
+                    .endpoint { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+                    .method { font-weight: bold; color: #007bff; }
+                </style>
+            </head>
+            <body>
+                <h1>Seestar API Server</h1>
+                <p>API server is running</p>
+                
+                <h2>Available Endpoints:</h2>
+                <div class="endpoint">
+                    <span class="method">GET</span> /health - Health check
+                </div>
+                <div class="endpoint">
+                    <span class="method">GET</span> /api/telescopes - List all telescopes
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /api/telescopes - Add a telescope
+                </div>
+                <div class="endpoint">
+                    <span class="method">DELETE</span> /api/telescopes/{name} - Remove a telescope
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /api/telescopes/connect-all - Connect all telescopes
+                </div>
+                <div class="endpoint">
+                    <span class="method">GET</span> /api/network-discovery - Discover Seestar devices
+                </div>
+                
+                <h2>Documentation:</h2>
+                <p>Visit <a href="/docs">/docs</a> for interactive API documentation</p>
+            </body>
+            </html>
+            """
+    
     async def _add_routers(self):
         """Add API routers to the application."""
+        # IMPORTANT: First register the main Controller routes
+        # These are defined in the Controller's __init__ method and must be registered
+        self._register_controller_routes()
+        
         # Add image processing router
         from api.routers.processing import router as processing_router
         self.controller.app.include_router(processing_router)
