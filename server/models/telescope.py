@@ -498,63 +498,61 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             update_count = 0
             try:
                 while True:
-                    update_count += 1
-                    # Create a status object with current client information
-                    status = {
-                        "timestamp": asyncio.get_event_loop().time(),
-                        "connected": self.client.is_connected if self.client else False,
-                        "host": self.host,
-                        "port": self.port,
-                    }
-                    
-                    # Safely add status if available
-                    if self.client and hasattr(self.client, 'status') and self.client.status:
-                        try:
-                            status["status"] = self.client.status.model_dump()
-                        except Exception as e:
-                            status["status_error"] = f"Error getting status: {str(e)}"
-                    else:
-                        status["status"] = None
-
-                    # If connected, add recent events and messages
-                    # if client.is_connected:
-                    #     status["recent_events"] = [str(event) for event in list(client.recent_events)]
-                    #
-                    #     # Try to get current view state
-                    #     try:
-                    #         view_state = await client.send_and_recv(GetViewState())
-                    #         status["view_state"] = str(view_state)
-                    #     except Exception as e:
-                    #         status["view_state_error"] = str(e)
-
                     try:
+                        update_count += 1
+                        # Create a status object with current client information
+                        status = {
+                            "timestamp": asyncio.get_event_loop().time(),
+                            "connected": self.client.is_connected if self.client else False,
+                            "host": self.host,
+                            "port": self.port,
+                        }
+                        
+                        # Safely add status if available
+                        if self.client and hasattr(self.client, 'status') and self.client.status:
+                            try:
+                                status["status"] = self.client.status.model_dump()
+                            except Exception as e:
+                                status["status_error"] = f"Error getting status: {str(e)}"
+                        else:
+                            status["status"] = None
+
                         # Send the status as a Server-Sent Event
                         yield f"data: {json.dumps(status)}\n\n"
 
                         # Send a heartbeat comment every 10 updates to keep connection alive
                         if update_count % 10 == 0:
                             yield f": heartbeat at {datetime.datetime.now().isoformat()}\n\n"
+
+                    except (GeneratorExit, asyncio.CancelledError):
+                        # Client disconnected, stop the generator cleanly
+                        logging.debug("SSE client disconnected")
+                        return
                     except Exception as e:
-                        # If we can't serialize the status, send an error message
-                        error_status = {
-                            "timestamp": asyncio.get_event_loop().time(),
-                            "error": f"Failed to serialize status: {str(e)}"
-                        }
-                        yield f"data: {json.dumps(error_status)}\n\n"
+                        # Log error but continue streaming
+                        logging.error(f"Error generating status update: {e}")
+                        try:
+                            error_status = {
+                                "timestamp": asyncio.get_event_loop().time(),
+                                "error": f"Failed to generate status: {str(e)}"
+                            }
+                            yield f"data: {json.dumps(error_status)}\n\n"
+                        except (GeneratorExit, asyncio.CancelledError):
+                            return
+                        except Exception:
+                            logging.error("Failed to send error message in status stream")
 
                     # Wait for 1 seconds before sending next update
                     await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                # Handle client disconnection gracefully
-                yield f"data: {json.dumps({'status': 'stream_closed'})}\n\n"
+                    
+            except (GeneratorExit, asyncio.CancelledError):
+                # Normal termination
+                logging.debug("Status stream generator terminated")
+                return
             except Exception as e:
-                # Handle any other unexpected errors
-                logging.error(f"Error in status stream generator: {e}")
-                try:
-                    yield f"data: {json.dumps({'error': str(e), 'status': 'stream_error'})}\n\n"
-                except:
-                    # If we can't even send the error, just log it
-                    logging.error("Failed to send error message in status stream")
+                # Unexpected error - log and terminate cleanly
+                logging.error(f"Unexpected error in status stream generator: {e}")
+                return
 
         def build_frame_bytes(image: np.ndarray, width: int, height: int):
             # font = cv2.FONT_HERSHEY_COMPLEX
@@ -584,7 +582,13 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         async def stream_status():
             """Stream client status updates every 5 seconds."""
             return StreamingResponse(
-                status_stream_generator(), media_type="text/event-stream"
+                status_stream_generator(), 
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",  # Disable Nginx buffering
+                }
             )
 
         async def get_next_image(camera_id: int = 0):
