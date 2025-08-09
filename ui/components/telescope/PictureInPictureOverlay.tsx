@@ -47,8 +47,8 @@ export function PictureInPictureOverlay() {
     "extra-large": { width: 640, height: 480 },
   }
 
-  const currentSize = pipFullscreen 
-    ? { width: window.innerWidth, height: window.innerHeight } 
+  const currentSize = pipFullscreen
+    ? { width: window.innerWidth, height: window.innerHeight }
     : sizeConfig[pipSize]
 
   // Update timestamp every 30 seconds
@@ -142,7 +142,7 @@ export function PictureInPictureOverlay() {
   useEffect(() => {
     const handleResize = () => {
       if (pipFullscreen) return
-      
+
       const headerHeight = 40
       const totalHeight = pipMinimized ? headerHeight : currentSize.height + headerHeight
       const maxX = window.innerWidth - currentSize.width
@@ -155,7 +155,7 @@ export function PictureInPictureOverlay() {
     }
 
     window.addEventListener("resize", handleResize)
-    
+
     // Check bounds on mount and when size changes
     handleResize()
 
@@ -271,17 +271,17 @@ export function PictureInPictureOverlay() {
               </Select>
 
               {/* Status Toggle - only show for large and extra-large */}
-              {(pipSize === "large" || pipSize === "extra-large") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPipStatus(!showPipStatus)}
-                  className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                  title={showPipStatus ? "Hide Status" : "Show Status"}
-                >
-                  {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                </Button>
-              )}
+              {/*{(pipSize === "large" || pipSize === "extra-large") && (*/}
+              {/*  <Button*/}
+              {/*    variant="ghost"*/}
+              {/*    size="sm"*/}
+              {/*    onClick={() => setShowPipStatus(!showPipStatus)}*/}
+              {/*    className="h-6 w-6 p-0 text-gray-400 hover:text-white"*/}
+              {/*    title={showPipStatus ? "Hide Status" : "Show Status"}*/}
+              {/*  >*/}
+              {/*    {showPipStatus ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}*/}
+              {/*  </Button>*/}
+              {/*)}*/}
 
               {/* Settings Button - only show for extra-large to save space */}
               {pipSize === "extra-large" && (
@@ -361,14 +361,14 @@ export function PictureInPictureOverlay() {
           <PipOverlays width={currentSize.width} height={currentSize.height} camera={pipCamera} />
 
           {/* Live Status Indicator */}
-          {showPipStatus && (
-            <div className="absolute top-2 left-2 bg-black/70 rounded px-2 py-1">
-              <div className="flex items-center gap-2 text-xs">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-white font-mono">LIVE • 30 FPS</span>
-              </div>
-            </div>
-          )}
+          {/*{showPipStatus && (*/}
+          {/*  <div className="absolute top-2 left-2 bg-black/70 rounded px-2 py-1">*/}
+          {/*    <div className="flex items-center gap-2 text-xs">*/}
+          {/*      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>*/}
+          {/*      <span className="text-white font-mono">LIVE • 30 FPS</span>*/}
+          {/*    </div>*/}
+          {/*  </div>*/}
+          {/*)}*/}
 
           {/* Quick Overlay Toggle (for testing) */}
           <div className="absolute top-2 right-2 flex gap-1">

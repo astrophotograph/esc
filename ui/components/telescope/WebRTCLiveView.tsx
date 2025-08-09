@@ -174,11 +174,11 @@ export function WebRTCLiveView({
   }, []);
 
   // Retry WebRTC connection
-  const handleRetryWebRTC = useCallback(async () => {
-    setEnableWebRTC(true);
-    setMjpegError(false);
-    await retryWebRTC();
-  }, [retryWebRTC]);
+  // const handleRetryWebRTC = useCallback(async () => {
+  //   setEnableWebRTC(true);
+  //   setMjpegError(false);
+  //   await retryWebRTC();
+  // }, [retryWebRTC]);
 
   // Common transform styles
   const transformStyle = {
@@ -217,17 +217,17 @@ export function WebRTCLiveView({
         />
 
         {/* Controls overlay - hidden for cleaner UI */}
-        {false && (
-          <div className="absolute bottom-2 right-2 flex gap-2">
-            <button
-              onClick={() => setUseSimpleWebRTC(false)}
-              className="bg-gray-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-gray-700/90 transition-colors"
-              title="Switch to MJPEG"
-            >
-              Use MJPEG
-            </button>
-          </div>
-        )}
+        {/*{false && (*/}
+        {/*  <div className="absolute bottom-2 right-2 flex gap-2">*/}
+        {/*    <button*/}
+        {/*      onClick={() => setUseSimpleWebRTC(false)}*/}
+        {/*      className="bg-gray-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-gray-700/90 transition-colors"*/}
+        {/*      title="Switch to MJPEG"*/}
+        {/*    >*/}
+        {/*      Use MJPEG*/}
+        {/*    </button>*/}
+        {/*  </div>*/}
+        {/*)}*/}
       </div>
     );
   }
@@ -258,29 +258,29 @@ export function WebRTCLiveView({
                 </div>
               )}
 
-              {webrtcError && (
-                <div className="space-y-2">
-                  <div className="text-red-400">WebRTC Failed</div>
-                  <div className="text-sm text-gray-300">{webrtcError}</div>
+              {/*{webrtcError && (*/}
+              {/*  <div className="space-y-2">*/}
+              {/*    <div className="text-red-400">WebRTC Failed</div>*/}
+              {/*    <div className="text-sm text-gray-300">{webrtcError}</div>*/}
                   {/* WebRTC buttons hidden for cleaner UI */}
-                  {false && (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleRetryWebRTC}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        Retry WebRTC
-                      </button>
-                      <button
-                        onClick={() => setEnableWebRTC(false)}
-                        className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
-                      >
-                        Use MJPEG
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                  {/*{false && (*/}
+                  {/*  <div className="flex space-x-2">*/}
+                  {/*    <button*/}
+                  {/*      onClick={handleRetryWebRTC}*/}
+                  {/*      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"*/}
+                  {/*    >*/}
+                  {/*      Retry WebRTC*/}
+                  {/*    </button>*/}
+                  {/*    <button*/}
+                  {/*      onClick={() => setEnableWebRTC(false)}*/}
+                  {/*      className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"*/}
+                  {/*    >*/}
+                  {/*      Use MJPEG*/}
+                  {/*    </button>*/}
+                  {/*  </div>*/}
+                  {/*)}*/}
+                {/*</div>*/}
+              {/*)}*/}
             </div>
           </div>
         )}
@@ -331,14 +331,14 @@ export function WebRTCLiveView({
                 <div className="text-red-400">Stream Error</div>
                 <div className="text-sm text-gray-300">Failed to load video stream</div>
                 {/* WebRTC button hidden for cleaner UI */}
-                {false && (
-                  <button
-                    onClick={handleRetryWebRTC}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  >
-                    Try WebRTC
-                  </button>
-                )}
+                {/*{false && (*/}
+                {/*  <button*/}
+                {/*    onClick={handleRetryWebRTC}*/}
+                {/*    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"*/}
+                {/*  >*/}
+                {/*    Try WebRTC*/}
+                {/*  </button>*/}
+                {/*)}*/}
               </div>
             )}
           </div>
@@ -346,38 +346,38 @@ export function WebRTCLiveView({
       )}
 
       {/* MJPEG Connection Indicator - WebRTC buttons hidden for cleaner UI */}
-      {!mjpegError && !mjpegLoading && (
-        <div className="absolute top-2 left-2 flex items-center gap-2">
-          <div className="bg-yellow-600/90 text-white px-2 py-1 rounded text-xs font-medium">
-            MJPEG Stream
-          </div>
-          {/* WebRTC buttons hidden for cleaner UI */}
-          {false && (
-            <>
-              <button
-                onClick={() => {
-                  console.log('User requested WebRTC trial');
-                  setEnableWebRTC(true);
-                }}
-                className="bg-blue-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700/90 transition-colors"
-                title="Try WebRTC connection"
-              >
-                Try WebRTC
-              </button>
-              <button
-                onClick={() => {
-                  console.log('User requested Simple WebRTC');
-                  setUseSimpleWebRTC(true);
-                }}
-                className="bg-purple-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-purple-700/90 transition-colors"
-                title="Try Simple WebRTC (Canvas-based)"
-              >
-                Simple WebRTC
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      {/*{!mjpegError && !mjpegLoading && (*/}
+      {/*  <div className="absolute top-2 left-2 flex items-center gap-2">*/}
+      {/*    <div className="bg-yellow-600/90 text-white px-2 py-1 rounded text-xs font-medium">*/}
+      {/*      MJPEG Stream*/}
+      {/*    </div>*/}
+      {/*    /!* WebRTC buttons hidden for cleaner UI *!/*/}
+      {/*    {false && (*/}
+      {/*      <>*/}
+      {/*        <button*/}
+      {/*          onClick={() => {*/}
+      {/*            console.log('User requested WebRTC trial');*/}
+      {/*            setEnableWebRTC(true);*/}
+      {/*          }}*/}
+      {/*          className="bg-blue-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700/90 transition-colors"*/}
+      {/*          title="Try WebRTC connection"*/}
+      {/*        >*/}
+      {/*          Try WebRTC*/}
+      {/*        </button>*/}
+      {/*        <button*/}
+      {/*          onClick={() => {*/}
+      {/*            console.log('User requested Simple WebRTC');*/}
+      {/*            setUseSimpleWebRTC(true);*/}
+      {/*          }}*/}
+      {/*          className="bg-purple-600/90 text-white px-2 py-1 rounded text-xs font-medium hover:bg-purple-700/90 transition-colors"*/}
+      {/*          title="Try Simple WebRTC (Canvas-based)"*/}
+      {/*        >*/}
+      {/*          Simple WebRTC*/}
+      {/*        </button>*/}
+      {/*      </>*/}
+      {/*    )}*/}
+      {/*  </div>*/}
+      {/*)}*/}
     </div>
   );
 }
