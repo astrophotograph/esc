@@ -37,10 +37,12 @@ class SeestarImagingStatus(BaseModel):
     battery_capacity: int | None = None
     stacked_frame: int = 0
     dropped_frame: int = 0
+    skipped_frame: int = 0  # Frames skipped due to ongoing image reception
     target_name: str = ""
     annotate: AnnotateResult | None = None
     is_streaming: bool = False
     is_fetching_images: bool = False
+    is_receiving_image: bool = False  # True while receiving image data
     
     # Image retrieval timing
     last_image_start_time: float | None = None  # Timestamp when image started being received
@@ -56,10 +58,12 @@ class SeestarImagingStatus(BaseModel):
         self.battery_capacity = None
         self.stacked_frame = 0
         self.dropped_frame = 0
+        self.skipped_frame = 0
         self.target_name = ""
         self.annotate = None
         self.is_streaming = False
         self.is_fetching_images = False
+        self.is_receiving_image = False
         # Reset timing fields
         self.last_image_start_time = None
         self.last_image_end_time = None
@@ -166,13 +170,18 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
                 data = None
                 if size is not None:
-                    # Track that we're starting to receive the image data
-                    self.status.last_image_start_time = image_start_time
-                    self.status.last_image_size_bytes = size
+                    # Check if this looks like image data (not a small control message)
+                    if width and height and width > 0 and height > 0 and size and size > 1000:
+                        # Mark that we're receiving an image
+                        self.status.is_receiving_image = True
+                        # Track that we're starting to receive the image data
+                        self.status.last_image_start_time = image_start_time
+                        self.status.last_image_size_bytes = size
                     
                     data = await self.connection.read_exactly(size)
                     if data is None:
                         # Connection issue during data read, continue
+                        self.status.is_receiving_image = False
                         await asyncio.sleep(0.1)
                         continue
 
@@ -181,6 +190,9 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     self.image = await self.binary_protocol.handle_incoming_message(
                         width, height, data, id
                     )
+                    
+                    # Clear receiving flag after processing
+                    self.status.is_receiving_image = False
                     
                     # Only update timing statistics for actual image data
                     # Skip small control messages (like TestConnection responses)
@@ -349,9 +361,15 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_stack_event(self, event: BaseEvent):
         if event.state == "frame_complete" and self.status.is_fetching_images:
-            # Only grab the frame if we're streaming in client!
-            logging.trace("Grabbing frame")
-            await self.send(GetStackedImage(id=23))
+            # Check if we're currently receiving an image
+            if self.status.is_receiving_image:
+                # Skip this frame request since we're already receiving an image
+                self.status.skipped_frame += 1
+                logging.trace(f"Skipped frame request (already receiving image). Total skipped: {self.status.skipped_frame}")
+            else:
+                # Only grab the frame if we're streaming in client and not currently receiving
+                logging.trace("Grabbing frame")
+                await self.send(GetStackedImage(id=23))
 
     async def _handle_client_mode(self, event: BaseEvent):
         if isinstance(event, InternalEvent):

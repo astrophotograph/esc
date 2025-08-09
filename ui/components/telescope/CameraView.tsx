@@ -1057,6 +1057,7 @@ export function CameraView() {
   // Default values for frame counts if not available in stream
   const stackedFrames = localStreamStatus?.status?.stacked_frame || 0;
   const droppedFrames = localStreamStatus?.status?.dropped_frame || 0;
+  const skippedFrames = localStreamStatus?.status?.skipped_frame || 0;
   const targetName = selectedTarget?.name || localStreamStatus?.status?.target_name;
 
   return (
@@ -1155,6 +1156,25 @@ export function CameraView() {
                       {droppedFrames === 0 && "No frames have been dropped - connection is stable"}
                       {droppedFrames > 0 && droppedFrames <= 5 && "Minor frame drops - connection may be slightly unstable"}
                       {droppedFrames > 5 && "Significant frame drops - check network connection"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Skipped Frames Counter */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <AlertTriangle className={`w-4 h-4 ${skippedFrames > 0 ? "text-yellow-400" : "text-gray-400"}`} />
+                      <span className="text-gray-300">{skippedFrames}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Skipped Frames: {skippedFrames}
+                      <br />
+                      {skippedFrames === 0 && "No frames have been skipped - processing is keeping up"}
+                      {skippedFrames > 0 && skippedFrames <= 10 && "Some frames skipped during rapid stacking"}
+                      {skippedFrames > 10 && "Many frames skipped - consider reducing stacking rate"}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -1745,7 +1765,9 @@ export function CameraView() {
                               </div>
                               <div className="flex justify-between text-xs text-gray-500">
                                 <span>Min: {Math.min(...validHistory).toFixed(0)}ms</span>
-                                <span>Max: {Math.max(...validHistory).toFixed(0)}ms</span>
+                                <span className={Math.max(...validHistory) > 5000 ? "text-red-500 font-bold" : ""}>
+                                  Max: {Math.max(...validHistory).toFixed(0)}ms
+                                </span>
                               </div>
                             </div>
                           );
