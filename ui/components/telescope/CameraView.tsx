@@ -1685,9 +1685,20 @@ export function CameraView() {
                             <Clock className="w-4 h-4 text-yellow-400" />
                             <span className="text-gray-300">Image Time</span>
                           </div>
-                          <span className="text-white font-mono">
-                            {localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms
-                          </span>
+                          <div className="flex items-center gap-2 text-white font-mono">
+                            <span>{localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms</span>
+                            {localStreamStatus.imaging_status.last_image_size_bytes && (
+                              <>
+                                <span className="text-gray-500">•</span>
+                                <span className="text-green-400">
+                                  {(
+                                    (localStreamStatus.imaging_status.last_image_size_bytes * 8) / 
+                                    (localStreamStatus.imaging_status.last_image_elapsed_ms * 1000)
+                                  ).toFixed(1)} Mbps
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                         {/* Sparkline with min/max labels */}
                         {(() => {
@@ -1750,9 +1761,20 @@ export function CameraView() {
                           <Clock className="w-4 h-4 text-yellow-300" />
                           <span className="text-gray-300">Avg Time</span>
                         </div>
-                        <span className="text-white font-mono">
-                          {localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms
-                        </span>
+                        <div className="flex items-center gap-2 text-white font-mono">
+                          <span>{localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms</span>
+                          {localStreamStatus.imaging_status.last_image_size_bytes && (
+                            <>
+                              <span className="text-gray-500">•</span>
+                              <span className="text-green-400">
+                                {(
+                                  (localStreamStatus.imaging_status.last_image_size_bytes * 8) / 
+                                  (localStreamStatus.imaging_status.avg_image_elapsed_ms * 1000)
+                                ).toFixed(1)} Mbps
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
 
