@@ -455,13 +455,15 @@ class OptimizedController:
                     continue
                     
                 # Get location if available (it's an async property)
+                # Don't use hasattr() with async properties as it triggers the coroutine
                 location = None
-                if hasattr(telescope, 'location'):
-                    try:
+                try:
+                    # Just try to access it directly
+                    if telescope.__class__.__name__ == 'Telescope':
                         location = await telescope.location
-                    except Exception as e:
-                        logging.debug(f"Failed to get telescope location: {e}")
-                        location = None
+                except Exception as e:
+                    logging.debug(f"Failed to get telescope location: {e}")
+                    location = None
                 
                 result.append({
                     "name": telescope.name,
