@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:respawn": "node scripts/respawn.js dev",
+    "dev:nodemon": "nodemon --exec 'next dev' --watch . --ext js,jsx,ts,tsx,json --ignore '.next' --ignore 'node_modules'",
     "prebuild": "node scripts/generate-version.js --update-package",
     "build": "next build",
     "start": "next start",
+    "start:respawn": "node scripts/respawn.js start",
+    "start:production": "npm run build && node scripts/respawn.js start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
