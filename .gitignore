@@ -7,3 +7,8 @@ telescopes.db
 ui/coverage
 server/processed
 server/uploads
+
+logs
+/build
+/dist
+/electron/assets
