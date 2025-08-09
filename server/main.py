@@ -59,26 +59,26 @@ class InterceptHandler(orig_logging.Handler):
         )
 
 
-def setup_logging():
-    """Configure logging for the application."""
-    # Intercept standard logging
-    orig_logging.basicConfig(handlers=[InterceptHandler()], level=0)
-
-    # Configure loguru
-    logging.remove()  # Remove default handler
-    logging.add(
-        "server.log",
-        rotation="1 day",
-        retention="7 days",
-        level="INFO",
-        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
-    )
-    logging.add(
-        lambda msg: print(msg, end=""),
-        level="INFO",
-        format="{time:HH:mm:ss.SSS} | {level} | {message}",
-        colorize=True,
-    )
+# def setup_logging():
+#     """Configure logging for the application."""
+#     # Intercept standard logging
+#     orig_logging.basicConfig(handlers=[InterceptHandler()], level=0)
+#
+#     # Configure loguru
+#     logging.remove()  # Remove default handler
+#     logging.add(
+#         "server.log",
+#         rotation="1 day",
+#         retention="7 days",
+#         level="INFO",
+#         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}",
+#     )
+#     logging.add(
+#         lambda msg: print(msg, end=""),
+#         level="INFO",
+#         format="{time:HH:mm:ss.SSS} | {level} | {message}",
+#         colorize=True,
+#     )
 
 
 @click.group()
