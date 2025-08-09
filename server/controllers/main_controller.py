@@ -1379,7 +1379,8 @@ class Controller:
         """Create and run the Uvicorn server with optimized background initialization."""
         
         # Check if we should use optimized startup
-        use_optimized = os.environ.get("OPTIMIZED_STARTUP", "true").lower() == "true"
+        # Default to false for now due to event loop timing issues
+        use_optimized = os.environ.get("OPTIMIZED_STARTUP", "false").lower() == "true"
         
         if use_optimized:
             # Use the new optimized startup manager

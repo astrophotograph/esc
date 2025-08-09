@@ -30,14 +30,19 @@ The telescope server now supports an optimized asynchronous startup process that
 
 ### Enable/Disable Optimized Startup
 ```bash
-# Enable (default)
+# Enable optimized startup (currently experimental)
 export OPTIMIZED_STARTUP=true
 uv run python main.py server
 
-# Disable (use sequential startup)
+# Disable - use sequential startup (default)
 export OPTIMIZED_STARTUP=false
 uv run python main.py server
+
+# Or just run without setting the variable (defaults to sequential)
+uv run python main.py server
 ```
+
+**Note:** Sequential startup is currently the default due to event loop timing issues with the optimized startup. Once these issues are resolved, optimized startup can be made the default.
 
 ## Task Priority System
 
