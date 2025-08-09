@@ -1812,6 +1812,29 @@ export function CameraView() {
                         </span>
                       </div>
                     )}
+
+                    {/* Frame Counters */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-blue-400" />
+                        <span className="text-gray-300">Frames</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white font-mono">
+                        <span className="text-blue-400" title="Stacked frames">{stackedFrames}</span>
+                        {droppedFrames > 0 && (
+                          <>
+                            <span className="text-gray-500">•</span>
+                            <span className="text-red-400" title="Dropped frames">{droppedFrames} dropped</span>
+                          </>
+                        )}
+                        {skippedFrames > 0 && (
+                          <>
+                            <span className="text-gray-500">•</span>
+                            <span className="text-yellow-400" title="Skipped frames">{skippedFrames} skipped</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Network Section */}
