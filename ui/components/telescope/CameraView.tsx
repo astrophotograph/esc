@@ -37,8 +37,7 @@ import {
   AlertTriangle,
   Clock,
   Cpu,
-  Zap,
-  HardDrive
+  Zap
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
