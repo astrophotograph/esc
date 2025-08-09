@@ -342,7 +342,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         mode = pydash.get(data, "mode", "unknown")
         state = pydash.get(data, "state", "unknown")
 
-        logging.warning(f"Process view: {stage=} {mode=} {state=}")
+        logging.debug(f"Process view: {stage=} {mode=} {state=}")
 
         annotate_result = pydash.get(data, "Stack.Annotate.result", None)
 

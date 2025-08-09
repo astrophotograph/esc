@@ -88,7 +88,7 @@ async def discover_seestars(timeout=10):
     if not _initial_discovery_complete:
         logging.info(f"Discovering on {len(interfaces)} network interface(s)")
     else:
-        logging.debug(f"Discovering on {len(interfaces)} network interface(s)")
+        logging.trace(f"Discovering on {len(interfaces)} network interface(s)")
 
     # Create tasks for parallel discovery on all interfaces
     tasks = []
