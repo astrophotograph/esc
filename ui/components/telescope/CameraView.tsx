@@ -1627,40 +1627,23 @@ export function CameraView() {
 
                       {!collapsedSections.balance && (
                         <>
-                          {/* Accelerometer X, Y, Z */}
+                          {/* Balance Sensor Data */}
                           {localStreamStatus.status.balance_sensor.data && (
                             <>
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                  <Activity className="w-4 h-4 text-orange-400" />
-                                  <span className="text-gray-300">Accel X</span>
+                              {/* Tilt Angle from Z accelerometer */}
+                              {localStreamStatus.status.balance_sensor.data.z !== undefined && (
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-orange-400" />
+                                    <span className="text-gray-300">Tilt Angle</span>
+                                  </div>
+                                  <span className="text-white font-mono">
+                                    {(Math.acos(Math.min(1, Math.max(-1, localStreamStatus.status.balance_sensor.data.z))) * 180 / Math.PI).toFixed(1)}°
+                                  </span>
                                 </div>
-                                <span className="text-white font-mono">
-                                  {localStreamStatus.status.balance_sensor.data.x?.toFixed(3) ?? 'N/A'}
-                                </span>
-                              </div>
+                              )}
                               
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                  <Activity className="w-4 h-4 text-orange-400" />
-                                  <span className="text-gray-300">Accel Y</span>
-                                </div>
-                                <span className="text-white font-mono">
-                                  {localStreamStatus.status.balance_sensor.data.y?.toFixed(3) ?? 'N/A'}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
-                                  <Activity className="w-4 h-4 text-orange-400" />
-                                  <span className="text-gray-300">Accel Z</span>
-                                </div>
-                                <span className="text-white font-mono">
-                                  {localStreamStatus.status.balance_sensor.data.z?.toFixed(3) ?? 'N/A'}
-                                </span>
-                              </div>
-                              
-                              {/* Computed Rotation Angle from X and Y */}
+                              {/* Rotation Angle from X and Y */}
                               {(localStreamStatus.status.balance_sensor.data.x !== undefined && 
                                 localStreamStatus.status.balance_sensor.data.y !== undefined) && (
                                 <div className="flex items-center justify-between gap-3">
