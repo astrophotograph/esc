@@ -612,11 +612,13 @@ export function CameraView() {
   const [collapsedSections, setCollapsedSections] = useState<{
     powerThermal: boolean;
     coordinates: boolean;
+    balance: boolean;
     imaging: boolean;
     network: boolean;
   }>({
     powerThermal: false,
     coordinates: false,
+    balance: false,
     imaging: false,
     network: false,
   });
@@ -1607,6 +1609,71 @@ export function CameraView() {
                           <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
                         </div>
                       )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Balance Sensor Section */}
+                  {localStreamStatus?.status?.balance_sensor && (
+                    <div className="space-y-2">
+                      <h4 
+                        className="font-medium text-orange-400 border-b border-orange-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-orange-300"
+                        onClick={() => setCollapsedSections(prev => ({ ...prev, balance: !prev.balance }))}
+                      >
+                        <span>Balance Sensor</span>
+                        {collapsedSections.balance ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </h4>
+
+                      {!collapsedSections.balance && (
+                        <>
+                          {/* Accelerometer X, Y, Z */}
+                          {localStreamStatus.status.balance_sensor.data && (
+                            <>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Activity className="w-4 h-4 text-orange-400" />
+                                  <span className="text-gray-300">Accel X</span>
+                                </div>
+                                <span className="text-white font-mono">
+                                  {localStreamStatus.status.balance_sensor.data.x?.toFixed(3) ?? 'N/A'}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Activity className="w-4 h-4 text-orange-400" />
+                                  <span className="text-gray-300">Accel Y</span>
+                                </div>
+                                <span className="text-white font-mono">
+                                  {localStreamStatus.status.balance_sensor.data.y?.toFixed(3) ?? 'N/A'}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Activity className="w-4 h-4 text-orange-400" />
+                                  <span className="text-gray-300">Accel Z</span>
+                                </div>
+                                <span className="text-white font-mono">
+                                  {localStreamStatus.status.balance_sensor.data.z?.toFixed(3) ?? 'N/A'}
+                                </span>
+                              </div>
+                              
+                              {/* Computed Rotation Angle */}
+                              {localStreamStatus.status.balance_sensor.data.angle !== undefined && (
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <RotateCw className="w-4 h-4 text-yellow-400" />
+                                    <span className="text-gray-300">Rotation</span>
+                                  </div>
+                                  <span className="text-white font-mono">
+                                    {localStreamStatus.status.balance_sensor.data.angle.toFixed(1)}°
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </>
                       )}
                     </div>

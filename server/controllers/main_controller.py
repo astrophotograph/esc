@@ -920,6 +920,10 @@ class Controller:
                             async def periodic_status_update():
                                 while tel.client.is_connected:
                                     try:
+                                        # Update coordinates and balance sensor data
+                                        if hasattr(tel.client, 'update_current_coords'):
+                                            await tel.client.update_current_coords()
+                                        
                                         # Get status as dict - handle both Pydantic models and plain objects
                                         if hasattr(tel.client.status, "model_dump"):
                                             status_dict = tel.client.status.model_dump()
@@ -1174,6 +1178,10 @@ class Controller:
                             async def periodic_status_update():
                                 while tel.client.is_connected:
                                     try:
+                                        # Update coordinates and balance sensor data
+                                        if hasattr(tel.client, 'update_current_coords'):
+                                            await tel.client.update_current_coords()
+                                        
                                         # Get status as dict - handle both Pydantic models and plain objects
                                         if hasattr(tel.client.status, "model_dump"):
                                             status_dict = tel.client.status.model_dump()
