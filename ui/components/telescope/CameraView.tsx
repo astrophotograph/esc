@@ -1660,15 +1660,19 @@ export function CameraView() {
                                 </span>
                               </div>
                               
-                              {/* Computed Rotation Angle */}
-                              {localStreamStatus.status.balance_sensor.data.angle !== undefined && (
+                              {/* Computed Rotation Angle from X and Y */}
+                              {(localStreamStatus.status.balance_sensor.data.x !== undefined && 
+                                localStreamStatus.status.balance_sensor.data.y !== undefined) && (
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-2">
                                     <RotateCw className="w-4 h-4 text-yellow-400" />
                                     <span className="text-gray-300">Rotation</span>
                                   </div>
                                   <span className="text-white font-mono">
-                                    {localStreamStatus.status.balance_sensor.data.angle.toFixed(1)}°
+                                    {(Math.atan2(
+                                      localStreamStatus.status.balance_sensor.data.y, 
+                                      localStreamStatus.status.balance_sensor.data.x
+                                    ) * 180 / Math.PI).toFixed(1)}°
                                   </span>
                                 </div>
                               )}
