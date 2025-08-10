@@ -10,8 +10,10 @@ import {
   Battery,
   BatteryCharging,
   BatteryFull,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Crosshair,
   Eye,
   EyeOff,
@@ -605,6 +607,19 @@ export function CameraView() {
   const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined);
   const [imageTimingHistory, setImageTimingHistory] = useState<number[]>([]);
   const [rttHistory, setRttHistory] = useState<number[]>([]);
+  
+  // State for collapsible sections in telescope status overlay
+  const [collapsedSections, setCollapsedSections] = useState<{
+    powerThermal: boolean;
+    coordinates: boolean;
+    imaging: boolean;
+    network: boolean;
+  }>({
+    powerThermal: false,
+    coordinates: false,
+    imaging: false,
+    network: false,
+  });
 
   // Simplified zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -1489,7 +1504,7 @@ export function CameraView() {
           }}
           nodeRef={draggableNodeRef}
         >
-          <div ref={draggableNodeRef} className="fixed bg-black/90 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-gray-700" style={{ zIndex: 9999, minHeight: '200px', top: '100px', left: '100px' }}>
+          <div ref={draggableNodeRef} className="fixed bg-black/90 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-gray-700 max-h-[90vh] overflow-y-auto" style={{ zIndex: 9999, minHeight: '200px', top: '100px', left: '100px' }}>
             {/* Header with drag handle */}
             <div className="drag-handle cursor-move bg-gray-900/80 px-4 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between">
               <h3 className="font-semibold text-blue-400 flex items-center gap-2 select-none">
@@ -1506,7 +1521,7 @@ export function CameraView() {
               </Button>
             </div>
             {/* Content */}
-            <div className="p-4 max-h-[700px] overflow-y-auto">
+            <div className="p-4">
               {!localStreamStatus ? (
                 <div className="text-center text-gray-400 py-8">
                   <p className="text-sm">Waiting for telescope status...</p>
@@ -1517,8 +1532,16 @@ export function CameraView() {
 
                   {/* Power & Temperature Section */}
                   <div className="space-y-2">
-                    <h4 className="font-medium text-green-400 border-b border-green-400/30 pb-1">Power & Thermal</h4>
+                    <h4 
+                      className="font-medium text-green-400 border-b border-green-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-green-300"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, powerThermal: !prev.powerThermal }))}
+                    >
+                      <span>Power & Thermal</span>
+                      {collapsedSections.powerThermal ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </h4>
 
+                    {!collapsedSections.powerThermal && (
+                      <>
                     {/* Battery */}
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -1547,14 +1570,24 @@ export function CameraView() {
                         <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
                       </div>
                     )}
+                      </>
+                    )}
                   </div>
 
                   {/* Coordinates Section */}
                   {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) ||
                     (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
                     <div className="space-y-2">
-                      <h4 className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1">Coordinates</h4>
+                      <h4 
+                        className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-cyan-300"
+                        onClick={() => setCollapsedSections(prev => ({ ...prev, coordinates: !prev.coordinates }))}
+                      >
+                        <span>Coordinates</span>
+                        {collapsedSections.coordinates ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </h4>
 
+                      {!collapsedSections.coordinates && (
+                        <>
                       {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
@@ -1574,13 +1607,23 @@ export function CameraView() {
                           <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
                         </div>
                       )}
+                        </>
+                      )}
                     </div>
                   )}
 
                   {/* Imaging Section */}
                   <div className="space-y-2">
-                    <h4 className="font-medium text-purple-400 border-b border-purple-400/30 pb-1">Imaging</h4>
+                    <h4 
+                      className="font-medium text-purple-400 border-b border-purple-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-purple-300"
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, imaging: !prev.imaging }))}
+                    >
+                      <span>Imaging</span>
+                      {collapsedSections.imaging ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </h4>
 
+                    {!collapsedSections.imaging && (
+                      <>
                     {/* Stage */}
                     {localStreamStatus?.status?.stage && (
                       <div className="flex items-center justify-between gap-3">
@@ -1742,14 +1785,24 @@ export function CameraView() {
                         )}
                       </div>
                     </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Network Section */}
                   {(localStreamStatus?.status?.server_browser_rtt_ms !== undefined ||
                     localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined) && (
                     <div className="space-y-2">
-                      <h4 className="font-medium text-blue-400 border-b border-blue-400/30 pb-1">Network (Server ↔ Browser)</h4>
+                      <h4 
+                        className="font-medium text-blue-400 border-b border-blue-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-blue-300"
+                        onClick={() => setCollapsedSections(prev => ({ ...prev, network: !prev.network }))}
+                      >
+                        <span>Network (Server ↔ Browser)</span>
+                        {collapsedSections.network ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </h4>
 
+                      {!collapsedSections.network && (
+                        <>
                       {/* Current RTT with Sparkline */}
                       {localStreamStatus?.status?.server_browser_rtt_ms !== undefined && localStreamStatus.status.server_browser_rtt_ms !== null && (
                         <div className="space-y-2">
@@ -1822,6 +1875,8 @@ export function CameraView() {
                             {localStreamStatus.status.server_browser_avg_rtt_ms.toFixed(1)}ms
                           </span>
                         </div>
+                      )}
+                        </>
                       )}
                     </div>
                   )}
