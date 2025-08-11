@@ -30,6 +30,7 @@ import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
 import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
 import { getWebSocketService, MessageType, CommandAction } from "../services/websocket-service"
+import { j2000ToJNow } from "../utils/coordinate-precession"
 
 export interface Annotation {
   type: string;
@@ -1540,7 +1541,11 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await wsSendGotoMessage(targetName, ra, dec, startImaging, targetType, magnitude, description, currentTelescope, 'J2000', gain, lightPollutionFilter)
+      // Convert J2000 coordinates to JNow before sending (telescope expects JNow)
+      const jNowCoords = j2000ToJNow({ ra, dec })
+      
+      // Send JNow coordinates with epoch marked as JNow
+      await wsSendGotoMessage(targetName, jNowCoords.ra, jNowCoords.dec, startImaging, targetType, magnitude, description, currentTelescope, 'JNow', gain, lightPollutionFilter)
 
       addStatusAlert({
         type: "success",
