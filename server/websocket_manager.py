@@ -862,8 +862,8 @@ class WebSocketManager:
         except ValueError:
             pass
 
-        # HMS format with h/m/s markers
-        hms_pattern = r'(\d+(?:\.\d+)?)[hH]\s*(\d+(?:\.\d+)?)[mM]\s*(\d+(?:\.\d+)?)[sS]?'
+        # HMS format with h/m/s markers - handle spaces before markers
+        hms_pattern = r'(\d+(?:\.\d+)?)\s*[hH]\s*(\d+(?:\.\d+)?)\s*[mM]\s*(\d+(?:\.\d+)?)\s*[sS]?'
         match = re.match(hms_pattern, ra_str)
         if match:
             hours = float(match.group(1))
@@ -933,8 +933,8 @@ class WebSocketManager:
         elif dec_str.startswith('+'):
             dec_str = dec_str[1:].strip()
 
-        # DMS format with d/m/s markers
-        dms_pattern = r'(\d+(?:\.\d+)?)[dD°]\s*(\d+(?:\.\d+)?)[mM\']\s*(\d+(?:\.\d+)?)[sS"]?'
+        # DMS format with d/m/s markers - handle various quote styles and spaces
+        dms_pattern = r'(\d+(?:\.\d+)?)\s*[dD°]\s*(\d+(?:\.\d+)?)\s*[mM\'′]\s*(\d+(?:\.\d+)?)\s*[sS"″]?'
         match = re.match(dms_pattern, dec_str)
         if match:
             degrees = float(match.group(1))
