@@ -1542,7 +1542,14 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
     try {
       // Convert J2000 coordinates to JNow before sending (telescope expects JNow)
+      console.log('Converting J2000 to JNow - Input:', { ra, dec })
       const jNowCoords = j2000ToJNow({ ra, dec })
+      console.log('JNow coordinates:', jNowCoords)
+      
+      // Validate the converted coordinates
+      if (isNaN(jNowCoords.ra) || isNaN(jNowCoords.dec) || jNowCoords.ra === null || jNowCoords.dec === null) {
+        throw new Error(`Invalid JNow coordinate conversion: RA=${jNowCoords.ra}, Dec=${jNowCoords.dec}`)
+      }
       
       // Send JNow coordinates with epoch marked as JNow
       await wsSendGotoMessage(targetName, jNowCoords.ra, jNowCoords.dec, startImaging, targetType, magnitude, description, currentTelescope, 'JNow', gain, lightPollutionFilter)

@@ -298,11 +298,15 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       // Close dialog immediately for better UX
       onOpenChange(false)
       
+      // Parse RA and Dec from string format to degrees
+      const raDegrees = parseRA(selectedObject.ra)
+      const decDegrees = parseDec(selectedObject.dec)
+      
       // Execute the command in the background - context function will handle success/error notifications
       handleGotoTarget(
         selectedObject.name,
-        selectedObject.ra,
-        selectedObject.dec,
+        raDegrees,
+        decDegrees,
         startImaging,
         selectedObject.type,
         selectedObject.magnitude,
