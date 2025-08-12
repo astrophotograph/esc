@@ -128,7 +128,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    client_mode: Literal["ContinuousExposure", "Stack", "Streaming", "Idle"] | None = "Idle"
+    client_mode: Literal["Initialise", "ContinuousExposure", "Stack", "Streaming", "Idle"] | None = "Idle"
     message_history: collections.deque = collections.deque(maxlen=5000)
 
     # Image enhancement settings
