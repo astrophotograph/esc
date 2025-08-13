@@ -155,6 +155,10 @@ export function CameraView() {
   // const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null); // DISABLED - image change detection disabled
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const draggableNodeRef = useRef<HTMLDivElement>(null);
+  
+  // Cumulative rotation tracking
+  const [cumulativeRotation, setCumulativeRotation] = useState<number>(0);
+  const previousRotationRef = useRef<number | null>(null);
 
   // WebSocket hook for real-time telescope status and control
   const {
@@ -933,6 +937,35 @@ export function CameraView() {
     }
   }, [wsHealthStatus, currentTelescope, wsForceReconnect]);
 
+  // Track cumulative rotation from balance sensor
+  useEffect(() => {
+    if (!localStreamStatus?.status?.balance_sensor?.data) return;
+    
+    const { x, y } = localStreamStatus.status.balance_sensor.data;
+    if (x === undefined || y === undefined) return;
+    
+    // Calculate current rotation angle in degrees
+    const currentRotation = Math.atan2(y, x) * 180 / Math.PI;
+    
+    // If we have a previous rotation value, calculate the delta
+    if (previousRotationRef.current !== null) {
+      let delta = currentRotation - previousRotationRef.current;
+      
+      // Handle wrap-around at ±180 degrees
+      if (delta > 180) {
+        delta -= 360;
+      } else if (delta < -180) {
+        delta += 360;
+      }
+      
+      // Update cumulative rotation
+      setCumulativeRotation(prev => prev + delta);
+    }
+    
+    // Store current rotation for next comparison
+    previousRotationRef.current = currentRotation;
+  }, [localStreamStatus?.status?.balance_sensor?.data]);
+
   // Zoom in function
   const zoomIn = () => {
     setZoomLevel(prev => Math.min(prev + 0.25, 4));
@@ -1658,18 +1691,43 @@ export function CameraView() {
                               {/* Rotation Angle from X and Y */}
                               {(localStreamStatus.status.balance_sensor.data.x !== undefined && 
                                 localStreamStatus.status.balance_sensor.data.y !== undefined) && (
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <RotateCw className="w-4 h-4 text-yellow-400" />
-                                    <span className="text-gray-300">Rotation</span>
+                                <>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                      <RotateCw className="w-4 h-4 text-yellow-400" />
+                                      <span className="text-gray-300">Rotation</span>
+                                    </div>
+                                    <span className="text-white font-mono">
+                                      {(Math.atan2(
+                                        localStreamStatus.status.balance_sensor.data.y, 
+                                        localStreamStatus.status.balance_sensor.data.x
+                                      ) * 180 / Math.PI).toFixed(1)}°
+                                    </span>
                                   </div>
-                                  <span className="text-white font-mono">
-                                    {(Math.atan2(
-                                      localStreamStatus.status.balance_sensor.data.y, 
-                                      localStreamStatus.status.balance_sensor.data.x
-                                    ) * 180 / Math.PI).toFixed(1)}°
-                                  </span>
-                                </div>
+                                  
+                                  {/* Cumulative Rotation */}
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                      <TrendingUp className="w-4 h-4 text-green-400" />
+                                      <span className="text-gray-300">Cumulative</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-white font-mono">
+                                        {cumulativeRotation.toFixed(1)}°
+                                      </span>
+                                      <button
+                                        onClick={() => {
+                                          setCumulativeRotation(0);
+                                          previousRotationRef.current = null;
+                                        }}
+                                        className="text-gray-400 hover:text-white transition-colors"
+                                        title="Reset cumulative rotation"
+                                      >
+                                        <RotateCw className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </>
                               )}
                             </>
                           )}
