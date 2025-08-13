@@ -3,6 +3,7 @@ import './globals.css'
 import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/sonner"
 import SentryErrorBoundary from "@/components/SentryErrorBoundary"
+import {MonitoringProvider} from "@/components/MonitoringProvider"
 
 export const metadata: Metadata = {
   title: 'ESC',
@@ -23,7 +24,9 @@ export default function RootLayout({
       disableTransitionOnChange
     >
       <SentryErrorBoundary>
-        {children}
+        <MonitoringProvider>
+          {children}
+        </MonitoringProvider>
       </SentryErrorBoundary>
       <Toaster />
     </ThemeProvider>

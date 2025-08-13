@@ -3,6 +3,11 @@ import * as Sentry from "@sentry/nextjs"
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('./sentry.server.config');
+    
+    // Start server monitoring
+    const { startServerMonitoring } = await import('./lib/server-monitoring');
+    startServerMonitoring(60);
+    console.log('[Instrumentation] Server monitoring started');
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

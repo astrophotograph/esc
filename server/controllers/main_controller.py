@@ -26,6 +26,8 @@ from database import TelescopeDatabase
 from webrtc_router import router as webrtc_router
 from websocket_router import router as websocket_router
 from remote_websocket_client import RemoteController
+from utils.memory_monitor import MemoryMonitor
+from utils.task_manager import task_manager
 
 
 # Request/Response models
@@ -317,6 +319,12 @@ class Controller:
         self.discover = discover
         self.reload = reload
         self.db = TelescopeDatabase()
+        
+        # Initialize memory monitoring
+        self.memory_monitor = MemoryMonitor(
+            interval_seconds=60,  # Log every minute
+            enable_tracemalloc=os.environ.get("ENABLE_TRACEMALLOC", "false").lower() == "true"
+        )
 
     async def add_telescope(
         self,
@@ -662,7 +670,12 @@ class Controller:
     async def auto_discover(self):
         """Automatically discover and add telescopes."""
         while True:
-            devices = await discover_seestars(timeout=3)
+            try:
+                devices = await discover_seestars(timeout=3)
+            except Exception as e:
+                logging.error(f"Error during telescope discovery: {e}", exc_info=True)
+                await asyncio.sleep(10)  # Wait before retrying
+                continue
 
             # Collect new devices to add in parallel
             new_devices = []
@@ -964,11 +977,18 @@ class Controller:
                                         )
                                     except Exception as e:
                                         logging.error(
-                                            f"Error sending periodic status update for {telescope_id}: {e}"
+                                            f"Error sending periodic status update for {telescope_id}: {e}",
+                                            exc_info=True
                                         )
                                     await asyncio.sleep(1)  # Send updates every second
 
-                            asyncio.create_task(periodic_status_update())
+                            # Use task manager for better exception handling
+                            task_manager.create_task(
+                                periodic_status_update(),
+                                name=f"status_update_{telescope_id}",
+                                restart_on_failure=True,
+                                max_retries=5
+                            )
                             logging.info(
                                 f"Registered telescope {telescope_id} with WebSocket manager"
                             )
@@ -1222,11 +1242,18 @@ class Controller:
                                         )
                                     except Exception as e:
                                         logging.error(
-                                            f"Error sending periodic status update for {telescope_id}: {e}"
+                                            f"Error sending periodic status update for {telescope_id}: {e}",
+                                            exc_info=True
                                         )
                                     await asyncio.sleep(1)  # Send updates every second
 
-                            asyncio.create_task(periodic_status_update())
+                            # Use task manager for better exception handling
+                            task_manager.create_task(
+                                periodic_status_update(),
+                                name=f"status_update_{telescope_id}",
+                                restart_on_failure=True,
+                                max_retries=5
+                            )
                             logging.info(
                                 f"Registered telescope {telescope_id} with WebSocket manager"
                             )
@@ -1456,7 +1483,12 @@ class Controller:
         print(f"Discover {self.discover}")
         if self.discover:
             click.secho("Starting auto-discovery...", fg="green")
-            asyncio.create_task(self.auto_discover())
+            task_manager.create_task(
+                self.auto_discover(),
+                name="auto_discovery",
+                restart_on_failure=True,
+                max_retries=10
+            )
 
         # Initialize WebRTC service with telescope getter
         from webrtc_router import initialize_webrtc_service
@@ -1552,6 +1584,10 @@ class Controller:
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
         async def startup_event():
+            # Start memory monitoring
+            await self.memory_monitor.start()
+            logging.info("Memory monitoring started")
+            
             # Start WebSocket manager first
             from websocket_manager import get_websocket_manager
 
@@ -1615,8 +1651,14 @@ class Controller:
                 except Exception as e:
                     logging.warning(f"Error closing database: {e}")
                 
-                # Cancel any remaining background tasks (do this last)
+                # Cancel any remaining background tasks
                 await self.cleanup_background_tasks()
+                
+                # Cancel task manager tasks
+                await task_manager.cancel_all()
+                
+                # Stop memory monitoring
+                await self.memory_monitor.stop()
                 
                 logging.info("Graceful shutdown completed")
                 shutdown_initiated = False  # Mark shutdown as completed successfully
@@ -2420,6 +2462,50 @@ class Controller:
                     status_code=500, detail=f"Failed to connect telescopes: {str(e)}"
                 )
 
+        @self.app.get("/metrics")
+        async def prometheus_metrics():
+            """Expose Prometheus metrics endpoint."""
+            from fastapi.responses import PlainTextResponse
+            
+            # Collect all metrics
+            metrics = []
+            
+            # Add memory metrics
+            metrics.append(self.memory_monitor.get_prometheus_metrics())
+            
+            # Add task manager metrics
+            metrics.append(task_manager.get_prometheus_metrics())
+            
+            # Add telescope metrics
+            metrics.append(f'# HELP python_telescopes_total Total number of telescopes')
+            metrics.append(f'# TYPE python_telescopes_total gauge')
+            metrics.append(f'python_telescopes_total {len(self.telescopes)}')
+            
+            # Count connected telescopes
+            connected_count = sum(
+                1 for t in self.telescopes.values()
+                if hasattr(t, 'client') and t.client and t.client.is_connected
+            )
+            metrics.append(f'# HELP python_telescopes_connected Number of connected telescopes')
+            metrics.append(f'# TYPE python_telescopes_connected gauge')
+            metrics.append(f'python_telescopes_connected {connected_count}')
+            
+            # Add remote controller metrics
+            metrics.append(f'# HELP python_remote_controllers_total Total number of remote controllers')
+            metrics.append(f'# TYPE python_remote_controllers_total gauge')
+            metrics.append(f'python_remote_controllers_total {len(self.remote_controllers)}')
+            
+            # Add WebSocket metrics if available
+            try:
+                from websocket_manager import get_websocket_manager
+                ws_manager = get_websocket_manager()
+                if hasattr(ws_manager, 'get_prometheus_metrics'):
+                    metrics.append(ws_manager.get_prometheus_metrics())
+            except Exception as e:
+                logging.debug(f"Could not get WebSocket metrics: {e}")
+            
+            return PlainTextResponse('\n'.join(filter(None, metrics)), media_type="text/plain")
+        
         @self.app.get("/api/remote-controllers")
         async def get_remote_controllers():
             """Get a list of all remote controllers."""
