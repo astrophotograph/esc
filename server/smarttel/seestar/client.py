@@ -128,7 +128,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    client_mode: Literal["Initialise", "ContinuousExposure", "Stack", "Streaming", "Idle"] | None = "Idle"
+    client_mode: Literal["Initialise", "ContinuousExposure", "Stack", "Streaming", "AutoGoto", "Idle"] | None = "Idle"
     message_history: collections.deque = collections.deque(maxlen=5000)
 
     # Image enhancement settings
@@ -362,6 +362,8 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 new_client_mode = "Streaming"
             elif stage == "Stack":
                 new_client_mode = "Stacking"
+            elif stage == "AutoGoto":
+                new_client_mode = "AutoGoto"
             else:
                 # Stage isn't a known active stage, default to Idle for safety
                 # This prevents the frontend from trying to load streams when the telescope state is unknown

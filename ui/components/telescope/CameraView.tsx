@@ -62,6 +62,7 @@ import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 import { ChalkboardPanel } from "./panels/ChalkboardPanel"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { ImageErrorBoundary } from "./ImageErrorBoundary"
+import { AutoGotoOverlay } from "./AutoGotoOverlay"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -123,6 +124,7 @@ export function CameraView() {
     setShowCelestialSearch,
     showChalkboard,
     setShowChalkboard,
+    clientMode,
     setClientMode,
   } = useTelescopeContext()
 
@@ -1362,6 +1364,16 @@ export function CameraView() {
                 />
               </ImageErrorBoundary>
             </div>
+
+            {/* AutoGoto Overlay - Show when in AutoGoto mode */}
+            <AutoGotoOverlay
+              isVisible={clientMode === "AutoGoto"}
+              targetName={selectedTarget?.name || localStreamStatus?.status?.target_name}
+              targetRa={selectedTarget?.ra}
+              targetDec={selectedTarget?.dec}
+              currentRa={localStreamStatus?.status?.ra}
+              currentDec={localStreamStatus?.status?.dec}
+            />
 
             {/* Starmap Window */}
             <StarmapWindow
