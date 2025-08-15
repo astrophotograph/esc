@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 import cv2
 import numpy as np
 from loguru import logger as logging
-from skimage import restoration, transform, filters, exposure
+from skimage import restoration, filters, exposure
 
 
 class UpscalingMethod(str, Enum):

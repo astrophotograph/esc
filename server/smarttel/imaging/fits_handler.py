@@ -1,10 +1,7 @@
 """FITS file handling and processing utilities."""
 
 import io
-import os
-import tempfile
 from typing import Dict, Tuple, Any, Optional
-from pathlib import Path
 
 import numpy as np
 from PIL import Image
