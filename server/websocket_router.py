@@ -205,6 +205,13 @@ async def websocket_debug(manager=Depends(get_websocket_manager_dependency)):
         "remote_manager_clients": len(manager.remote_manager.clients)
         if hasattr(manager, "remote_manager")
         else 0,
+        "duplicate_message_stats": {
+            telescope_id: {
+                "duplicate_count": manager.duplicate_message_count.get(telescope_id, 0),
+                "tracked_message_ids": len(manager.seen_message_ids.get(telescope_id, {}))
+            }
+            for telescope_id in set(list(manager.duplicate_message_count.keys()) + list(manager.seen_message_ids.keys()))
+        } if hasattr(manager, 'duplicate_message_count') else {},
         "connection_details": [
             {
                 "connection_id": conn.connection_id,

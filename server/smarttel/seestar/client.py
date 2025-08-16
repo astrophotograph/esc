@@ -23,7 +23,7 @@ from smarttel.seestar.commands.responses import (
     MessageAnalytics,
 )
 from smarttel.seestar.commands.settings import SetUserLocation, SetUserLocationParameters, PiSetTime, \
-    PiSetTimeParameter, SetSetting, SettingParameters
+    PiSetTimeParameter, SetSetting, SettingParameters, SetStackSetting, SetStackSettingParameters
 from smarttel.seestar.commands.simple import (
     GetTime,
     GetDeviceState,
@@ -78,6 +78,7 @@ class SeestarStatus(BaseModel):
     totalMB: int | None = None
     ra: float | None = None
     dec: float | None = None
+    dist_deg: float | None = None # Distance from the telescope to the target in degrees
     balance_sensor: BalanceSensorInfo | None = None
 
     def reset(self):
@@ -319,22 +320,91 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 await asyncio.sleep(5)
                 continue
 
+    async def refresh_view_state(self):
+        """Refresh the view state."""
+        logging.trace(f"Refreshing view state for {self}")
+        response = await self.send_and_recv(GetViewState())
+        self._process_view_state(response)
+
     async def _view_refresher(self):
         """Background task that refreshes the view state periodically."""
         logging.info(f"Starting view refresher task for {self}")
         while True:
             if self.is_connected:
-                response = await self.send_and_recv(GetViewState())
-                self._process_view_state(response)
+                await self.refresh_view_state()
                 response = await self.send_and_recv(GetDiskVolume())
                 self.status.freeMB = response.result.get("freeMB")
                 self.status.totalMB = response.result.get("totalMB")
-            await asyncio.sleep(30)
+            await asyncio.sleep(15)
+
+    def _update_client_mode(self, stage: str, state: str = "unknown", mode: str | None = None):
+        """Update client mode."""
+        if state != "cancel":
+            if stage == "ContinuousExposure":
+                new_client_mode = "ContinuousExposure"
+            elif stage == "RTSP":
+                new_client_mode = "Streaming"
+            elif stage == "Stack":
+                new_client_mode = "Stacking"
+            elif stage == "AutoGoto" or stage == "ScopeGoto":
+                new_client_mode = "AutoGoto"
+            else:
+                # Stage isn't a known active stage, default to Idle for safety
+                # This prevents the frontend from trying to load streams when the telescope state is unknown
+                logging.warning(f"Unknown stage: {stage=} {mode=} {state=} - defaulting to Idle")
+                new_client_mode = "ContinuousExposure"
+        else:
+            new_client_mode = "Idle"
+
+        if self.client_mode != new_client_mode:
+            # client mode is changing, so let's make appropriate changes
+            old_client_mode = self.client_mode
+            logging.warning(
+                f"Client mode changing from {old_client_mode} to {new_client_mode}"
+            )
+
+            # Emit to event bus for imaging client and other local listeners
+            if self.event_bus:
+                self.event_bus.emit(
+                    "ClientModeChanged",
+                    InternalEvent(
+                        Timestamp=datetime.now().isoformat(),
+                        params={"existing": old_client_mode, "new_mode": new_client_mode},
+                    ),
+                )
+
+            # Update client mode
+            self.client_mode = new_client_mode
+
+            # Broadcast to websocket for frontend clients
+            if self.websocket_manager and self.telescope_id:
+                try:
+                    # Create a task to handle the async websocket broadcast
+                    asyncio.create_task(self._broadcast_client_mode_change(old_client_mode, new_client_mode))
+                except Exception as e:
+                    logging.error(f"Error broadcasting client mode change to websocket: {e}")
+        else:
+            self.client_mode = new_client_mode
+
+        # Set status.stage to match the client mode for frontend consistency
+        # Frontend expects status.stage to indicate the current telescope state
+        if new_client_mode == "Idle":
+            self.status.stage = "Idle"
+        elif new_client_mode == "ContinuousExposure":
+            self.status.stage = "ContinuousExposure"
+        elif new_client_mode == "Stacking":
+            self.status.stage = "Stack"
+        elif new_client_mode == "Streaming":
+            self.status.stage = "RTSP"
+        else:
+            # Fallback to original stage if unknown mode
+            self.status.stage = stage
 
     def _process_view(self, data: dict[str, Any] | None):
         if not data:
             return
 
+        print("View", data)
         self.status.target_name = pydash.get(data, "target_name", "unknown")
         self.status.gain = pydash.get(data, "gain", 0)
 
@@ -355,66 +425,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             self.event_bus.emit("Annotate", annotation)
 
         # Update client mode
-        if state != "cancel":
-            if stage == "ContinuousExposure":
-                new_client_mode = "ContinuousExposure"
-            elif stage == "RTSP":
-                new_client_mode = "Streaming"
-            elif stage == "Stack":
-                new_client_mode = "Stacking"
-            elif stage == "AutoGoto":
-                new_client_mode = "AutoGoto"
-            else:
-                # Stage isn't a known active stage, default to Idle for safety
-                # This prevents the frontend from trying to load streams when the telescope state is unknown
-                logging.warning(f"Unknown stage: {stage=} {mode=} {state=} - defaulting to Idle")
-                new_client_mode = "ContinuousExposure"
-        else:
-            new_client_mode = "Idle"
-
-        if self.client_mode != new_client_mode:
-            # client mode is changing, so let's make appropriate changes
-            old_client_mode = self.client_mode
-            logging.warning(
-                f"Client mode changing from {old_client_mode} to {new_client_mode}"
-            )
-            
-            # Emit to event bus for imaging client and other local listeners
-            if self.event_bus:
-                self.event_bus.emit(
-                    "ClientModeChanged",
-                    InternalEvent(
-                        Timestamp=datetime.now().isoformat(),
-                        params={"existing": old_client_mode, "new_mode": new_client_mode},
-                    ),
-                )
-            
-            # Update client mode
-            self.client_mode = new_client_mode
-            
-            # Broadcast to websocket for frontend clients
-            if self.websocket_manager and self.telescope_id:
-                try:
-                    # Create a task to handle the async websocket broadcast
-                    asyncio.create_task(self._broadcast_client_mode_change(old_client_mode, new_client_mode))
-                except Exception as e:
-                    logging.error(f"Error broadcasting client mode change to websocket: {e}")
-        else:
-            self.client_mode = new_client_mode
-        
-        # Set status.stage to match the client mode for frontend consistency
-        # Frontend expects status.stage to indicate the current telescope state
-        if new_client_mode == "Idle":
-            self.status.stage = "Idle"
-        elif new_client_mode == "ContinuousExposure":
-            self.status.stage = "ContinuousExposure"
-        elif new_client_mode == "Stacking":
-            self.status.stage = "Stack"
-        elif new_client_mode == "Streaming":
-            self.status.stage = "RTSP"
-        else:
-            # Fallback to original stage if unknown mode
-            self.status.stage = stage
+        self._update_client_mode(stage, state, mode)
 
     async def _broadcast_client_mode_change(self, old_mode: str | None, new_mode: str | None):
         """Broadcast client mode change to websocket clients."""
@@ -493,10 +504,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
         self._process_device_state(response)
 
-        response = await self.send_and_recv(GetViewState())
-        logging.trace(f"Received GetViewState: {response}")
-
-        self._process_view_state(response)
+        await self.refresh_view_state()
 
         # Get initial focus position
         response = await self.send_and_recv(GetFocuserPosition())
@@ -620,6 +628,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.lp_filter = wheel_event.position == 2
                 case "View":
                     self._process_view(parser.event.dict())
+                case "ScopeGoto":
+                    if parser.event.cur_ra_dec is not None:
+                        self.status.ra = parser.event.cur_ra_dec.ra
+                        self.status.dec = parser.event.cur_ra_dec.dec
+                        self.status.dist_deg = parser.event.dist_deg
+                        self._update_client_mode("ScopeGoto")
                 case _:
                     self.event_bus.emit(parser.event.Event, parser.event)
 
@@ -852,7 +866,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             # Clean up the event listener
             self.event_bus.remove_listener(event_type, event_handler)
 
-    async def initialize_telescope(self, lat: float, lon: float):
+    async def initialize_telescope(self, lat: float | None = None, lon: float | None = None):
         """Initialize telescope.
 
         Sends a series of commands to initialize the telescope."""
@@ -872,8 +886,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             sec=now.second,
             time_zone=tz_name
         )]))
-        await self.send_and_recv(SetUserLocation(params=SetUserLocationParameters(
-            lat=lat, lon=lon)))
+
+        if lat is not None and lon is not None:
+            await self.send_and_recv(SetUserLocation(params=SetUserLocationParameters(
+                lat=lat, lon=lon)))
 
         settings = [
             SettingParameters(lang="en"),
@@ -885,13 +901,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 "pix": 1,
                 "interval": 1,
             }),
-            SettingParameters(stack={"dbe": False}),
+            SettingParameters(stack={"dbe": False}), # ???
             SettingParameters(frame_calib=False),
         ]
         for setting in settings:
             await self.send_and_recv(SetSetting(params=setting))
 
         # delay....
+        await asyncio.sleep(3)
 
         # await self.send_and_recv(PiOutputSet2(params={
         #     "heater": {
@@ -899,10 +916,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         #         "value": 0, # Power
         #     }
         # }))
-        # await self.send_and_recv(SetStackSetting(params=SetStackSettingParameters(
-        #     save_discrete_ok_frame=True,
-        #     save_discrete_frame=True,
-        # )))
+
+        await self.send_and_recv(SetStackSetting(params=SetStackSettingParameters(
+            save_discrete_ok_frame=True,
+            save_discrete_frame=True,
+        )))
+
         # await self.send_and_recv(ScopePark(params={"equ_mode": self.is_EQ_mode}))
 
     async def _connection_monitor(self):

@@ -155,7 +155,7 @@ class ScopeGotoEvent(BaseEvent):
     Event: Literal["ScopeGoto"] = "ScopeGoto"
     state: EventState = None
     lapse_ms: int = 0
-    cur_ra_dec: RaDecTuple = []
+    cur_ra_dec: RaDecTuple | None = None
     dist_deg: float = 0.0
     route: list[Any] = []
 
