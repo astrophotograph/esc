@@ -220,6 +220,7 @@ export class WebSocketService extends EventEmitter {
   private subscriptions = new Set<string>()
 
   // Connection details
+  // Note: We don't store telescope ID for reconnection - we want a single global connection
   private telescopeId: string | null = null
   private clientId: string | null = null
   private instanceId: number
@@ -264,7 +265,12 @@ export class WebSocketService extends EventEmitter {
       return
     }
 
-    this.telescopeId = telescopeId || null
+    // For the global connection, we should never have a telescope ID
+    // Telescope-specific routing is handled via message payloads, not connection params
+    if (telescopeId) {
+      console.warn('Warning: Telescope ID provided to global WebSocket connection. This should be handled via message payloads instead.')
+    }
+    this.telescopeId = null  // Always null for global connection
     this.clientId = clientId || null
 
     this.setConnectionState(ConnectionState.CONNECTING)
@@ -279,10 +285,8 @@ export class WebSocketService extends EventEmitter {
         if (clientId) {
           params.set('client_id', clientId)
         }
-        // Include telescope ID as a query param if specified
-        if (telescopeId) {
-          params.set('telescope_id', telescopeId)
-        }
+        // Never include telescope ID in URL - use message payloads instead
+        // This ensures we have a single global connection
         if (params.toString()) {
           wsUrl += `?${params.toString()}`
         }
@@ -642,7 +646,8 @@ export class WebSocketService extends EventEmitter {
 
     this.reconnectTimeout = setTimeout(async () => {
       try {
-        await this.connect(this.telescopeId || undefined, this.clientId || undefined)
+        // Don't pass telescope ID on reconnect - we want a single global connection
+        await this.connect(undefined, this.clientId || undefined)
 
         // Restore subscriptions
         for (const subscription of this.subscriptions) {
