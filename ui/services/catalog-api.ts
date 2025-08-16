@@ -184,6 +184,16 @@ export class CatalogAPI {
     const sign = catalogObj.dec_decimal >= 0 ? '+' : '-'
     const decString = `${sign}${degrees}° ${arcminutes}′ ${arcseconds}″`
 
+    // Determine best observation time based on object type
+    let bestSeenIn = "Night"  // Default for most deep sky objects
+    if (catalogObj.id === 'sun') {
+      bestSeenIn = "Day (with proper solar filter)"
+    } else if (catalogObj.id === 'moon') {
+      bestSeenIn = "Night or Twilight"
+    } else if (catalogObj.id === 'mercury' || catalogObj.id === 'venus') {
+      bestSeenIn = "Twilight"
+    }
+
     return {
       id: catalogObj.id,
       name: catalogObj.name,
@@ -205,7 +215,7 @@ export class CatalogAPI {
       _moonPhase: catalogObj.moon_phase,
       isCurrentlyVisible: catalogObj.above_horizon,
       optimalMoonPhase: "any",
-      bestSeenIn: "Night"
+      bestSeenIn: bestSeenIn
     }
   }
 }

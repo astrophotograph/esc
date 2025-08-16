@@ -625,7 +625,8 @@ async def search_catalog(
                 above_horizon = altitude > 0
                 
                 # Filter by horizon if requested - but allow below horizon objects when searching
-                if above_horizon_only and not above_horizon and not query:
+                # Always include the Sun regardless of horizon status (safety warnings in UI)
+                if above_horizon_only and not above_horizon and not query and obj.get('id') != 'sun':
                     continue
             
             # Create celestial object
@@ -870,8 +871,8 @@ async def quick_search_catalog(
                 )
                 above_horizon = altitude > 0
                 
-                # Skip objects below horizon for quick view
-                if not above_horizon:
+                # Skip objects below horizon for quick view - except for the Sun (special case)
+                if not above_horizon and obj.get('id') != 'sun':
                     continue
             
             moon_phase = obj.get('_moon_phase') if obj.get('id') == 'moon' else None

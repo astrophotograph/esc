@@ -55,6 +55,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   const [isLoading, setIsLoading] = useState(false)
   const [showImagingParametersDialog, setShowImagingParametersDialog] = useState(false)
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false)
+  const [showSolarWarningDialog, setShowSolarWarningDialog] = useState(false)
 
   // Debounce search query
   useEffect(() => {
@@ -86,9 +87,11 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         setHasLoadedInitialData(true)
       } else {
         // Use full search when there's a query or after initial load
+        // When searching for "sun", include below horizon objects
+        const searchingForSun = debouncedSearchQuery?.toLowerCase().includes('sun')
         response = await catalogAPI.searchCatalog({
           query: debouncedSearchQuery || undefined,
-          above_horizon_only: true,
+          above_horizon_only: !searchingForSun,
           latitude: location.coordinates.latitude,
           longitude: location.coordinates.longitude,
           elevation: location.elevation,
@@ -260,6 +263,12 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
 
   const handleGoto = async (startImaging: boolean = false) => {
     if (!selectedObject) return
+    
+    // Check if this is the Sun - show warning dialog
+    if (selectedObject.id === 'sun' || selectedObject.name?.toLowerCase() === 'sun') {
+      setShowSolarWarningDialog(true)
+      return
+    }
     
     // Check if currently imaging (stage is "Stack")
     const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
@@ -631,8 +640,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 <Navigation className="w-4 h-4 mr-1" />
                 Goto
               </Button>
-              {/* Only show Goto & Image for non-Moon objects */}
-              {selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && (
+              {/* Only show Goto & Image for non-Moon and non-Sun objects */}
+              {selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && 
+               selectedObject.id !== 'sun' && selectedObject.name?.toLowerCase() !== 'sun' && (
                 <Button
                   variant="default"
                   size="sm"
@@ -696,6 +706,58 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       onConfirm={handleImagingParametersConfirm}
       onCancel={handleImagingParametersCancel}
     />
+    
+    {/* Solar Warning Dialog */}
+    <AlertDialog open={showSolarWarningDialog} onOpenChange={setShowSolarWarningDialog}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+            ⚠️ SOLAR OBSERVATION WARNING
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-3">
+            <p className="font-semibold text-red-600">
+              NEVER point your telescope at the Sun without a proper solar filter!
+            </p>
+            <p>
+              Observing the Sun without appropriate protection will cause:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Instant and permanent damage to the telescope's camera sensor</li>
+              <li>Potential damage to internal telescope components</li>
+              <li>Risk of fire or melting of telescope parts</li>
+              <li>Severe eye injury if looking through any eyepiece</li>
+            </ul>
+            <p className="font-semibold">
+              Only proceed if you have a certified solar filter properly installed on your telescope.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Solar filters must be specifically designed for your telescope model and must cover the entire aperture.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setShowSolarWarningDialog(false)}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={async () => {
+              setShowSolarWarningDialog(false)
+              // Check if currently imaging
+              const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
+              if (isCurrentlyImaging) {
+                setPendingGotoAction({ startImaging: false })
+                setShowStopImagingConfirm(true)
+              } else {
+                await executeGoto(false)
+              }
+            }}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            I have a solar filter installed - Proceed
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }
