@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { createPortal } from 'react-dom'
 import Draggable from 'react-draggable'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,7 +39,8 @@ import {
   Clock,
   Cpu,
   TrendingUp,
-  X
+  X,
+  MoreVertical
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -48,6 +50,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useTelescopeContext } from "@/context/TelescopeContext"
+import { usePersistentState } from "@/hooks/use-persistent-state"
 import { StatsPanel } from "./panels/StatsPanel"
 import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
@@ -129,6 +132,7 @@ export function CameraView() {
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
+  const [isLargeScreen, setIsLargeScreen] = useState(false)
 
   // Existing state variables and context
 
@@ -268,6 +272,16 @@ export function CameraView() {
   //     return '';
   //   }
   // };
+
+  // Check for large screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsLargeScreen(window.innerWidth > 1280)
+    }
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
 
   // Update video URL when telescope changes
   useEffect(() => {
@@ -609,8 +623,11 @@ export function CameraView() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [localStreamStatus, setLocalStreamStatus] = useState<any>(null);
   const [reconnectCounter, setReconnectCounter] = useState(0);
-  // Initialize position to right side of screen (will be calculated on mount)
-  const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined);
+  // Use persistent state for overlay position
+  const [overlayPosition, setOverlayPosition] = usePersistentState<{ x: number; y: number } | undefined>(
+    'telescope-status-overlay-position',
+    undefined
+  );
   const [imageTimingHistory, setImageTimingHistory] = useState<number[]>([]);
   const [rttHistory, setRttHistory] = useState<number[]>([]);
   
@@ -793,15 +810,52 @@ export function CameraView() {
     }
   }, [liveViewFullscreen, setLiveViewFullscreen])
 
-  // Initialize overlay position to right side of screen
+  // Helper function to ensure position is within screen bounds
+  const ensureWithinBounds = (pos: { x: number; y: number }) => {
+    const overlayWidth = 320; // Width of the overlay
+    const overlayHeight = 400; // Approximate height
+    const padding = 20; // Minimum distance from edge
+    
+    const maxX = window.innerWidth - overlayWidth - padding;
+    const maxY = window.innerHeight - overlayHeight - padding;
+    
+    return {
+      x: Math.min(Math.max(padding, pos.x), maxX),
+      y: Math.min(Math.max(padding, pos.y), maxY)
+    };
+  };
+
+  // Initialize overlay position or ensure it's within bounds
   useEffect(() => {
-    if (overlayPosition === undefined && typeof window !== 'undefined') {
-      // Position it 100px from the right and 100px from the top
-      // Since Draggable uses transform, we need to calculate from left
-      const rightOffset = window.innerWidth - 420; // 320px width + 100px from right
-      setOverlayPosition({ x: rightOffset, y: 0 });
+    if (showStreamStatus) {
+      if (overlayPosition === undefined && typeof window !== 'undefined') {
+        // Position it 100px from the right and 100px from the top
+        const rightOffset = window.innerWidth - 420; // 320px width + 100px from right
+        setOverlayPosition({ x: rightOffset, y: 100 });
+      } else if (overlayPosition) {
+        // Ensure stored position is still within bounds (in case window was resized)
+        const boundedPos = ensureWithinBounds(overlayPosition);
+        if (boundedPos.x !== overlayPosition.x || boundedPos.y !== overlayPosition.y) {
+          setOverlayPosition(boundedPos);
+        }
+      }
     }
-  }, [overlayPosition])
+  }, [showStreamStatus])
+  
+  // Handle window resize to keep overlay in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      if (overlayPosition && showStreamStatus) {
+        const boundedPos = ensureWithinBounds(overlayPosition);
+        if (boundedPos.x !== overlayPosition.x || boundedPos.y !== overlayPosition.y) {
+          setOverlayPosition(boundedPos);
+        }
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [overlayPosition, showStreamStatus, setOverlayPosition])
 
   // Setup WebSocket connection for streaming status
   useEffect(() => {
@@ -995,7 +1049,7 @@ export function CameraView() {
     <>
     <TooltipProvider>
       <div className={liveViewFullscreen ?
-        "fixed inset-0 z-50 bg-gray-800" :
+        "fixed inset-0 z-40 bg-gray-800" :
         `transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`
       }>
       <Card className={liveViewFullscreen ?
@@ -1004,13 +1058,13 @@ export function CameraView() {
       }
       data-tour="camera-view">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Crosshair className="w-5 h-5" />
-              Live View
+          <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'}`}>
+            <CardTitle className={`text-white flex items-center ${isMobile ? 'text-sm' : ''} gap-2 flex-wrap`}>
+              <Crosshair className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} flex-shrink-0`} />
+              <span className="flex-shrink-0">Live View</span>
               {targetName && (
-                <div className="flex items-center gap-2 ml-2">
-                  <Badge variant="outline" className="text-lg px-3 py-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={`${isMobile ? 'text-sm px-2 py-0.5' : 'text-lg px-3 py-1'}`}>
                     {targetName}
                   </Badge>
                   {localStreamStatus?.status?.stage === 'Stack' && (
@@ -1019,15 +1073,15 @@ export function CameraView() {
                 </div>
               )}
               {isImaging && (
-                <div className="ml-2 flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                   <span className="text-red-400 text-sm font-medium">REC</span>
                 </div>
               )}
             </CardTitle>
-            <div className="flex items-center gap-2 md:gap-4">
+            <div className={`flex items-center ${isMobile ? 'justify-between w-full' : 'gap-2 md:gap-4'}`}>
               {/* System Status Indicators */}
-              <div className={`flex items-center gap-1 md:gap-3 text-xs md:text-sm ${isMobile ? 'overflow-x-auto' : ''}`}>
+              <div className={`flex items-center gap-1 md:gap-3 text-xs md:text-sm ${isMobile ? 'flex-shrink min-w-0 overflow-x-auto max-w-[50%]' : ''}`}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={`flex items-center gap-1 cursor-default ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
@@ -1221,39 +1275,37 @@ export function CameraView() {
                 </Tooltip>
               </div>
 
-              <div className={`flex items-center gap-1 md:gap-2 ${isMobile ? 'overflow-x-auto' : ''}`}>
-                {/* Primary actions - always visible */}
+              <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1 lg:gap-2'} ${isMobile ? 'flex-shrink-0' : ''}`}>
+                {/* Primary actions - always visible but compact on mobile/tablet */}
                 <Button
                   variant="outline"
-                  size={isMobile ? "sm" : "sm"}
+                  size="sm"
                   onClick={() => setShowCelestialSearch(true)}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title="Search Celestial Objects (⌘K)"
                 >
-                  <Search className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  <Search className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                 </Button>
 
-                {/* Secondary actions - hide some on mobile */}
-                {!isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowStreamStatus(!showStreamStatus)}
-                    className="text-gray-400 hover:text-white"
-                    title={showStreamStatus ? "Hide Stream Status" : "Show Stream Status"}
-                  >
-                    {showStreamStatus ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </Button>
-                )}
+                {/* Status button - show on all screen sizes */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowStreamStatus(!showStreamStatus)}
+                  className={`text-gray-400 hover:text-white ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  title={showStreamStatus ? "Hide Stream Status" : "Show Stream Status"}
+                >
+                  {showStreamStatus ? <Eye className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /> : <EyeOff className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />}
+                </Button>
 
                 <Button
                   variant="ghost"
-                  size={isMobile ? "sm" : "sm"}
+                  size="sm"
                   onClick={() => _setShowAnnotations(!_showAnnotations)}
-                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"} ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"} ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title={_showAnnotations ? "Hide Annotations" : "Show Annotations"}
                 >
-                  <Crosshair className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} ${_showAnnotations ? "" : "opacity-50"}`} />
+                  <Crosshair className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${_showAnnotations ? "" : "opacity-50"}`} />
                   {/* Indicator dot when annotations are available */}
                   {currentAnnotations.length > 0 && (
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
@@ -1274,37 +1326,37 @@ export function CameraView() {
 
                 <Button
                   variant="outline"
-                  size={isMobile ? "sm" : "sm"}
+                  size="sm"
                   onClick={() => {
                     // Rotate by 90 degrees on each click
                     setRotationAngle((prevAngle) => (prevAngle + 90) % 360);
                   }}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title="Rotate"
                 >
-                  <RotateCw className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  <RotateCw className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                 </Button>
 
                 <Button
                   variant="outline"
-                  size={isMobile ? "sm" : "sm"}
+                  size="sm"
                   onClick={() => setLiveViewFullscreen(!liveViewFullscreen)}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-8 h-8 p-0' : ''}`}
+                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title={liveViewFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 >
                   {liveViewFullscreen ?
-                    <Minimize className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} /> :
-                    <Expand className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                    <Minimize className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /> :
+                    <Expand className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                   }
                 </Button>
 
-                {/* Controls collapse toggle - hide on mobile since we handle it differently */}
-                {!isMobile && (
+                {/* Controls collapse toggle - only show on larger screens */}
+                {isLargeScreen && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-                    className="border-gray-600 text-white hover:bg-gray-700"
+                    className="border-gray-600 text-white hover:bg-gray-700 ml-1"
                   >
                     {isControlsCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </Button>
@@ -1398,14 +1450,15 @@ export function CameraView() {
               </ImageErrorBoundary>
             </div>
 
-            {/* AutoGoto Overlay - Show when in AutoGoto mode */}
+            {/* AutoGoto Overlay - Show when in ScopeGoto or AutoGoto mode */}
             <AutoGotoOverlay
-              isVisible={clientMode === "AutoGoto"}
+              isVisible={clientMode === "ScopeGoto" || clientMode === "AutoGoto"}
               targetName={selectedTarget?.name || localStreamStatus?.status?.target_name}
               targetRa={selectedTarget?.ra}
               targetDec={selectedTarget?.dec}
               currentRa={localStreamStatus?.status?.ra}
               currentDec={localStreamStatus?.status?.dec}
+              distDeg={localStreamStatus?.status?.dist_deg}
             />
 
             {/* Starmap Window */}
@@ -1540,477 +1593,6 @@ export function CameraView() {
       </Card>
       </div>
     </TooltipProvider>
-
-    {/* Comprehensive Status Stream Overlay - Draggable - At root level */}
-    {showStreamStatus && overlayPosition && (
-      <Draggable
-          handle=".drag-handle"
-          position={overlayPosition}
-          onDrag={(e, data) => {
-            setOverlayPosition({ x: data.x, y: data.y });
-          }}
-          nodeRef={draggableNodeRef}
-        >
-          <div ref={draggableNodeRef} className="fixed bg-black/90 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-gray-700 max-h-[90vh] overflow-y-auto" style={{ zIndex: 9999, minHeight: '200px', top: '100px', left: '100px' }}>
-            {/* Header with drag handle */}
-            <div className="drag-handle cursor-move bg-gray-900/80 px-4 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-blue-400 flex items-center gap-2 select-none">
-                <Cpu className="w-4 h-4" />
-                Telescope Status
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowStreamStatus(false)}
-                className="h-6 w-6 p-0 hover:bg-gray-700"
-              >
-                <X className="h-4 w-4 text-gray-400" />
-              </Button>
-            </div>
-            {/* Content */}
-            <div className="p-4">
-              {!localStreamStatus ? (
-                <div className="text-center text-gray-400 py-8">
-                  <p className="text-sm">Waiting for telescope status...</p>
-                  <p className="text-xs mt-2">Make sure a telescope is connected</p>
-                </div>
-              ) : (
-                <div className="space-y-3 text-xs">
-
-                  {/* Power & Temperature Section */}
-                  <div className="space-y-2">
-                    <h4 
-                      className="font-medium text-green-400 border-b border-green-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-green-300"
-                      onClick={() => setCollapsedSections(prev => ({ ...prev, powerThermal: !prev.powerThermal }))}
-                    >
-                      <span>Power & Thermal</span>
-                      {collapsedSections.powerThermal ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </h4>
-
-                    {!collapsedSections.powerThermal && (
-                      <>
-                    {/* Battery */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        {localStreamStatus?.status?.charger_status === "Charging" ? (
-                          <BatteryCharging className="w-4 h-4 text-green-400" />
-                        ) : localStreamStatus?.status?.charger_status === "Full" ? (
-                          <BatteryFull className="w-4 h-4 text-green-400" />
-                        ) : (
-                          <Battery className="w-4 h-4 text-gray-400" />
-                        )}
-                        <span className="text-gray-300">Battery</span>
-                      </div>
-                      <span className="text-white font-mono">
-                        {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
-                        {localStreamStatus?.status?.charger_status && ` (${localStreamStatus.status.charger_status})`}
-                      </span>
-                    </div>
-
-                    {/* Temperature */}
-                    {localStreamStatus?.status?.temp !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Thermometer className={`w-4 h-4 ${localStreamStatus.status.temp < 30 ? 'text-blue-400' : 'text-orange-400'}`} />
-                          <span className="text-gray-300">Temperature</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
-                      </div>
-                    )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Coordinates Section */}
-                  {((localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null) ||
-                    (localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null)) && (
-                    <div className="space-y-2">
-                      <h4 
-                        className="font-medium text-cyan-400 border-b border-cyan-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-cyan-300"
-                        onClick={() => setCollapsedSections(prev => ({ ...prev, coordinates: !prev.coordinates }))}
-                      >
-                        <span>Coordinates</span>
-                        {collapsedSections.coordinates ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </h4>
-
-                      {!collapsedSections.coordinates && (
-                        <>
-                      {localStreamStatus?.status?.ra !== undefined && localStreamStatus?.status?.ra !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">RA</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(3)}°</span>
-                        </div>
-                      )}
-
-                      {localStreamStatus?.status?.dec !== undefined && localStreamStatus?.status?.dec !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-4 h-4 text-cyan-400" />
-                            <span className="text-gray-300">Dec</span>
-                          </div>
-                          <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(3)}°</span>
-                        </div>
-                      )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Balance Sensor Section */}
-                  {localStreamStatus?.status?.balance_sensor && (
-                    <div className="space-y-2">
-                      <h4 
-                        className="font-medium text-orange-400 border-b border-orange-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-orange-300"
-                        onClick={() => setCollapsedSections(prev => ({ ...prev, balance: !prev.balance }))}
-                      >
-                        <span>Balance Sensor</span>
-                        {collapsedSections.balance ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </h4>
-
-                      {!collapsedSections.balance && (
-                        <>
-                          {/* Balance Sensor Data */}
-                          {localStreamStatus.status.balance_sensor.data && (
-                            <>
-                              {/* Tilt Angle from Z accelerometer */}
-                              {localStreamStatus.status.balance_sensor.data.z !== undefined && (
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <Activity className="w-4 h-4 text-orange-400" />
-                                    <span className="text-gray-300">Tilt Angle</span>
-                                  </div>
-                                  <span className="text-white font-mono">
-                                    {(Math.acos(Math.min(1, Math.max(-1, localStreamStatus.status.balance_sensor.data.z))) * 180 / Math.PI).toFixed(1)}°
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {/* Rotation Angle from X and Y */}
-                              {(localStreamStatus.status.balance_sensor.data.x !== undefined && 
-                                localStreamStatus.status.balance_sensor.data.y !== undefined) && (
-                                <>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                      <RotateCw className="w-4 h-4 text-yellow-400" />
-                                      <span className="text-gray-300">Rotation</span>
-                                    </div>
-                                    <span className="text-white font-mono">
-                                      {(Math.atan2(
-                                        localStreamStatus.status.balance_sensor.data.y, 
-                                        localStreamStatus.status.balance_sensor.data.x
-                                      ) * 180 / Math.PI).toFixed(1)}°
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Cumulative Rotation */}
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                      <TrendingUp className="w-4 h-4 text-green-400" />
-                                      <span className="text-gray-300">Cumulative</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-white font-mono">
-                                        {cumulativeRotation.toFixed(1)}°
-                                      </span>
-                                      <button
-                                        onClick={() => {
-                                          setCumulativeRotation(0);
-                                          previousRotationRef.current = null;
-                                        }}
-                                        className="text-gray-400 hover:text-white transition-colors"
-                                        title="Reset cumulative rotation"
-                                      >
-                                        <RotateCw className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Imaging Section */}
-                  <div className="space-y-2">
-                    <h4 
-                      className="font-medium text-purple-400 border-b border-purple-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-purple-300"
-                      onClick={() => setCollapsedSections(prev => ({ ...prev, imaging: !prev.imaging }))}
-                    >
-                      <span>Imaging</span>
-                      {collapsedSections.imaging ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </h4>
-
-                    {!collapsedSections.imaging && (
-                      <>
-                    {/* Stage */}
-                    {localStreamStatus?.status?.stage && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Cpu className="w-4 h-4 text-blue-400" />
-                          <span className="text-gray-300">Stage</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.stage}</span>
-                      </div>
-                    )}
-
-                    {/* Focus Position */}
-                    {localStreamStatus?.status?.focus_position !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Focus className="w-4 h-4 text-cyan-400" />
-                          <span className="text-gray-300">Focus</span>
-                        </div>
-                        <span className="text-white font-mono">{localStreamStatus.status.focus_position}</span>
-                      </div>
-                    )}
-
-                    {/* Image Timing Stats with Sparkline */}
-                    {localStreamStatus?.imaging_status?.last_image_elapsed_ms !== undefined &&
-                     localStreamStatus.imaging_status.last_image_elapsed_ms > 0 && (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-yellow-400" />
-                            <span className="text-gray-300">Image Time</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-white font-mono">
-                            <span>{localStreamStatus.imaging_status.last_image_elapsed_ms.toFixed(0)}ms</span>
-                            {localStreamStatus.imaging_status.last_image_size_bytes && (
-                              <>
-                                <span className="text-gray-500">•</span>
-                                <span className="text-green-400">
-                                  {(
-                                    (localStreamStatus.imaging_status.last_image_size_bytes * 8) /
-                                    (localStreamStatus.imaging_status.last_image_elapsed_ms * 1000)
-                                  ).toFixed(1)} Mbps
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        {/* Sparkline with min/max labels */}
-                        {(() => {
-                          // Filter out any zeros from the history for display
-                          const validHistory = imageTimingHistory.filter(v => v > 0);
-                          if (validHistory.length <= 1) return null;
-
-                          return (
-                            <div className="space-y-1">
-                              <div className="h-8 w-full bg-gray-800/50 rounded px-1 relative">
-                                <svg className="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
-                                  <polyline
-                                    fill="none"
-                                    stroke="rgb(250, 204, 21)"
-                                    strokeWidth="1"
-                                    points={validHistory.map((value, index) => {
-                                      const x = (index / (validHistory.length - 1)) * 100;
-                                      const max = Math.max(...validHistory);
-                                      const min = Math.min(...validHistory);
-                                      const range = max - min || 1;
-                                      const y = 20 - ((value - min) / range) * 18;
-                                      return `${x},${y}`;
-                                    }).join(' ')}
-                                  />
-                                  {/* Add dots for the last few points */}
-                                  {validHistory.slice(-3).map((value, index) => {
-                                    const actualIndex = validHistory.length - 3 + index;
-                                    const x = (actualIndex / (validHistory.length - 1)) * 100;
-                                    const max = Math.max(...validHistory);
-                                    const min = Math.min(...validHistory);
-                                    const range = max - min || 1;
-                                    const y = 20 - ((value - min) / range) * 18;
-                                    return (
-                                      <circle
-                                        key={actualIndex}
-                                        cx={x}
-                                        cy={y}
-                                        r="1.5"
-                                        fill="rgb(250, 204, 21)"
-                                      />
-                                    );
-                                  })}
-                                </svg>
-                              </div>
-                              <div className="flex justify-between text-xs text-gray-500">
-                                <span>Min: {Math.min(...validHistory).toFixed(0)}ms</span>
-                                <span className={Math.max(...validHistory) > 5000 ? "text-red-500 font-bold" : ""}>
-                                  Max: {Math.max(...validHistory).toFixed(0)}ms
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {/* Average Image Time */}
-                    {localStreamStatus?.imaging_status?.avg_image_elapsed_ms !== undefined &&
-                     localStreamStatus.imaging_status.avg_image_elapsed_ms > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-yellow-300" />
-                          <span className="text-gray-300">Avg Time</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-white font-mono">
-                          <span>{localStreamStatus.imaging_status.avg_image_elapsed_ms.toFixed(0)}ms</span>
-                          {localStreamStatus.imaging_status.last_image_size_bytes && (
-                            <>
-                              <span className="text-gray-500">•</span>
-                              <span className="text-green-400">
-                                {(
-                                  (localStreamStatus.imaging_status.last_image_size_bytes * 8) /
-                                  (localStreamStatus.imaging_status.avg_image_elapsed_ms * 1000)
-                                ).toFixed(1)} Mbps
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Image Size */}
-                    {localStreamStatus?.imaging_status?.last_image_size_bytes !== undefined && (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <HardDrive className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-300">Image Size</span>
-                        </div>
-                        <span className="text-white font-mono">
-                          {(localStreamStatus.imaging_status.last_image_size_bytes / 1024).toFixed(1)}KB
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Frame Counters */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-blue-400" />
-                        <span className="text-gray-300">Skipped Frames</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-white font-mono">
-                        <span className="text-blue-400" title="Stacked frames">{stackedFrames}</span>
-                        {droppedFrames > 0 && (
-                          <>
-                            <span className="text-gray-500">•</span>
-                            <span className="text-red-400" title="Dropped frames">{droppedFrames} dropped</span>
-                          </>
-                        )}
-                        {skippedFrames > 0 && (
-                          <>
-                            <span className="text-gray-500">•</span>
-                            <span className="text-yellow-400" title="Skipped frames">{skippedFrames} skipped</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Network Section */}
-                  {(localStreamStatus?.status?.server_browser_rtt_ms !== undefined ||
-                    localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined) && (
-                    <div className="space-y-2">
-                      <h4 
-                        className="font-medium text-blue-400 border-b border-blue-400/30 pb-1 flex items-center justify-between cursor-pointer hover:text-blue-300"
-                        onClick={() => setCollapsedSections(prev => ({ ...prev, network: !prev.network }))}
-                      >
-                        <span>Network (Server ↔ Browser)</span>
-                        {collapsedSections.network ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </h4>
-
-                      {!collapsedSections.network && (
-                        <>
-                      {/* Current RTT with Sparkline */}
-                      {localStreamStatus?.status?.server_browser_rtt_ms !== undefined && localStreamStatus.status.server_browser_rtt_ms !== null && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <Activity className="w-4 h-4 text-blue-400" />
-                              <span className="text-gray-300">Round Trip Time</span>
-                            </div>
-                            <span className="text-white font-mono">
-                              {localStreamStatus.status.server_browser_rtt_ms.toFixed(1)}ms
-                            </span>
-                          </div>
-
-                          {/* RTT Sparkline */}
-                          {rttHistory.length > 1 && (
-                            <div className="space-y-1">
-                              <div className="h-8 w-full bg-gray-800/50 rounded px-1 relative">
-                                <svg className="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none">
-                                  <polyline
-                                    fill="none"
-                                    stroke="rgb(59, 130, 246)"
-                                    strokeWidth="1"
-                                    points={rttHistory.map((value, index) => {
-                                      const x = (index / (rttHistory.length - 1)) * 100;
-                                      const max = Math.max(...rttHistory);
-                                      const min = Math.min(...rttHistory);
-                                      const range = max - min || 1;
-                                      const y = 20 - ((value - min) / range) * 18;
-                                      return `${x},${y}`;
-                                    }).join(' ')}
-                                  />
-                                  {/* Add dots for the last few points */}
-                                  {rttHistory.slice(-3).map((value, index) => {
-                                    const actualIndex = rttHistory.length - 3 + index;
-                                    const x = (actualIndex / (rttHistory.length - 1)) * 100;
-                                    const max = Math.max(...rttHistory);
-                                    const min = Math.min(...rttHistory);
-                                    const range = max - min || 1;
-                                    const y = 20 - ((value - min) / range) * 18;
-                                    return (
-                                      <circle
-                                        key={actualIndex}
-                                        cx={x}
-                                        cy={y}
-                                        r="1.5"
-                                        fill="rgb(59, 130, 246)"
-                                      />
-                                    );
-                                  })}
-                                </svg>
-                              </div>
-                              <div className="flex justify-between text-xs text-gray-500">
-                                <span>Min: {Math.min(...rttHistory).toFixed(1)}ms</span>
-                                <span>Max: {Math.max(...rttHistory).toFixed(1)}ms</span>
-                                <span>Last {rttHistory.length}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Average RTT */}
-                      {localStreamStatus?.status?.server_browser_avg_rtt_ms !== undefined && localStreamStatus.status.server_browser_avg_rtt_ms !== null && (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-300">Avg RTT</span>
-                          </div>
-                          <span className="text-white font-mono">
-                            {localStreamStatus.status.server_browser_avg_rtt_ms.toFixed(1)}ms
-                          </span>
-                        </div>
-                      )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                </div>
-              )}
-            </div>
-          </div>
-      </Draggable>
-    )}
     </>
   )
 }

@@ -18,6 +18,7 @@ import { DataPersistenceManager } from "./components/telescope/DataPersistenceMa
 import { useTelescopeContext } from "./context/TelescopeContext"
 import { PictureInPictureOverlay } from "./components/telescope/PictureInPictureOverlay"
 import { PipOverlayControls } from "./components/telescope/PipOverlayControls"
+import { NetworkStatusOverlay } from "./components/telescope/NetworkStatusOverlay"
 import { DataManagementSettings } from "./components/telescope/modals/DataManagementSettings"
 import { EquipmentManager } from "./components/telescope/modals/EquipmentManager"
 import { CelestialSearchDialog } from "./components/telescope/CelestialSearchDialog"
@@ -192,6 +193,9 @@ function TelescopeControlContent() {
 
         {/* PiP Overlay Controls - moved outside max-width container */}
         <PipOverlayControls />
+
+        {/* Network Status Overlay - moved outside max-width container for proper dragging */}
+        <NetworkStatusOverlay />
 
         {/* App Tour */}
         <AppTour />

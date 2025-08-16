@@ -32,7 +32,7 @@ class ServerMemoryMonitor {
     this.initialMemory = process.memoryUsage();
     this.peakMemory = this.initialMemory.heapUsed;
     
-    console.log(`[ServerMemoryMonitor] Started (interval: ${this.intervalMs / 1000}s, initial heap: ${this.formatBytes(this.initialMemory.heapUsed)})`);
+    console.log(`${new Date().toISOString()} [ServerMemoryMonitor] Started (interval: ${this.intervalMs / 1000}s, initial heap: ${this.formatBytes(this.initialMemory.heapUsed)})`);
     
     this.intervalId = setInterval(() => {
       this.checkMemory();
@@ -48,7 +48,7 @@ class ServerMemoryMonitor {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
-      console.log('[ServerMemoryMonitor] Stopped');
+      console.log(`${new Date().toISOString()} [ServerMemoryMonitor] Stopped`);
     }
   }
 
@@ -69,7 +69,7 @@ class ServerMemoryMonitor {
     // Update peak memory
     if (stats.heapUsed > this.peakMemory) {
       this.peakMemory = stats.heapUsed;
-      console.warn(`[ServerMemoryMonitor] New peak memory: ${this.formatBytes(this.peakMemory)}`);
+      console.warn(`${new Date().toISOString()} [ServerMemoryMonitor] New peak memory: ${this.formatBytes(this.peakMemory)}`);
     }
     
     // Calculate delta from initial
@@ -87,7 +87,7 @@ class ServerMemoryMonitor {
     }
     
     logFn(
-      `[ServerMemoryMonitor] RSS: ${this.formatBytes(stats.rss)}, ` +
+      `${stats.timestamp} [ServerMemoryMonitor] RSS: ${this.formatBytes(stats.rss)}, ` +
       `Heap: ${this.formatBytes(stats.heapUsed)}/${this.formatBytes(stats.heapTotal)} ` +
       `(Δ${deltaMB > 0 ? '+' : ''}${deltaMB.toFixed(1)}MB), ` +
       `External: ${this.formatBytes(stats.external)}, ` +
@@ -96,14 +96,14 @@ class ServerMemoryMonitor {
     
     // Check for potential memory leak
     if (deltaMB > 100) {
-      console.error(`[ServerMemoryMonitor] Potential memory leak! Memory increased by ${deltaMB.toFixed(1)}MB`);
+      console.error(`${stats.timestamp} [ServerMemoryMonitor] Potential memory leak! Memory increased by ${deltaMB.toFixed(1)}MB`);
       
       // Force garbage collection if exposed
       if (global.gc) {
         global.gc();
         const afterGC = process.memoryUsage();
         const freed = stats.heapUsed - afterGC.heapUsed;
-        console.info(`[ServerMemoryMonitor] After GC: freed ${this.formatBytes(freed)}`);
+        console.info(`${new Date().toISOString()} [ServerMemoryMonitor] After GC: freed ${this.formatBytes(freed)}`);
       }
     }
     
@@ -117,7 +117,7 @@ class ServerMemoryMonitor {
     const totalDelta = final.heapUsed - this.initialMemory.heapUsed;
     
     console.info(
-      `[ServerMemoryMonitor] Final stats - ` +
+      `${new Date().toISOString()} [ServerMemoryMonitor] Final stats - ` +
       `Peak: ${this.formatBytes(this.peakMemory)}, ` +
       `Final: ${this.formatBytes(final.heapUsed)}, ` +
       `Total delta: ${this.formatBytes(totalDelta)}`

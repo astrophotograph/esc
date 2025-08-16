@@ -12,6 +12,7 @@ interface AutoGotoOverlayProps {
   targetDec?: number
   currentRa?: number
   currentDec?: number
+  distDeg?: number  // Distance to target in degrees from status
   isVisible: boolean
 }
 
@@ -21,47 +22,69 @@ export function AutoGotoOverlay({
   targetDec,
   currentRa,
   currentDec,
+  distDeg,
   isVisible
 }: AutoGotoOverlayProps) {
   const [animationFrame, setAnimationFrame] = useState(0)
-  const [distance, setDistance] = useState<number | null>(null)
+  const [initialDistance, setInitialDistance] = useState<number | null>(null)
   const [progress, setProgress] = useState(0)
 
-  // Calculate angular distance between current and target positions
+  // Use distDeg from status if available, otherwise calculate it
   useEffect(() => {
-    if (targetRa !== undefined && targetDec !== undefined && 
-        currentRa !== undefined && currentDec !== undefined) {
+    let calculatedDistance: number | undefined
+    
+    // Use the provided distDeg from status if available
+    if (distDeg !== undefined) {
+      calculatedDistance = distDeg
+    }
+    // Otherwise calculate from coordinates if available
+    else if (targetRa !== undefined && targetDec !== undefined &&
+             currentRa !== undefined && currentDec !== undefined) {
       // Convert RA hours to degrees (15 degrees per hour)
       const targetRaDeg = targetRa * 15
       const currentRaDeg = currentRa * 15
-      
+
       // Calculate angular separation using spherical trigonometry
       const dRa = Math.abs(targetRaDeg - currentRaDeg)
       const cosDist = Math.sin(currentDec * Math.PI / 180) * Math.sin(targetDec * Math.PI / 180) +
-                      Math.cos(currentDec * Math.PI / 180) * Math.cos(targetDec * Math.PI / 180) * 
+                      Math.cos(currentDec * Math.PI / 180) * Math.cos(targetDec * Math.PI / 180) *
                       Math.cos(dRa * Math.PI / 180)
-      
+
       const distRad = Math.acos(Math.min(1, Math.max(-1, cosDist)))
-      const distDeg = distRad * 180 / Math.PI
-      
-      setDistance(distDeg)
-      
-      // Calculate progress (assume we started from some initial distance)
-      // This is a simplified calculation - in reality we'd track the initial distance
-      const maxDistance = 180 // Maximum possible distance in degrees
-      const progressPercent = Math.max(0, Math.min(100, (1 - distDeg / maxDistance) * 100))
-      setProgress(progressPercent)
+      calculatedDistance = distRad * 180 / Math.PI
     }
-  }, [targetRa, targetDec, currentRa, currentDec])
+
+    if (calculatedDistance !== undefined) {
+      // Track initial distance for progress calculation
+      if (initialDistance === null && calculatedDistance > 0.1) {
+        setInitialDistance(calculatedDistance)
+      }
+
+      // Calculate progress based on initial distance
+      if (initialDistance !== null && initialDistance > 0) {
+        const progressPercent = Math.max(0, Math.min(100, 
+          ((initialDistance - calculatedDistance) / initialDistance) * 100))
+        setProgress(progressPercent)
+      }
+    }
+  }, [distDeg, targetRa, targetDec, currentRa, currentDec, initialDistance])
+
+  // Reset initial distance when overlay becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      setInitialDistance(null)  // Reset to capture new initial distance
+      setProgress(0)
+    }
+  }, [isVisible])
 
   // Animation loop for visual effects
   useEffect(() => {
     if (!isVisible) return
-    
+
     const interval = setInterval(() => {
       setAnimationFrame(prev => (prev + 1) % 360)
     }, 50)
-    
+
     return () => clearInterval(interval)
   }, [isVisible])
 
@@ -74,7 +97,7 @@ export function AutoGotoOverlay({
           {/* Header with animated icon */}
           <div className="flex items-center justify-center space-x-3">
             <div className="relative">
-              <Navigation 
+              <Navigation
                 className={cn(
                   "w-10 h-10 text-blue-400",
                   "transition-transform duration-1000"
@@ -99,34 +122,39 @@ export function AutoGotoOverlay({
             </div>
 
             {/* Coordinates if available */}
-            {targetRa !== undefined && targetDec !== undefined && (
-              <div className="text-sm text-gray-400 pl-7">
-                RA: {targetRa.toFixed(4)}h, Dec: {targetDec.toFixed(2)}°
-              </div>
-            )}
+            {/*{targetRa !== undefined && targetDec !== undefined && (*/}
+            {/*  <div className="text-sm text-gray-400 pl-7">*/}
+            {/*    RA: {targetRa.toFixed(4)}h, Dec: {targetDec.toFixed(2)}°*/}
+            {/*  </div>*/}
+            {/*)}*/}
           </div>
 
           {/* Distance and progress */}
-          {distance !== null && (
+          {(distDeg !== undefined || (targetRa !== undefined && currentRa !== undefined)) && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Compass className="w-5 h-5 text-yellow-400" />
-                  <span className="text-gray-300">Distance:</span>
+                  <span className="text-gray-300">Distance to target:</span>
                 </div>
-                <span className="text-white font-mono">
-                  {distance.toFixed(2)}°
+                <span className="text-white font-mono text-lg">
+                  {distDeg !== undefined ? distDeg.toFixed(2) : "---"}°
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>Progress</span>
-                  <span>{progress.toFixed(0)}%</span>
+              {initialDistance !== null && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Progress</span>
+                    <span>{progress.toFixed(0)}%</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                  <div className="text-xs text-gray-500 text-center">
+                    Started from {initialDistance.toFixed(2)}°
+                  </div>
                 </div>
-                <Progress value={progress} className="h-2" />
-              </div>
+              )}
             </div>
           )}
 

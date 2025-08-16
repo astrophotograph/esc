@@ -20,7 +20,7 @@ from smarttel.seestar.commands.parameterized import (
     IscopeStartViewParams, IscopeStartStack, StartStackParams, )
 from smarttel.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
-from smarttel.seestar.commands.simple import PiReboot
+from smarttel.seestar.commands.simple import PiReboot, GetViewState
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -141,6 +141,12 @@ class WebSocketManager:
         self.echo_interval = 1  # Check every 1 second
         self.echo_timeout = 5  # Consider echo lost after 5 seconds
         self.echo_sequence = 0
+        
+        # Message ID tracking for duplicate detection
+        self.seen_message_ids: Dict[str, Dict[str, float]] = {}  # telescope_id -> {message_id: timestamp}
+        self.duplicate_message_count: Dict[str, int] = {}  # telescope_id -> count
+        self.message_id_cleanup_interval = 60  # Clean up old message IDs every minute
+        self.message_id_retention_time = 300  # Keep message IDs for 5 minutes
 
         # Initialize remote WebSocket manager
         self.remote_manager = RemoteWebSocketManager(self._handle_remote_message)
@@ -153,7 +159,8 @@ class WebSocketManager:
         self._running = True
         self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
         self.echo_task = asyncio.create_task(self._echo_loop())
-        logger.info("WebSocket manager started with echo loop enabled")
+        self.message_id_cleanup_task = asyncio.create_task(self._periodic_message_id_cleanup())
+        logger.info("WebSocket manager started with echo loop and duplicate detection enabled")
 
     async def stop(self):
         """Stop the WebSocket manager and clean up resources."""
@@ -170,6 +177,13 @@ class WebSocketManager:
             self.echo_task.cancel()
             try:
                 await self.echo_task
+            except asyncio.CancelledError:
+                pass
+        
+        if hasattr(self, 'message_id_cleanup_task') and self.message_id_cleanup_task:
+            self.message_id_cleanup_task.cancel()
+            try:
+                await self.message_id_cleanup_task
             except asyncio.CancelledError:
                 pass
 
@@ -504,6 +518,22 @@ class WebSocketManager:
                 )
             )
             return
+        
+        # Check for duplicate command message
+        if message.id:  # Only check if message has an ID
+            message_id = f"control_command_{message.id}"
+            if self._check_duplicate_message(telescope_id, message_id):
+                logger.warning(f"Ignoring duplicate control command {message.id} for telescope {telescope_id}, action: {command_payload.get('action', 'unknown')}")
+                # Still send a response to avoid client hanging
+                await connection.send_message(
+                    MessageFactory.create_command_response(
+                        telescope_id=telescope_id,
+                        command_id=message.id,
+                        success=False,
+                        error="Duplicate command ignored",
+                    )
+                )
+                return
 
         # Check if telescope is available (either local or remote)
         if not (
@@ -1013,6 +1043,8 @@ class WebSocketManager:
                 await client.stop_goto()
                 error_message = f"Error positioning telescope: {error}" if error else "Error positioning telescope"
                 logger.error(error_message)
+                # send off view state command
+                await client.refresh_view_state()
                 return {"status": "error", "message": error_message}
 
             logger.debug(f"Start imaging: {start_imaging}")
@@ -1464,6 +1496,12 @@ class WebSocketManager:
         request_timestamp = message.payload.get('request_timestamp')
         sequence = message.payload.get('sequence', 0)
         
+        # Check for duplicate echo response - use connection ID to make it unique per connection
+        message_id = f"echo_response_{connection.connection_id}_{telescope_id}_{sequence}"
+        if self._check_duplicate_message(telescope_id, message_id):
+            logger.warning(f"Ignoring duplicate echo response {sequence} from telescope {telescope_id} on connection {connection.connection_id}")
+            return
+        
         if telescope_id not in self.rtt_data:
             logger.warning(f"Received echo response for unknown telescope: {telescope_id}")
             return
@@ -1495,7 +1533,10 @@ class WebSocketManager:
             
             logger.trace(f"RTT for telescope {telescope_id}: {rtt_ms:.1f}ms (avg: {rtt_data['avg_rtt_ms']:.1f}ms)")
         else:
-            logger.warning(f"Received echo response for unknown sequence {sequence} from telescope {telescope_id}")
+            # This can happen if the echo request timed out and was already removed from pending
+            # It's not really an error condition, just late responses
+            # logger.warning(f"Received echo response for unknown sequence {sequence} from telescope {telescope_id}")
+            logger.trace(f"Received echo response for unknown/timed-out sequence {sequence} from telescope {telescope_id}")
     
     def get_telescope_rtt(self, telescope_id: str) -> Dict[str, Any]:
         """Get RTT data for a telescope."""
@@ -1512,6 +1553,89 @@ class WebSocketManager:
             'server_browser_min_rtt_ms': None,
             'server_browser_max_rtt_ms': None,
         }
+    
+    def _check_duplicate_message(self, telescope_id: str, message_id: str) -> bool:
+        """
+        Check if a message ID has been seen before for a telescope.
+        Returns True if this is a duplicate message.
+        """
+        current_time = time.time()
+        
+        # Initialize tracking for telescope if not exists
+        if telescope_id not in self.seen_message_ids:
+            self.seen_message_ids[telescope_id] = {}
+            self.duplicate_message_count[telescope_id] = 0
+        
+        # Check if we've seen this message ID before
+        if message_id in self.seen_message_ids[telescope_id]:
+            self.duplicate_message_count[telescope_id] += 1
+            previous_time = self.seen_message_ids[telescope_id][message_id]
+            time_diff = current_time - previous_time
+            
+            # Only warn if the duplicate is recent (within 1 second)
+            # Older "duplicates" might be legitimate retransmissions
+            if time_diff < 1.0:
+                logger.warning(
+                    f"DUPLICATE MESSAGE DETECTED for telescope {telescope_id}: "
+                    f"ID={message_id}, first seen {time_diff:.3f}s ago, "
+                    f"total duplicates for this telescope: {self.duplicate_message_count[telescope_id]}"
+                )
+                # Log stack trace to understand where the duplicate is coming from
+                import traceback
+                logger.debug(f"Duplicate call stack:\n{''.join(traceback.format_stack())}")
+                
+                # Update timestamp to track the most recent occurrence
+                self.seen_message_ids[telescope_id][message_id] = current_time
+                return True  # This is a duplicate
+            else:
+                # It's been more than 1 second, treat as a legitimate retransmission
+                self.seen_message_ids[telescope_id][message_id] = current_time
+                return False
+        
+        # Record this message ID
+        self.seen_message_ids[telescope_id][message_id] = current_time
+        
+        # Clean up old message IDs periodically
+        if len(self.seen_message_ids[telescope_id]) > 1000:  # Arbitrary threshold
+            self._cleanup_old_message_ids(telescope_id, current_time)
+        
+        return False
+    
+    def _cleanup_old_message_ids(self, telescope_id: str, current_time: float):
+        """Remove message IDs older than retention time."""
+        if telescope_id not in self.seen_message_ids:
+            return
+        
+        cutoff_time = current_time - self.message_id_retention_time
+        old_ids = [
+            msg_id for msg_id, timestamp in self.seen_message_ids[telescope_id].items()
+            if timestamp < cutoff_time
+        ]
+        
+        for msg_id in old_ids:
+            del self.seen_message_ids[telescope_id][msg_id]
+        
+        if old_ids:
+            logger.debug(f"Cleaned up {len(old_ids)} old message IDs for telescope {telescope_id}")
+    
+    async def _periodic_message_id_cleanup(self):
+        """Periodically clean up old message IDs from all telescopes."""
+        while self._running:
+            try:
+                await asyncio.sleep(self.message_id_cleanup_interval)
+                current_time = time.time()
+                
+                for telescope_id in list(self.seen_message_ids.keys()):
+                    self._cleanup_old_message_ids(telescope_id, current_time)
+                    
+                    # Remove telescope entry if no message IDs remain
+                    if not self.seen_message_ids[telescope_id]:
+                        del self.seen_message_ids[telescope_id]
+                        if telescope_id in self.duplicate_message_count:
+                            del self.duplicate_message_count[telescope_id]
+                
+            except Exception as e:
+                logger.error(f"Error in periodic message ID cleanup: {e}")
 
 
 # Global WebSocket manager instance (initialized later)
