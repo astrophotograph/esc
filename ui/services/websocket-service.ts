@@ -269,6 +269,7 @@ export class WebSocketService extends EventEmitter {
     // Telescope-specific routing is handled via message payloads, not connection params
     if (telescopeId) {
       console.warn('Warning: Telescope ID provided to global WebSocket connection. This should be handled via message payloads instead.')
+      console.trace('Stack trace for telescope ID:')  // This will show us where the call is coming from
     }
     this.telescopeId = null  // Always null for global connection
     this.clientId = clientId || null
@@ -295,6 +296,7 @@ export class WebSocketService extends EventEmitter {
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {
+          console.log('WebSocket opened successfully')
           this.setConnectionState(ConnectionState.CONNECTED)
           this.reconnectAttempts = 0
           this.lastMessageTime = Date.now()
@@ -317,9 +319,16 @@ export class WebSocketService extends EventEmitter {
         }
 
         this.ws.onclose = (event) => {
+          console.log('WebSocket closed:', { 
+            wasClean: event.wasClean, 
+            code: event.code, 
+            reason: event.reason,
+            connectionState: this.connectionState 
+          })
           this.cleanup()
 
           if (!event.wasClean && this.connectionState !== ConnectionState.DISCONNECTED) {
+            console.log('Triggering reconnect due to unclean close')
             this.handleReconnect()
           }
         }
