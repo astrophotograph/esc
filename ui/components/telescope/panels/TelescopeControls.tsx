@@ -83,6 +83,7 @@ export function TelescopeControls() {
   }, [])
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isMouseDownRef = useRef<boolean>(false)
 
   const startContinuousMove = useCallback((direction: string) => {
     // Clear any existing interval
@@ -99,23 +100,36 @@ export function TelescopeControls() {
     }, 500)
   }, [handleTelescopeMove])
 
-  const stopContinuousMove = useCallback(() => {
+  const stopContinuousMove = useCallback((fromMouseLeave = false) => {
     // Clear the interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
 
-    // Send stop command
-    handleTelescopeMove("stop")
+    // Only send stop command if this is from an actual button release, not a mouse leave
+    // Mouse leave should only stop if the mouse was actually pressed down
+    if (!fromMouseLeave || isMouseDownRef.current) {
+      handleTelescopeMove("stop")
+    }
   }, [handleTelescopeMove])
 
   const handleMouseDown = useCallback((direction: string) => {
+    isMouseDownRef.current = true
     startContinuousMove(direction)
   }, [startContinuousMove])
 
   const handleMouseUp = useCallback(() => {
-    stopContinuousMove()
+    isMouseDownRef.current = false
+    stopContinuousMove(false)
+  }, [stopContinuousMove])
+
+  const handleMouseLeave = useCallback(() => {
+    // Only stop if mouse was pressed down (dragging out of button)
+    if (isMouseDownRef.current) {
+      isMouseDownRef.current = false
+      stopContinuousMove(true)
+    }
   }, [stopContinuousMove])
 
   const handleTouchStart = useCallback((direction: string) => {
@@ -123,7 +137,7 @@ export function TelescopeControls() {
   }, [startContinuousMove])
 
   const handleTouchEnd = useCallback(() => {
-    stopContinuousMove()
+    stopContinuousMove(false)
   }, [stopContinuousMove])
 
   // Cleanup on unmounting
@@ -417,7 +431,7 @@ export function TelescopeControls() {
                 size="sm"
                 onMouseDown={() => handleMouseDown("north")}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("north")}
                 onTouchEnd={handleTouchEnd}
                 className="border-gray-600 text-white hover:bg-gray-700"
@@ -430,7 +444,7 @@ export function TelescopeControls() {
                 size="sm"
                 onMouseDown={() => handleMouseDown("west")}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("west")}
                 onTouchEnd={handleTouchEnd}
                 className="border-gray-600 text-white hover:bg-gray-700"
@@ -450,7 +464,7 @@ export function TelescopeControls() {
                 size="sm"
                 onMouseDown={() => handleMouseDown("east")}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("east")}
                 onTouchEnd={handleTouchEnd}
                 className="border-gray-600 text-white hover:bg-gray-700"
@@ -463,7 +477,7 @@ export function TelescopeControls() {
                 size="sm"
                 onMouseDown={() => handleMouseDown("south")}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("south")}
                 onTouchEnd={handleTouchEnd}
                 className="border-gray-600 text-white hover:bg-gray-700"

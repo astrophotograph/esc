@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useState, useRef, type ReactNode, useEffect } from "react"
 import { toast } from "sonner"
 import { usePersistentState } from "../hooks/use-persistent-state"
+import { useMovementToast } from "../hooks/use-movement-toast"
 import { STORAGE_KEYS, loadFromStorage } from "../utils/storage-utils"
 import type {
   CelestialObject,
@@ -1299,6 +1300,11 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     subscribeToTelescope()
   }, [currentTelescope?.id, wsIsConnected]) // Only re-run when telescope ID changes, not the entire object
 
+  const { showMovementToast } = useMovementToast({
+    fadeOutDelay: 1500,
+    updateDebounce: 100,
+  })
+
   const handleTelescopeMove = async (direction: string) => {
     if (!currentTelescope) {
       addStatusAlert({
@@ -1321,20 +1327,8 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     try {
       await wsMoveTelescope(direction, currentTelescope)
 
-      // Add status alert for telescope movement
-      if (direction !== "stop") {
-        addStatusAlert({
-          type: "info",
-          title: "Telescope Moving",
-          message: `Moving telescope ${direction}`,
-        })
-      } else {
-        addStatusAlert({
-          type: "info",
-          title: "Telescope Stopped",
-          message: "Telescope movement stopped",
-        })
-      }
+      // Use the new movement toast system
+      showMovementToast(direction)
     } catch (error) {
       console.error('Error moving telescope via WebSocket:', error)
       addStatusAlert({
