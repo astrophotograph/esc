@@ -60,7 +60,6 @@ import { RandomTestPattern } from "./RandomTestPattern"
 import type { ScreenAnnotation } from "@/types/telescope-types"
 import { generateStreamingUrl } from "@/utils/streaming"
 import { WebRTCLiveView } from "./WebRTCLiveView"
-import { useTelescopeWebSocket } from "@/hooks/useTelescopeWebSocket"
 import { ImageEnhancementOverlay } from "./ImageEnhancementOverlay"
 import { ChalkboardPanel } from "./panels/ChalkboardPanel"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -131,6 +130,11 @@ export function CameraView() {
     setShowChalkboard,
     clientMode,
     setClientMode,
+    wsStatus,
+    wsIsConnected,
+    wsConnectionState,
+    wsLastUpdate,
+    wsHealthStatus,
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
@@ -166,19 +170,8 @@ export function CameraView() {
   const [cumulativeRotation, setCumulativeRotation] = useState<number>(0);
   const previousRotationRef = useRef<number | null>(null);
 
-  // WebSocket hook for real-time telescope status and control
-  const {
-    status: wsStatus,
-    isConnected: wsConnected,
-    lastUpdate: wsLastUpdate,
-    healthStatus: wsHealthStatus,
-    connect: wsConnect,
-    disconnect: wsDisconnect,
-    forceReconnect: wsForceReconnect
-  } = useTelescopeWebSocket({
-    autoConnect: false,
-    onAnnotationsReceived: setCurrentAnnotations
-  });
+  // WebSocket status is now provided by TelescopeContext
+  // Annotations are handled via WebSocket messages in the context
 
   // Calculate boundaries for panning
   const calculateBoundaries = () => {
@@ -285,7 +278,7 @@ export function CameraView() {
     return () => window.removeEventListener('resize', checkScreenSize)
   }, [])
 
-  // Update video URL when telescope changes
+  // Update video URL when telescope ID changes
   useEffect(() => {
     const newUrl = generateVideoUrl(currentTelescope);
     setVideoUrl(newUrl);
@@ -326,7 +319,7 @@ export function CameraView() {
     }
 
     console.log(`Updated video URL for telescope: ${currentTelescope?.name || 'default'} -> ${newUrl}`);
-  }, [currentTelescope]);
+  }, [currentTelescope?.id, currentTelescope?.serial_number]); // Only re-run when telescope ID or serial number changes
 
   // Monitor stream activity - detect if the live stream is still changing - DISABLED
   // useEffect(() => {
@@ -379,17 +372,17 @@ export function CameraView() {
 
   // Update lastSSEMessage whenever we receive WebSocket updates
   useEffect(() => {
-    if (wsConnected && wsLastUpdate > 0) {
+    if (wsIsConnected && wsLastUpdate > 0) {
       setLastSSEMessage(Date.now());
       setSseConnected(true);
       // Reset connection lost state if we're receiving updates
       if (connectionLost) {
         setConnectionLost(false);
       }
-    } else if (!wsConnected) {
+    } else if (!wsIsConnected) {
       setSseConnected(false);
     }
-  }, [wsLastUpdate, wsConnected, connectionLost]);
+  }, [wsLastUpdate, wsIsConnected, connectionLost]);
 
   // Monitor WebSocket connection health
   useEffect(() => {
@@ -873,24 +866,17 @@ export function CameraView() {
     return () => window.removeEventListener('resize', handleResize);
   }, [overlayPosition, showStreamStatus, setOverlayPosition])
 
-  // Setup WebSocket connection for streaming status
+  // WebSocket connection is now managed globally by TelescopeContext
+  // Status updates are received automatically for the current telescope
   useEffect(() => {
     if (!currentTelescope) {
       setLocalStreamStatus(null);
       setSseConnected(false);
-      wsDisconnect();
-      return;
+    } else {
+      // Mark as connected if we have a telescope and WebSocket is connected
+      setSseConnected(wsIsConnected);
     }
-
-    wsConnect(currentTelescope).catch((error) => {
-      console.error("WebSocket connect failed:", error);
-    });
-
-    return () => {
-      wsDisconnect();
-      setSseConnected(false);
-    };
-  }, [currentTelescope]);
+  }, [currentTelescope, wsIsConnected]);
 
   // Handle WebSocket status updates
   useEffect(() => {
@@ -968,9 +954,9 @@ export function CameraView() {
 
   // Handle WebSocket connection state
   useEffect(() => {
-    setSseConnected(wsConnected);
+    setSseConnected(wsIsConnected);
 
-    if (wsConnected) {
+    if (wsIsConnected) {
       setReconnectCounter(0);
 
       // If connection was restored and both streams are healthy - IMAGE CHANGE DETECTION DISABLED
@@ -984,7 +970,7 @@ export function CameraView() {
         setConnectionLost(true);
       }
     }
-  }, [wsConnected, connectionLost, streamActive, reconnectCounter]);
+  }, [wsIsConnected, connectionLost, streamActive, reconnectCounter]);
 
   // Update last message timestamp when WebSocket receives data
   useEffect(() => {
@@ -1000,12 +986,13 @@ export function CameraView() {
     const { timeSinceLastMessage } = wsHealthStatus;
     const HEALTH_CHECK_THRESHOLD = 90000; // 90 seconds - trigger reconnect if no messages for this long
 
-    // Only check if we should be connected (telescope is selected)
+    // WebSocket reconnection is now handled globally by the TelescopeContext
+    // We just log a warning if messages haven't been received
     if (timeSinceLastMessage > HEALTH_CHECK_THRESHOLD) {
-      console.warn(`WebSocket health check: No messages for ${timeSinceLastMessage}ms, forcing reconnection`);
-      wsForceReconnect('No messages received within health check threshold');
+      console.warn(`WebSocket health check: No messages for ${timeSinceLastMessage}ms`);
+      // Reconnection is handled automatically by the global WebSocket service
     }
-  }, [wsHealthStatus, currentTelescope, wsForceReconnect]);
+  }, [wsHealthStatus, currentTelescope]);
 
   // Track cumulative rotation from balance sensor
   useEffect(() => {

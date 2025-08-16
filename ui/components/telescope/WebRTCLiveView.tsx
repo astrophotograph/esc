@@ -101,7 +101,7 @@ export function WebRTCLiveView({
         onConnectionStateChange?.('disconnected');
       }
     }
-  }, [telescope, stage, mjpegUrl, onConnectionStateChange]);
+  }, [telescope?.id, telescope?.name, telescope?.serial_number, stage, mjpegUrl, onConnectionStateChange]); // Only re-run when telescope identity changes
 
   // Handle WebRTC stream assignment to video element
   useEffect(() => {

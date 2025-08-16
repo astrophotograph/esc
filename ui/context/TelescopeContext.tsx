@@ -292,6 +292,13 @@ interface TelescopeContextType {
     starmapPosition: { x: number; y: number }
     setStarmapPosition: (position: { x: number; y: number }) => void
 
+  // WebSocket status
+  wsStatus: any | null
+  wsIsConnected: boolean
+  wsConnectionState: any
+  wsLastUpdate: number
+  wsHealthStatus: any | null
+  
   // Functions
   addStatusAlert: (alert: Omit<StatusAlert, "id" | "timestamp" | "dismissed">) => void
   handleTelescopeMove: (direction: string) => void
@@ -650,6 +657,11 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Stream status
   const [streamStatus, setStreamStatus] = useState<any>(null)
 
+  // WebSocket status for current telescope
+  const [wsStatus, setWsStatus] = useState<any>(null)
+  const [wsLastUpdate, setWsLastUpdate] = useState<number>(0)
+  const [wsHealthStatus, setWsHealthStatus] = useState<any>(null)
+  
   // Imaging state
   const [isImaging, setIsImaging] = useState(false)
 
@@ -1263,7 +1275,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }, [rawCurrentTelescope])
 
   // Subscribe to telescope updates when one is selected
-  // The global WebSocket connection is managed in the initialization effect
+  // Subscribe to telescope updates when telescope ID changes
   useEffect(() => {
     const subscribeToTelescope = async () => {
       if (currentTelescope && wsIsConnected) {
@@ -1283,7 +1295,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
 
     subscribeToTelescope()
-  }, [currentTelescope, wsIsConnected])
+  }, [currentTelescope?.id, wsIsConnected]) // Only re-run when telescope ID changes, not the entire object
 
   const handleTelescopeMove = async (direction: string) => {
     if (!currentTelescope) {
@@ -1854,17 +1866,20 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
 
   // Initialize WebSocket connection and fetch initial data on component mount
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return
+    }
+    
     const initializeWebSocket = async () => {
       const wsService = getWebSocketService()
       if (!wsService.isConnected()) {
         try {
           // Connect to the main WebSocket endpoint without a specific telescope
           await wsService.connect()
-          console.log('WebSocket connected successfully')
           
           // Subscribe to all telescopes for status updates
           await wsService.subscribe([SubscriptionType.ALL])
-          console.log('Subscribed to all telescope updates')
           
           // Server will automatically send telescope list on connection
           // No need to request it explicitly
@@ -1879,6 +1894,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     
     initializeWebSocket()
     fetchRemoteControllers()
+  }, [])
+
+  // Update WebSocket health status periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const wsService = getWebSocketService()
+      const healthStatus = wsService.getHealthStatus()
+      setWsHealthStatus(healthStatus)
+    }, 1000) // Update every second
+    
+    return () => clearInterval(interval)
   }, [])
 
   // Listen for WebSocket messages including telescope list updates
@@ -1952,21 +1978,36 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         
         // If this is the current telescope, update its status
         if (currentTelescope?.id === message.telescope_id) {
-          setCurrentTelescope(prev => prev ? {
-            ...prev,
-            status: message.payload.status.connected ? 'online' : 'offline',
-            lastStatus: message.payload.status,
-            lastUpdate: Date.now()
-          } : null)
+          // Update the current telescope with new status
+          if (currentTelescope) {
+            setCurrentTelescope({
+              ...currentTelescope,
+              status: message.payload.status.connected ? 'online' : 'offline',
+              lastStatus: message.payload.status,
+              lastUpdate: Date.now()
+            })
+          }
+          
+          // Update WebSocket status for the current telescope
+          setWsStatus(message.payload.status)
+          setWsLastUpdate(Date.now())
         }
       }
     }
 
+    // Handle annotation events
+    const handleAnnotationEvent = (message: any) => {
+      if (message.telescope_id === currentTelescope?.id && message.payload?.annotations) {
+        setCurrentAnnotations(message.payload.annotations)
+      }
+    }
+    
     wsService.on(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
     wsService.on(MessageType.TELESCOPE_LIST, handleTelescopeList)
     wsService.on(MessageType.TELESCOPE_DISCOVERED, handleTelescopeDiscovered)
     wsService.on(MessageType.TELESCOPE_LOST, handleTelescopeLost)
     wsService.on(MessageType.STATUS_UPDATE, handleStatusUpdate)
+    wsService.on(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
 
     return () => {
       wsService.off(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
@@ -1974,6 +2015,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       wsService.off(MessageType.TELESCOPE_DISCOVERED, handleTelescopeDiscovered)
       wsService.off(MessageType.TELESCOPE_LOST, handleTelescopeLost)
       wsService.off(MessageType.STATUS_UPDATE, handleStatusUpdate)
+      wsService.off(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
     }
   }, [currentTelescope?.id])
 
@@ -2523,6 +2565,13 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setStarmapPosition,
     showChalkboard,
     setShowChalkboard,
+    
+    // WebSocket status
+    wsStatus,
+    wsIsConnected,
+    wsConnectionState,
+    wsLastUpdate,
+    wsHealthStatus,
 
     // Functions
     addStatusAlert,

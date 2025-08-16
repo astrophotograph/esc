@@ -60,25 +60,29 @@ async def websocket_endpoint(
     await _handle_websocket_connection(websocket, telescope_id, client_id, manager)
 
 
-@router.websocket("/ws/{telescope_id}")
-async def websocket_telescope_endpoint(
-    websocket: WebSocket,
-    telescope_id: str,
-    client_id: Optional[str] = Query(
-        None, description="Client identifier for reconnection"
-    ),
-    manager=Depends(get_websocket_manager_dependency),
-):
-    """
-    Telescope-specific WebSocket endpoint.
-
-    Path parameters:
-    - telescope_id: Specific telescope to connect to
-
-    Query parameters:
-    - client_id: Optional client identifier for connection tracking
-    """
-    await _handle_websocket_connection(websocket, telescope_id, client_id, manager)
+# DEPRECATED: Per-telescope WebSocket endpoints are no longer supported
+# All WebSocket connections should use the global /ws endpoint
+# Telescope-specific routing is handled via message payloads
+#
+# @router.websocket("/ws/{telescope_id}")
+# async def websocket_telescope_endpoint(
+#     websocket: WebSocket,
+#     telescope_id: str,
+#     client_id: Optional[str] = Query(
+#         None, description="Client identifier for reconnection"
+#     ),
+#     manager=Depends(get_websocket_manager_dependency),
+# ):
+#     """
+#     Telescope-specific WebSocket endpoint.
+#
+#     Path parameters:
+#     - telescope_id: Specific telescope to connect to
+#
+#     Query parameters:
+#     - client_id: Optional client identifier for connection tracking
+#     """
+#     await _handle_websocket_connection(websocket, telescope_id, client_id, manager)
 
 
 async def _handle_websocket_connection(

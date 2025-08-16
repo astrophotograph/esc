@@ -268,8 +268,12 @@ export class WebSocketService extends EventEmitter {
     // For the global connection, we should never have a telescope ID
     // Telescope-specific routing is handled via message payloads, not connection params
     if (telescopeId) {
-      console.warn('Warning: Telescope ID provided to global WebSocket connection. This should be handled via message payloads instead.')
+      console.error('ERROR: Telescope ID provided to global WebSocket connection:', telescopeId)
+      console.error('This should be handled via message payloads instead.')
       console.trace('Stack trace for telescope ID:')  // This will show us where the call is coming from
+      
+      // Force the telescope ID to be null to prevent per-telescope connections
+      telescopeId = undefined
     }
     this.telescopeId = null  // Always null for global connection
     this.clientId = clientId || null
@@ -292,11 +296,15 @@ export class WebSocketService extends EventEmitter {
           wsUrl += `?${params.toString()}`
         }
 
-        console.log('Attempting WebSocket connection to:', wsUrl)
+        // Check if WebSocket is available
+        if (typeof WebSocket === 'undefined') {
+          console.error('WebSocket is not available in this environment')
+          throw new Error('WebSocket not available')
+        }
+        
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {
-          console.log('WebSocket opened successfully')
           this.setConnectionState(ConnectionState.CONNECTED)
           this.reconnectAttempts = 0
           this.lastMessageTime = Date.now()
