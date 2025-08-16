@@ -893,7 +893,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     try {
       const wsService = getWebSocketService()
       
-      // Try to use WebSocket first if connected
+      // Only use WebSocket for telescope list
       if (wsService.isConnected()) {
         // Request telescope list via WebSocket
         await wsService.requestTelescopeList()
@@ -901,143 +901,10 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         return
       }
       
-      // Fallback to HTTP if WebSocket not connected
-      const response = await fetch('/api/telescopes')
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const rawData = await response.json()
-
-      // Transform API data to match UI interface
-      const transformedTelescopes: TelescopeInfo[] = rawData.map((telescope: any) => ({
-        ...telescope,
-        // Add computed properties for UI compatibility
-        id: telescope.serial_number || telescope.name,
-        status: telescope.connected ? 'online' : 'offline',
-        type: telescope.product_model,
-        isConnected: telescope.connected,
-        description: `${telescope.host}:${telescope.port} on ${telescope.ssid}`,
-        host: `${telescope.host}:${telescope.port}`,
-        location: telescope.location || `Network: ${telescope.ssid}`,
-        ssid: telescope.ssid,
-        // Derive isManual from discovery_method (default to false if not specified)
-        isManual: telescope.discovery_method === 'manual'
-      }))
-
-      setTelescopes(transformedTelescopes)
-
-      // Restore previously selected telescope or auto-select first one
-      if (transformedTelescopes.length > 0) {
-        if (currentTelescope) {
-          // Enhanced telescope matching with validation
-          const findTelescopeMatch = (saved: TelescopeInfo, telescopes: TelescopeInfo[]) => {
-            // Priority 1: Match by serial number (most reliable)
-            if (saved.serial_number) {
-              const match = telescopes.find(t => t.serial_number === saved.serial_number)
-              if (match) {
-                console.log(`Telescope matched by serial number: ${match.name} (${match.serial_number})`)
-                return { telescope: match, confidence: 'high' as const }
-              }
-            }
-
-            // Priority 2: Match by computed ID (fallback for devices without serial)
-            if (saved.id) {
-              const match = telescopes.find(t => t.id === saved.id)
-              if (match) {
-                console.log(`Telescope matched by ID: ${match.name} (${match.id})`)
-                return { telescope: match, confidence: 'medium' as const }
-              }
-            }
-
-            // Priority 3: Match by name and host (least reliable due to network changes)
-            if (saved.name && saved.host) {
-              const match = telescopes.find(t => t.name === saved.name && t.host === saved.host)
-              if (match) {
-                console.log(`Telescope matched by name+host: ${match.name} (${match.host})`)
-                return { telescope: match, confidence: 'low' as const }
-              }
-            }
-
-            // Removed Priority 4: Match by name only - too unreliable and causes random switching
-            // This was causing issues when multiple telescopes have similar names
-
-            return null
-          }
-
-          try {
-            console.log(`Attempting to restore telescope: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
-            console.log(`Available telescopes: ${transformedTelescopes.map(t => `${t.name} (${t.serial_number || 'no-serial'})`).join(', ')}`)
-
-            const matchResult = findTelescopeMatch(currentTelescope, transformedTelescopes)
-
-            if (matchResult) {
-              const { telescope: savedTelescope, confidence } = matchResult
-
-              // Only update if the telescope data has meaningfully changed
-              const hasChanged =
-                currentTelescope.status !== savedTelescope.status ||
-                currentTelescope.isConnected !== savedTelescope.isConnected ||
-                currentTelescope.host !== savedTelescope.host ||
-                currentTelescope.description !== savedTelescope.description
-
-              if (hasChanged) {
-                // Update with fresh telescope data while maintaining the selection
-                setCurrentTelescope(savedTelescope)
-                console.log(`Updated telescope data: ${savedTelescope.name} (confidence: ${confidence})`)
-
-                // Only show notification on first load or high confidence matches to reduce noise
-                const isFirstConnection = currentTelescope.status !== savedTelescope.status && savedTelescope.status === 'online';
-
-                if (isFirstConnection && (confidence === 'high' || confidence === 'medium')) {
-                  setTimeout(() => {
-                    addStatusAlert({
-                      type: 'info',
-                      title: 'Welcome Back',
-                      message: `Reconnected to ${savedTelescope.name}`
-                    })
-                  }, 1000) // Delay to avoid showing immediately on load
-                }
-              } else {
-                console.log(`Telescope data unchanged: ${savedTelescope.name} (confidence: ${confidence})`)
-              }
-            } else {
-              // Previously selected telescope no longer available
-              console.warn(`Previous telescope not found: ${currentTelescope.name || currentTelescope.id || 'unknown'}`)
-
-              // Don't auto-switch during periodic refresh - only switch on first load or user action
-              // This prevents random switching when telescopes temporarily disappear from API
-              const isInitialLoad = telescopes.length === 0; // First time loading telescopes
-
-              if (isInitialLoad) {
-                setCurrentTelescope(transformedTelescopes[0])
-                console.log(`Auto-selected first available telescope (initial load): ${transformedTelescopes[0].name}`)
-
-                // Don't show toast notification for telescope changes
-                // The change is already visible in the UI
-                // setTimeout(() => {
-                //   addStatusAlert({
-                //     type: 'warning',
-                //     title: 'Telescope Changed',
-                //     message: `Previous telescope not available, switched to ${transformedTelescopes[0].name}`
-                //   })
-                // }, 1000)
-              } else {
-                // Keep current selection even if telescope temporarily disappears
-                console.log(`Keeping current telescope selection despite temporary unavailability`)
-              }
-            }
-          } catch (error) {
-            console.error('Error during telescope restoration:', error)
-            // Fallback to first telescope on restoration error
-            setCurrentTelescope(transformedTelescopes[0])
-            console.log(`Fallback to first telescope due to error: ${transformedTelescopes[0].name}`)
-          }
-        } else {
-          // No previous selection, auto-select first telescope
-          setCurrentTelescope(transformedTelescopes[0])
-          console.log(`Auto-selected first telescope: ${transformedTelescopes[0].name}`)
-        }
-      }
+      // No fallback - WebSocket is required for telescope list
+      console.warn('WebSocket not connected, cannot fetch telescope list')
+      setTelescopeError('WebSocket connection required. Please refresh the page.')
+      setTelescopes([])
     } catch (error) {
       console.error('Failed to fetch telescopes:', error)
       setTelescopeError(error instanceof Error ? error.message : 'Failed to fetch telescopes')

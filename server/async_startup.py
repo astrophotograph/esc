@@ -369,7 +369,7 @@ class OptimizedController:
             
             return None
         
-        initialize_websocket_manager(get_telescope_by_id)
+        initialize_websocket_manager(get_telescope_by_id, self.controller)
         self.controller.app.include_router(
             __import__('websocket_router').router,
             prefix="/api"

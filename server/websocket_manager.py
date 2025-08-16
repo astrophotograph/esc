@@ -126,7 +126,7 @@ class WebSocketConnection:
 class WebSocketManager:
     """Manages all WebSocket connections and message routing."""
 
-    def __init__(self, telescope_getter=None):
+    def __init__(self, telescope_getter=None, controller=None):
         self.connections: Dict[str, WebSocketConnection] = {}
         self.telescope_clients: Dict[str, Any] = {}  # telescope_id -> SeestarClient
         self.remote_clients: Dict[
@@ -136,6 +136,7 @@ class WebSocketManager:
         self.heartbeat_task: Optional[asyncio.Task] = None
         self._running = False
         self.telescope_getter = telescope_getter  # Function to get telescope by ID
+        self.controller = controller  # Reference to main controller
         
         # RTT tracking for each telescope
         self.rtt_data: Dict[str, Dict[str, Any]] = {}  # telescope_id -> RTT data
@@ -473,24 +474,52 @@ class WebSocketManager:
         """Handle request for telescope list from a specific client."""
         logger.debug(f"Telescope list requested by {connection.connection_id}")
         
-        # Get telescope list from the controller if available
-        if self.telescope_getter:
-            try:
-                # Get the controller
-                from controllers.main_controller import Controller
-                controller = getattr(self.telescope_getter, '__self__', None)
-                
-                if controller and isinstance(controller, Controller):
-                    telescope_list = await controller.get_telescope_list()
-                    
-                    # Send list to requesting connection only
-                    list_message = MessageFactory.create_telescope_list(telescope_list)
-                    await connection.send_message(list_message)
-                    
-                    logger.debug(f"Sent telescope list to {connection.connection_id}: {len(telescope_list)} telescopes")
-                else:
-                    logger.warning("Controller not available for telescope list request")
-            except Exception as e:
+        telescope_list = []
+        
+        try:
+            # First try to get the list from controller if available
+            if self.controller and hasattr(self.controller, 'get_telescope_list'):
+                telescope_list = await self.controller.get_telescope_list()
+                logger.debug(f"Got telescope list from controller: {len(telescope_list)} telescopes")
+            elif self.telescope_clients:
+                # Fallback: Build telescope list from the telescope_clients we're tracking
+                for telescope_id in self.telescope_clients.keys():
+                    if self.telescope_getter:
+                        telescope = self.telescope_getter(telescope_id)
+                        if telescope:
+                            # Build telescope info dict
+                            telescope_info = {
+                                "name": getattr(telescope, 'name', telescope_id),
+                                "serial_number": getattr(telescope, 'serial_number', telescope_id),
+                                "host": getattr(telescope, 'host', 'unknown'),
+                                "port": getattr(telescope, 'port', 4700),
+                                "connected": getattr(telescope, 'connected', False),
+                                "product_model": getattr(telescope, 'product_model', 'Seestar'),
+                                "ssid": getattr(telescope, 'ssid', 'unknown'),
+                                "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
+                                "location": getattr(telescope, 'location', None),
+                            }
+                            telescope_list.append(telescope_info)
+                        else:
+                            # Fallback if telescope_getter returns None
+                            telescope_list.append({
+                                "name": telescope_id,
+                                "serial_number": telescope_id,
+                                "host": "unknown",
+                                "port": 4700,
+                                "connected": telescope_id in self.telescope_clients,
+                                "product_model": "Seestar",
+                                "ssid": "unknown",
+                                "discovery_method": "unknown",
+                                "location": None,
+                            })
+            
+            # Send list to requesting connection only
+            list_message = MessageFactory.create_telescope_list(telescope_list)
+            await connection.send_message(list_message)
+            
+            logger.debug(f"Sent telescope list to {connection.connection_id}: {len(telescope_list)} telescopes")
+        except Exception as e:
                 logger.error(f"Error handling telescope list request: {e}")
         else:
             logger.warning("No telescope getter configured for telescope list request")
@@ -1739,10 +1768,10 @@ def get_websocket_manager():
     return _websocket_manager
 
 
-def initialize_websocket_manager(telescope_getter=None):
-    """Initialize the WebSocket manager with a telescope getter function."""
+def initialize_websocket_manager(telescope_getter=None, controller=None):
+    """Initialize the WebSocket manager with a telescope getter function and optional controller."""
     global _websocket_manager
-    _websocket_manager = WebSocketManager(telescope_getter=telescope_getter)
+    _websocket_manager = WebSocketManager(telescope_getter=telescope_getter, controller=controller)
     # Try to start if in async context
     try:
         loop = asyncio.get_running_loop()
