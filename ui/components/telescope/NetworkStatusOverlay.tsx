@@ -191,12 +191,7 @@ export function NetworkStatusOverlay() {
     }))
   }
 
-  if (!showStreamStatus) return null
-
-  // If position not yet initialized, don't render
-  if (!overlayPosition) return null
-
-  // Handle dragging
+  // Handle dragging - moved before conditional returns
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
     const rect = overlayRef.current?.getBoundingClientRect()
@@ -218,10 +213,11 @@ export function NetworkStatusOverlay() {
     setOverlayPosition(boundedPos)
   }, [isDragging, dragOffset.x, dragOffset.y, setOverlayPosition, ensureWithinBounds])
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false)
-  }
+  }, [])
 
+  // This useEffect must be called before any conditional returns
   useEffect(() => {
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove)
@@ -232,7 +228,13 @@ export function NetworkStatusOverlay() {
         document.removeEventListener("mouseup", handleMouseUp)
       }
     }
-  }, [isDragging, handleMouseMove])
+  }, [isDragging, handleMouseMove, handleMouseUp])
+
+  // Conditional returns must be after all hooks
+  if (!showStreamStatus) return null
+
+  // If position not yet initialized, don't render
+  if (!overlayPosition) return null
 
   const stackedFrames = localStreamStatus?.status?.stacked_frame || 0
   const droppedFrames = localStreamStatus?.status?.dropped_frame || 0
