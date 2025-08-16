@@ -29,6 +29,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       build-info: ${{ steps.version.outputs.build-info }}
+      build-number: ${{ steps.version.outputs.build-number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,14 +46,27 @@ jobs:
         run: |
           cd ui
           # Generate version using our script (quiet mode in CI)
-          VERSION=$(node scripts/generate-version.js --update-package --quiet)
+          VERSION=$(CI=true node scripts/generate-version.js --update-package --quiet)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # Read build info
           BUILD_INFO=$(cat build-info.json | tr -d '\n')
           echo "build-info=$BUILD_INFO" >> $GITHUB_OUTPUT
           
-          echo "Generated version: $VERSION"
+          # Extract build number from build info
+          BUILD_NUMBER=$(cat build-info.json | jq -r '.buildNumber')
+          echo "build-number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          
+          echo "Generated version: $VERSION (Build #$BUILD_NUMBER)"
+      
+      - name: Commit build number update
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .build-number
+          git diff --staged --quiet || git commit -m "chore: update build number to ${{ steps.version.outputs.build-number }} [skip ci]"
+          git push || echo "No changes to push"
 
   build-arm64:
     needs: generate-version
@@ -86,9 +100,9 @@ jobs:
       - name: Restore version info
         run: |
           cd ui
-          # Regenerate version info for this job (quiet mode in CI)
-          node scripts/generate-version.js --update-package --quiet
-          echo "Version: ${{ needs.generate-version.outputs.version }}"
+          # Use the build number from the previous job to maintain consistency
+          BUILD_NUMBER=${{ needs.generate-version.outputs.build-number }} CI=true node scripts/generate-version.js --update-package --quiet
+          echo "Version: ${{ needs.generate-version.outputs.version }} (Build #${{ needs.generate-version.outputs.build-number }})"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

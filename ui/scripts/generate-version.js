@@ -114,14 +114,53 @@ function determineVersionFromGit(gitInfo) {
   return generateCalVerVersion(phase, patch);
 }
 
+function readBuildNumber() {
+  const buildNumberPath = path.join(__dirname, '../../.build-number');
+  try {
+    if (fs.existsSync(buildNumberPath)) {
+      const content = fs.readFileSync(buildNumberPath, 'utf8').trim();
+      return parseInt(content) || 1;
+    }
+  } catch (error) {
+    // Ignore errors, return default
+  }
+  return 1;
+}
+
+function writeBuildNumber(buildNumber) {
+  const buildNumberPath = path.join(__dirname, '../../.build-number');
+  try {
+    fs.writeFileSync(buildNumberPath, buildNumber.toString());
+  } catch (error) {
+    console.error('Failed to write build number:', error.message);
+  }
+}
+
 function generateBuildInfo(version, gitInfo) {
   const buildDate = new Date().toISOString();
-  const buildNumber = process.env.GITHUB_RUN_NUMBER || process.env.BUILD_NUMBER || 'local';
+  
+  // Read current build number from file
+  let buildNumber = readBuildNumber();
+  
+  // If running in CI and not provided, increment the build number
+  if (process.env.CI === 'true' && !process.env.BUILD_NUMBER) {
+    buildNumber = buildNumber + 1;
+    writeBuildNumber(buildNumber);
+  } else if (process.env.BUILD_NUMBER) {
+    // If BUILD_NUMBER is explicitly provided, use it and update the file
+    buildNumber = parseInt(process.env.BUILD_NUMBER);
+    writeBuildNumber(buildNumber);
+  }
+  
+  // Use GITHUB_RUN_NUMBER if available (for backwards compatibility)
+  if (process.env.GITHUB_RUN_NUMBER) {
+    buildNumber = parseInt(process.env.GITHUB_RUN_NUMBER);
+  }
   
   return {
     version,
     buildDate,
-    buildNumber,
+    buildNumber: buildNumber.toString(),
     buildTime: new Date().toISOString(),
     git: gitInfo.hasGit ? {
       hash: gitInfo.hash,
@@ -158,6 +197,13 @@ function main() {
   const forcePatch = args.find(arg => arg.startsWith('--patch='))?.split('=')[1];
   const updatePackage = args.includes('--update-package');
   const quiet = args.includes('--quiet') || process.env.CI === 'true';
+  const incrementBuild = args.includes('--increment-build');
+  
+  // Handle explicit build increment for local builds
+  if (incrementBuild && !process.env.CI) {
+    const currentBuild = readBuildNumber();
+    writeBuildNumber(currentBuild + 1);
+  }
   
   const gitInfo = getGitInfo();
   
@@ -209,5 +255,7 @@ if (require.main === module) {
 module.exports = {
   generateCalVerVersion,
   determineVersionFromGit,
-  getGitInfo
+  getGitInfo,
+  readBuildNumber,
+  writeBuildNumber
 };

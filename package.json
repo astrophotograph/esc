@@ -13,11 +13,12 @@
     "electron:build": "npm run build:ui && npm run build:server && cd electron && pnpm run build",
     "electron:dist": "npm run build:ui && npm run build:server && cd electron && pnpm run dist",
     "test": "cd ui && pnpm test && cd ../server && uv run pytest",
-    "lint": "cd ui && pnpm run lint && cd ../server && uv run ruff check ."
+    "lint": "cd ui && pnpm run lint && cd ../server && uv run ruff check .",
+    "prepare": "husky"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "pyinstaller": "^6.3.0"
+    "husky": "^9.1.7"
   },
   "workspaces": [
     "ui",

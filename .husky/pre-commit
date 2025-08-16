@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Increment build number on every commit
+cd ui && node scripts/generate-version.js --increment-build --quiet
+git add ../.build-number
