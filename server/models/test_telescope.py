@@ -94,7 +94,7 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
     event_bus: EventBus | None = None
     client: MockSeestarClient | None = None
     imaging: MockImagingClient | None = None
-
+    
     def __init__(self, **data):
         super().__init__(**data)
         # Initialize mock clients
@@ -117,6 +117,10 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
     async def get_location(self) -> Optional[str]:
         """Return the location for the test telescope (async for compatibility)."""
         return self._location or "Test Lab"
+    
+    def __repr__(self):
+        """Custom repr to avoid issues with properties."""
+        return f"TestTelescope(host={self.host!r}, port={self.port!r}, serial_number={self.serial_number!r})"
 
     async def _get_public_ip(self) -> Optional[str]:
         """Mock method - test telescope doesn't need real IP."""

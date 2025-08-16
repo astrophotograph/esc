@@ -64,6 +64,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
     def location(self) -> Optional[str]:
         """Get the cached location (synchronous)."""
         return self._location
+    
+    def __repr__(self):
+        """Custom repr to avoid issues with properties."""
+        return f"Telescope(host={self.host!r}, port={self.port!r}, serial_number={self.serial_number!r})"
 
     async def get_location(self) -> Optional[str]:
         """Get the user's location. Returns _location if set, otherwise tries to determine from user's public IP."""
