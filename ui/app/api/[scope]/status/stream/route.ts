@@ -1,15 +1,37 @@
 import { NextRequest } from 'next/server';
+import { createSafeTransformStream, checkMemoryPressure } from '@/lib/stream-utils';
+import { getConnectionPool } from '@/lib/connection-pool';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 30; // 30 second max for Vercel
 
 export async function GET(req: NextRequest,
                           { params }: { params: Promise<{ scope: string }> }
                           ) {
   let abortController: AbortController | undefined;
+  const connectionId = `sse-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const pool = getConnectionPool();
+  
+  // Check if we can accept new connections
+  if (!pool.canAccept()) {
+    console.error('Connection pool full, rejecting SSE request');
+    return new Response(
+      JSON.stringify({ error: 'Server at maximum capacity, please try again later' }),
+      { status: 503, headers: { 'Content-Type': 'application/json', 'Retry-After': '10' } }
+    );
+  }
   
   try {
     const { scope } = await params;
+    
+    // Add to connection pool
+    if (!pool.add(connectionId, 'sse', scope)) {
+      return new Response(
+        JSON.stringify({ error: 'Unable to establish connection' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
     // Use direct backend URL to avoid circular proxy calls
     const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     const statusStreamUrl = `${backendBaseUrl}/api/telescopes/${scope}/status/stream`;
@@ -45,10 +67,18 @@ export async function GET(req: NextRequest,
       );
     }
 
-    // Create a transform stream to handle cleanup
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
+    // Check memory pressure before creating stream
+    checkMemoryPressure();
+    
+    // Create a safe transform stream with limits
+    const { transformer, abort } = createSafeTransformStream({
+      maxSize: 50 * 1024 * 1024, // 50MB max for SSE streams
+      timeout: 30000, // 30 second timeout
+      chunkSize: 4 * 1024, // 4KB chunks for SSE
+    });
+    
     const reader = response.body.getReader();
+    const writer = transformer.writable.getWriter();
     
     // Pipe the response with cleanup handling
     const pump = async () => {
@@ -56,11 +86,13 @@ export async function GET(req: NextRequest,
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          await writer.ready; // Backpressure handling
           await writer.write(value);
         }
       } catch (error) {
         console.error('SSE stream error:', error);
       } finally {
+        abort(); // Ensure transform stream is aborted
         try {
           await reader.cancel();
           await writer.close();
@@ -75,13 +107,15 @@ export async function GET(req: NextRequest,
     // Clean up on client disconnect
     req.signal.addEventListener('abort', () => {
       console.log(`Client disconnected from SSE stream for ${scope}`);
+      pool.remove(connectionId);
       abortController?.abort();
+      abort();
       reader.cancel().catch(() => {});
       writer.close().catch(() => {});
     });
 
     // Create a new response with the transform stream and proper SSE headers
-    return new Response(readable, {
+    return new Response(transformer.readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -94,6 +128,7 @@ export async function GET(req: NextRequest,
     });
   } catch (error) {
     console.error('Error proxying SSE status stream:', error);
+    pool.remove(connectionId);
     abortController?.abort();
     return new Response(
       JSON.stringify({ error: 'Failed to proxy status stream' }),

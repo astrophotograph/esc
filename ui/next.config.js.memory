@@ -1,0 +1,83 @@
+/** @type {import('next').NextConfig} */
+
+// Memory-optimized Next.js configuration
+const nextConfig = {
+  // Optimize for production even in dev
+  swcMinify: true,
+  
+  // Reduce memory usage
+  experimental: {
+    // Limit worker threads
+    workerThreads: false,
+    cpus: 1,
+    
+    // Optimize memory usage
+    optimizeCss: true,
+    optimizePackageImports: ['@deck.gl/core', '@deck.gl/layers', '@deck.gl/react'],
+    
+    // Reduce build memory
+    webpackBuildWorker: true,
+  },
+  
+  // Webpack optimization
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Reduce memory footprint on server
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            commons: {
+              name: 'commons',
+              chunks: 'all',
+              minChunks: 2,
+            },
+          },
+        },
+      };
+      
+      // Limit parallelism
+      config.parallelism = 1;
+      
+      // Add memory management plugin
+      const webpack = require('webpack');
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'process.env.NODE_OPTIONS': JSON.stringify('--max-old-space-size=384'),
+        })
+      );
+    }
+    
+    return config;
+  },
+  
+  // Reduce server component size
+  serverComponentsExternalPackages: [
+    '@deck.gl/core',
+    '@deck.gl/layers', 
+    '@deck.gl/react',
+    'd3',
+    'recharts',
+  ],
+  
+  // Headers for better caching
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
+}
+
+module.exports = nextConfig
