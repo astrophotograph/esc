@@ -120,11 +120,11 @@ export function DarkLibraryOverlay({
             </div>
 
             {/* Estimated time or frames info */}
-            {percentage < 100 && (
-              <div className="text-xs text-gray-500 text-center">
-                Please keep the telescope covered during this process
-              </div>
-            )}
+            {/*{percentage < 100 && (*/}
+            {/*  <div className="text-xs text-gray-500 text-center">*/}
+            {/*    Please keep the telescope covered during this process*/}
+            {/*  </div>*/}
+            {/*)}*/}
           </div>
 
           {/* Visual loading animation */}
@@ -172,8 +172,8 @@ export function DarkLibraryOverlay({
             <div className="text-xs text-gray-400 space-y-1">
               <p className="font-semibold text-purple-300">Tips:</p>
               <ul className="space-y-0.5 ml-3">
-                <li>• Ensure lens cap is on or telescope is covered</li>
-                <li>• Keep temperature stable during capture</li>
+                {/*<li>• Ensure lens cap is on or telescope is covered</li>*/}
+                {/*<li>• Keep temperature stable during capture</li>*/}
                 <li>• Dark frames match current sensor temperature</li>
               </ul>
             </div>

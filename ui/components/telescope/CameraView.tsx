@@ -377,25 +377,39 @@ export function CameraView() {
   //   };
   // }, [streamActive, connectionLost, lastImageData, lastSuccessfulLoad]);
 
-  // Monitor SSE status stream health
+  // Update lastSSEMessage whenever we receive WebSocket updates
+  useEffect(() => {
+    if (wsConnected && wsLastUpdate > 0) {
+      setLastSSEMessage(Date.now());
+      setSseConnected(true);
+      // Reset connection lost state if we're receiving updates
+      if (connectionLost) {
+        setConnectionLost(false);
+      }
+    } else if (!wsConnected) {
+      setSseConnected(false);
+    }
+  }, [wsLastUpdate, wsConnected, connectionLost]);
+
+  // Monitor WebSocket connection health
   useEffect(() => {
     if (!sseConnected) return;
 
-    const SSE_TIMEOUT = 30000; // 30 seconds timeout for SSE messages - increased for better stability
+    const WS_TIMEOUT = 30000; // 30 seconds timeout for WebSocket messages - increased for better stability
     const CHECK_INTERVAL = 2000; // Check every 2 seconds
 
-    const checkSSEHealth = () => {
+    const checkConnectionHealth = () => {
       const now = Date.now();
       const timeSinceLastMessage = now - lastSSEMessage;
 
-      if (timeSinceLastMessage > SSE_TIMEOUT && !connectionLost) {
-        console.log(`SSE connection appears lost - ${timeSinceLastMessage}ms since last message`);
+      if (timeSinceLastMessage > WS_TIMEOUT && !connectionLost) {
+        console.log(`WebSocket connection appears lost - ${timeSinceLastMessage}ms since last message`);
         setConnectionLost(true);
       }
     };
 
-    // Start monitoring SSE health
-    sseCheckIntervalRef.current = setInterval(checkSSEHealth, CHECK_INTERVAL);
+    // Start monitoring connection health
+    sseCheckIntervalRef.current = setInterval(checkConnectionHealth, CHECK_INTERVAL);
 
     return () => {
       if (sseCheckIntervalRef.current) {
