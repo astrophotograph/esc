@@ -974,13 +974,15 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   }
 
   const selectTelescope = (telescope: TelescopeInfo, showNotification: boolean = true) => {
-    setCurrentTelescope(telescope)
+    // Find the most up-to-date version of this telescope from the list
+    const latestTelescope = telescopes.find(t => t.id === telescope.id) || telescope
+    setCurrentTelescope(latestTelescope)
 
     if (showNotification) {
       addStatusAlert({
         type: 'info',
         title: 'Telescope Selected',
-        message: `Connected to ${telescope.name}`
+        message: `Connected to ${latestTelescope.name}`
       })
     }
   }
@@ -1864,6 +1866,20 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [streamStatus])
 
+  // Keep currentTelescope in sync with telescopes list
+  useEffect(() => {
+    if (currentTelescope && telescopes.length > 0) {
+      const updated = telescopes.find(t => t.id === currentTelescope.id)
+      if (updated && (
+        updated.status !== currentTelescope.status || 
+        updated.isConnected !== currentTelescope.isConnected
+      )) {
+        // Update current telescope with latest data from the list
+        setCurrentTelescope(updated)
+      }
+    }
+  }, [telescopes])
+
   // Initialize WebSocket connection and fetch initial data on component mount
   useEffect(() => {
     // Only run on client side
@@ -1964,11 +1980,12 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     const handleStatusUpdate = (message: any) => {
       if (message.telescope_id && message.payload?.status) {
         // Update telescope status in the list
+        // Note: STATUS_UPDATE messages don't include connection status,
+        // only TELESCOPE_LIST messages have the 'connected' field
         setTelescopes(prev => prev.map(t => {
           if (t.id === message.telescope_id) {
             return {
               ...t,
-              status: message.payload.status.connected ? 'online' : 'offline',
               lastStatus: message.payload.status,
               lastUpdate: Date.now()
             }
@@ -1976,18 +1993,9 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           return t
         }))
         
-        // If this is the current telescope, update its status
+        // If this is the current telescope, just update the WebSocket status
+        // The currentTelescope will be updated when telescope list arrives
         if (currentTelescope?.id === message.telescope_id) {
-          // Update the current telescope with new status
-          if (currentTelescope) {
-            setCurrentTelescope({
-              ...currentTelescope,
-              status: message.payload.status.connected ? 'online' : 'offline',
-              lastStatus: message.payload.status,
-              lastUpdate: Date.now()
-            })
-          }
-          
           // Update WebSocket status for the current telescope
           setWsStatus(message.payload.status)
           setWsLastUpdate(Date.now())

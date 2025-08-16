@@ -273,12 +273,19 @@ class WebSocketManager:
                         telescope = self.telescope_getter(telescope_id)
                         if telescope:
                             # Build telescope info dict
+                            # Check if telescope is connected via its client connection
+                            is_connected = False
+                            if hasattr(telescope, 'client') and telescope.client:
+                                if hasattr(telescope.client, 'connection') and telescope.client.connection:
+                                    if hasattr(telescope.client.connection, 'is_connected'):
+                                        is_connected = telescope.client.connection.is_connected()
+                            
                             telescope_info = {
                                 "name": getattr(telescope, 'name', telescope_id),
                                 "serial_number": getattr(telescope, 'serial_number', telescope_id),
                                 "host": getattr(telescope, 'host', 'unknown'),
                                 "port": getattr(telescope, 'port', 4700),
-                                "connected": getattr(telescope, 'connected', False),
+                                "connected": is_connected,
                                 "product_model": getattr(telescope, 'product_model', 'Seestar'),
                                 "ssid": getattr(telescope, 'ssid', 'unknown'),
                                 "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
@@ -549,12 +556,19 @@ class WebSocketManager:
                         telescope = self.telescope_getter(telescope_id)
                         if telescope:
                             # Build telescope info dict
+                            # Check if telescope is connected via its client connection
+                            is_connected = False
+                            if hasattr(telescope, 'client') and telescope.client:
+                                if hasattr(telescope.client, 'connection') and telescope.client.connection:
+                                    if hasattr(telescope.client.connection, 'is_connected'):
+                                        is_connected = telescope.client.connection.is_connected()
+                            
                             telescope_info = {
                                 "name": getattr(telescope, 'name', telescope_id),
                                 "serial_number": getattr(telescope, 'serial_number', telescope_id),
                                 "host": getattr(telescope, 'host', 'unknown'),
                                 "port": getattr(telescope, 'port', 4700),
-                                "connected": getattr(telescope, 'connected', False),
+                                "connected": is_connected,
                                 "product_model": getattr(telescope, 'product_model', 'Seestar'),
                                 "ssid": getattr(telescope, 'ssid', 'unknown'),
                                 "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
