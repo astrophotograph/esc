@@ -66,6 +66,8 @@ import { ChalkboardPanel } from "./panels/ChalkboardPanel"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { ImageErrorBoundary } from "./ImageErrorBoundary"
 import { AutoGotoOverlay } from "./AutoGotoOverlay"
+import { DarkLibraryOverlay } from "./DarkLibraryOverlay"
+import { AutoFocusOverlay } from "./AutoFocusOverlay"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -1383,8 +1385,12 @@ export function CameraView() {
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
             >
-              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) or when client mode is Idle */}
-              {((connectionLost && connectionType === 'disconnected') || localStreamStatus?.status?.stage === 'Idle' || (!localStreamStatus?.status?.stage && currentTelescope)) && (
+              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) or when client mode is Idle, Initialise, or AutoFocus */}
+              {((connectionLost && connectionType === 'disconnected') || 
+                localStreamStatus?.status?.stage === 'Idle' || 
+                localStreamStatus?.status?.stage === 'Initialise' ||
+                localStreamStatus?.status?.stage === 'AutoFocus' ||
+                (!localStreamStatus?.status?.stage && currentTelescope)) && (
                 <div className="w-full h-full flex items-center justify-center bg-black relative">
                   <RandomTestPattern
                     width={containerDimensions.width || 800}
@@ -1393,6 +1399,10 @@ export function CameraView() {
                     statusText={
                       localStreamStatus?.status?.stage === 'Idle'
                         ? 'Telescope is not currently imaging or streaming'
+                        : localStreamStatus?.status?.stage === 'Initialise'
+                        ? 'Generating dark library frames...'
+                        : localStreamStatus?.status?.stage === 'AutoFocus'
+                        ? 'Auto focus in progress...'
                         : (!localStreamStatus?.status?.stage && currentTelescope)
                         ? 'Waiting for telescope status...'
                         : undefined
@@ -1422,32 +1432,35 @@ export function CameraView() {
               )}
 
               {/* WebRTC Live View with MJPEG fallback - wrapped in error boundary */}
-              <ImageErrorBoundary
-                fallbackTitle="Camera Feed Error"
-                fallbackDescription="There was an issue connecting to the telescope camera. Please check your connection and try again."
-                onRetry={() => {
-                  // Reset connection state and retry
-                  setConnectionLost(false)
-                  setImageError(false)
-                  setRetryCount(0)
-                  handleImageLoad()
-                }}
-              >
-                <WebRTCLiveView
-                  telescope={currentTelescope}
-                  className=""
-                  brightness={brightness}
-                  contrast={contrast}
-                  rotationAngle={rotationAngle}
-                  zoomLevel={zoomLevel}
-                  panPosition={panPosition}
-                  isPortrait={isPortrait}
-                  stage={localStreamStatus?.status?.stage}
-                  onLoad={handleImageLoad}
-                  onError={handleImageError}
-                  onConnectionStateChange={setConnectionType}
-                />
-              </ImageErrorBoundary>
+              {/* Hide when in Initialise mode for dark library generation or AutoFocus mode */}
+              {clientMode !== "Initialise" && clientMode !== "AutoFocus" && (
+                <ImageErrorBoundary
+                  fallbackTitle="Camera Feed Error"
+                  fallbackDescription="There was an issue connecting to the telescope camera. Please check your connection and try again."
+                  onRetry={() => {
+                    // Reset connection state and retry
+                    setConnectionLost(false)
+                    setImageError(false)
+                    setRetryCount(0)
+                    handleImageLoad()
+                  }}
+                >
+                  <WebRTCLiveView
+                    telescope={currentTelescope}
+                    className=""
+                    brightness={brightness}
+                    contrast={contrast}
+                    rotationAngle={rotationAngle}
+                    zoomLevel={zoomLevel}
+                    panPosition={panPosition}
+                    isPortrait={isPortrait}
+                    stage={localStreamStatus?.status?.stage}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    onConnectionStateChange={setConnectionType}
+                  />
+                </ImageErrorBoundary>
+              )}
             </div>
 
             {/* AutoGoto Overlay - Show when in ScopeGoto or AutoGoto mode */}
@@ -1459,6 +1472,18 @@ export function CameraView() {
               currentRa={localStreamStatus?.status?.ra}
               currentDec={localStreamStatus?.status?.dec}
               distDeg={localStreamStatus?.status?.dist_deg}
+            />
+
+            {/* Dark Library Overlay - Show when in Initialise mode */}
+            <DarkLibraryOverlay
+              isVisible={clientMode === "Initialise"}
+              percentage={localStreamStatus?.status?.percent}
+            />
+
+            {/* Auto Focus Overlay - Show when in AutoFocus mode */}
+            <AutoFocusOverlay
+              isVisible={clientMode === "AutoFocus"}
+              focusPosition={localStreamStatus?.status?.focus_position}
             />
 
             {/* Starmap Window */}

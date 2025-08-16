@@ -20,6 +20,28 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+// Helper function to convert RA degrees to HMS format
+function raToHMS(raDegrees: number): string {
+  // Convert degrees to hours (15 degrees per hour)
+  const raHours = raDegrees / 15
+  const hours = Math.floor(raHours)
+  const minutesDecimal = (raHours - hours) * 60
+  const minutes = Math.floor(minutesDecimal)
+  const seconds = ((minutesDecimal - minutes) * 60).toFixed(1)
+  return `${hours}h ${minutes}m ${seconds}s`
+}
+
+// Helper function to convert Dec degrees to DMS format
+function decToDMS(decDegrees: number): string {
+  const sign = decDegrees < 0 ? '-' : '+'
+  const absDec = Math.abs(decDegrees)
+  const degrees = Math.floor(absDec)
+  const minutesDecimal = (absDec - degrees) * 60
+  const minutes = Math.floor(minutesDecimal)
+  const seconds = ((minutesDecimal - minutes) * 60).toFixed(1)
+  return `${sign}${degrees}° ${minutes}' ${seconds}"`
+}
+
 export function NetworkStatusOverlay() {
   const {
     showStreamStatus,
@@ -328,17 +350,27 @@ export function NetworkStatusOverlay() {
 
                 {/* RA */}
                 {localStreamStatus?.status?.ra !== undefined && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-300">RA</span>
-                    <span className="text-white font-mono">{localStreamStatus.status.ra.toFixed(4)}h</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-300">RA</span>
+                      <div className="text-right">
+                        <div className="text-white font-mono">{raToHMS(localStreamStatus.status.ra)}</div>
+                        <div className="text-gray-400 text-xs font-mono">{localStreamStatus.status.ra.toFixed(2)}° ({(localStreamStatus.status.ra / 15).toFixed(4)}h)</div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {/* Dec */}
                 {localStreamStatus?.status?.dec !== undefined && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-300">Dec</span>
-                    <span className="text-white font-mono">{localStreamStatus.status.dec.toFixed(4)}°</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-300">Dec</span>
+                      <div className="text-right">
+                        <div className="text-white font-mono">{decToDMS(localStreamStatus.status.dec)}</div>
+                        <div className="text-gray-400 text-xs font-mono">{localStreamStatus.status.dec.toFixed(4)}°</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
@@ -458,6 +490,26 @@ export function NetworkStatusOverlay() {
 
             {!collapsedSections.imaging && (
               <>
+                {/* Client Mode / Stage */}
+                {localStreamStatus?.status?.stage && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-blue-400" />
+                      <span className="text-gray-300">Mode</span>
+                    </div>
+                    <span className="text-white font-mono">
+                      {localStreamStatus.status.stage === 'RTSP' ? 'Streaming' : 
+                       localStreamStatus.status.stage === 'Stack' ? 'Stacking' :
+                       localStreamStatus.status.stage === 'ContinuousExposure' ? 'Live View' :
+                       localStreamStatus.status.stage === 'AutoGoto' ? 'Auto Goto' :
+                       localStreamStatus.status.stage === 'ScopeGoto' ? 'Scope Goto' :
+                       localStreamStatus.status.stage === 'AutoFocus' ? 'Auto Focus' :
+                       localStreamStatus.status.stage === 'Initialise' ? 'Dark Library' :
+                       localStreamStatus.status.stage}
+                    </span>
+                  </div>
+                )}
+
                 {/* Frame Counts */}
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-gray-800 rounded px-2 py-1">

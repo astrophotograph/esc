@@ -79,6 +79,7 @@ class SeestarStatus(BaseModel):
     ra: float | None = None
     dec: float | None = None
     dist_deg: float | None = None # Distance from the telescope to the target in degrees
+    percent: float | None = None
     balance_sensor: BalanceSensorInfo | None = None
 
     def reset(self):
@@ -129,7 +130,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
     responses: dict[int, dict] = {}
     recent_events: collections.deque = collections.deque(maxlen=5)
     text_protocol: TextProtocol = TextProtocol()
-    client_mode: Literal["Initialise", "ContinuousExposure", "Stack", "Streaming", "AutoGoto", "Idle"] | None = "Idle"
+    client_mode: Literal["Initialise", "ContinuousExposure", "Stack", "Streaming", "AutoGoto", "AutoFocus", "Idle"] | None = "Idle"
     message_history: collections.deque = collections.deque(maxlen=5000)
 
     # Image enhancement settings
@@ -348,6 +349,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                 new_client_mode = "Stacking"
             elif stage == "AutoGoto" or stage == "ScopeGoto":
                 new_client_mode = "AutoGoto"
+            elif stage == "AutoFocus":
+                new_client_mode = "AutoFocus"
+            elif stage == "Initialise":
+                new_client_mode = "Initialise"
             else:
                 # Stage isn't a known active stage, default to Idle for safety
                 # This prevents the frontend from trying to load streams when the telescope state is unknown
@@ -396,6 +401,12 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
             self.status.stage = "Stack"
         elif new_client_mode == "Streaming":
             self.status.stage = "RTSP"
+        elif new_client_mode == "AutoGoto":
+            self.status.stage = "AutoGoto"
+        elif new_client_mode == "AutoFocus":
+            self.status.stage = "AutoFocus"
+        elif new_client_mode == "Initialise":
+            self.status.stage = "Initialise"
         else:
             # Fallback to original stage if unknown mode
             self.status.stage = stage
@@ -586,7 +597,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.trace(f"Handling event from {self}: {event_str}")
+        logging.debug(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -634,6 +645,14 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                         self.status.dec = parser.event.cur_ra_dec.dec
                         self.status.dist_deg = parser.event.dist_deg
                         self._update_client_mode("ScopeGoto")
+                case "Initialise":
+                    self._update_client_mode("Initialise")
+                    if parser.event.state == "working":
+                        self.status.percent = 0
+                case "DarkLibrary":
+                    self.status.percent = parser.event.percent
+                case "AutoFocus":
+                    self._update_client_mode("AutoFocus")
                 case _:
                     self.event_bus.emit(parser.event.Event, parser.event)
 
