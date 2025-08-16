@@ -975,12 +975,29 @@ class Controller:
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
+                                    except (ConnectionResetError, BrokenPipeError, OSError) as e:
+                                        # Handle connection reset gracefully (likely telescope reboot)
+                                        if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
+                                            logging.info(
+                                                f"Telescope {telescope_id} connection lost (likely rebooting). "
+                                                f"Will continue retrying in background."
+                                            )
+                                            # Wait longer during reboot
+                                            await asyncio.sleep(10)
+                                        else:
+                                            logging.warning(
+                                                f"Connection issue with {telescope_id}: {e}"
+                                            )
+                                            await asyncio.sleep(5)
                                     except Exception as e:
-                                        logging.error(
-                                            f"Error sending periodic status update for {telescope_id}: {e}",
-                                            exc_info=True
+                                        # Log other errors less verbosely
+                                        logging.debug(
+                                            f"Status update error for {telescope_id}: {e}"
                                         )
-                                    await asyncio.sleep(1)  # Send updates every second
+                                        await asyncio.sleep(2)
+                                    else:
+                                        # Normal operation - send updates every second
+                                        await asyncio.sleep(1)
 
                             # Use task manager for better exception handling
                             task_manager.create_task(
@@ -1240,12 +1257,29 @@ class Controller:
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
+                                    except (ConnectionResetError, BrokenPipeError, OSError) as e:
+                                        # Handle connection reset gracefully (likely telescope reboot)
+                                        if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
+                                            logging.info(
+                                                f"Telescope {telescope_id} connection lost (likely rebooting). "
+                                                f"Will continue retrying in background."
+                                            )
+                                            # Wait longer during reboot
+                                            await asyncio.sleep(10)
+                                        else:
+                                            logging.warning(
+                                                f"Connection issue with {telescope_id}: {e}"
+                                            )
+                                            await asyncio.sleep(5)
                                     except Exception as e:
-                                        logging.error(
-                                            f"Error sending periodic status update for {telescope_id}: {e}",
-                                            exc_info=True
+                                        # Log other errors less verbosely
+                                        logging.debug(
+                                            f"Status update error for {telescope_id}: {e}"
                                         )
-                                    await asyncio.sleep(1)  # Send updates every second
+                                        await asyncio.sleep(2)
+                                    else:
+                                        # Normal operation - send updates every second
+                                        await asyncio.sleep(1)
 
                             # Use task manager for better exception handling
                             task_manager.create_task(

@@ -28,6 +28,8 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
     _should_reconnect_callback: Optional[Callable[[], bool]] = None
     _last_reconnect_log: float = 0.0
     _reconnect_log_interval: float = 30.0
+    _reboot_detected: bool = False
+    _last_reboot_time: float = 0.0
 
     def __init__(
         self,
@@ -118,6 +120,9 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
     async def _reconnect_with_backoff(self) -> bool:
         """Attempt to reconnect with exponential backoff."""
+        import time
+        current_time = time.time()
+        
         # Check if reconnection is allowed via callback
         if self._should_reconnect_callback and not self._should_reconnect_callback():
             logging.debug(
@@ -127,19 +132,34 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
 
         self._reconnect_attempts += 1
         
+        # Check if this looks like a reboot (multiple failures within a short time)
+        if not self._reboot_detected and self._reconnect_attempts >= 3:
+            if current_time - self._last_reboot_time > 300:  # 5 minutes since last reboot
+                self._reboot_detected = True
+                self._last_reboot_time = current_time
+                logging.info(
+                    f"Telescope at {self.host}:{self.port} appears to be rebooting. "
+                    f"Will continue reconnection attempts with reduced logging."
+                )
+        
         # Use exponential backoff but cap at max delay, don't give up after max attempts
         # Reset attempts counter periodically to prevent overflow and allow fresh logging
         if self._reconnect_attempts > 50:  # Reset after many attempts to refresh logging
             self._reconnect_attempts = 10
             
-        delay = min(
-            self._base_reconnect_delay * (2 ** min(self._reconnect_attempts - 1, 6)),  # Cap exponential growth
-            self._max_reconnect_delay
-        ) + random.uniform(0, 1)
+        # Use longer delays if reboot detected
+        if self._reboot_detected:
+            delay = min(
+                5.0 * (2 ** min(self._reconnect_attempts - 1, 3)),  # Start at 5s for reboots
+                self._max_reconnect_delay
+            ) + random.uniform(0, 2)
+        else:
+            delay = min(
+                self._base_reconnect_delay * (2 ** min(self._reconnect_attempts - 1, 6)),  # Cap exponential growth
+                self._max_reconnect_delay
+            ) + random.uniform(0, 1)
 
         # Only log reconnection attempts periodically to avoid spam
-        import time
-        current_time = time.time()
         if current_time - self._last_reconnect_log > self._reconnect_log_interval:
             logging.info(
                 f"Attempting reconnection #{self._reconnect_attempts} to {self.host}:{self.port} in {delay:.2f}s"
@@ -155,8 +175,22 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
         try:
             await self.close()  # Ensure clean state
             await self.open()
-            logging.info(f"Successfully reconnected to {self.host}:{self.port} (after {self._reconnect_attempts} attempts)")
+            
+            # Log successful reconnection appropriately based on context
+            if self._reboot_detected:
+                logging.info(
+                    f"Successfully reconnected to {self.host}:{self.port} after reboot "
+                    f"(took {self._reconnect_attempts} attempts)"
+                )
+                self._reboot_detected = False  # Clear reboot flag
+            else:
+                logging.info(
+                    f"Successfully reconnected to {self.host}:{self.port} "
+                    f"(after {self._reconnect_attempts} attempts)"
+                )
+            
             self._last_reconnect_log = 0.0  # Reset log throttling on success
+            self._reconnect_attempts = 0  # Reset attempts counter
             return True
         except Exception as e:
             # Only log detailed error every few attempts to avoid spam
@@ -183,9 +217,15 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             self.written_messages += 1
         except Exception as e:
             if self._is_connection_reset_error(e):
-                logging.warning(
-                    f"Connection reset detected while writing to {self}: {e}"
-                )
+                # Reduce log verbosity for expected reboot scenarios
+                if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
+                    logging.info(
+                        f"Connection to {self.host}:{self.port} lost (telescope may be rebooting)"
+                    )
+                else:
+                    logging.warning(
+                        f"Connection reset detected while writing to {self}: {e}"
+                    )
                 await self.close()
 
                 # Attempt reconnection
@@ -221,9 +261,15 @@ class SeestarConnection(BaseModel, arbitrary_types_allowed=True):
             return data.decode().strip()
         except Exception as e:
             if self._is_connection_reset_error(e):
-                logging.warning(
-                    f"Connection reset detected while reading from {self}: {e}"
-                )
+                # Reduce log verbosity for expected reboot scenarios
+                if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
+                    logging.info(
+                        f"Connection to {self.host}:{self.port} lost during read (telescope may be rebooting)"
+                    )
+                else:
+                    logging.warning(
+                        f"Connection reset detected while reading from {self}: {e}"
+                    )
                 await self.close()
 
                 # Attempt reconnection
