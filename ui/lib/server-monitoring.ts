@@ -76,13 +76,17 @@ class ServerMemoryMonitor {
     const deltaBytes = this.initialMemory ? stats.heapUsed - this.initialMemory.heapUsed : 0;
     const deltaMB = deltaBytes / 1024 / 1024;
     
-    // Determine log level
+    // Check external memory (often the culprit in Next.js apps)
+    const externalMB = stats.external / 1024 / 1024;
+    const totalMemoryMB = (stats.heapUsed + stats.external) / 1024 / 1024;
+    
+    // Determine log level based on total memory (heap + external)
     let logFn = console.debug;
-    if (Math.abs(deltaMB) > 100) {
+    if (totalMemoryMB > 500) {
       logFn = console.error;
-    } else if (Math.abs(deltaMB) > 50) {
+    } else if (totalMemoryMB > 300) {
       logFn = console.warn;
-    } else if (Math.abs(deltaMB) > 10) {
+    } else if (Math.abs(deltaMB) > 10 || externalMB > 100) {
       logFn = console.info;
     }
     
@@ -91,20 +95,43 @@ class ServerMemoryMonitor {
       `Heap: ${this.formatBytes(stats.heapUsed)}/${this.formatBytes(stats.heapTotal)} ` +
       `(Δ${deltaMB > 0 ? '+' : ''}${deltaMB.toFixed(1)}MB), ` +
       `External: ${this.formatBytes(stats.external)}, ` +
+      `Total: ${this.formatBytes(stats.heapUsed + stats.external)}, ` +
       `CPU: ${(cpuUsage.user / 1000).toFixed(0)}ms user, ${(cpuUsage.system / 1000).toFixed(0)}ms system`
     );
     
-    // Check for potential memory leak
-    if (deltaMB > 100) {
-      console.error(`${stats.timestamp} [ServerMemoryMonitor] Potential memory leak! Memory increased by ${deltaMB.toFixed(1)}MB`);
+    // Check for potential memory leak - consider both heap and external memory
+    if (deltaMB > 100 || externalMB > 200) {
+      console.error(`${stats.timestamp} [ServerMemoryMonitor] Potential memory leak! Heap delta: ${deltaMB.toFixed(1)}MB, External: ${externalMB.toFixed(1)}MB`);
       
       // Force garbage collection if exposed
       if (global.gc) {
+        console.info(`${new Date().toISOString()} [ServerMemoryMonitor] Triggering garbage collection...`);
         global.gc();
-        const afterGC = process.memoryUsage();
-        const freed = stats.heapUsed - afterGC.heapUsed;
-        console.info(`${new Date().toISOString()} [ServerMemoryMonitor] After GC: freed ${this.formatBytes(freed)}`);
+        
+        // Check memory after GC
+        setTimeout(() => {
+          const afterGC = process.memoryUsage();
+          const freedHeap = stats.heapUsed - afterGC.heapUsed;
+          const freedExternal = stats.external - afterGC.external;
+          console.info(
+            `${new Date().toISOString()} [ServerMemoryMonitor] After GC: ` +
+            `Heap freed: ${this.formatBytes(freedHeap)}, ` +
+            `External freed: ${this.formatBytes(freedExternal)}, ` +
+            `Current heap: ${this.formatBytes(afterGC.heapUsed)}, ` +
+            `Current external: ${this.formatBytes(afterGC.external)}`
+          );
+        }, 1000);
+      } else {
+        console.warn('Garbage collection not exposed. Run Node.js with --expose-gc flag to enable manual GC.');
       }
+    }
+    
+    // Warn if external memory is too high (common with buffers and streams)
+    if (externalMB > 150) {
+      console.warn(
+        `${stats.timestamp} [ServerMemoryMonitor] High external memory usage: ${this.formatBytes(stats.external)}. ` +
+        `This often indicates unclosed streams, buffers, or native resources.`
+      );
     }
     
     this.lastStats = stats;

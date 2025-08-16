@@ -50,6 +50,12 @@ export async function GET(req: NextRequest,
 
     console.log(`Proxying ${streamType} stream for ${scope}: ${streamUrl}`)
 
+    // Create abort controller for cleanup
+    const abortController = new AbortController()
+    
+    // Add timeout to prevent hanging requests
+    const timeoutId = setTimeout(() => abortController.abort(), 30000) // 30 second timeout
+
     // Fetch the stream from the telescope
     const response = await fetch(streamUrl, {
       method: 'GET',
@@ -57,9 +63,10 @@ export async function GET(req: NextRequest,
         'Accept': 'image/jpeg, image/png, */*',
         'User-Agent': 'SeestarUI/1.0',
       },
-      // Add timeout to prevent hanging requests
-      // signal: AbortSignal.timeout(30000), // 30 second timeout
+      signal: abortController.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       console.error(`Stream fetch error for ${scope}: ${response.status} ${response.statusText}`)
@@ -85,8 +92,43 @@ export async function GET(req: NextRequest,
     // Get content type from the telescope response
     const contentType = response.headers.get('content-type') || 'image/jpeg'
 
-    // Create a new response with the telescope's stream
-    return new Response(response.body, {
+    // Create a transform stream to handle cleanup
+    const { readable, writable } = new TransformStream()
+    const writer = writable.getWriter()
+    const reader = response.body.getReader()
+    
+    // Pipe the response with cleanup handling
+    const pump = async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          await writer.write(value)
+        }
+      } catch (error) {
+        console.error('Stream pipe error:', error)
+      } finally {
+        try {
+          await reader.cancel()
+          await writer.close()
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+    
+    pump().catch(console.error)
+
+    // Clean up on client disconnect
+    req.signal.addEventListener('abort', () => {
+      console.log(`Client disconnected from stream for ${scope}`)
+      abortController.abort()
+      reader.cancel().catch(() => {})
+      writer.close().catch(() => {})
+    })
+
+    // Create a new response with the transform stream
+    return new Response(readable, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'no-cache, no-store, must-revalidate',

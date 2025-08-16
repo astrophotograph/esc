@@ -6,6 +6,8 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest,
                           { params }: { params: Promise<{ scope: string }> }
                           ) {
+  let abortController: AbortController | undefined;
+  
   try {
     const { scope } = await params;
     // Use direct backend URL to avoid circular proxy calls
@@ -14,6 +16,9 @@ export async function GET(req: NextRequest,
 
     console.log(`Proxying SSE status stream for ${scope}: ${statusStreamUrl}`);
 
+    // Create an abort controller for cleanup
+    abortController = new AbortController();
+    
     const response = await fetch(statusStreamUrl, {
       method: 'GET',
       headers: {
@@ -21,6 +26,7 @@ export async function GET(req: NextRequest,
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
       },
+      signal: abortController.signal,
     });
 
     if (!response.ok) {
@@ -39,8 +45,43 @@ export async function GET(req: NextRequest,
       );
     }
 
-    // Create a new response with the same body and proper SSE headers
-    return new Response(response.body, {
+    // Create a transform stream to handle cleanup
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const reader = response.body.getReader();
+    
+    // Pipe the response with cleanup handling
+    const pump = async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } catch (error) {
+        console.error('SSE stream error:', error);
+      } finally {
+        try {
+          await reader.cancel();
+          await writer.close();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    };
+    
+    pump().catch(console.error);
+
+    // Clean up on client disconnect
+    req.signal.addEventListener('abort', () => {
+      console.log(`Client disconnected from SSE stream for ${scope}`);
+      abortController?.abort();
+      reader.cancel().catch(() => {});
+      writer.close().catch(() => {});
+    });
+
+    // Create a new response with the transform stream and proper SSE headers
+    return new Response(readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -53,6 +94,7 @@ export async function GET(req: NextRequest,
     });
   } catch (error) {
     console.error('Error proxying SSE status stream:', error);
+    abortController?.abort();
     return new Response(
       JSON.stringify({ error: 'Failed to proxy status stream' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
