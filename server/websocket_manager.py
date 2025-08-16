@@ -269,7 +269,7 @@ class WebSocketManager:
                                 "product_model": getattr(telescope, 'product_model', 'Seestar'),
                                 "ssid": getattr(telescope, 'ssid', 'unknown'),
                                 "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
-                                "location": getattr(telescope, 'location', None),
+                                "location": getattr(telescope, '_location', None),  # Access _location directly to avoid property issues
                             }
                             telescope_list.append(telescope_info)
             
@@ -533,7 +533,7 @@ class WebSocketManager:
                                 "product_model": getattr(telescope, 'product_model', 'Seestar'),
                                 "ssid": getattr(telescope, 'ssid', 'unknown'),
                                 "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
-                                "location": getattr(telescope, 'location', None),
+                                "location": getattr(telescope, '_location', None),  # Access _location directly to avoid property issues
                             }
                             telescope_list.append(telescope_info)
                         else:

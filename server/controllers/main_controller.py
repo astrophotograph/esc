@@ -419,7 +419,7 @@ class Controller:
                 "name": telescope.name,
                 "host": telescope.host,
                 "port": telescope.port,
-                "location": telescope.location if hasattr(telescope, 'location') else None,
+                "location": telescope._location if hasattr(telescope, '_location') else None,
                 "connected": telescope.client.is_connected if hasattr(telescope, 'client') and telescope.client else False,
                 "serial_number": telescope.serial_number,
                 "product_model": telescope.product_model,
