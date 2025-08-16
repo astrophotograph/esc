@@ -12,3 +12,4 @@ logs
 /build
 /dist
 /electron/assets
+/node_modules
