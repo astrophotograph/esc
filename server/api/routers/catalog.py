@@ -5,12 +5,17 @@ import math
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+import time
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
+
+# Global cache for catalog data
+_catalog_cache: Optional[Dict[str, Any]] = None
+_cache_load_time: float = 0
 
 
 class ObserverLocation(BaseModel):
@@ -88,15 +93,28 @@ def calculate_altitude_azimuth(ra_hours: float, dec_degrees: float,
 
 
 def load_catalog() -> Dict[str, Any]:
-    """Load the astronomical catalog from JSON file."""
+    """Load the astronomical catalog from JSON file with caching."""
+    global _catalog_cache, _cache_load_time
+    
+    # Return cached data if available and less than 1 hour old
+    if _catalog_cache is not None and (time.time() - _cache_load_time) < 3600:
+        logger.debug("Using cached catalog data")
+        return _catalog_cache
+    
     catalog_path = Path(__file__).parent.parent.parent / "data" / "catalogs" / "astro_data" / "astronomical_objects_full.json"
     
     if not catalog_path.exists():
         raise HTTPException(status_code=500, detail="Catalog file not found")
     
     try:
+        logger.info("Loading catalog from disk...")
+        start_time = time.time()
         with open(catalog_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            _catalog_cache = json.load(f)
+        _cache_load_time = time.time()
+        load_duration = _cache_load_time - start_time
+        logger.info(f"Catalog loaded in {load_duration:.2f} seconds ({len(_catalog_cache.get('objects', []))} objects)")
+        return _catalog_cache
     except Exception as e:
         logger.error(f"Error loading catalog: {e}")
         raise HTTPException(status_code=500, detail="Error loading catalog")
@@ -754,3 +772,140 @@ async def get_object_types() -> Dict[str, int]:
         type_counts[obj_type] = type_counts.get(obj_type, 0) + 1
     
     return type_counts
+
+
+@router.on_event("startup")
+async def preload_catalog():
+    """Preload catalog data on server startup for faster initial requests."""
+    try:
+        logger.info("Preloading catalog data on startup...")
+        load_catalog()
+        logger.info("Catalog preload complete")
+    except Exception as e:
+        logger.error(f"Failed to preload catalog: {e}")
+
+
+@router.get("/quick-search", response_model=CatalogSearchResponse)
+async def quick_search_catalog(
+    latitude: Optional[float] = Query(None, ge=-90, le=90, description="Observer latitude"),
+    longitude: Optional[float] = Query(None, ge=-180, le=180, description="Observer longitude"),
+    elevation: Optional[float] = Query(0, description="Observer elevation in meters")
+) -> CatalogSearchResponse:
+    """
+    Quick search endpoint that returns only the brightest objects for fast initial load.
+    Returns top 50 objects with magnitude <= 4.0 for instant display.
+    """
+    
+    catalog_data = load_catalog()
+    objects = catalog_data.get('objects', [])
+    
+    # Observer location for horizon calculations
+    observer_location = None
+    now = datetime.utcnow()
+    if latitude is not None and longitude is not None:
+        observer_location = ObserverLocation(
+            latitude=latitude,
+            longitude=longitude,
+            elevation=elevation
+        )
+        
+        # Calculate Local Sidereal Time
+        lst = calculate_local_sidereal_time(longitude, now)
+    
+    # Add only brightest dynamic objects for quick load
+    dynamic_objects = []
+    
+    # Add Moon (always visible when above horizon)
+    moon = calculate_moon_position(now)
+    dynamic_objects.append(moon)
+    
+    # Add brightest planets
+    planets = get_planet_positions(now)
+    # Filter to only the brightest planets
+    bright_planets = [p for p in planets if p['magnitudes']['v'] < 1.0]
+    dynamic_objects.extend(bright_planets)
+    
+    results = []
+    
+    # Process only objects with good magnitude for quick initial display
+    for obj in dynamic_objects + objects[:500]:  # Only check first 500 catalog objects for speed
+        try:
+            coordinates = obj.get('coordinates', {})
+            ra_data = coordinates.get('ra_j2000', {})
+            dec_data = coordinates.get('dec_j2000', {})
+            
+            if not ra_data or not dec_data:
+                continue
+                
+            ra_decimal = ra_data.get('decimal')
+            dec_decimal = dec_data.get('decimal')
+            
+            if ra_decimal is None or dec_decimal is None:
+                continue
+            
+            # Get magnitude and filter early
+            magnitudes = obj.get('magnitudes', {})
+            magnitude = get_object_magnitude(magnitudes)
+            
+            # For quick load, only include bright objects
+            if magnitude is None or magnitude > 4.0:
+                continue
+            
+            # Get object details
+            name = get_object_name(obj)
+            obj_type = obj.get('object_type', 'Unknown')
+            constellation = coordinates.get('constellation', 'Unknown')
+            physical_props = obj.get('physical_properties', {})
+            size_arcmin = get_object_size(physical_props)
+            
+            # Calculate horizon position if observer location provided
+            altitude = None
+            azimuth = None
+            above_horizon = True
+            
+            if observer_location:
+                ra_hours = ra_decimal / 15.0
+                altitude, azimuth = calculate_altitude_azimuth(
+                    ra_hours, dec_decimal, observer_location.latitude, lst
+                )
+                above_horizon = altitude > 0
+                
+                # Skip objects below horizon for quick view
+                if not above_horizon:
+                    continue
+            
+            moon_phase = obj.get('_moon_phase') if obj.get('id') == 'moon' else None
+            
+            celestial_obj = CelestialObject(
+                id=obj.get('id', ''),
+                name=name,
+                object_type=obj_type,
+                ra_decimal=ra_decimal,
+                dec_decimal=dec_decimal,
+                magnitude=magnitude,
+                constellation=constellation,
+                altitude=altitude,
+                azimuth=azimuth,
+                above_horizon=above_horizon,
+                size_arcmin=size_arcmin,
+                moon_phase=moon_phase
+            )
+            
+            results.append(celestial_obj)
+            
+            # Limit results for quick response
+            if len(results) >= 50:
+                break
+                
+        except Exception as e:
+            continue
+    
+    # Sort by magnitude (brightest first)
+    results.sort(key=lambda x: x.magnitude if x.magnitude is not None else 999.0)
+    
+    return CatalogSearchResponse(
+        objects=results,
+        total_count=len(results),
+        filtered_count=len(results),
+        observer_location=observer_location
+    )

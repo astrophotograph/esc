@@ -29,6 +29,8 @@ import { AppTour } from "./components/telescope/AppTour"
 import { VersionFooter } from "./components/telescope/VersionFooter"
 import { VersionUpdateNotification } from "./components/telescope/VersionUpdateNotification"
 import { useIsMobile } from "./hooks/use-mobile"
+import { catalogAPI } from "./services/catalog-api"
+import { DEFAULT_OBSERVER_LOCATION } from "./utils/celestial-calculations"
 
 function TelescopeControlContent() {
   const {
@@ -72,6 +74,21 @@ function TelescopeControlContent() {
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [handleKeyDown])
+
+  // Preload catalog data when the app loads
+  useEffect(() => {
+    const location = currentObservingLocation || {
+      coordinates: { latitude: DEFAULT_OBSERVER_LOCATION.latitude, longitude: DEFAULT_OBSERVER_LOCATION.longitude },
+      elevation: 0
+    }
+    
+    // Preload in the background - this will cache the data
+    catalogAPI.preloadQuickSearch(
+      location.coordinates.latitude,
+      location.coordinates.longitude,
+      location.elevation
+    )
+  }, [currentObservingLocation])
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

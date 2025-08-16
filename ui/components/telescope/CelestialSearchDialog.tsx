@@ -54,6 +54,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showImagingParametersDialog, setShowImagingParametersDialog] = useState(false)
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false)
 
   // Debounce search query
   useEffect(() => {
@@ -73,17 +74,30 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         elevation: 0
       }
 
-      const response = await catalogAPI.searchCatalog({
-        query: debouncedSearchQuery || undefined,
-        above_horizon_only: true,
-        latitude: location.coordinates.latitude,
-        longitude: location.coordinates.longitude,
-        elevation: location.elevation,
-        limit: 100
-      })
+      let response: any
+      
+      // Use quick search for initial load (no search query)
+      if (!debouncedSearchQuery && !hasLoadedInitialData) {
+        response = await catalogAPI.quickSearch(
+          location.coordinates.latitude,
+          location.coordinates.longitude,
+          location.elevation
+        )
+        setHasLoadedInitialData(true)
+      } else {
+        // Use full search when there's a query or after initial load
+        response = await catalogAPI.searchCatalog({
+          query: debouncedSearchQuery || undefined,
+          above_horizon_only: true,
+          latitude: location.coordinates.latitude,
+          longitude: location.coordinates.longitude,
+          elevation: location.elevation,
+          limit: 100
+        })
+      }
 
       // Convert catalog objects to frontend format
-      const convertedObjects = response.objects.map((obj, index) => 
+      const convertedObjects = response.objects.map((obj: any, index: number) => 
         CatalogAPI.convertToFrontendObject(obj, index)
       ) as CelestialObjectWithHorizon[]
 
@@ -99,7 +113,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     } finally {
       setIsLoading(false)
     }
-  }, [debouncedSearchQuery, currentObservingLocation])
+  }, [debouncedSearchQuery, currentObservingLocation, hasLoadedInitialData])
 
   useEffect(() => {
     if (!open) return
