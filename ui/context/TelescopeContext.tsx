@@ -1866,17 +1866,15 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           await wsService.subscribe([SubscriptionType.ALL])
           console.log('Subscribed to all telescope updates')
           
-          // Request telescope list after connection
-          await wsService.requestTelescopeList()
+          // Server will automatically send telescope list on connection
+          // No need to request it explicitly
         } catch (error) {
           console.error('Failed to connect WebSocket:', error)
-          // Fall back to HTTP polling if WebSocket fails
-          fetchTelescopes()
+          // No fallback - WebSocket is required
+          setTelescopeError('Failed to connect to server. Please refresh the page.')
         }
-      } else {
-        // If already connected, just request telescope list
-        await wsService.requestTelescopeList()
       }
+      // If already connected, server already sent the list
     }
     
     initializeWebSocket()

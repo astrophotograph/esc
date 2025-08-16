@@ -245,6 +245,42 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Failed to send initial heartbeat to {connection_id}: {e}")
 
+        # Send initial telescope list to the new connection
+        try:
+            telescope_list = []
+            
+            # First try to get the list from controller if available
+            if self.controller and hasattr(self.controller, 'get_telescope_list'):
+                telescope_list = await self.controller.get_telescope_list()
+                logger.debug(f"Got telescope list from controller for new connection: {len(telescope_list)} telescopes")
+            elif self.telescope_clients:
+                # Fallback: Build telescope list from the telescope_clients we're tracking
+                for telescope_id in self.telescope_clients.keys():
+                    if self.telescope_getter:
+                        telescope = self.telescope_getter(telescope_id)
+                        if telescope:
+                            # Build telescope info dict
+                            telescope_info = {
+                                "name": getattr(telescope, 'name', telescope_id),
+                                "serial_number": getattr(telescope, 'serial_number', telescope_id),
+                                "host": getattr(telescope, 'host', 'unknown'),
+                                "port": getattr(telescope, 'port', 4700),
+                                "connected": getattr(telescope, 'connected', False),
+                                "product_model": getattr(telescope, 'product_model', 'Seestar'),
+                                "ssid": getattr(telescope, 'ssid', 'unknown'),
+                                "discovery_method": getattr(telescope, 'discovery_method', 'auto'),
+                                "location": getattr(telescope, 'location', None),
+                            }
+                            telescope_list.append(telescope_info)
+            
+            # Send telescope list to new connection
+            if telescope_list or True:  # Always send, even if empty
+                list_message = MessageFactory.create_telescope_list(telescope_list)
+                await connection.send_message(list_message)
+                logger.info(f"Sent initial telescope list to {connection_id}: {len(telescope_list)} telescopes")
+        except Exception as e:
+            logger.error(f"Failed to send initial telescope list to {connection_id}: {e}")
+
         return connection
 
     async def disconnect(self, connection_id: str):
