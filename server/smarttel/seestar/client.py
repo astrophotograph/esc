@@ -216,7 +216,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                             self.text_protocol.handle_incoming_message(parsed_response)
                         except Exception as parse_error:
                             logging.error(
-                                f"Error parsing response from {self}: {response_str} {parse_error}"
+                                f"Error parsing response from {self}: '{response_str}' {parse_error}"
                             )
                 else:
                     # response_str is None - connection layer handles reconnection automatically
