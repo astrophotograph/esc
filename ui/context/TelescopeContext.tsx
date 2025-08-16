@@ -28,8 +28,7 @@ import type {
 } from "../types/telescope-types"
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
-import { useTelescopeWebSocket } from "../hooks/useTelescopeWebSocket"
-import { getWebSocketService, MessageType, CommandAction } from "../services/websocket-service"
+import { getWebSocketService, MessageType, CommandAction, SubscriptionType } from "../services/websocket-service"
 import { j2000ToJNow } from "../utils/coordinate-precession"
 
 export interface Annotation {
@@ -454,19 +453,40 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // WebSocket hook for telescope control and status
-  const {
-    moveTelescope: wsMoveTelescope,
-    parkTelescope: wsParkTelescope,
-    adjustFocus: wsAdjustFocus,
-    sendGotoMessage: wsSendGotoMessage,
-    enableSceneryMode: wsEnableSceneryMode,
-    isConnected: wsIsConnected,
-    connectionState: wsConnectionState,
-    connect: wsConnect,
-    disconnect: wsDisconnect,
-  } = useTelescopeWebSocket({
-    autoConnect: false
-  });
+  // Use global WebSocket service instead of per-telescope connections
+  // The global service connects once and handles all telescope communication
+  const wsService = getWebSocketService()
+  
+  // Create wrapper functions that use the global WebSocket service
+  const wsMoveTelescope = async (direction: string) => {
+    if (!currentTelescope) throw new Error('No telescope selected')
+    return wsService.sendCommand(CommandAction.MOVE, { direction }, currentTelescope.id)
+  }
+  
+  const wsParkTelescope = async () => {
+    if (!currentTelescope) throw new Error('No telescope selected')
+    return wsService.sendCommand(CommandAction.PARK, {}, currentTelescope.id)
+  }
+  
+  const wsAdjustFocus = async (direction: 'in' | 'out') => {
+    if (!currentTelescope) throw new Error('No telescope selected')
+    const increment = direction === 'in' ? -10 : 10
+    return wsService.sendCommand(CommandAction.FOCUS_INCREMENT, { increment }, currentTelescope.id)
+  }
+  
+  const wsSendGotoMessage = async (ra: number, dec: number, targetName?: string) => {
+    if (!currentTelescope) throw new Error('No telescope selected')
+    return wsService.sendCommand(CommandAction.GOTO, { ra, dec, target_name: targetName }, currentTelescope.id)
+  }
+  
+  const wsEnableSceneryMode = async () => {
+    if (!currentTelescope) throw new Error('No telescope selected')
+    return wsService.sendCommand(CommandAction.SCENERY, {}, currentTelescope.id)
+  }
+  
+  // Connection state from global service
+  const wsIsConnected = wsService.isConnected()
+  const wsConnectionState = wsService.getConnectionState()
 
   const [systemStats, setSystemStats] = useState<SystemStats>({
     battery: 85,
@@ -871,6 +891,17 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     setTelescopeError(null)
 
     try {
+      const wsService = getWebSocketService()
+      
+      // Try to use WebSocket first if connected
+      if (wsService.isConnected()) {
+        // Request telescope list via WebSocket
+        await wsService.requestTelescopeList()
+        // The response will be handled by the WebSocket listener above
+        return
+      }
+      
+      // Fallback to HTTP if WebSocket not connected
       const response = await fetch('/api/telescopes')
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -1364,30 +1395,28 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [rawCurrentTelescope])
 
-  // Manage WebSocket connection based on current telescope
+  // Subscribe to telescope updates when one is selected
+  // The global WebSocket connection is managed in the initialization effect
   useEffect(() => {
-    const connectToTelescope = async () => {
-      if (currentTelescope && !wsIsConnected) {
+    const subscribeToTelescope = async () => {
+      if (currentTelescope && wsIsConnected) {
         try {
-          console.log('🔌 Connecting to WebSocket for telescope:', currentTelescope.name)
-          await wsConnect(currentTelescope)
-          console.log('✅ WebSocket connected successfully')
+          console.log('📡 Subscribing to telescope updates:', currentTelescope.name)
+          await wsService.subscribe([SubscriptionType.ALL], currentTelescope.id)
+          console.log('✅ Subscribed to telescope successfully')
         } catch (error) {
-          console.error('❌ Failed to connect WebSocket:', error)
+          console.error('❌ Failed to subscribe to telescope:', error)
           addStatusAlert({
             type: 'error',
-            title: 'Connection Failed',
-            message: `Failed to connect to ${currentTelescope.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+            title: 'Subscription Failed',
+            message: `Failed to subscribe to ${currentTelescope.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
           })
         }
-      } else if (!currentTelescope && wsIsConnected) {
-        console.log('🔌 Disconnecting WebSocket (no telescope selected)')
-        wsDisconnect()
       }
     }
 
-    connectToTelescope()
-  }, [currentTelescope, wsIsConnected, wsConnect, wsDisconnect])
+    subscribeToTelescope()
+  }, [currentTelescope, wsIsConnected])
 
   const handleTelescopeMove = async (direction: string) => {
     if (!currentTelescope) {
@@ -1956,12 +1985,38 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     }
   }, [streamStatus])
 
-  // Initialize remote controllers on component mount
+  // Initialize WebSocket connection and fetch initial data on component mount
   useEffect(() => {
+    const initializeWebSocket = async () => {
+      const wsService = getWebSocketService()
+      if (!wsService.isConnected()) {
+        try {
+          // Connect to the main WebSocket endpoint without a specific telescope
+          await wsService.connect()
+          console.log('WebSocket connected successfully')
+          
+          // Subscribe to all telescopes for status updates
+          await wsService.subscribe([SubscriptionType.ALL])
+          console.log('Subscribed to all telescope updates')
+          
+          // Request telescope list after connection
+          await wsService.requestTelescopeList()
+        } catch (error) {
+          console.error('Failed to connect WebSocket:', error)
+          // Fall back to HTTP polling if WebSocket fails
+          fetchTelescopes()
+        }
+      } else {
+        // If already connected, just request telescope list
+        await wsService.requestTelescopeList()
+      }
+    }
+    
+    initializeWebSocket()
     fetchRemoteControllers()
   }, [])
 
-  // Listen for client mode changes
+  // Listen for WebSocket messages including telescope list updates
   useEffect(() => {
     const wsService = getWebSocketService()
 
@@ -1970,11 +2025,90 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         setClientMode(message.payload.new_mode)
       }
     }
+    
+    // Handle telescope list updates from WebSocket
+    const handleTelescopeList = (message: any) => {
+      if (message.payload?.telescopes) {
+        const rawData = message.payload.telescopes
+        
+        // Transform API data to match UI interface
+        const transformedTelescopes: TelescopeInfo[] = rawData.map((telescope: any) => ({
+          ...telescope,
+          id: telescope.serial_number || telescope.name,
+          status: telescope.connected ? 'online' : 'offline',
+          type: telescope.product_model,
+          isConnected: telescope.connected,
+          description: `${telescope.host}:${telescope.port} on ${telescope.ssid}`,
+          host: `${telescope.host}:${telescope.port}`,
+          location: telescope.location || `Network: ${telescope.ssid}`,
+          ssid: telescope.ssid,
+          isManual: telescope.discovery_method === 'manual'
+        }))
+        
+        setTelescopes(transformedTelescopes)
+        setIsLoadingTelescopes(false)
+        
+        // Update current telescope if it's in the list
+        if (currentTelescope) {
+          const updated = transformedTelescopes.find(t => t.id === currentTelescope.id)
+          if (updated) {
+            setCurrentTelescope(updated)
+          }
+        }
+      }
+    }
+    
+    // Handle telescope discovery/loss events
+    const handleTelescopeDiscovered = () => {
+      // Request updated telescope list when a new telescope is discovered
+      wsService.requestTelescopeList()
+    }
+    
+    const handleTelescopeLost = () => {
+      // Request updated telescope list when a telescope is lost
+      wsService.requestTelescopeList()
+    }
+    
+    // Handle status updates from telescopes
+    const handleStatusUpdate = (message: any) => {
+      if (message.telescope_id && message.payload?.status) {
+        // Update telescope status in the list
+        setTelescopes(prev => prev.map(t => {
+          if (t.id === message.telescope_id) {
+            return {
+              ...t,
+              status: message.payload.status.connected ? 'online' : 'offline',
+              lastStatus: message.payload.status,
+              lastUpdate: Date.now()
+            }
+          }
+          return t
+        }))
+        
+        // If this is the current telescope, update its status
+        if (currentTelescope?.id === message.telescope_id) {
+          setCurrentTelescope(prev => prev ? {
+            ...prev,
+            status: message.payload.status.connected ? 'online' : 'offline',
+            lastStatus: message.payload.status,
+            lastUpdate: Date.now()
+          } : null)
+        }
+      }
+    }
 
     wsService.on(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
+    wsService.on(MessageType.TELESCOPE_LIST, handleTelescopeList)
+    wsService.on(MessageType.TELESCOPE_DISCOVERED, handleTelescopeDiscovered)
+    wsService.on(MessageType.TELESCOPE_LOST, handleTelescopeLost)
+    wsService.on(MessageType.STATUS_UPDATE, handleStatusUpdate)
 
     return () => {
       wsService.off(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
+      wsService.off(MessageType.TELESCOPE_LIST, handleTelescopeList)
+      wsService.off(MessageType.TELESCOPE_DISCOVERED, handleTelescopeDiscovered)
+      wsService.off(MessageType.TELESCOPE_LOST, handleTelescopeLost)
+      wsService.off(MessageType.STATUS_UPDATE, handleStatusUpdate)
     }
   }, [currentTelescope?.id])
 

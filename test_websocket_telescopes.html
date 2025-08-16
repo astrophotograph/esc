@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Telescope List Test</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #0f0; 
+        }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            background: #333; 
+            color: #0f0; 
+            border: 1px solid #0f0; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #444; 
+        }
+        #log { 
+            margin-top: 20px; 
+            padding: 10px; 
+            background: #000; 
+            border: 1px solid #0f0; 
+            height: 400px; 
+            overflow-y: scroll; 
+            white-space: pre-wrap; 
+        }
+        .message { 
+            margin: 5px 0; 
+            padding: 5px; 
+        }
+        .sent { 
+            color: #ff0; 
+        }
+        .received { 
+            color: #0ff; 
+        }
+        .error { 
+            color: #f00; 
+        }
+        .success { 
+            color: #0f0; 
+        }
+        .telescope-list {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+            background: #111;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Telescope List Test</h1>
+    
+    <div>
+        <button onclick="connectWS()">Connect to Server</button>
+        <button onclick="disconnectWS()">Disconnect</button>
+        <button onclick="requestTelescopeList()">Request Telescope List</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div>
+        <label>Connection Status: <span id="status">Disconnected</span></label>
+    </div>
+    
+    <div id="telescopes" class="telescope-list">
+        <h3>Telescopes:</h3>
+        <div id="telescope-data">No data yet</div>
+    </div>
+    
+    <div id="log"></div>
+    
+    <script>
+        let ws = null;
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        const telescopeData = document.getElementById('telescope-data');
+        
+        function addLog(message, className = '') {
+            const entry = document.createElement('div');
+            entry.className = `message ${className}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function connectWS() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addLog('Already connected', 'error');
+                return;
+            }
+            
+            // Connect directly to the backend server
+            const wsUrl = 'ws://localhost:8000/api/ws';
+            addLog(`Connecting to ${wsUrl}...`, 'sent');
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    addLog('Connected to WebSocket server', 'success');
+                    status.textContent = 'Connected';
+                    status.style.color = '#0f0';
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        addLog(`Received: ${JSON.stringify(data, null, 2)}`, 'received');
+                        
+                        // Handle different message types
+                        if (data.type === 'telescope_list') {
+                            displayTelescopes(data.payload.telescopes);
+                        } else if (data.type === 'telescope_discovered') {
+                            addLog(`Telescope discovered: ${data.payload.telescope.name}`, 'success');
+                            // Request updated list
+                            requestTelescopeList();
+                        } else if (data.type === 'telescope_lost') {
+                            addLog(`Telescope lost: ${data.telescope_id}`, 'error');
+                            // Request updated list
+                            requestTelescopeList();
+                        } else if (data.type === 'server_init') {
+                            addLog(`Server init: ${data.payload.stage} - ${data.payload.message}`, 'success');
+                        }
+                    } catch (err) {
+                        addLog(`Failed to parse message: ${err}`, 'error');
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    addLog(`WebSocket error: ${error}`, 'error');
+                };
+                
+                ws.onclose = () => {
+                    addLog('WebSocket connection closed', 'error');
+                    status.textContent = 'Disconnected';
+                    status.style.color = '#f00';
+                    ws = null;
+                };
+            } catch (err) {
+                addLog(`Failed to connect: ${err}`, 'error');
+            }
+        }
+        
+        function disconnectWS() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function requestTelescopeList() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addLog('Not connected to WebSocket', 'error');
+                return;
+            }
+            
+            const message = {
+                type: 'request_telescope_list',
+                id: `req-${Date.now()}`,
+                timestamp: Date.now()
+            };
+            
+            addLog(`Sending: ${JSON.stringify(message)}`, 'sent');
+            ws.send(JSON.stringify(message));
+        }
+        
+        function displayTelescopes(telescopes) {
+            if (!telescopes || telescopes.length === 0) {
+                telescopeData.innerHTML = '<p>No telescopes found</p>';
+                return;
+            }
+            
+            let html = '<ul>';
+            telescopes.forEach(t => {
+                const status = t.connected ? '🟢' : '🔴';
+                html += `<li>${status} <b>${t.name}</b> - ${t.host}:${t.port}`;
+                if (t.serial_number) html += ` (SN: ${t.serial_number})`;
+                if (t.product_model) html += ` [${t.product_model}]`;
+                if (t.is_remote) html += ` 🌐 Remote`;
+                html += '</li>';
+            });
+            html += '</ul>';
+            
+            telescopeData.innerHTML = html;
+            addLog(`Updated telescope list: ${telescopes.length} telescope(s)`, 'success');
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+            addLog('Log cleared', 'success');
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            addLog('Page loaded. Click "Connect to Server" to start.', 'success');
+        };
+    </script>
+</body>
+</html>

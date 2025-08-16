@@ -21,14 +21,17 @@ class MessageType(str, Enum):
     STATUS_UPDATE = "status_update"
     TELESCOPE_DISCOVERED = "telescope_discovered"
     TELESCOPE_LOST = "telescope_lost"
+    TELESCOPE_LIST = "telescope_list"  # Full telescope list update
     ANNOTATION_EVENT = "annotation_event"
     ALERT = "alert"
     PLATE_SOLVE_RESULT = "plate_solve_result"
     CLIENT_MODE_CHANGED = "client_mode_changed"
+    SERVER_INIT = "server_init"  # Server initialization status
 
     # Control commands
     CONTROL_COMMAND = "control_command"
     COMMAND_RESPONSE = "command_response"
+    REQUEST_TELESCOPE_LIST = "request_telescope_list"  # Request for telescope list
 
     # Connection management
     HEARTBEAT = "heartbeat"
@@ -388,6 +391,51 @@ class EchoResponseMessage(WebSocketMessage):
         )
 
 
+class ServerInitMessage(WebSocketMessage):
+    """Server initialization status message."""
+    
+    type: MessageType = MessageType.SERVER_INIT
+    
+    def __init__(self, stage: str, message: str, progress: Optional[float] = None, **data):
+        """Create a server initialization message.
+        
+        Args:
+            stage: Current initialization stage (e.g., 'websocket', 'database', 'discovery', 'telescope_connection')
+            message: Human-readable message about the current step
+            progress: Optional progress percentage (0-100)
+        """
+        super().__init__(
+            payload={
+                "stage": stage,
+                "message": message,
+                "progress": progress,
+                "timestamp": time.time()
+            },
+            **data
+        )
+
+
+class TelescopeListMessage(WebSocketMessage):
+    """Message containing the full list of available telescopes."""
+    
+    type: MessageType = MessageType.TELESCOPE_LIST
+    
+    def __init__(self, telescopes: List[Dict[str, Any]], **data):
+        """Create a telescope list message.
+        
+        Args:
+            telescopes: List of telescope information dictionaries
+        """
+        super().__init__(
+            payload={
+                "telescopes": telescopes,
+                "count": len(telescopes),
+                "timestamp": time.time()
+            },
+            **data
+        )
+
+
 # Type aliases for convenience
 WebSocketMessageUnion = Union[
     StatusUpdateMessage,
@@ -404,6 +452,8 @@ WebSocketMessageUnion = Union[
     ErrorMessage,
     EchoRequestMessage,
     EchoResponseMessage,
+    ServerInitMessage,
+    TelescopeListMessage,
 ]
 
 
@@ -584,3 +634,17 @@ class MessageFactory:
             old_mode=old_mode,
             new_mode=new_mode,
         )
+
+    @staticmethod
+    def create_server_init(
+        stage: str, message: str, progress: Optional[float] = None
+    ) -> ServerInitMessage:
+        """Create a server initialization message."""
+        return ServerInitMessage(stage=stage, message=message, progress=progress)
+    
+    @staticmethod
+    def create_telescope_list(
+        telescopes: List[Dict[str, Any]]
+    ) -> TelescopeListMessage:
+        """Create a telescope list message."""
+        return TelescopeListMessage(telescopes=telescopes)

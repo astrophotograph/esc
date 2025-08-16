@@ -401,7 +401,52 @@ class Controller:
             telescope.create_telescope_api(),
             prefix=f"/api/telescopes/{telescope.name}",
         )
+        
+        # Broadcast updated telescope list
+        asyncio.create_task(self.broadcast_telescope_list())
 
+    async def get_telescope_list(self) -> list:
+        """Get the current list of all telescopes."""
+        result = []
+        
+        # Add local telescopes (exclude test telescopes)
+        for telescope in self.telescopes.values():
+            # Skip test telescopes
+            if isinstance(telescope, TestTelescope) or telescope.port == 9999:
+                continue
+            
+            result.append({
+                "name": telescope.name,
+                "host": telescope.host,
+                "port": telescope.port,
+                "location": await telescope.location if hasattr(telescope, 'location') else None,
+                "connected": telescope.client.is_connected if hasattr(telescope, 'client') else False,
+                "serial_number": telescope.serial_number,
+                "product_model": telescope.product_model,
+                "ssid": telescope.ssid,
+                "discovery_method": telescope.discovery_method,
+                "is_remote": False,
+            })
+        
+        # Add remote telescopes
+        for remote_telescope in self.remote_telescopes.values():
+            result.append(remote_telescope)
+        
+        return result
+    
+    async def broadcast_telescope_list(self):
+        """Broadcast the current telescope list via WebSocket."""
+        try:
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
+            
+            telescope_list = await self.get_telescope_list()
+            await websocket_manager.broadcast_telescope_list(telescope_list)
+            
+            logging.debug(f"Broadcast telescope list with {len(telescope_list)} telescopes")
+        except Exception as e:
+            logging.error(f"Failed to broadcast telescope list: {e}")
+    
     def remove_telescope(self, name: str):
         """Remove a telescope from the controller."""
         # Try to remove local telescope first
@@ -416,6 +461,9 @@ class Controller:
             if telescope.discovery_method == "manual":
                 task = asyncio.create_task(self.db.delete_telescope_by_name(name))
                 self.db._pending_operations.append(task)
+            
+            # Broadcast updated telescope list
+            asyncio.create_task(self.broadcast_telescope_list())
 
             # todo : need to remove from router and shut down connection...
             return
@@ -424,6 +472,8 @@ class Controller:
         remote_telescope = self.remote_telescopes.pop(name, None)
         if remote_telescope:
             logging.info(f"Removed remote telescope {name}")
+            # Broadcast updated telescope list
+            asyncio.create_task(self.broadcast_telescope_list())
             
             # Remove from discovery tracking if it has a host
             if "host" in remote_telescope:
@@ -1618,30 +1668,77 @@ class Controller:
         # Add startup handler to connect telescopes after server is ready
         @self.app.on_event("startup")
         async def startup_event():
+            from websocket_manager import get_websocket_manager
+            websocket_manager = get_websocket_manager()
+            
+            # Start WebSocket manager first to enable broadcasting
+            await websocket_manager.start()
+            logging.info("WebSocket manager started")
+            
+            # Broadcast initialization progress
+            await websocket_manager.broadcast_server_init(
+                "startup",
+                "Starting server components...",
+                25
+            )
+            
             # Start memory monitoring
             await self.memory_monitor.start()
             logging.info("Memory monitoring started")
+            await websocket_manager.broadcast_server_init(
+                "memory",
+                "Memory monitoring initialized",
+                35
+            )
             
-            # Start WebSocket manager first
-            from websocket_manager import get_websocket_manager
-
-            websocket_manager = get_websocket_manager()
-
-            await websocket_manager.start()
-            logging.info("WebSocket manager started")
-
+            # Initialize database
+            await websocket_manager.broadcast_server_init(
+                "database",
+                "Loading telescope database...",
+                45
+            )
+            
+            # Check for discovery
+            if self.discover:
+                await websocket_manager.broadcast_server_init(
+                    "discovery",
+                    "Scanning network for telescopes...",
+                    55
+                )
+            
             # Connect to all loaded telescopes after server is fully started
             if self.telescopes:
 
                 async def delayed_connect():
                     await asyncio.sleep(2)  # Wait for server to be fully ready
+                    
+                    await websocket_manager.broadcast_server_init(
+                        "telescope_connection",
+                        f"Connecting to {len(self.telescopes)} telescope(s)...",
+                        70
+                    )
+                    
                     click.secho(
                         f"Connecting to {len(self.telescopes)} telescopes after startup...",
                         fg="blue",
                     )
+                    
                     await self.connect_all_telescopes()
+                    
+                    await websocket_manager.broadcast_server_init(
+                        "complete",
+                        "Server initialization complete",
+                        100
+                    )
 
                 asyncio.create_task(delayed_connect())
+            else:
+                # No telescopes to connect
+                await websocket_manager.broadcast_server_init(
+                    "complete",
+                    "Server ready - no telescopes configured",
+                    100
+                )
 
         # Add shutdown handler for graceful cleanup
         @self.app.on_event("shutdown")
@@ -2169,34 +2266,7 @@ class Controller:
         @self.app.get("/api/telescopes")
         async def get_telescopes():
             """Get a list of all telescopes."""
-            result = []
-
-            # Add local telescopes (exclude test telescopes)
-            for telescope in self.telescopes.values():
-                # Skip test telescopes (identified by TestTelescope class or port 9999)
-                if isinstance(telescope, TestTelescope) or telescope.port == 9999:
-                    continue
-
-                result.append(
-                    {
-                        "name": telescope.name,
-                        "host": telescope.host,
-                        "port": telescope.port,
-                        "location": await telescope.location,
-                        "connected": telescope.client.is_connected,
-                        "serial_number": telescope.serial_number,
-                        "product_model": telescope.product_model,
-                        "ssid": telescope.ssid,
-                        "discovery_method": telescope.discovery_method,
-                        "is_remote": False,
-                    }
-                )
-
-            # Add remote telescopes
-            for remote_telescope in self.remote_telescopes.values():
-                result.append(remote_telescope)
-
-            return result
+            return await self.get_telescope_list()
 
         @self.app.post("/api/telescopes")
         async def add_telescope_endpoint(telescope_request: AddTelescopeRequest):

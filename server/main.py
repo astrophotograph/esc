@@ -335,6 +335,14 @@ def server(
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
         
+        # Get WebSocket manager early to enable initialization broadcasts
+        from websocket_manager import get_websocket_manager
+        ws_manager = get_websocket_manager()
+        
+        # Start WebSocket manager early (before controller runner)
+        # This allows us to broadcast initialization messages
+        click.echo("Starting WebSocket server for early client connections...")
+        
         # Run the controller
         await controller.runner()
         
@@ -347,6 +355,11 @@ def server(
             log_level="info" if not reload else "debug",
         )
         server = uvicorn.Server(config)
+        
+        click.echo(f"\n✨ Server starting on http://0.0.0.0:{server_port}")
+        click.echo("WebSocket endpoint: ws://localhost:{}/ws".format(server_port))
+        click.echo("\nClients can connect to WebSocket immediately to see initialization progress")
+        
         await server.serve()
     
     # Run the server

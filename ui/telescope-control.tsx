@@ -31,6 +31,7 @@ import { VersionUpdateNotification } from "./components/telescope/VersionUpdateN
 import { useIsMobile } from "./hooks/use-mobile"
 import { catalogAPI } from "./services/catalog-api"
 import { DEFAULT_OBSERVER_LOCATION } from "./utils/celestial-calculations"
+import { ServerInitStatus } from "./components/ServerInitStatus"
 
 function TelescopeControlContent() {
   const {
@@ -228,9 +229,15 @@ function TelescopeControlContent() {
 }
 
 export default function TelescopeControl() {
+  // Only show ServerInitStatus in development or when explicitly enabled
+  const showServerInit = process.env.NODE_ENV === 'development' || 
+                         typeof window !== 'undefined' && 
+                         window.location.search.includes('show_init')
+  
   return (
     <VersionCheckProvider checkIntervalMinutes={1440}>
       <TelescopeProvider>
+        {showServerInit && <ServerInitStatus />}
         <TelescopeControlContent />
         <NotificationPanels notifications={[]} onDismiss={() => {}} onMarkAsRead={() => {}} />
       </TelescopeProvider>

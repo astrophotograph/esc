@@ -34,6 +34,8 @@ from websocket_protocol import (
     ClientModeChangedMessage,
     EchoRequestMessage,
     EchoResponseMessage,
+    ServerInitMessage,
+    TelescopeListMessage,
 )
 
 
@@ -157,9 +159,24 @@ class WebSocketManager:
             return
 
         self._running = True
+        
+        # Broadcast that WebSocket manager is starting
+        await self.broadcast_server_init(
+            "websocket",
+            "WebSocket manager starting...",
+            10
+        )
+        
         self.heartbeat_task = asyncio.create_task(self._heartbeat_loop())
         self.echo_task = asyncio.create_task(self._echo_loop())
         self.message_id_cleanup_task = asyncio.create_task(self._periodic_message_id_cleanup())
+        
+        await self.broadcast_server_init(
+            "websocket",
+            "WebSocket manager started successfully",
+            20
+        )
+        
         logger.info("WebSocket manager started with echo loop and duplicate detection enabled")
 
     async def stop(self):
@@ -276,6 +293,8 @@ class WebSocketManager:
                 # Just update the last heartbeat time (already done above)
             elif isinstance(message, EchoResponseMessage):
                 await self._handle_echo_response(connection, message)
+            elif message.type == "request_telescope_list":
+                await self._handle_telescope_list_request(connection, message)
             else:
                 logger.warning(f"Unhandled message type: {message.type}")
 
@@ -413,6 +432,68 @@ class WebSocketManager:
         for connection in self.connections.values():
             if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
                 await connection.send_message(message)
+    
+    async def broadcast_server_init(
+            self,
+            stage: str,
+            message_text: str,
+            progress: Optional[float] = None
+    ):
+        """Broadcast server initialization status to all connections."""
+        message = MessageFactory.create_server_init(
+            stage=stage,
+            message=message_text,
+            progress=progress
+        )
+        
+        # Send to all connections regardless of subscription status
+        for connection in self.connections.values():
+            await connection.send_message(message)
+        
+        logger.info(f"Server init broadcast: {stage} - {message_text}")
+    
+    async def broadcast_telescope_list(
+            self,
+            telescopes: List[Dict[str, Any]]
+    ):
+        """Broadcast the full telescope list to all connections."""
+        message = MessageFactory.create_telescope_list(telescopes)
+        
+        # Send to all connections
+        for connection in self.connections.values():
+            await connection.send_message(message)
+        
+        logger.info(f"Telescope list broadcast: {len(telescopes)} telescopes")
+    
+    async def _handle_telescope_list_request(
+            self,
+            connection: WebSocketConnection,
+            message: WebSocketMessage
+    ):
+        """Handle request for telescope list from a specific client."""
+        logger.debug(f"Telescope list requested by {connection.connection_id}")
+        
+        # Get telescope list from the controller if available
+        if self.telescope_getter:
+            try:
+                # Get the controller
+                from controllers.main_controller import Controller
+                controller = getattr(self.telescope_getter, '__self__', None)
+                
+                if controller and isinstance(controller, Controller):
+                    telescope_list = await controller.get_telescope_list()
+                    
+                    # Send list to requesting connection only
+                    list_message = MessageFactory.create_telescope_list(telescope_list)
+                    await connection.send_message(list_message)
+                    
+                    logger.debug(f"Sent telescope list to {connection.connection_id}: {len(telescope_list)} telescopes")
+                else:
+                    logger.warning("Controller not available for telescope list request")
+            except Exception as e:
+                logger.error(f"Error handling telescope list request: {e}")
+        else:
+            logger.warning("No telescope getter configured for telescope list request")
 
     def register_telescope_client(self, telescope_id: str, client: Any):
         """Register a telescope client for command execution."""

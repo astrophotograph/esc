@@ -13,6 +13,8 @@ export enum MessageType {
   STATUS_UPDATE = 'status_update',
   TELESCOPE_DISCOVERED = 'telescope_discovered',
   TELESCOPE_LOST = 'telescope_lost',
+  TELESCOPE_LIST = 'telescope_list',
+  REQUEST_TELESCOPE_LIST = 'request_telescope_list',
   ANNOTATION_EVENT = 'annotation_event',
   CONTROL_COMMAND = 'control_command',
   COMMAND_RESPONSE = 'command_response',
@@ -24,7 +26,8 @@ export enum MessageType {
   PLATE_SOLVE_RESULT = 'plate_solve_result',
   CLIENT_MODE_CHANGED = 'client_mode_changed',
   ECHO_REQUEST = 'echo_request',
-  ECHO_RESPONSE = 'echo_response'
+  ECHO_RESPONSE = 'echo_response',
+  SERVER_INIT = 'server_init'
 }
 
 export enum CommandAction {
@@ -232,10 +235,15 @@ export class WebSocketService extends EventEmitter {
 
     this.instanceId = ++instanceCounter
 
+    // WebSocket connections go directly to the backend server, not through Next.js
+    // In production, this should be configured via environment variable
+    const backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST || 'localhost:8000'
+    const defaultWsUrl = typeof window !== 'undefined' ?
+      `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${backendHost}` :
+      'ws://localhost:8000'
+    
     this.config = {
-      baseUrl: config.baseUrl || (typeof window !== 'undefined' ?
-        `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` :
-        'ws://localhost:3000'),
+      baseUrl: config.baseUrl || defaultWsUrl,
       reconnectAttempts: config.reconnectAttempts || 5,
       reconnectDelayMs: config.reconnectDelayMs || 1000,
       maxReconnectDelayMs: config.maxReconnectDelayMs || 30000,
@@ -263,16 +271,17 @@ export class WebSocketService extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       try {
-        // Build WebSocket URL
+        // Always use the single WebSocket endpoint
+        // Telescope-specific routing is handled via message payloads
         let wsUrl = `${this.config.baseUrl}/api/ws`
-
-        if (telescopeId) {
-          wsUrl = `${this.config.baseUrl}/api/ws/${encodeURIComponent(telescopeId)}`
-        }
 
         const params = new URLSearchParams()
         if (clientId) {
           params.set('client_id', clientId)
+        }
+        // Include telescope ID as a query param if specified
+        if (telescopeId) {
+          params.set('telescope_id', telescopeId)
         }
         if (params.toString()) {
           wsUrl += `?${params.toString()}`
@@ -342,6 +351,20 @@ export class WebSocketService extends EventEmitter {
     }
   }
 
+  /**
+   * Request the telescope list from server
+   */
+  async requestTelescopeList(): Promise<void> {
+    const message = {
+      type: MessageType.REQUEST_TELESCOPE_LIST,
+      id: this.generateMessageId(),
+      timestamp: Date.now(),
+      payload: {}
+    }
+    
+    await this.sendMessage(message as WebSocketMessage)
+  }
+  
   /**
    * Send a control command to the telescope
    */
