@@ -40,6 +40,22 @@ class MessageType(str, Enum):
     UNSUBSCRIBE = "unsubscribe"
     ECHO_REQUEST = "echo_request"
     ECHO_RESPONSE = "echo_response"
+    
+    # Catalog operations
+    CATALOG_SEARCH = "catalog_search"
+    CATALOG_SEARCH_RESPONSE = "catalog_search_response"
+    CATALOG_QUICK_SEARCH = "catalog_quick_search"
+    CATALOG_QUICK_SEARCH_RESPONSE = "catalog_quick_search_response"
+    
+    # Remote controller operations
+    REMOTE_CONTROLLERS_LIST = "remote_controllers_list"
+    REMOTE_CONTROLLERS_LIST_RESPONSE = "remote_controllers_list_response"
+    REMOTE_CONTROLLER_ADD = "remote_controller_add"
+    REMOTE_CONTROLLER_ADD_RESPONSE = "remote_controller_add_response"
+    REMOTE_CONTROLLER_REMOVE = "remote_controller_remove"
+    REMOTE_CONTROLLER_REMOVE_RESPONSE = "remote_controller_remove_response"
+    REMOTE_CONTROLLER_RECONNECT = "remote_controller_reconnect"
+    REMOTE_CONTROLLER_RECONNECT_RESPONSE = "remote_controller_reconnect_response"
 
 
 class CommandAction(str, Enum):
@@ -436,6 +452,204 @@ class TelescopeListMessage(WebSocketMessage):
         )
 
 
+# Catalog message classes
+class CatalogSearchMessage(WebSocketMessage):
+    """Catalog search request message."""
+    
+    type: MessageType = MessageType.CATALOG_SEARCH
+    
+    def __init__(self, **data):
+        payload = data.get("payload", {})
+        super().__init__(
+            type=MessageType.CATALOG_SEARCH,
+            payload=payload,
+            **{k: v for k, v in data.items() if k != "payload"}
+        )
+
+
+class CatalogSearchResponseMessage(WebSocketMessage):
+    """Catalog search response message."""
+    
+    type: MessageType = MessageType.CATALOG_SEARCH_RESPONSE
+    
+    def __init__(self, request_id: str, objects: List[Dict[str, Any]], 
+                 total_count: int, filtered_count: int, 
+                 observer_location: Optional[Dict[str, Any]] = None, **data):
+        super().__init__(
+            id=request_id,  # Use the same ID as the request
+            type=MessageType.CATALOG_SEARCH_RESPONSE,
+            payload={
+                "objects": objects,
+                "total_count": total_count,
+                "filtered_count": filtered_count,
+                "observer_location": observer_location
+            },
+            **data
+        )
+
+
+class CatalogQuickSearchMessage(WebSocketMessage):
+    """Catalog quick search request message."""
+    
+    type: MessageType = MessageType.CATALOG_QUICK_SEARCH
+    
+    def __init__(self, **data):
+        payload = data.get("payload", {})
+        super().__init__(
+            type=MessageType.CATALOG_QUICK_SEARCH,
+            payload=payload,
+            **{k: v for k, v in data.items() if k != "payload"}
+        )
+
+
+class CatalogQuickSearchResponseMessage(WebSocketMessage):
+    """Catalog quick search response message."""
+    
+    type: MessageType = MessageType.CATALOG_QUICK_SEARCH_RESPONSE
+    
+    def __init__(self, request_id: str, objects: List[Dict[str, Any]], 
+                 total_count: int, filtered_count: int,
+                 observer_location: Optional[Dict[str, Any]] = None, **data):
+        super().__init__(
+            id=request_id,  # Use the same ID as the request
+            type=MessageType.CATALOG_QUICK_SEARCH_RESPONSE,
+            payload={
+                "objects": objects,
+                "total_count": total_count,
+                "filtered_count": filtered_count,
+                "observer_location": observer_location
+            },
+            **data
+        )
+
+
+# Remote controller message classes
+class RemoteControllersListMessage(WebSocketMessage):
+    """Remote controllers list request message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLERS_LIST
+    
+    def __init__(self, **data):
+        super().__init__(
+            type=MessageType.REMOTE_CONTROLLERS_LIST,
+            payload={},
+            **data
+        )
+
+
+class RemoteControllersListResponseMessage(WebSocketMessage):
+    """Remote controllers list response message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLERS_LIST_RESPONSE
+    
+    def __init__(self, request_id: str, controllers: List[Dict[str, Any]], **data):
+        super().__init__(
+            id=request_id,
+            type=MessageType.REMOTE_CONTROLLERS_LIST_RESPONSE,
+            payload={"controllers": controllers},
+            **data
+        )
+
+
+class RemoteControllerAddMessage(WebSocketMessage):
+    """Remote controller add request message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_ADD
+    
+    def __init__(self, **data):
+        payload = data.get("payload", {})
+        super().__init__(
+            type=MessageType.REMOTE_CONTROLLER_ADD,
+            payload=payload,
+            **{k: v for k, v in data.items() if k != "payload"}
+        )
+
+
+class RemoteControllerAddResponseMessage(WebSocketMessage):
+    """Remote controller add response message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_ADD_RESPONSE
+    
+    def __init__(self, request_id: str, success: bool, 
+                 message: Optional[str] = None, error: Optional[str] = None, **data):
+        super().__init__(
+            id=request_id,
+            type=MessageType.REMOTE_CONTROLLER_ADD_RESPONSE,
+            payload={
+                "success": success,
+                "message": message,
+                "error": error
+            },
+            **data
+        )
+
+
+class RemoteControllerRemoveMessage(WebSocketMessage):
+    """Remote controller remove request message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_REMOVE
+    
+    def __init__(self, **data):
+        payload = data.get("payload", {})
+        super().__init__(
+            type=MessageType.REMOTE_CONTROLLER_REMOVE,
+            payload=payload,
+            **{k: v for k, v in data.items() if k != "payload"}
+        )
+
+
+class RemoteControllerRemoveResponseMessage(WebSocketMessage):
+    """Remote controller remove response message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_REMOVE_RESPONSE
+    
+    def __init__(self, request_id: str, success: bool,
+                 message: Optional[str] = None, error: Optional[str] = None, **data):
+        super().__init__(
+            id=request_id,
+            type=MessageType.REMOTE_CONTROLLER_REMOVE_RESPONSE,
+            payload={
+                "success": success,
+                "message": message,
+                "error": error
+            },
+            **data
+        )
+
+
+class RemoteControllerReconnectMessage(WebSocketMessage):
+    """Remote controller reconnect request message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_RECONNECT
+    
+    def __init__(self, **data):
+        payload = data.get("payload", {})
+        super().__init__(
+            type=MessageType.REMOTE_CONTROLLER_RECONNECT,
+            payload=payload,
+            **{k: v for k, v in data.items() if k != "payload"}
+        )
+
+
+class RemoteControllerReconnectResponseMessage(WebSocketMessage):
+    """Remote controller reconnect response message."""
+    
+    type: MessageType = MessageType.REMOTE_CONTROLLER_RECONNECT_RESPONSE
+    
+    def __init__(self, request_id: str, success: bool,
+                 message: Optional[str] = None, error: Optional[str] = None, **data):
+        super().__init__(
+            id=request_id,
+            type=MessageType.REMOTE_CONTROLLER_RECONNECT_RESPONSE,
+            payload={
+                "success": success,
+                "message": message,
+                "error": error
+            },
+            **data
+        )
+
+
 # Type aliases for convenience
 WebSocketMessageUnion = Union[
     StatusUpdateMessage,
@@ -454,6 +668,18 @@ WebSocketMessageUnion = Union[
     EchoResponseMessage,
     ServerInitMessage,
     TelescopeListMessage,
+    CatalogSearchMessage,
+    CatalogSearchResponseMessage,
+    CatalogQuickSearchMessage,
+    CatalogQuickSearchResponseMessage,
+    RemoteControllersListMessage,
+    RemoteControllersListResponseMessage,
+    RemoteControllerAddMessage,
+    RemoteControllerAddResponseMessage,
+    RemoteControllerRemoveMessage,
+    RemoteControllerRemoveResponseMessage,
+    RemoteControllerReconnectMessage,
+    RemoteControllerReconnectResponseMessage,
 ]
 
 
@@ -521,6 +747,18 @@ class MessageFactory:
                 id=data.get("id"),
                 timestamp=data.get("timestamp")
             )
+        elif message_type == MessageType.CATALOG_SEARCH:
+            return CatalogSearchMessage(**data)
+        elif message_type == MessageType.CATALOG_QUICK_SEARCH:
+            return CatalogQuickSearchMessage(**data)
+        elif message_type == MessageType.REMOTE_CONTROLLERS_LIST:
+            return RemoteControllersListMessage(**data)
+        elif message_type == MessageType.REMOTE_CONTROLLER_ADD:
+            return RemoteControllerAddMessage(**data)
+        elif message_type == MessageType.REMOTE_CONTROLLER_REMOVE:
+            return RemoteControllerRemoveMessage(**data)
+        elif message_type == MessageType.REMOTE_CONTROLLER_RECONNECT:
+            return RemoteControllerReconnectMessage(**data)
         else:
             # Default to base WebSocket message
             return WebSocketMessage.model_validate(data)

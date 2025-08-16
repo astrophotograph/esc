@@ -61,6 +61,7 @@ function TelescopeControlContent() {
     setShowEquipmentManager,
     showTelescopeManagement,
     setShowTelescopeManagement,
+    wsIsConnected,
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
@@ -76,20 +77,35 @@ function TelescopeControlContent() {
     }
   }, [handleKeyDown])
 
-  // Preload catalog data when the app loads
+  // Preload catalog data when the app loads (preferably after WebSocket is connected)
   useEffect(() => {
     const location = currentObservingLocation || {
       coordinates: { latitude: DEFAULT_OBSERVER_LOCATION.latitude, longitude: DEFAULT_OBSERVER_LOCATION.longitude },
       elevation: 0
     }
     
-    // Preload in the background - this will cache the data
-    catalogAPI.preloadQuickSearch(
-      location.coordinates.latitude,
-      location.coordinates.longitude,
-      location.elevation
-    )
-  }, [currentObservingLocation])
+    if (wsIsConnected) {
+      // WebSocket is connected, preload immediately via WebSocket
+      console.log('WebSocket connected, preloading catalog data via WebSocket')
+      catalogAPI.preloadQuickSearch(
+        location.coordinates.latitude,
+        location.coordinates.longitude,
+        location.elevation
+      )
+    } else {
+      // WebSocket not connected yet, wait a bit then preload anyway (will use HTTP)
+      const timer = setTimeout(() => {
+        console.log('WebSocket not connected after 3s, preloading catalog data via HTTP fallback')
+        catalogAPI.preloadQuickSearch(
+          location.coordinates.latitude,
+          location.coordinates.longitude,
+          location.elevation
+        )
+      }, 3000) // Wait 3 seconds for WebSocket to potentially connect
+      
+      return () => clearTimeout(timer)
+    }
+  }, [currentObservingLocation, wsIsConnected])
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

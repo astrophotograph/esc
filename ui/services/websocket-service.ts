@@ -27,7 +27,21 @@ export enum MessageType {
   CLIENT_MODE_CHANGED = 'client_mode_changed',
   ECHO_REQUEST = 'echo_request',
   ECHO_RESPONSE = 'echo_response',
-  SERVER_INIT = 'server_init'
+  SERVER_INIT = 'server_init',
+  // Catalog operations
+  CATALOG_SEARCH = 'catalog_search',
+  CATALOG_SEARCH_RESPONSE = 'catalog_search_response',
+  CATALOG_QUICK_SEARCH = 'catalog_quick_search',
+  CATALOG_QUICK_SEARCH_RESPONSE = 'catalog_quick_search_response',
+  // Remote controller operations
+  REMOTE_CONTROLLERS_LIST = 'remote_controllers_list',
+  REMOTE_CONTROLLERS_LIST_RESPONSE = 'remote_controllers_list_response',
+  REMOTE_CONTROLLER_ADD = 'remote_controller_add',
+  REMOTE_CONTROLLER_ADD_RESPONSE = 'remote_controller_add_response',
+  REMOTE_CONTROLLER_REMOVE = 'remote_controller_remove',
+  REMOTE_CONTROLLER_REMOVE_RESPONSE = 'remote_controller_remove_response',
+  REMOTE_CONTROLLER_RECONNECT = 'remote_controller_reconnect',
+  REMOTE_CONTROLLER_RECONNECT_RESPONSE = 'remote_controller_reconnect_response'
 }
 
 export enum CommandAction {
@@ -164,6 +178,123 @@ export interface EchoResponseMessage extends WebSocketMessage {
   }
 }
 
+export interface CatalogSearchMessage extends WebSocketMessage {
+  type: MessageType.CATALOG_SEARCH
+  payload: {
+    query?: string
+    object_type?: string
+    min_magnitude?: number
+    max_magnitude?: number
+    above_horizon_only?: boolean
+    latitude?: number
+    longitude?: number
+    elevation?: number
+    limit?: number
+  }
+}
+
+export interface CatalogSearchResponseMessage extends WebSocketMessage {
+  type: MessageType.CATALOG_SEARCH_RESPONSE
+  payload: {
+    objects: any[]
+    total_count: number
+    filtered_count: number
+    observer_location?: {
+      latitude: number
+      longitude: number
+      elevation: number
+    }
+  }
+}
+
+export interface CatalogQuickSearchMessage extends WebSocketMessage {
+  type: MessageType.CATALOG_QUICK_SEARCH
+  payload: {
+    latitude?: number
+    longitude?: number
+    elevation?: number
+  }
+}
+
+export interface CatalogQuickSearchResponseMessage extends WebSocketMessage {
+  type: MessageType.CATALOG_QUICK_SEARCH_RESPONSE
+  payload: {
+    objects: any[]
+    total_count: number
+    filtered_count: number
+    observer_location?: {
+      latitude: number
+      longitude: number
+      elevation: number
+    }
+  }
+}
+
+export interface RemoteControllersListMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLERS_LIST
+  payload: Record<string, never>
+}
+
+export interface RemoteControllersListResponseMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLERS_LIST_RESPONSE
+  payload: {
+    controllers: any[]
+  }
+}
+
+export interface RemoteControllerAddMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_ADD
+  payload: {
+    host: string
+    port: number
+    name?: string
+    description?: string
+  }
+}
+
+export interface RemoteControllerAddResponseMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_ADD_RESPONSE
+  payload: {
+    success: boolean
+    message?: string
+    error?: string
+  }
+}
+
+export interface RemoteControllerRemoveMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_REMOVE
+  payload: {
+    host: string
+    port: number
+  }
+}
+
+export interface RemoteControllerRemoveResponseMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_REMOVE_RESPONSE
+  payload: {
+    success: boolean
+    message?: string
+    error?: string
+  }
+}
+
+export interface RemoteControllerReconnectMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_RECONNECT
+  payload: {
+    host: string
+    port: number
+  }
+}
+
+export interface RemoteControllerReconnectResponseMessage extends WebSocketMessage {
+  type: MessageType.REMOTE_CONTROLLER_RECONNECT_RESPONSE
+  payload: {
+    success: boolean
+    message?: string
+    error?: string
+  }
+}
+
 export type WebSocketMessageUnion =
   | StatusUpdateMessage
   | ControlCommandMessage
@@ -176,6 +307,18 @@ export type WebSocketMessageUnion =
   | ClientModeChangedMessage
   | EchoRequestMessage
   | EchoResponseMessage
+  | CatalogSearchMessage
+  | CatalogSearchResponseMessage
+  | CatalogQuickSearchMessage
+  | CatalogQuickSearchResponseMessage
+  | RemoteControllersListMessage
+  | RemoteControllersListResponseMessage
+  | RemoteControllerAddMessage
+  | RemoteControllerAddResponseMessage
+  | RemoteControllerRemoveMessage
+  | RemoteControllerRemoveResponseMessage
+  | RemoteControllerReconnectMessage
+  | RemoteControllerReconnectResponseMessage
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',
@@ -452,6 +595,193 @@ export class WebSocketService extends EventEmitter {
   }
 
   /**
+   * Search the catalog for celestial objects
+   */
+  async searchCatalog(params: {
+    query?: string
+    object_type?: string
+    min_magnitude?: number
+    max_magnitude?: number
+    above_horizon_only?: boolean
+    latitude?: number
+    longitude?: number
+    elevation?: number
+    limit?: number
+  }): Promise<any> {
+    const message: CatalogSearchMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.CATALOG_SEARCH,
+      timestamp: Date.now(),
+      payload: params
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Catalog search timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
+   * Quick search the catalog for brightest objects
+   */
+  async quickSearchCatalog(
+    latitude?: number,
+    longitude?: number,
+    elevation?: number
+  ): Promise<any> {
+    const message: CatalogQuickSearchMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.CATALOG_QUICK_SEARCH,
+      timestamp: Date.now(),
+      payload: { latitude, longitude, elevation }
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Catalog quick search timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
+   * Get list of remote controllers
+   */
+  async getRemoteControllers(): Promise<any> {
+    const message: RemoteControllersListMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.REMOTE_CONTROLLERS_LIST,
+      timestamp: Date.now(),
+      payload: {}
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Get remote controllers timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
+   * Add a remote controller
+   */
+  async addRemoteController(params: {
+    host: string
+    port: number
+    name?: string
+    description?: string
+  }): Promise<any> {
+    const message: RemoteControllerAddMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.REMOTE_CONTROLLER_ADD,
+      timestamp: Date.now(),
+      payload: params
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Add remote controller timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
+   * Remove a remote controller
+   */
+  async removeRemoteController(host: string, port: number): Promise<any> {
+    const message: RemoteControllerRemoveMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.REMOTE_CONTROLLER_REMOVE,
+      timestamp: Date.now(),
+      payload: { host, port }
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Remove remote controller timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
+   * Reconnect to a remote controller
+   */
+  async reconnectRemoteController(host: string, port: number): Promise<any> {
+    const message: RemoteControllerReconnectMessage = {
+      id: this.generateMessageId(),
+      type: MessageType.REMOTE_CONTROLLER_RECONNECT,
+      timestamp: Date.now(),
+      payload: { host, port }
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingCommands.delete(message.id)
+        reject(new Error('Reconnect remote controller timeout'))
+      }, this.config.commandTimeoutMs)
+
+      this.pendingCommands.set(message.id, {
+        id: message.id,
+        resolve,
+        reject,
+        timeout
+      })
+
+      this.sendMessage(message).catch(reject)
+    })
+  }
+
+  /**
    * Unsubscribe from telescope updates
    */
   async unsubscribe(
@@ -558,6 +888,36 @@ export class WebSocketService extends EventEmitter {
         return
       }
 
+      // Handle catalog search response
+      if (message.type === MessageType.CATALOG_SEARCH_RESPONSE) {
+        this.handleCatalogResponse(message as CatalogSearchResponseMessage)
+        return
+      }
+
+      // Handle catalog quick search response
+      if (message.type === MessageType.CATALOG_QUICK_SEARCH_RESPONSE) {
+        this.handleCatalogResponse(message as CatalogQuickSearchResponseMessage)
+        return
+      }
+
+      // Handle remote controller responses
+      if (message.type === MessageType.REMOTE_CONTROLLERS_LIST_RESPONSE) {
+        this.handleRemoteControllerResponse(message as RemoteControllersListResponseMessage)
+        return
+      }
+      if (message.type === MessageType.REMOTE_CONTROLLER_ADD_RESPONSE) {
+        this.handleRemoteControllerResponse(message as RemoteControllerAddResponseMessage)
+        return
+      }
+      if (message.type === MessageType.REMOTE_CONTROLLER_REMOVE_RESPONSE) {
+        this.handleRemoteControllerResponse(message as RemoteControllerRemoveResponseMessage)
+        return
+      }
+      if (message.type === MessageType.REMOTE_CONTROLLER_RECONNECT_RESPONSE) {
+        this.handleRemoteControllerResponse(message as RemoteControllerReconnectResponseMessage)
+        return
+      }
+
       // Handle heartbeat
       if (message.type === MessageType.HEARTBEAT) {
         this.lastHeartbeatReceived = Date.now()
@@ -606,6 +966,60 @@ export class WebSocketService extends EventEmitter {
       pendingCommand.resolve(message.payload.result)
     } else {
       pendingCommand.reject(new Error(message.payload.error || 'Command failed'))
+    }
+  }
+  
+  /**
+   * Handle catalog response message
+   */
+  private handleCatalogResponse(message: CatalogSearchResponseMessage | CatalogQuickSearchResponseMessage): void {
+    // Use the message ID to find the pending command
+    const pendingCommand = this.pendingCommands.get(message.id)
+    
+    if (!pendingCommand) {
+      // If no pending command, this might be a response to a request we didn't make
+      return
+    }
+
+    // Clear timeout and remove from pending
+    clearTimeout(pendingCommand.timeout)
+    this.pendingCommands.delete(message.id)
+
+    // Resolve with the payload
+    pendingCommand.resolve(message.payload)
+  }
+
+  /**
+   * Handle remote controller response message
+   */
+  private handleRemoteControllerResponse(
+    message: RemoteControllersListResponseMessage | 
+    RemoteControllerAddResponseMessage | 
+    RemoteControllerRemoveResponseMessage | 
+    RemoteControllerReconnectResponseMessage
+  ): void {
+    // Use the message ID to find the pending command
+    const pendingCommand = this.pendingCommands.get(message.id)
+    
+    if (!pendingCommand) {
+      // If no pending command, this might be a response to a request we didn't make
+      return
+    }
+
+    // Clear timeout and remove from pending
+    clearTimeout(pendingCommand.timeout)
+    this.pendingCommands.delete(message.id)
+
+    // For add/remove/reconnect operations, check for success/error
+    if ('success' in message.payload) {
+      if (message.payload.success) {
+        pendingCommand.resolve(message.payload)
+      } else {
+        pendingCommand.reject(new Error(message.payload.error || 'Operation failed'))
+      }
+    } else {
+      // For list operations, just return the payload
+      pendingCommand.resolve(message.payload)
     }
   }
   

@@ -1,5 +1,7 @@
 // Service for interacting with the astronomical catalog API
 
+import { getWebSocketService } from './websocket-service'
+
 export interface CatalogObject {
   id: string
   name: string
@@ -99,6 +101,26 @@ export class CatalogAPI {
       return cached
     }
 
+    try {
+      // Try WebSocket first
+      const ws = getWebSocketService()
+      if (ws.isConnected()) {
+        console.log('Using WebSocket for catalog search')
+        const response = await ws.searchCatalog(params)
+        const data: CatalogSearchResponse = {
+          objects: response.objects,
+          total_count: response.total_count,
+          filtered_count: response.filtered_count,
+          observer_location: response.observer_location
+        }
+        this.setCache(cacheKey, data)
+        return data
+      }
+    } catch (wsError) {
+      console.warn('WebSocket catalog search failed, falling back to HTTP:', wsError)
+    }
+
+    // Fallback to HTTP
     const queryParams = new URLSearchParams()
     
     if (params.query) queryParams.append('query', params.query)
@@ -131,6 +153,26 @@ export class CatalogAPI {
       return cached
     }
 
+    try {
+      // Try WebSocket first
+      const ws = getWebSocketService()
+      if (ws.isConnected()) {
+        console.log('Using WebSocket for catalog quick search')
+        const response = await ws.quickSearchCatalog(latitude, longitude, elevation)
+        const data: CatalogSearchResponse = {
+          objects: response.objects,
+          total_count: response.total_count,
+          filtered_count: response.filtered_count,
+          observer_location: response.observer_location
+        }
+        this.setCache(cacheKey, data)
+        return data
+      }
+    } catch (wsError) {
+      console.warn('WebSocket catalog quick search failed, falling back to HTTP:', wsError)
+    }
+
+    // Fallback to HTTP
     const queryParams = new URLSearchParams()
     if (latitude !== undefined) queryParams.append('latitude', latitude.toString())
     if (longitude !== undefined) queryParams.append('longitude', longitude.toString())

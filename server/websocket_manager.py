@@ -24,6 +24,7 @@ from smarttel.seestar.commands.simple import PiReboot, GetViewState
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
+    MessageType,
     SubscriptionType,
     StatusUpdateMessage,
     ControlCommandMessage,
@@ -36,6 +37,18 @@ from websocket_protocol import (
     EchoResponseMessage,
     ServerInitMessage,
     TelescopeListMessage,
+    CatalogSearchMessage,
+    CatalogSearchResponseMessage,
+    CatalogQuickSearchMessage,
+    CatalogQuickSearchResponseMessage,
+    RemoteControllersListMessage,
+    RemoteControllersListResponseMessage,
+    RemoteControllerAddMessage,
+    RemoteControllerAddResponseMessage,
+    RemoteControllerRemoveMessage,
+    RemoteControllerRemoveResponseMessage,
+    RemoteControllerReconnectMessage,
+    RemoteControllerReconnectResponseMessage,
 )
 
 
@@ -332,6 +345,18 @@ class WebSocketManager:
                 await self._handle_echo_response(connection, message)
             elif message.type == "request_telescope_list":
                 await self._handle_telescope_list_request(connection, message)
+            elif message.type == MessageType.CATALOG_SEARCH:
+                await self._handle_catalog_search(connection, message)
+            elif message.type == MessageType.CATALOG_QUICK_SEARCH:
+                await self._handle_catalog_quick_search(connection, message)
+            elif message.type == MessageType.REMOTE_CONTROLLERS_LIST:
+                await self._handle_remote_controllers_list(connection, message)
+            elif message.type == MessageType.REMOTE_CONTROLLER_ADD:
+                await self._handle_remote_controller_add(connection, message)
+            elif message.type == MessageType.REMOTE_CONTROLLER_REMOVE:
+                await self._handle_remote_controller_remove(connection, message)
+            elif message.type == MessageType.REMOTE_CONTROLLER_RECONNECT:
+                await self._handle_remote_controller_reconnect(connection, message)
             else:
                 logger.warning(f"Unhandled message type: {message.type}")
 
@@ -1699,6 +1724,219 @@ class WebSocketManager:
             'server_browser_min_rtt_ms': None,
             'server_browser_max_rtt_ms': None,
         }
+    
+    async def _handle_catalog_search(self, connection: WebSocketConnection, message: CatalogSearchMessage):
+        """Handle catalog search request."""
+        try:
+            from api.routers.catalog import search_catalog
+            
+            payload = message.payload
+            response = await search_catalog(
+                query=payload.get("query"),
+                object_type=payload.get("object_type"),
+                min_magnitude=payload.get("min_magnitude"),
+                max_magnitude=payload.get("max_magnitude"),
+                above_horizon_only=payload.get("above_horizon_only"),
+                latitude=payload.get("latitude"),
+                longitude=payload.get("longitude"),
+                elevation=payload.get("elevation"),
+                limit=payload.get("limit")
+            )
+            
+            # Convert CelestialObject models to dicts
+            objects = [obj.model_dump() for obj in response.objects]
+            
+            # Send response back with the same ID as the request
+            response_msg = CatalogSearchResponseMessage(
+                request_id=message.id,
+                objects=objects,
+                total_count=response.total_count,
+                filtered_count=response.filtered_count,
+                observer_location=response.observer_location.model_dump() if response.observer_location else None
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error handling catalog search: {e}")
+            error_msg = MessageFactory.create_error(
+                error_code="CATALOG_SEARCH_ERROR",
+                error_message=str(e)
+            )
+            error_msg.id = message.id  # Use same ID for error response
+            await connection.send_message(error_msg)
+    
+    async def _handle_catalog_quick_search(self, connection: WebSocketConnection, message: CatalogQuickSearchMessage):
+        """Handle catalog quick search request."""
+        try:
+            from api.routers.catalog import quick_search_catalog
+            
+            payload = message.payload
+            response = await quick_search_catalog(
+                latitude=payload.get("latitude"),
+                longitude=payload.get("longitude"),
+                elevation=payload.get("elevation", 0)
+            )
+            
+            # Convert CelestialObject models to dicts
+            objects = [obj.model_dump() for obj in response.objects]
+            
+            # Send response back with the same ID as the request
+            response_msg = CatalogQuickSearchResponseMessage(
+                request_id=message.id,
+                objects=objects,
+                total_count=response.total_count,
+                filtered_count=response.filtered_count,
+                observer_location=response.observer_location.model_dump() if response.observer_location else None
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error handling catalog quick search: {e}")
+            error_msg = MessageFactory.create_error(
+                error_code="CATALOG_QUICK_SEARCH_ERROR",
+                error_message=str(e)
+            )
+            error_msg.id = message.id  # Use same ID for error response
+            await connection.send_message(error_msg)
+    
+    async def _handle_remote_controllers_list(self, connection: WebSocketConnection, message: RemoteControllersListMessage):
+        """Handle remote controllers list request."""
+        try:
+            # Get list of remote controllers from the controller
+            controllers = []
+            if self.controller and hasattr(self.controller, 'remote_controllers'):
+                controllers = list(self.controller.remote_controllers.values())
+            
+            # Send response back with the same ID as the request
+            response_msg = RemoteControllersListResponseMessage(
+                request_id=message.id,
+                controllers=controllers
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error handling remote controllers list: {e}")
+            error_msg = MessageFactory.create_error(
+                error_code="REMOTE_CONTROLLERS_LIST_ERROR",
+                error_message=str(e)
+            )
+            error_msg.id = message.id
+            await connection.send_message(error_msg)
+    
+    async def _handle_remote_controller_add(self, connection: WebSocketConnection, message: RemoteControllerAddMessage):
+        """Handle remote controller add request."""
+        try:
+            payload = message.payload
+            
+            # Validate required fields
+            if not payload.get("host") or not payload.get("port"):
+                raise ValueError("Host and port are required")
+            
+            # Create controller dict
+            controller_data = {
+                "host": payload["host"],
+                "port": payload["port"],
+                "name": payload.get("name", f"{payload['host']}:{payload['port']}"),
+                "description": payload.get("description", "")
+            }
+            
+            # Add to controller if available
+            if self.controller and hasattr(self.controller, 'add_remote_controller'):
+                await self.controller.add_remote_controller(controller_data)
+                success = True
+                msg = f"Remote controller {controller_data['name']} added successfully"
+            else:
+                success = False
+                msg = "Controller not available"
+            
+            # Send response
+            response_msg = RemoteControllerAddResponseMessage(
+                request_id=message.id,
+                success=success,
+                message=msg
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error adding remote controller: {e}")
+            response_msg = RemoteControllerAddResponseMessage(
+                request_id=message.id,
+                success=False,
+                error=str(e)
+            )
+            await connection.send_message(response_msg)
+    
+    async def _handle_remote_controller_remove(self, connection: WebSocketConnection, message: RemoteControllerRemoveMessage):
+        """Handle remote controller remove request."""
+        try:
+            payload = message.payload
+            host = payload.get("host")
+            port = payload.get("port")
+            
+            if not host or not port:
+                raise ValueError("Host and port are required")
+            
+            # Remove from controller if available
+            if self.controller and hasattr(self.controller, 'remove_remote_controller'):
+                await self.controller.remove_remote_controller(host, port)
+                success = True
+                msg = f"Remote controller {host}:{port} removed successfully"
+            else:
+                success = False
+                msg = "Controller not available"
+            
+            # Send response
+            response_msg = RemoteControllerRemoveResponseMessage(
+                request_id=message.id,
+                success=success,
+                message=msg
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error removing remote controller: {e}")
+            response_msg = RemoteControllerRemoveResponseMessage(
+                request_id=message.id,
+                success=False,
+                error=str(e)
+            )
+            await connection.send_message(response_msg)
+    
+    async def _handle_remote_controller_reconnect(self, connection: WebSocketConnection, message: RemoteControllerReconnectMessage):
+        """Handle remote controller reconnect request."""
+        try:
+            payload = message.payload
+            host = payload.get("host")
+            port = payload.get("port")
+            
+            if not host or not port:
+                raise ValueError("Host and port are required")
+            
+            # Reconnect via controller if available
+            if self.controller and hasattr(self.controller, 'reconnect_remote_controller'):
+                await self.controller.reconnect_remote_controller(host, port)
+                success = True
+                msg = f"Reconnecting to remote controller {host}:{port}"
+            else:
+                success = False
+                msg = "Controller not available"
+            
+            # Send response
+            response_msg = RemoteControllerReconnectResponseMessage(
+                request_id=message.id,
+                success=success,
+                message=msg
+            )
+            await connection.send_message(response_msg)
+            
+        except Exception as e:
+            logger.error(f"Error reconnecting remote controller: {e}")
+            response_msg = RemoteControllerReconnectResponseMessage(
+                request_id=message.id,
+                success=False,
+                error=str(e)
+            )
+            await connection.send_message(response_msg)
     
     def _check_duplicate_message(self, telescope_id: str, message_id: str) -> bool:
         """
