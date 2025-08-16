@@ -24,14 +24,15 @@ const command = args[0] || 'dev'; // Default to 'dev' if no command specified
 // Map commands to npm scripts
 const commandMap = {
   'dev': ['npm', ['run', 'dev']],
-  'start': ['npm', ['run', 'start']],
-  'build-start': ['npm', ['run', 'build', '&&', 'npm', 'run', 'start']],
+  'start': ['node', ['.next/standalone/server.js']],
+  'start-gc': ['node', ['--expose-gc', '--max-old-space-size=1024', '.next/standalone/server.js']],
+  'build-start': ['npm', ['run', 'build', '&&', 'node', '.next/standalone/server.js']],
   'custom': args.slice(1) // Allow custom commands
 };
 
 if (!commandMap[command] && command !== 'custom') {
   console.error(`Unknown command: ${command}`);
-  console.log('Usage: node scripts/respawn.js [dev|start|build-start|custom <command>]');
+  console.log('Usage: node scripts/respawn.js [dev|start|start-gc|build-start|custom <command>]');
   process.exit(1);
 }
 
