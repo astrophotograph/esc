@@ -110,8 +110,12 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
         return self.serial_number or self.host
 
     @property
-    async def location(self) -> Optional[str]:
-        """Return the location for the test telescope."""
+    def location(self) -> Optional[str]:
+        """Return the location for the test telescope (synchronous)."""
+        return self._location or "Test Lab"
+    
+    async def get_location(self) -> Optional[str]:
+        """Return the location for the test telescope (async for compatibility)."""
         return self._location or "Test Lab"
 
     async def _get_public_ip(self) -> Optional[str]:
