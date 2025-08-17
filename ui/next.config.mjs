@@ -1,5 +1,9 @@
 import { withSentryConfig } from "@sentry/nextjs"
 
+// Get backend host from environment or default to localhost:8000
+const backendHost = process.env.BACKEND_HOST || 'localhost:8000'
+const backendUrl = `http://${backendHost}`
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // experimental: {
@@ -24,35 +28,35 @@ const nextConfig = {
       // General API proxy - telescopes and other endpoints
       {
         source: '/api/telescopes/:path*',
-        destination: 'http://localhost:8000/api/telescopes/:path*',
+        destination: `${backendUrl}/api/telescopes/:path*`,
       },
       {
         source: '/api/telescopes',
-        destination: 'http://localhost:8000/api/telescopes',
+        destination: `${backendUrl}/api/telescopes`,
       },
       // Remote controllers
       {
         source: '/api/remote-controllers/:path*',
-        destination: 'http://localhost:8000/api/remote-controllers/:path*',
+        destination: `${backendUrl}/api/remote-controllers/:path*`,
       },
       {
         source: '/api/remote-controllers',
-        destination: 'http://localhost:8000/api/remote-controllers',
+        destination: `${backendUrl}/api/remote-controllers`,
       },
       // Image processing endpoints
       {
         source: '/processed/:path*',
-        destination: 'http://localhost:8000/api/processing/processed/:path*',
+        destination: `${backendUrl}/api/processing/processed/:path*`,
       },
       // System administration endpoints
       {
         source: '/api/system/:path*',
-        destination: 'http://localhost:8000/api/system/:path*',
+        destination: `${backendUrl}/api/system/:path*`,
       },
       // Sky map endpoints
       {
         source: '/api/skymap/:path*',
-        destination: 'http://localhost:8000/api/skymap/:path*',
+        destination: `${backendUrl}/api/skymap/:path*`,
       },
     ]
   },

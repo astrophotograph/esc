@@ -381,10 +381,21 @@ export class WebSocketService extends EventEmitter {
 
     // WebSocket connections go directly to the backend server, not through Next.js
     // In production, this should be configured via environment variable
-    const backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST || 'localhost:8000'
+    // When running remotely, use the same hostname but on port 8000 for the backend
+    let backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST
+    
+    if (!backendHost && typeof window !== 'undefined') {
+      // Extract hostname from current location and use port 8000 for backend
+      const hostname = window.location.hostname
+      backendHost = `${hostname}:8000`
+    } else if (!backendHost) {
+      // Fallback for server-side rendering
+      backendHost = 'localhost:8000'
+    }
+    
     const defaultWsUrl = typeof window !== 'undefined' ?
       `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${backendHost}` :
-      'ws://localhost:8000'
+      `ws://${backendHost}`
     
     this.config = {
       baseUrl: config.baseUrl || defaultWsUrl,

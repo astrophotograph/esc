@@ -5,7 +5,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { file_
     const { file_id } = params
 
     // Forward request to Python backend
-    const response = await fetch(`http://localhost:8000/api/processing/persisted-files/${file_id}`, {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const response = await fetch(`${backendUrl}/api/processing/persisted-files/${file_id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
