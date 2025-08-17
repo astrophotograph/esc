@@ -159,6 +159,142 @@ body {
     --sidebar-border: 0 0% 85%;
     --sidebar-ring: 0 0% 60%;
   }
+  .green-screen {
+    --background: 0 0% 5%;         /* Dark phosphor background */
+    --foreground: 120 100% 50%;    /* Green phosphor text */
+    --card: 0 0% 8%;
+    --card-foreground: 120 100% 50%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 120 100% 50%;
+    --primary: 120 100% 45%;       /* Bright green */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 120 100% 50%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 120 60% 40%;
+    --accent: 120 80% 25%;
+    --accent-foreground: 120 100% 50%;
+    --destructive: 30 100% 50%;    /* Amber for warnings */
+    --destructive-foreground: 0 0% 0%;
+    --border: 120 50% 20%;
+    --input: 0 0% 10%;
+    --ring: 120 100% 45%;
+    --chart-1: 120 100% 50%;
+    --chart-2: 120 80% 45%;
+    --chart-3: 120 90% 40%;
+    --chart-4: 120 70% 55%;
+    --chart-5: 120 85% 48%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 120 100% 50%;
+    --sidebar-primary: 120 100% 45%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 120 50% 15%;
+    --sidebar-accent-foreground: 120 100% 50%;
+    --sidebar-border: 120 50% 20%;
+    --sidebar-ring: 120 100% 45%;
+  }
+  .c64 {
+    --background: 221 89% 25%;     /* C64 Blue */
+    --foreground: 221 50% 75%;     /* C64 Light Blue */
+    --card: 221 89% 28%;
+    --card-foreground: 221 50% 75%;
+    --popover: 221 89% 28%;
+    --popover-foreground: 221 50% 75%;
+    --primary: 221 50% 75%;        /* Light blue primary */
+    --primary-foreground: 221 89% 25%;
+    --secondary: 221 89% 20%;
+    --secondary-foreground: 221 50% 75%;
+    --muted: 221 89% 22%;
+    --muted-foreground: 221 40% 65%;
+    --accent: 221 70% 35%;
+    --accent-foreground: 221 50% 75%;
+    --destructive: 0 0% 100%;      /* White for warnings */
+    --destructive-foreground: 221 89% 25%;
+    --border: 221 50% 75%;
+    --input: 221 89% 20%;
+    --ring: 221 50% 75%;
+    --chart-1: 221 50% 75%;
+    --chart-2: 0 0% 100%;
+    --chart-3: 154 50% 50%;        /* C64 Green */
+    --chart-4: 291 50% 50%;        /* C64 Purple */
+    --chart-5: 30 50% 50%;         /* C64 Orange */
+    --sidebar-background: 221 89% 23%;
+    --sidebar-foreground: 221 50% 75%;
+    --sidebar-primary: 221 50% 75%;
+    --sidebar-primary-foreground: 221 89% 25%;
+    --sidebar-accent: 221 89% 30%;
+    --sidebar-accent-foreground: 221 50% 75%;
+    --sidebar-border: 221 50% 75%;
+    --sidebar-ring: 221 50% 75%;
+  }
+  .dark-tufte {
+    --background: 0 0% 8%;          /* Dark charcoal */
+    --foreground: 37 14% 76%;       /* Warm cream text */
+    --card: 0 0% 10%;
+    --card-foreground: 37 14% 76%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 37 14% 76%;
+    --primary: 37 14% 76%;          /* Cream for primary */
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 37 14% 76%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 37 10% 60%;
+    --accent: 30 10% 25%;           /* Subtle warm accent */
+    --accent-foreground: 37 14% 76%;
+    --destructive: 0 40% 40%;       /* Muted red */
+    --destructive-foreground: 37 14% 76%;
+    --border: 0 0% 25%;             /* Subtle borders */
+    --input: 0 0% 12%;
+    --ring: 37 10% 50%;
+    --chart-1: 37 10% 60%;          /* Warm grayscale charts */
+    --chart-2: 37 10% 50%;
+    --chart-3: 37 10% 40%;
+    --chart-4: 37 10% 70%;
+    --chart-5: 37 10% 45%;
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 37 14% 76%;
+    --sidebar-primary: 37 14% 76%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 37 14% 76%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 37 10% 50%;
+  }
+  .fallout {
+    --background: 0 0% 0%;          /* Pure black */
+    --foreground: 71 100% 60%;      /* Pip-Boy green */
+    --card: 0 0% 3%;
+    --card-foreground: 71 100% 60%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 71 100% 60%;
+    --primary: 71 100% 55%;         /* Bright Pip-Boy green */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 71 100% 60%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 71 60% 45%;
+    --accent: 71 80% 20%;
+    --accent-foreground: 71 100% 60%;
+    --destructive: 30 100% 50%;     /* Amber warning */
+    --destructive-foreground: 0 0% 0%;
+    --border: 71 100% 30%;
+    --input: 0 0% 5%;
+    --ring: 71 100% 55%;
+    --chart-1: 71 100% 60%;
+    --chart-2: 30 100% 50%;
+    --chart-3: 71 80% 50%;
+    --chart-4: 71 60% 40%;
+    --chart-5: 71 90% 55%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 71 100% 60%;
+    --sidebar-primary: 71 100% 55%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 71 80% 15%;
+    --sidebar-accent-foreground: 71 100% 60%;
+    --sidebar-border: 71 100% 30%;
+    --sidebar-ring: 71 100% 55%;
+  }
 }
 
 @layer base {
@@ -174,27 +310,63 @@ body {
 .tufte {
   /* Typography refinements */
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
-  line-height: 1.6;
+  line-height: 1.7;
+  font-size: 1.05rem;
   
   /* Apply serif font to body text and content areas */
   body, 
   p, 
   .prose,
-  .card-description,
-  .text-sm,
-  .text-base,
+  .card-description {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    font-size: 1.05rem;
+  }
+  
+  .text-sm {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    font-size: 0.925rem;
+  }
+  
+  .text-base {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    font-size: 1.05rem;
+  }
+  
   .text-lg {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    font-size: 1.2rem;
   }
   
   /* Headers use a slightly different serif for distinction */
-  h1, h2, h3, h4, h5, h6,
+  h1 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 2.25rem;
+  }
+  
+  h2 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 1.875rem;
+  }
+  
+  h3 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 1.5rem;
+  }
+  
+  h4, h5, h6,
   .font-semibold,
   .font-bold,
   .font-medium {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
+    font-size: 1.125rem;
   }
   
   /* UI elements keep sans-serif for clarity */
@@ -358,6 +530,966 @@ body {
   .bg-muted.rounded {
     background-color: hsl(0 0% 98%) !important;
     border: 1px solid hsl(0 0% 90%) !important;
+  }
+}
+
+/* Green Screen Theme Special Overrides */
+.green-screen {
+  /* Monospace font for authentic terminal feel */
+  font-family: 'Courier New', 'Consolas', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  
+  /* CRT screen effect container */
+  position: relative;
+  overflow: hidden;
+  
+  /* Scanline effect */
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      transparent 0%,
+      rgba(0, 255, 0, 0.03) 50%,
+      transparent 100%
+    );
+    background-size: 100% 4px;
+    animation: scanlines 8s linear infinite;
+    pointer-events: none;
+    z-index: 9998;
+  }
+  
+  /* Screen flicker effect */
+  &::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+    animation: flicker 0.15s infinite;
+    pointer-events: none;
+    z-index: 9997;
+  }
+  
+  /* Text glow effect */
+  * {
+    text-shadow: 
+      0 0 2px hsl(120 100% 50%),
+      0 0 4px hsl(120 100% 50% / 0.5);
+  }
+  
+  /* All colors become phosphor green */
+  .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
+  .bg-purple-500, .bg-purple-600, .bg-pink-500, .bg-pink-600,
+  .bg-red-500, .bg-red-600 {
+    background-color: hsl(120 80% 15%) !important;
+    color: hsl(120 100% 50%) !important;
+    box-shadow: inset 0 0 10px hsl(120 100% 50% / 0.2) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
+  .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+  .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
+  .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
+    background-color: hsl(120 80% 20%) !important;
+    box-shadow: inset 0 0 15px hsl(120 100% 50% / 0.3) !important;
+  }
+  
+  /* Text colors */
+  .text-green-400, .text-green-500, .text-green-600,
+  .text-blue-400, .text-blue-500, .text-blue-600,
+  .text-yellow-400, .text-yellow-500, .text-yellow-600,
+  .text-orange-400, .text-orange-500, .text-orange-600,
+  .text-purple-400, .text-purple-500, .text-purple-600,
+  .text-red-400, .text-red-500, .text-red-600 {
+    color: hsl(120 100% 50%) !important;
+  }
+  
+  /* Dimmer phosphor for secondary text */
+  .text-green-300, .text-blue-300, .text-yellow-300,
+  .text-orange-300, .text-purple-300, .text-muted-foreground {
+    color: hsl(120 60% 40%) !important;
+  }
+  
+  /* Charts and graphs */
+  svg polyline, svg path {
+    stroke: hsl(120 100% 50%) !important;
+    filter: drop-shadow(0 0 3px hsl(120 100% 50%));
+  }
+  
+  /* Icons */
+  svg.lucide {
+    color: hsl(120 100% 50%) !important;
+    filter: drop-shadow(0 0 2px hsl(120 100% 50%));
+  }
+  
+  /* Borders with glow */
+  .border {
+    border-color: hsl(120 80% 30%) !important;
+    box-shadow: 0 0 5px hsl(120 100% 50% / 0.3) !important;
+  }
+  
+  /* Cards */
+  .bg-card {
+    background-color: hsl(0 0% 7%) !important;
+    border: 1px solid hsl(120 80% 20%) !important;
+    box-shadow: 
+      inset 0 0 20px hsl(120 100% 50% / 0.05),
+      0 0 10px hsl(120 100% 50% / 0.2) !important;
+  }
+  
+  /* Input fields */
+  input, textarea, select {
+    background-color: hsl(0 0% 3%) !important;
+    border: 1px solid hsl(120 80% 25%) !important;
+    color: hsl(120 100% 50%) !important;
+    font-family: 'Courier New', monospace !important;
+    text-transform: uppercase !important;
+    box-shadow: inset 0 0 5px hsl(120 100% 50% / 0.1) !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    box-shadow: 
+      inset 0 0 10px hsl(120 100% 50% / 0.2),
+      0 0 15px hsl(120 100% 50% / 0.3) !important;
+  }
+  
+  /* Radio buttons and checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(120 100% 45%) !important;
+    filter: drop-shadow(0 0 3px hsl(120 100% 50%));
+  }
+  
+  /* Buttons */
+  button {
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  /* Footer */
+  footer * {
+    color: hsl(120 80% 45%) !important;
+    text-transform: uppercase !important;
+  }
+  
+  /* Chalkboard colors - all green phosphor */
+  [style*="color: #ff0000"],
+  [style*="color: #00ff00"],
+  [style*="color: #0000ff"],
+  [style*="color: #ffffff"],
+  [style*="color: #ffff00"],
+  [style*="color: #ff00ff"],
+  [style*="color: #00ffff"] {
+    color: hsl(120 100% 50%) !important;
+  }
+  
+  /* Chalkboard stroke colors */
+  [stroke="#ff0000"],
+  [stroke="#00ff00"],
+  [stroke="#0000ff"],
+  [stroke="#ffffff"],
+  [stroke="#ffff00"],
+  [stroke="#ff00ff"],
+  [stroke="#00ffff"] {
+    stroke: hsl(120 100% 50%) !important;
+  }
+  
+  /* Annotation overlays */
+  .annotation-circle {
+    border-color: hsl(120 100% 50%) !important;
+    box-shadow: 0 0 10px hsl(120 100% 50% / 0.5) !important;
+  }
+  
+  .annotation-text {
+    color: hsl(120 100% 50%) !important;
+    background-color: hsl(0 0% 0% / 0.8) !important;
+    text-transform: uppercase !important;
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  /* Telescope status */
+  .bg-muted {
+    background-color: hsl(0 0% 8%) !important;
+    border: 1px solid hsl(120 80% 20%) !important;
+  }
+  
+  /* Graph backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(0 0% 6%) !important;
+    border: 1px solid hsl(120 80% 25%) !important;
+    box-shadow: inset 0 0 10px hsl(120 100% 50% / 0.05) !important;
+  }
+  
+  /* Scrollbars */
+  &::-webkit-scrollbar {
+    width: 12px;
+    background-color: hsl(0 0% 5%);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: hsl(120 80% 20%);
+    border: 1px solid hsl(120 100% 50%);
+    box-shadow: inset 0 0 5px hsl(120 100% 50% / 0.3);
+  }
+  
+  /* Blinking cursor effect for inputs */
+  input, textarea {
+    caret-color: hsl(120 100% 50%);
+    animation: blink-caret 1s step-end infinite;
+  }
+}
+
+/* Dark Tufte Theme Special Overrides */
+.dark-tufte {
+  /* Typography refinements */
+  font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+  line-height: 1.7;
+  font-size: 1.05rem;
+  
+  /* Apply serif font to body text */
+  body, p, .prose, .card-description {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    color: hsl(37 14% 76%);
+    font-size: 1.05rem;
+  }
+  
+  .text-sm {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    color: hsl(37 14% 76%);
+    font-size: 0.925rem;
+  }
+  
+  .text-base {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    color: hsl(37 14% 76%);
+    font-size: 1.05rem;
+  }
+  
+  .text-lg {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+    color: hsl(37 14% 76%);
+    font-size: 1.2rem;
+  }
+  
+  /* Headers with serif distinction */
+  h1 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: hsl(37 14% 80%);
+    font-size: 2.25rem;
+  }
+  
+  h2 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: hsl(37 14% 80%);
+    font-size: 1.875rem;
+  }
+  
+  h3 {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: hsl(37 14% 80%);
+    font-size: 1.5rem;
+  }
+  
+  h4, h5, h6,
+  .font-semibold, .font-bold, .font-medium {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: hsl(37 14% 80%);
+    font-size: 1.125rem;
+  }
+  
+  /* UI elements keep sans-serif */
+  button, input, select, textarea,
+  .button, .badge, .toast,
+  .dropdown-menu, .tooltip,
+  code, pre, .font-mono {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  /* Data with tabular figures */
+  .tabular-nums, .data-value, td, .stat {
+    font-variant-numeric: tabular-nums;
+    font-family: 'Georgia', 'Cambria', serif;
+  }
+  
+  /* Muted warm colors for status */
+  .bg-green-500, .bg-green-600 {
+    background-color: hsl(120 15% 25%) !important;
+    color: hsl(37 14% 76%) !important;
+  }
+  
+  .bg-blue-500, .bg-blue-600 {
+    background-color: hsl(210 15% 25%) !important;
+    color: hsl(37 14% 76%) !important;
+  }
+  
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
+    background-color: hsl(30 20% 25%) !important;
+    color: hsl(37 14% 76%) !important;
+  }
+  
+  .bg-red-500, .bg-red-600 {
+    background-color: hsl(0 20% 25%) !important;
+    color: hsl(37 14% 76%) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
+  .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+  .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
+  .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
+    background-color: hsl(0 0% 20%) !important;
+  }
+  
+  /* Text colors - warm muted */
+  .text-green-400, .text-green-500, .text-green-600 {
+    color: hsl(120 20% 55%) !important;
+  }
+  
+  .text-blue-400, .text-blue-500, .text-blue-600 {
+    color: hsl(210 20% 55%) !important;
+  }
+  
+  .text-yellow-400, .text-yellow-500, .text-yellow-600,
+  .text-orange-400, .text-orange-500, .text-orange-600 {
+    color: hsl(30 25% 55%) !important;
+  }
+  
+  .text-red-400, .text-red-500, .text-red-600 {
+    color: hsl(0 25% 50%) !important;
+  }
+  
+  /* Charts - warm grayscale with thin lines */
+  svg polyline {
+    stroke: hsl(37 10% 60%) !important;
+    stroke-width: 1px !important;
+  }
+  
+  svg path {
+    stroke: hsl(37 10% 60%) !important;
+    stroke-width: 1px !important;
+  }
+  
+  /* Icons - subtle warm gray */
+  svg.lucide {
+    color: hsl(37 10% 60%) !important;
+  }
+  
+  button svg.lucide,
+  .hover\:text-foreground:hover svg.lucide {
+    color: currentColor !important;
+  }
+  
+  /* Minimal borders */
+  .border {
+    border-color: hsl(0 0% 25%) !important;
+    border-width: 1px !important;
+  }
+  
+  /* Cards with subtle depth */
+  .bg-card {
+    background-color: hsl(0 0% 10%) !important;
+    box-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.2) !important;
+  }
+  
+  /* Input fields - minimal */
+  input, textarea, select {
+    background-color: hsl(0 0% 12%) !important;
+    border: 1px solid hsl(0 0% 25%) !important;
+    color: hsl(37 14% 76%) !important;
+  }
+  
+  /* Radio buttons and checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(37 10% 60%) !important;
+  }
+  
+  /* Footer text */
+  footer * {
+    color: hsl(37 10% 50%) !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Telescope status */
+  .bg-muted {
+    background-color: hsl(0 0% 15%) !important;
+  }
+  
+  /* Graph backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(0 0% 12%) !important;
+    border: 1px solid hsl(0 0% 20%) !important;
+  }
+}
+
+/* C64 Theme Special Overrides */
+.c64 {
+  /* PETSCII-style font */
+  font-family: 'Courier New', 'Consolas', monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  
+  /* Container for content to fit within borders */
+  padding: 45px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  
+  /* Main content barrel distortion */
+  & > div:first-child {
+    border-radius: 40px;
+    overflow: hidden;
+    transform: scale(0.94) perspective(800px) rotateX(1deg);
+    filter: contrast(1.15) brightness(0.92);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* CRT monitor bezel */
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 35px solid hsl(221 60% 65%);
+    border-radius: 80px;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 
+      inset 0 0 120px rgba(0, 0, 0, 0.8),
+      inset 0 0 40px rgba(0, 0, 0, 0.6),
+      inset 0 5px 15px rgba(0, 0, 0, 0.8),
+      0 0 50px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* CRT glass reflection - above monitor */
+  &::after {
+    content: "";
+    position: fixed;
+    top: 5%;
+    left: 25%;
+    width: 50%;
+    height: 15%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 30%,
+      transparent 60%
+    );
+    border-radius: 50% 50% 50% 50% / 100% 100% 20% 20%;
+    pointer-events: none;
+    z-index: 10001;
+    filter: blur(15px);
+  }
+  
+  /* Barrel distortion and vignette overlay */
+  body::before {
+    content: "" !important;
+    position: fixed !important;
+    top: 35px !important;
+    left: 35px !important;
+    right: 35px !important;
+    bottom: 35px !important;
+    border-radius: 45px !important;
+    background: radial-gradient(
+      ellipse 120% 100% at center,
+      transparent 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.1) 70%,
+      rgba(0, 0, 0, 0.4) 100%
+    ) !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
+  }
+  
+  /* Scanline effect for C64 */
+  body::after {
+    content: "" !important;
+    position: fixed !important;
+    top: 35px !important;
+    left: 35px !important;
+    right: 35px !important;
+    bottom: 35px !important;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0.1) 4px
+    ) !important;
+    pointer-events: none !important;
+    z-index: 9998 !important;
+    border-radius: 45px !important;
+  }
+  
+  /* Pixelated text rendering */
+  * {
+    image-rendering: pixelated;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Status badges in C64 colors */
+  .bg-green-500, .bg-green-600 {
+    background-color: hsl(154 50% 40%) !important;
+    color: hsl(221 50% 75%) !important;
+  }
+  
+  .bg-blue-500, .bg-blue-600 {
+    background-color: hsl(221 70% 35%) !important;
+    color: hsl(221 50% 75%) !important;
+  }
+  
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
+    background-color: hsl(30 50% 45%) !important;
+    color: hsl(221 89% 25%) !important;
+  }
+  
+  .bg-red-500, .bg-red-600 {
+    background-color: hsl(0 50% 45%) !important;
+    color: hsl(0 0% 100%) !important;
+  }
+  
+  .bg-purple-500, .bg-purple-600 {
+    background-color: hsl(291 50% 40%) !important;
+    color: hsl(221 50% 75%) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
+  .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+  .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
+  .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
+    background-color: hsl(221 70% 40%) !important;
+  }
+  
+  /* Text colors in C64 palette */
+  .text-green-400, .text-green-500, .text-green-600 {
+    color: hsl(154 50% 50%) !important;
+  }
+  
+  .text-blue-400, .text-blue-500, .text-blue-600 {
+    color: hsl(221 50% 75%) !important;
+  }
+  
+  .text-yellow-400, .text-yellow-500, .text-yellow-600,
+  .text-orange-400, .text-orange-500, .text-orange-600 {
+    color: hsl(30 50% 50%) !important;
+  }
+  
+  .text-red-400, .text-red-500, .text-red-600 {
+    color: hsl(0 50% 50%) !important;
+  }
+  
+  .text-purple-400, .text-purple-500, .text-purple-600 {
+    color: hsl(291 50% 50%) !important;
+  }
+  
+  /* Dimmer text */
+  .text-muted-foreground {
+    color: hsl(221 40% 65%) !important;
+  }
+  
+  /* Charts and graphs */
+  svg polyline {
+    stroke: hsl(221 50% 75%) !important;
+    stroke-width: 2px !important;
+  }
+  
+  svg path {
+    stroke: hsl(221 50% 75%) !important;
+    stroke-width: 2px !important;
+  }
+  
+  /* Icons */
+  svg.lucide {
+    color: hsl(221 50% 75%) !important;
+  }
+  
+  button svg.lucide,
+  .hover\:text-foreground:hover svg.lucide {
+    color: currentColor !important;
+  }
+  
+  /* Borders - thick C64 style */
+  .border {
+    border-color: hsl(221 50% 75%) !important;
+    border-width: 2px !important;
+  }
+  
+  /* Cards */
+  .bg-card {
+    background-color: hsl(221 89% 28%) !important;
+    border: 2px solid hsl(221 50% 75%) !important;
+  }
+  
+  /* Input fields */
+  input, textarea, select {
+    background-color: hsl(221 89% 20%) !important;
+    border: 2px solid hsl(221 50% 75%) !important;
+    color: hsl(221 50% 75%) !important;
+    font-family: 'Courier New', monospace !important;
+    text-transform: uppercase !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    background-color: hsl(221 89% 18%) !important;
+    outline: 2px solid hsl(221 50% 75%) !important;
+    outline-offset: 0;
+  }
+  
+  /* Radio buttons and checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(221 50% 75%) !important;
+  }
+  
+  /* Buttons */
+  button {
+    text-transform: uppercase !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: 700 !important;
+  }
+  
+  /* Footer */
+  footer * {
+    color: hsl(221 50% 75%) !important;
+    text-transform: uppercase !important;
+  }
+  
+  /* Chalkboard colors - C64 palette */
+  [style*="color: #ff0000"] { color: hsl(0 50% 50%) !important; }
+  [style*="color: #00ff00"] { color: hsl(154 50% 50%) !important; }
+  [style*="color: #0000ff"] { color: hsl(221 50% 75%) !important; }
+  [style*="color: #ffffff"] { color: hsl(0 0% 100%) !important; }
+  [style*="color: #ffff00"] { color: hsl(60 50% 50%) !important; }
+  [style*="color: #ff00ff"] { color: hsl(291 50% 50%) !important; }
+  [style*="color: #00ffff"] { color: hsl(180 50% 50%) !important; }
+  
+  /* Chalkboard stroke colors */
+  [stroke="#ff0000"] { stroke: hsl(0 50% 50%) !important; }
+  [stroke="#00ff00"] { stroke: hsl(154 50% 50%) !important; }
+  [stroke="#0000ff"] { stroke: hsl(221 50% 75%) !important; }
+  [stroke="#ffffff"] { stroke: hsl(0 0% 100%) !important; }
+  [stroke="#ffff00"] { stroke: hsl(60 50% 50%) !important; }
+  [stroke="#ff00ff"] { stroke: hsl(291 50% 50%) !important; }
+  [stroke="#00ffff"] { stroke: hsl(180 50% 50%) !important; }
+  
+  /* Annotation overlays */
+  .annotation-circle {
+    border-color: hsl(221 50% 75%) !important;
+    border-width: 2px !important;
+  }
+  
+  .annotation-text {
+    color: hsl(221 50% 75%) !important;
+    background-color: hsl(221 89% 25%) !important;
+    text-transform: uppercase !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: 700 !important;
+  }
+  
+  /* Telescope status */
+  .bg-muted {
+    background-color: hsl(221 89% 22%) !important;
+    border: 2px solid hsl(221 50% 75%) !important;
+  }
+  
+  /* Graph backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(221 89% 20%) !important;
+    border: 2px solid hsl(221 50% 75%) !important;
+  }
+  
+  /* Scrollbars */
+  &::-webkit-scrollbar {
+    width: 16px;
+    background-color: hsl(221 89% 25%);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: hsl(221 50% 75%);
+    border: 2px solid hsl(221 89% 25%);
+  }
+  
+  /* Blinking cursor */
+  input, textarea {
+    caret-color: hsl(221 50% 75%);
+    animation: blink-caret 1s step-end infinite;
+  }
+}
+
+/* Fallout Theme Special Overrides */
+.fallout {
+  /* Retro-futuristic terminal font */
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  
+  /* Pip-Boy screen effect */
+  position: relative;
+  background-color: #000;
+  
+  /* Terminal scanlines */
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(65, 255, 0, 0.03) 2px,
+      rgba(65, 255, 0, 0.03) 4px
+    );
+    animation: scan 8s linear infinite;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  
+  /* CRT flicker and glow */
+  &::after {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(65, 255, 0, 0.05) 0%,
+      transparent 70%
+    );
+    animation: flicker 0.1s infinite alternate;
+    pointer-events: none;
+    z-index: 9998;
+  }
+  
+  /* Glowing text effect */
+  * {
+    text-shadow: 
+      0 0 3px hsl(71 100% 60%),
+      0 0 6px hsl(71 100% 60% / 0.5),
+      0 0 9px hsl(71 100% 60% / 0.3);
+  }
+  
+  /* All colors become Pip-Boy green or amber */
+  .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
+  .bg-purple-500, .bg-purple-600, .bg-pink-500, .bg-pink-600 {
+    background-color: hsl(71 80% 15%) !important;
+    color: hsl(71 100% 60%) !important;
+    border: 1px solid hsl(71 100% 40%) !important;
+    box-shadow: 
+      inset 0 0 10px hsl(71 100% 60% / 0.2),
+      0 0 5px hsl(71 100% 60% / 0.3) !important;
+  }
+  
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
+  .bg-red-500, .bg-red-600 {
+    background-color: hsl(30 80% 15%) !important;
+    color: hsl(30 100% 50%) !important;
+    border: 1px solid hsl(30 100% 40%) !important;
+    box-shadow: 
+      inset 0 0 10px hsl(30 100% 50% / 0.2),
+      0 0 5px hsl(30 100% 50% / 0.3) !important;
+  }
+  
+  /* Hover states */
+  .hover\:bg-green-600:hover, .hover\:bg-blue-600:hover {
+    background-color: hsl(71 80% 20%) !important;
+    box-shadow: 
+      inset 0 0 15px hsl(71 100% 60% / 0.3),
+      0 0 8px hsl(71 100% 60% / 0.4) !important;
+  }
+  
+  /* Text colors */
+  .text-green-400, .text-green-500, .text-blue-400, .text-blue-500,
+  .text-purple-400, .text-purple-500 {
+    color: hsl(71 100% 60%) !important;
+  }
+  
+  .text-yellow-400, .text-orange-400, .text-red-400 {
+    color: hsl(30 100% 50%) !important;
+  }
+  
+  .text-muted-foreground {
+    color: hsl(71 60% 45%) !important;
+  }
+  
+  /* Charts with glow */
+  svg polyline, svg path {
+    stroke: hsl(71 100% 60%) !important;
+    filter: drop-shadow(0 0 4px hsl(71 100% 60% / 0.6));
+    stroke-width: 2px !important;
+  }
+  
+  /* Icons with glow */
+  svg.lucide {
+    color: hsl(71 100% 60%) !important;
+    filter: drop-shadow(0 0 3px hsl(71 100% 60% / 0.5));
+  }
+  
+  /* Borders with terminal style */
+  .border {
+    border-color: hsl(71 100% 40%) !important;
+    border-style: solid !important;
+    box-shadow: 0 0 3px hsl(71 100% 60% / 0.3) !important;
+  }
+  
+  /* Cards - terminal windows */
+  .bg-card {
+    background-color: hsl(0 0% 2%) !important;
+    border: 2px solid hsl(71 100% 35%) !important;
+    box-shadow: 
+      inset 0 0 30px hsl(71 100% 60% / 0.05),
+      0 0 15px hsl(71 100% 60% / 0.2) !important;
+    position: relative;
+  }
+  
+  /* Terminal-style inputs */
+  input, textarea, select {
+    background-color: hsl(0 0% 1%) !important;
+    border: 2px solid hsl(71 100% 35%) !important;
+    color: hsl(71 100% 60%) !important;
+    font-family: 'Courier New', monospace !important;
+    text-transform: uppercase !important;
+    box-shadow: 
+      inset 0 0 10px hsl(71 100% 60% / 0.1),
+      0 0 5px hsl(71 100% 60% / 0.2) !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    box-shadow: 
+      inset 0 0 15px hsl(71 100% 60% / 0.2),
+      0 0 10px hsl(71 100% 60% / 0.4) !important;
+    outline: 1px solid hsl(71 100% 50%) !important;
+  }
+  
+  /* Radio/checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(71 100% 55%) !important;
+    filter: drop-shadow(0 0 4px hsl(71 100% 60%));
+  }
+  
+  /* Buttons */
+  button {
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-family: 'Courier New', monospace !important;
+    font-weight: 700 !important;
+    position: relative;
+  }
+  
+  button:hover::before {
+    content: ">";
+    position: absolute;
+    left: 0.5rem;
+    color: hsl(71 100% 60%);
+  }
+  
+  /* Footer */
+  footer * {
+    color: hsl(71 80% 50%) !important;
+    text-transform: uppercase !important;
+  }
+  
+  /* Status badges */
+  .bg-muted {
+    background-color: hsl(0 0% 5%) !important;
+    border: 1px solid hsl(71 100% 30%) !important;
+  }
+  
+  /* Graph backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(0 0% 3%) !important;
+    border: 2px solid hsl(71 100% 30%) !important;
+    box-shadow: inset 0 0 15px hsl(71 100% 60% / 0.05) !important;
+  }
+  
+  /* Scrollbars */
+  &::-webkit-scrollbar {
+    width: 12px;
+    background-color: hsl(0 0% 2%);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: hsl(71 80% 20%);
+    border: 1px solid hsl(71 100% 50%);
+    box-shadow: inset 0 0 5px hsl(71 100% 60% / 0.3);
+  }
+  
+  /* Blinking cursor */
+  input, textarea {
+    caret-color: hsl(71 100% 60%);
+    animation: blink-caret 1s step-end infinite;
+  }
+  
+  /* ASCII-style decorations for headers */
+  h1::before, h2::before {
+    content: "[ ";
+    color: hsl(71 100% 60%);
+  }
+  
+  h1::after, h2::after {
+    content: " ]";
+    color: hsl(71 100% 60%);
+  }
+}
+
+/* Animations for CRT effects */
+@keyframes scanlines {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.97;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.98;
+  }
+}
+
+@keyframes blink-caret {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
   }
 }
 
