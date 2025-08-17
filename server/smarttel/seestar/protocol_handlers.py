@@ -250,6 +250,7 @@ class BinaryProtocol(ProtocolHandler[npt.NDArray]):
                     width = 0
                     height = 0
 
+                # print(f"Processed image shape: {latest_image.shape} {width=} {height=} raw: {raw_img is not None} image: {latest_image is not None}")
                 return ScopeImage(
                     width=width, height=height, data=raw_img, image=latest_image
                 )
@@ -262,6 +263,9 @@ class BinaryProtocol(ProtocolHandler[npt.NDArray]):
             #    self.reconnect()
         except Exception as e:
             logging.error(f"Exception handling zip stack: {e}")
+            import traceback
+
+            traceback.print_exc()
             return ScopeImage(width=width, height=height, data=None, image=None)
 
     async def handle_incoming_message(

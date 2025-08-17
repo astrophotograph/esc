@@ -180,12 +180,15 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     
                     data = await self.connection.read_exactly(size)
                     if data is None:
+                        logging.warning(f"Issue while reading image data for {self}")
                         # Connection issue during data read, continue
                         self.status.is_receiving_image = False
                         await asyncio.sleep(0.1)
                         continue
 
-                if data is not None:
+                # print(f"Data: {data is not None} Size: {size}")
+                # We need to skip "images" that are small.  They are just text responses...
+                if data is not None and size is not None and size > 1000:
                     # Process the incoming message
                     self.image = await self.binary_protocol.handle_incoming_message(
                         width, height, data, id
@@ -216,10 +219,11 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                         if self._image_timing_history:
                             self.status.avg_image_elapsed_ms = sum(self._image_timing_history) / len(self._image_timing_history)
                         
-                        logging.trace(f"Image received in {elapsed_ms:.1f}ms (avg: {self.status.avg_image_elapsed_ms:.1f}ms, size: {size} bytes)")
+                        logging.debug(f"Image received in {elapsed_ms:.1f}ms (avg: {self.status.avg_image_elapsed_ms:.1f}ms, size: {size} bytes)")
                     
                     # Cache the raw image for instant processing
                     # Only cache if we have valid image data (both the ScopeImage and its image field)
+                    # print(f"Image {self.image is not None} image image: {self.image.image is not None if self.image is not None else None}")
                     if self.image is not None and self.image.image is not None:
                         with self.cached_raw_image_lock:
                             self.cached_raw_image = self.image.copy() if hasattr(self.image, 'copy') else self.image
@@ -229,6 +233,7 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                 logging.error(
                     f"Unexpected error in imaging reader task for {self}: {e}"
                 )
+                self.status.is_receiving_image = False
                 if self.is_connected:
                     await asyncio.sleep(1.0)  # Brief pause before retrying
                     continue
@@ -312,13 +317,13 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         try:
             while self.is_connected:
                 # Check if enhancement settings changed and we have a cached image
-                if self.enhancement_settings_changed_event.is_set():
-                    self.enhancement_settings_changed_event.clear()
-                    with self.cached_raw_image_lock:
-                        if self.cached_raw_image is not None:
-                            logging.info("Enhancement settings changed, yielding cached image for instant processing")
-                            yield self.cached_raw_image
-                            continue
+                # if self.enhancement_settings_changed_event.is_set():
+                #     self.enhancement_settings_changed_event.clear()
+                #     with self.cached_raw_image_lock:
+                #         if self.cached_raw_image is not None:
+                #             logging.info("Enhancement settings changed, yielding cached image for instant processing")
+                #             yield self.cached_raw_image
+                #             continue
                 if self.client_mode == "Streaming":
                     # If we're streaming, just run RTSP client, which runs as a background thread...
                     rtsp_port = 4554 + camera_id
@@ -344,13 +349,11 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     continue
 
                 if self.image is not None:
-                    # Optional[npt.NDArray]
-                    changed = not np.array_equal(self.image.image, last_image.image)
                     last_image = self.image
 
-                    if changed:
-                        yield self.image
-                await asyncio.sleep(0.01)
+                    logging.trace(f"Image changed, yielding image for {self}")
+                    yield self.image
+                await asyncio.sleep(0.1)
         except Exception as e:
             logging.error(f"Unexpected error in imaging reader task for {self}: {e}")
             import traceback

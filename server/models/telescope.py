@@ -623,12 +623,16 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     # Still need to yield something for the stream to work
                     yield b"Content-Type: text/plain\r\n\r\nImaging not initialized\r\n--frame\r\n"
                     return
-                
+
+                prev_image = None
                 async for image in self.imaging.get_next_image(camera_id):
+                    # print(f"imaging loop in telescope {image is not None}")
                     try:
                         is_streaming = self.imaging.client_mode == "Streaming"
-                        
+
+                        # print(f"{is_streaming=} {image is not None=} image.image: {image.image is not None if image is not None else None}")
                         if image is not None and image.image is not None:
+                            # print("Image available")
                             img = image.image
                             if not is_streaming:
                                 # We don't want to run processors when in streaming mode!
@@ -636,14 +640,20 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                                     img = processor.process(img)
                                 # Apply comprehensive enhancements
                                 img = self.enhancement_processor.process(img)
-                            frame = build_frame_bytes(img, image.width, image.height)
-                            yield frame
-                            
-                            if not is_streaming:
-                                # We send an extra frame if not streaming to deal with some browser's buffering issues!
+
+                            changed = not np.array_equal(img, prev_image)
+                            prev_image = img.copy()
+                            # print(f"Image changed: {changed}")
+                            if changed:
+                                frame = build_frame_bytes(img, image.width, image.height)
                                 yield frame
+
+                                if not is_streaming:
+                                    # We send an extra frame if not streaming to deal with some browser's buffering issues!
+                                    yield frame
                         else:
                             # No image available, wait a bit
+                            # print("No image available")
                             delay = 0.001 if is_streaming else 0.1
                             await asyncio.sleep(delay)
                             

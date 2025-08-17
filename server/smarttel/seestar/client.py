@@ -415,7 +415,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         if not data:
             return
 
-        print("View", data)
+        # print("View", data)
         self.status.target_name = pydash.get(data, "target_name", "unknown")
         self.status.gain = pydash.get(data, "gain", 0)
 
@@ -602,7 +602,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
 
     async def _handle_event(self, event_str: str):
         """Parse an event."""
-        logging.debug(f"Handling event from {self}: {event_str}")
+        logging.trace(f"Handling event from {self}: {event_str}")
         try:
             parsed = json.loads(event_str)
             parser: ParsedEvent = ParsedEvent(event=parsed)
@@ -623,7 +623,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     if pi_status.battery_capacity is not None:
                         self.status.battery_capacity = pi_status.battery_capacity
                 case "Stack":
-                    logging.debug(f"Updating stacked frame and dropped frame: {parsed}")
+                    logging.trace(f"Updating stacked frame and dropped frame: {parsed}")
                     if self.status.stacked_frame is not None:
                         self.status.stacked_frame = parser.event.stacked_frame
                     if self.status.dropped_frame is not None:
