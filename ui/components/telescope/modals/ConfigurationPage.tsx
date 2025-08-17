@@ -55,6 +55,14 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
     if (open && !settings) {
       loadSettings()
     }
+    
+    // Ensure proper cleanup on close
+    if (!open) {
+      setErrors([])
+      setSaving(false)
+      // Restore focus to body when dialog closes
+      document.body.focus()
+    }
   }, [open])
 
   const loadSettings = async () => {
@@ -197,7 +205,7 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-4xl h-[80vh] [&>button]:hidden">
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
             <span className="ml-2">Loading settings...</span>
@@ -213,7 +221,12 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent 
+        className="max-w-6xl h-[90vh] flex flex-col [&>button]:hidden"
+        onEscapeKeyDown={() => onOpenChange(false)}
+        onInteractOutside={(e) => {
+          e.preventDefault() // Prevent closing on click outside
+        }}>
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
