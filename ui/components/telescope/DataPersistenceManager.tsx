@@ -202,10 +202,20 @@ export function DataPersistenceManager() {
         // Convert date strings back to Date objects
         const processedLocations = storedLocations.map((location) => ({
           ...location,
-          metadata: {
+          metadata: location.metadata ? {
             ...location.metadata,
-            createdAt: new Date(location.metadata.createdAt),
-            lastUsed: location.metadata.lastUsed ? new Date(location.metadata.lastUsed) : undefined,
+            createdAt: location.metadata.createdAt 
+              ? new Date(location.metadata.createdAt)
+              : new Date(),
+            lastUsed: location.metadata.lastUsed 
+              ? new Date(location.metadata.lastUsed) 
+              : undefined,
+          } : {
+            // Provide default metadata if missing
+            createdAt: new Date(),
+            lastUsed: undefined,
+            timesUsed: 0,
+            averageRating: 0,
           },
         }))
         setObservingLocations(processedLocations)
@@ -219,14 +229,23 @@ export function DataPersistenceManager() {
       const storedCurrentLocation = loadFromStorage<ObservingLocation | null>(STORAGE_KEYS.CURRENT_LOCATION, null)
       if (storedCurrentLocation) {
         // Convert date strings back to Date objects
+        // Handle cases where metadata might be missing (for older stored data)
         const processedCurrentLocation = {
           ...storedCurrentLocation,
-          metadata: {
+          metadata: storedCurrentLocation.metadata ? {
             ...storedCurrentLocation.metadata,
-            createdAt: new Date(storedCurrentLocation.metadata.createdAt),
+            createdAt: storedCurrentLocation.metadata.createdAt 
+              ? new Date(storedCurrentLocation.metadata.createdAt)
+              : new Date(),
             lastUsed: storedCurrentLocation.metadata.lastUsed
               ? new Date(storedCurrentLocation.metadata.lastUsed)
               : undefined,
+          } : {
+            // Provide default metadata if missing
+            createdAt: new Date(),
+            lastUsed: undefined,
+            timesUsed: 0,
+            averageRating: 0,
           },
         }
         setCurrentObservingLocation(processedCurrentLocation)

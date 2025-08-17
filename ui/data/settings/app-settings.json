@@ -105,6 +105,21 @@
       "endTime": "06:00"
     }
   },
+  "apiKeys": {
+    "astrometry": {
+      "apiKey": "djltdckoljifhbhx",
+      "apiUrl": "",
+      "enabled": true
+    },
+    "openWeatherMap": {
+      "apiKey": "",
+      "enabled": false
+    },
+    "ipgeolocation": {
+      "apiKey": "",
+      "enabled": false
+    }
+  },
   "version": "1.0.0",
-  "lastModified": "2025-07-15T03:53:50.963Z"
+  "lastModified": "2025-08-17T03:43:32.076Z"
 }
