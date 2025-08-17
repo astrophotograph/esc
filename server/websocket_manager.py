@@ -1754,7 +1754,7 @@ class WebSocketManager:
                 above_horizon_only=payload.get("above_horizon_only"),
                 latitude=payload.get("latitude"),
                 longitude=payload.get("longitude"),
-                elevation=payload.get("elevation"),
+                elevation=payload.get("elevation", 0),  # Default to 0 if not provided
                 limit=payload.get("limit")
             )
             
