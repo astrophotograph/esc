@@ -311,7 +311,6 @@ body {
   /* Typography refinements */
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   line-height: 1.7;
-  font-size: 1.05rem;
   
   /* Apply serif font to body text and content areas */
   body, 
@@ -319,22 +318,18 @@ body {
   .prose,
   .card-description {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
-    font-size: 1.05rem;
   }
   
   .text-sm {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
-    font-size: 0.925rem;
   }
   
   .text-base {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
-    font-size: 1.05rem;
   }
   
   .text-lg {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
-    font-size: 1.2rem;
   }
   
   /* Headers use a slightly different serif for distinction */
@@ -342,21 +337,18 @@ body {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
-    font-size: 2.25rem;
   }
   
   h2 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
-    font-size: 1.875rem;
   }
   
   h3 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
-    font-size: 1.5rem;
   }
   
   h4, h5, h6,
@@ -366,7 +358,6 @@ body {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
-    font-size: 1.125rem;
   }
   
   /* UI elements keep sans-serif for clarity */
@@ -757,31 +748,26 @@ body {
   /* Typography refinements */
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   line-height: 1.7;
-  font-size: 1.05rem;
   
   /* Apply serif font to body text */
   body, p, .prose, .card-description {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
-    font-size: 1.05rem;
   }
   
   .text-sm {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
-    font-size: 0.925rem;
   }
   
   .text-base {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
-    font-size: 1.05rem;
   }
   
   .text-lg {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
-    font-size: 1.2rem;
   }
   
   /* Headers with serif distinction */
@@ -790,7 +776,6 @@ body {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
-    font-size: 2.25rem;
   }
   
   h2 {
@@ -798,7 +783,6 @@ body {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
-    font-size: 1.875rem;
   }
   
   h3 {
@@ -806,7 +790,6 @@ body {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
-    font-size: 1.5rem;
   }
   
   h4, h5, h6,
@@ -815,7 +798,6 @@ body {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
-    font-size: 1.125rem;
   }
   
   /* UI elements keep sans-serif */
