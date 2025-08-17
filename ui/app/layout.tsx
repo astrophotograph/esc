@@ -4,7 +4,6 @@ import {ThemeProvider} from "@/components/theme-provider"
 import {Toaster} from "@/components/ui/sonner"
 import SentryErrorBoundary from "@/components/SentryErrorBoundary"
 import {MonitoringProvider} from "@/components/MonitoringProvider"
-import {ThemeEffects} from "@/components/theme-effects"
 
 export const metadata: Metadata = {
   title: 'ESC',
@@ -25,13 +24,13 @@ export default function RootLayout({
       themes={['light', 'dark', 'night-vision', 'tufte', 'dark-tufte', 'green-screen', 'c64', 'fallout']}
       disableTransitionOnChange
     >
-      <ThemeEffects />
+      {/*<ThemeEffects/>*/}
       <SentryErrorBoundary>
         <MonitoringProvider>
           {children}
         </MonitoringProvider>
       </SentryErrorBoundary>
-      <Toaster />
+      <Toaster/>
     </ThemeProvider>
     </body>
     </html>

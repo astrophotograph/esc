@@ -311,46 +311,46 @@ body {
   /* Typography refinements */
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   line-height: 1.7;
-  
+
   /* Apply serif font to body text and content areas */
-  body, 
-  p, 
+  body,
+  p,
   .prose,
   .card-description {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   }
-  
+
   .text-sm {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   }
-  
+
   .text-base {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   }
-  
+
   .text-lg {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   }
-  
+
   /* Headers use a slightly different serif for distinction */
   h1 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  
+
   h2 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  
+
   h3 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  
+
   h4, h5, h6,
   .font-semibold,
   .font-bold,
@@ -359,7 +359,7 @@ body {
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  
+
   /* UI elements keep sans-serif for clarity */
   button,
   input,
@@ -375,7 +375,7 @@ body {
   .font-mono {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
-  
+
   /* Data and numbers use tabular figures */
   .tabular-nums,
   .data-value,
@@ -384,28 +384,28 @@ body {
     font-variant-numeric: tabular-nums;
     font-family: 'Georgia', 'Cambria', serif;
   }
-  
+
   /* Subtle, muted colors for status indicators */
   .bg-green-500, .bg-green-600 {
     background-color: hsl(120 5% 85%) !important;
     color: hsl(0 0% 20%) !important;
   }
-  
+
   .bg-blue-500, .bg-blue-600 {
     background-color: hsl(210 5% 85%) !important;
     color: hsl(0 0% 20%) !important;
   }
-  
+
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
     background-color: hsl(45 10% 85%) !important;
     color: hsl(0 0% 20%) !important;
   }
-  
+
   .bg-red-500, .bg-red-600 {
     background-color: hsl(0 10% 85%) !important;
     color: hsl(0 0% 20%) !important;
   }
-  
+
   /* Hover states - slightly darker */
   .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
   .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
@@ -413,75 +413,75 @@ body {
   .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
     background-color: hsl(0 0% 80%) !important;
   }
-  
+
   /* Text colors - muted */
   .text-green-400, .text-green-500, .text-green-600 {
     color: hsl(120 20% 35%) !important;
   }
-  
+
   .text-blue-400, .text-blue-500, .text-blue-600 {
     color: hsl(210 20% 35%) !important;
   }
-  
+
   .text-yellow-400, .text-yellow-500, .text-yellow-600,
   .text-orange-400, .text-orange-500, .text-orange-600 {
     color: hsl(30 25% 35%) !important;
   }
-  
+
   .text-red-400, .text-red-500, .text-red-600 {
     color: hsl(0 25% 40%) !important;
   }
-  
+
   /* Charts and graphs - grayscale with thin lines */
   svg polyline {
     stroke: hsl(0 0% 40%) !important;
     stroke-width: 1px !important;
   }
-  
+
   svg path {
     stroke: hsl(0 0% 40%) !important;
     stroke-width: 1px !important;
   }
-  
+
   /* Icons - subtle gray */
   svg.lucide {
     color: hsl(0 0% 40%) !important;
   }
-  
+
   button svg.lucide,
   .hover\:text-foreground:hover svg.lucide {
     color: currentColor !important;
   }
-  
+
   /* Minimal borders */
   .border {
     border-color: hsl(0 0% 85%) !important;
     border-width: 1px !important;
   }
-  
+
   /* Cards with subtle shadows */
   .bg-card {
     background-color: hsl(44 39% 97%) !important;
     box-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.05) !important;
   }
-  
+
   /* Input fields - minimal styling */
   input, textarea, select {
     background-color: hsl(44 39% 99%) !important;
     border: 1px solid hsl(0 0% 85%) !important;
   }
-  
+
   /* Radio buttons and checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(0 0% 40%) !important;
   }
-  
+
   /* Footer text */
   footer * {
     color: hsl(0 0% 50%) !important;
     font-size: 0.875rem !important;
   }
-  
+
   /* Chalkboard colors - muted palette */
   [style*="color: #ff0000"] { color: hsl(0 25% 40%) !important; }
   [style*="color: #00ff00"] { color: hsl(120 20% 35%) !important; }
@@ -490,7 +490,7 @@ body {
   [style*="color: #ffff00"] { color: hsl(45 25% 40%) !important; }
   [style*="color: #ff00ff"] { color: hsl(300 15% 40%) !important; }
   [style*="color: #00ffff"] { color: hsl(180 15% 40%) !important; }
-  
+
   /* Chalkboard stroke colors */
   [stroke="#ff0000"] { stroke: hsl(0 25% 40%) !important; }
   [stroke="#00ff00"] { stroke: hsl(120 20% 35%) !important; }
@@ -499,24 +499,24 @@ body {
   [stroke="#ffff00"] { stroke: hsl(45 25% 40%) !important; }
   [stroke="#ff00ff"] { stroke: hsl(300 15% 40%) !important; }
   [stroke="#00ffff"] { stroke: hsl(180 15% 40%) !important; }
-  
+
   /* Annotation overlays */
   .annotation-circle {
     border-color: hsl(0 0% 40%) !important;
     border-width: 1px !important;
   }
-  
+
   .annotation-text {
     color: hsl(0 0% 20%) !important;
     background-color: hsl(44 39% 97% / 0.9) !important;
     font-size: 0.875rem !important;
   }
-  
+
   /* Telescope status - minimal styling */
   .bg-muted {
     background-color: hsl(0 0% 96%) !important;
   }
-  
+
   /* Graph backgrounds */
   .bg-muted.rounded {
     background-color: hsl(0 0% 98%) !important;
@@ -530,11 +530,11 @@ body {
   font-family: 'Courier New', 'Consolas', monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  
+
   /* CRT screen effect container */
   position: relative;
   overflow: hidden;
-  
+
   /* Scanline effect */
   &::before {
     content: "";
@@ -553,7 +553,7 @@ body {
     pointer-events: none;
     z-index: 9998;
   }
-  
+
   /* Screen flicker effect */
   &::after {
     content: "";
@@ -571,14 +571,14 @@ body {
     pointer-events: none;
     z-index: 9997;
   }
-  
+
   /* Text glow effect */
   * {
-    text-shadow: 
+    text-shadow:
       0 0 2px hsl(120 100% 50%),
       0 0 4px hsl(120 100% 50% / 0.5);
   }
-  
+
   /* All colors become phosphor green */
   .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
@@ -588,7 +588,7 @@ body {
     color: hsl(120 100% 50%) !important;
     box-shadow: inset 0 0 10px hsl(120 100% 50% / 0.2) !important;
   }
-  
+
   /* Hover states */
   .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
   .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
@@ -597,7 +597,7 @@ body {
     background-color: hsl(120 80% 20%) !important;
     box-shadow: inset 0 0 15px hsl(120 100% 50% / 0.3) !important;
   }
-  
+
   /* Text colors */
   .text-green-400, .text-green-500, .text-green-600,
   .text-blue-400, .text-blue-500, .text-blue-600,
@@ -607,40 +607,40 @@ body {
   .text-red-400, .text-red-500, .text-red-600 {
     color: hsl(120 100% 50%) !important;
   }
-  
+
   /* Dimmer phosphor for secondary text */
   .text-green-300, .text-blue-300, .text-yellow-300,
   .text-orange-300, .text-purple-300, .text-muted-foreground {
     color: hsl(120 60% 40%) !important;
   }
-  
+
   /* Charts and graphs */
   svg polyline, svg path {
     stroke: hsl(120 100% 50%) !important;
     filter: drop-shadow(0 0 3px hsl(120 100% 50%));
   }
-  
+
   /* Icons */
   svg.lucide {
     color: hsl(120 100% 50%) !important;
     filter: drop-shadow(0 0 2px hsl(120 100% 50%));
   }
-  
+
   /* Borders with glow */
   .border {
     border-color: hsl(120 80% 30%) !important;
     box-shadow: 0 0 5px hsl(120 100% 50% / 0.3) !important;
   }
-  
+
   /* Cards */
   .bg-card {
     background-color: hsl(0 0% 7%) !important;
     border: 1px solid hsl(120 80% 20%) !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 20px hsl(120 100% 50% / 0.05),
       0 0 10px hsl(120 100% 50% / 0.2) !important;
   }
-  
+
   /* Input fields */
   input, textarea, select {
     background-color: hsl(0 0% 3%) !important;
@@ -650,32 +650,32 @@ body {
     text-transform: uppercase !important;
     box-shadow: inset 0 0 5px hsl(120 100% 50% / 0.1) !important;
   }
-  
+
   input:focus, textarea:focus, select:focus {
-    box-shadow: 
+    box-shadow:
       inset 0 0 10px hsl(120 100% 50% / 0.2),
       0 0 15px hsl(120 100% 50% / 0.3) !important;
   }
-  
+
   /* Radio buttons and checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(120 100% 45%) !important;
     filter: drop-shadow(0 0 3px hsl(120 100% 50%));
   }
-  
+
   /* Buttons */
   button {
     text-transform: uppercase !important;
     letter-spacing: 0.1em !important;
     font-family: 'Courier New', monospace !important;
   }
-  
+
   /* Footer */
   footer * {
     color: hsl(120 80% 45%) !important;
     text-transform: uppercase !important;
   }
-  
+
   /* Chalkboard colors - all green phosphor */
   [style*="color: #ff0000"],
   [style*="color: #00ff00"],
@@ -686,7 +686,7 @@ body {
   [style*="color: #00ffff"] {
     color: hsl(120 100% 50%) !important;
   }
-  
+
   /* Chalkboard stroke colors */
   [stroke="#ff0000"],
   [stroke="#00ff00"],
@@ -697,45 +697,45 @@ body {
   [stroke="#00ffff"] {
     stroke: hsl(120 100% 50%) !important;
   }
-  
+
   /* Annotation overlays */
   .annotation-circle {
     border-color: hsl(120 100% 50%) !important;
     box-shadow: 0 0 10px hsl(120 100% 50% / 0.5) !important;
   }
-  
+
   .annotation-text {
     color: hsl(120 100% 50%) !important;
     background-color: hsl(0 0% 0% / 0.8) !important;
     text-transform: uppercase !important;
     font-family: 'Courier New', monospace !important;
   }
-  
+
   /* Telescope status */
   .bg-muted {
     background-color: hsl(0 0% 8%) !important;
     border: 1px solid hsl(120 80% 20%) !important;
   }
-  
+
   /* Graph backgrounds */
   .bg-muted.rounded {
     background-color: hsl(0 0% 6%) !important;
     border: 1px solid hsl(120 80% 25%) !important;
     box-shadow: inset 0 0 10px hsl(120 100% 50% / 0.05) !important;
   }
-  
+
   /* Scrollbars */
   &::-webkit-scrollbar {
     width: 12px;
     background-color: hsl(0 0% 5%);
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background-color: hsl(120 80% 20%);
     border: 1px solid hsl(120 100% 50%);
     box-shadow: inset 0 0 5px hsl(120 100% 50% / 0.3);
   }
-  
+
   /* Blinking cursor effect for inputs */
   input, textarea {
     caret-color: hsl(120 100% 50%);
@@ -748,28 +748,28 @@ body {
   /* Typography refinements */
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
   line-height: 1.7;
-  
+
   /* Apply serif font to body text */
   body, p, .prose, .card-description {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
   }
-  
+
   .text-sm {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
   }
-  
+
   .text-base {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
   }
-  
+
   .text-lg {
     font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
     color: hsl(37 14% 76%);
   }
-  
+
   /* Headers with serif distinction */
   h1 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
@@ -777,21 +777,21 @@ body {
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
   }
-  
+
   h2 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
   }
-  
+
   h3 {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
     font-weight: 600;
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
   }
-  
+
   h4, h5, h6,
   .font-semibold, .font-bold, .font-medium {
     font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
@@ -799,7 +799,7 @@ body {
     letter-spacing: -0.01em;
     color: hsl(37 14% 80%);
   }
-  
+
   /* UI elements keep sans-serif */
   button, input, select, textarea,
   .button, .badge, .toast,
@@ -807,34 +807,34 @@ body {
   code, pre, .font-mono {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
-  
+
   /* Data with tabular figures */
   .tabular-nums, .data-value, td, .stat {
     font-variant-numeric: tabular-nums;
     font-family: 'Georgia', 'Cambria', serif;
   }
-  
+
   /* Muted warm colors for status */
   .bg-green-500, .bg-green-600 {
     background-color: hsl(120 15% 25%) !important;
     color: hsl(37 14% 76%) !important;
   }
-  
+
   .bg-blue-500, .bg-blue-600 {
     background-color: hsl(210 15% 25%) !important;
     color: hsl(37 14% 76%) !important;
   }
-  
+
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
     background-color: hsl(30 20% 25%) !important;
     color: hsl(37 14% 76%) !important;
   }
-  
+
   .bg-red-500, .bg-red-600 {
     background-color: hsl(0 20% 25%) !important;
     color: hsl(37 14% 76%) !important;
   }
-  
+
   /* Hover states */
   .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
   .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
@@ -842,81 +842,81 @@ body {
   .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
     background-color: hsl(0 0% 20%) !important;
   }
-  
+
   /* Text colors - warm muted */
   .text-green-400, .text-green-500, .text-green-600 {
     color: hsl(120 20% 55%) !important;
   }
-  
+
   .text-blue-400, .text-blue-500, .text-blue-600 {
     color: hsl(210 20% 55%) !important;
   }
-  
+
   .text-yellow-400, .text-yellow-500, .text-yellow-600,
   .text-orange-400, .text-orange-500, .text-orange-600 {
     color: hsl(30 25% 55%) !important;
   }
-  
+
   .text-red-400, .text-red-500, .text-red-600 {
     color: hsl(0 25% 50%) !important;
   }
-  
+
   /* Charts - warm grayscale with thin lines */
   svg polyline {
     stroke: hsl(37 10% 60%) !important;
     stroke-width: 1px !important;
   }
-  
+
   svg path {
     stroke: hsl(37 10% 60%) !important;
     stroke-width: 1px !important;
   }
-  
+
   /* Icons - subtle warm gray */
   svg.lucide {
     color: hsl(37 10% 60%) !important;
   }
-  
+
   button svg.lucide,
   .hover\:text-foreground:hover svg.lucide {
     color: currentColor !important;
   }
-  
+
   /* Minimal borders */
   .border {
     border-color: hsl(0 0% 25%) !important;
     border-width: 1px !important;
   }
-  
+
   /* Cards with subtle depth */
   .bg-card {
     background-color: hsl(0 0% 10%) !important;
     box-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.2) !important;
   }
-  
+
   /* Input fields - minimal */
   input, textarea, select {
     background-color: hsl(0 0% 12%) !important;
     border: 1px solid hsl(0 0% 25%) !important;
     color: hsl(37 14% 76%) !important;
   }
-  
+
   /* Radio buttons and checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(37 10% 60%) !important;
   }
-  
+
   /* Footer text */
   footer * {
     color: hsl(37 10% 50%) !important;
     font-size: 0.875rem !important;
   }
-  
+
   /* Telescope status */
   .bg-muted {
     background-color: hsl(0 0% 15%) !important;
   }
-  
+
   /* Graph backgrounds */
   .bg-muted.rounded {
     background-color: hsl(0 0% 12%) !important;
@@ -931,7 +931,7 @@ body {
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.02em;
-  
+
   /* Container for content to fit within borders */
   padding: 45px;
   box-sizing: border-box;
@@ -939,170 +939,170 @@ body {
   position: relative;
   overflow: hidden;
   background: #000;
-  
+
   /* Main content with WebGL-enhanced barrel distortion */
-  & > div:first-child {
-    border-radius: 40px;
-    overflow: hidden;
-    transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);
-    filter: contrast(1.15) brightness(0.92) blur(0.1px);
-    box-shadow: 
-      inset 0 0 120px rgba(0, 0, 0, 0.5),
-      inset 0 0 80px rgba(0, 0, 0, 0.4),
-      inset 0 0 40px rgba(0, 0, 0, 0.3);
-    will-change: transform, filter;
-    animation: crt-geometry 12s ease-in-out infinite;
-  }
-  
+  /*& > div:first-child {*/
+  /*  border-radius: 40px;*/
+  /*  overflow: hidden;*/
+  /*  transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);*/
+  /*  filter: contrast(1.15) brightness(0.92) blur(0.1px);*/
+  /*  box-shadow: */
+  /*    inset 0 0 120px rgba(0, 0, 0, 0.5),*/
+  /*    inset 0 0 80px rgba(0, 0, 0, 0.4),*/
+  /*    inset 0 0 40px rgba(0, 0, 0, 0.3);*/
+  /*  will-change: transform, filter;*/
+  /*  animation: crt-geometry 12s ease-in-out infinite;*/
+  /*}*/
+
   /* Animated barrel distortion */
-  @keyframes crt-geometry {
-    0%, 100% {
-      transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);
-    }
-    25% {
-      transform: scale(0.9401) perspective(1000px) rotateX(2.01deg) rotateY(0.1deg);
-    }
-    50% {
-      transform: scale(0.9402) perspective(1000px) rotateX(1.99deg) rotateY(-0.1deg);
-    }
-    75% {
-      transform: scale(0.9399) perspective(1000px) rotateX(2.01deg) rotateY(0.05deg);
-    }
-  }
-  
+  /*@keyframes crt-geometry {*/
+  /*  0%, 100% {*/
+  /*    transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);*/
+  /*  }*/
+  /*  25% {*/
+  /*    transform: scale(0.9401) perspective(1000px) rotateX(2.01deg) rotateY(0.1deg);*/
+  /*  }*/
+  /*  50% {*/
+  /*    transform: scale(0.9402) perspective(1000px) rotateX(1.99deg) rotateY(-0.1deg);*/
+  /*  }*/
+  /*  75% {*/
+  /*    transform: scale(0.9399) perspective(1000px) rotateX(2.01deg) rotateY(0.05deg);*/
+  /*  }*/
+  /*}*/
+
   /* CRT monitor bezel */
-  &::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 35px solid hsl(221 60% 65%);
-    border-radius: 80px;
-    pointer-events: none;
-    z-index: 10000;
-    box-shadow: 
-      inset 0 0 120px rgba(0, 0, 0, 0.8),
-      inset 0 0 40px rgba(0, 0, 0, 0.6),
-      inset 0 5px 15px rgba(0, 0, 0, 0.8),
-      0 0 50px rgba(0, 0, 0, 0.5);
-  }
-  
+  /*&::before {*/
+  /*  content: "";*/
+  /*  position: fixed;*/
+  /*  top: 0;*/
+  /*  left: 0;*/
+  /*  right: 0;*/
+  /*  bottom: 0;*/
+  /*  border: 35px solid hsl(221 60% 65%);*/
+  /*  border-radius: 80px;*/
+  /*  pointer-events: none;*/
+  /*  z-index: 10000;*/
+  /*  box-shadow:*/
+  /*    inset 0 0 120px rgba(0, 0, 0, 0.8),*/
+  /*    inset 0 0 40px rgba(0, 0, 0, 0.6),*/
+  /*    inset 0 5px 15px rgba(0, 0, 0, 0.8),*/
+  /*    0 0 50px rgba(0, 0, 0, 0.5);*/
+  /*}*/
+
   /* CRT glass reflection - above monitor */
-  &::after {
-    content: "";
-    position: fixed;
-    top: 5%;
-    left: 25%;
-    width: 50%;
-    height: 15%;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0.08) 30%,
-      transparent 60%
-    );
-    border-radius: 50% 50% 50% 50% / 100% 100% 20% 20%;
-    pointer-events: none;
-    z-index: 10001;
-    filter: blur(15px);
-  }
-  
+  /*&::after {*/
+  /*  content: "";*/
+  /*  position: fixed;*/
+  /*  top: 5%;*/
+  /*  left: 25%;*/
+  /*  width: 50%;*/
+  /*  height: 15%;*/
+  /*  background: linear-gradient(*/
+  /*    180deg,*/
+  /*    rgba(255, 255, 255, 0.15) 0%,*/
+  /*    rgba(255, 255, 255, 0.08) 30%,*/
+  /*    transparent 60%*/
+  /*  );*/
+  /*  border-radius: 50% 50% 50% 50% / 100% 100% 20% 20%;*/
+  /*  pointer-events: none;*/
+  /*  z-index: 10001;*/
+  /*  filter: blur(15px);*/
+  /*}*/
+
   /* Barrel distortion and vignette overlay */
-  body::before {
-    content: "" !important;
-    position: fixed !important;
-    top: 35px !important;
-    left: 35px !important;
-    right: 35px !important;
-    bottom: 35px !important;
-    border-radius: 45px !important;
-    background: radial-gradient(
-      ellipse 120% 100% at center,
-      transparent 0%,
-      transparent 50%,
-      rgba(0, 0, 0, 0.1) 70%,
-      rgba(0, 0, 0, 0.4) 100%
-    ) !important;
-    pointer-events: none !important;
-    z-index: 9999 !important;
-  }
-  
+  /*body::before {*/
+  /*  content: "" !important;*/
+  /*  position: fixed !important;*/
+  /*  top: 35px !important;*/
+  /*  left: 35px !important;*/
+  /*  right: 35px !important;*/
+  /*  bottom: 35px !important;*/
+  /*  border-radius: 45px !important;*/
+  /*  background: radial-gradient(*/
+  /*    ellipse 120% 100% at center,*/
+  /*    transparent 0%,*/
+  /*    transparent 50%,*/
+  /*    rgba(0, 0, 0, 0.1) 70%,*/
+  /*    rgba(0, 0, 0, 0.4) 100%*/
+  /*  ) !important;*/
+  /*  pointer-events: none !important;*/
+  /*  z-index: 9999 !important;*/
+  /*}*/
+
   /* Scanline effect for C64 */
-  body::after {
-    content: "" !important;
-    position: fixed !important;
-    top: 35px !important;
-    left: 35px !important;
-    right: 35px !important;
-    bottom: 35px !important;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.1) 2px,
-      rgba(0, 0, 0, 0.1) 4px
-    ) !important;
-    pointer-events: none !important;
-    z-index: 9998 !important;
-    border-radius: 45px !important;
-  }
-  
+  /*body::after {*/
+  /*  content: "" !important;*/
+  /*  position: fixed !important;*/
+  /*  top: 35px !important;*/
+  /*  left: 35px !important;*/
+  /*  right: 35px !important;*/
+  /*  bottom: 35px !important;*/
+  /*  background: repeating-linear-gradient(*/
+  /*    0deg,*/
+  /*    transparent,*/
+  /*    transparent 2px,*/
+  /*    rgba(0, 0, 0, 0.1) 2px,*/
+  /*    rgba(0, 0, 0, 0.1) 4px*/
+  /*  ) !important;*/
+  /*  pointer-events: none !important;*/
+  /*  z-index: 9998 !important;*/
+  /*  border-radius: 45px !important;*/
+  /*}*/
+
   /* Pixelated text rendering with phosphor glow */
-  * {
-    image-rendering: pixelated;
-    -webkit-font-smoothing: none;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
+  /** {*/
+  /*  image-rendering: pixelated;*/
+  /*  -webkit-font-smoothing: none;*/
+  /*  -moz-osx-font-smoothing: grayscale;*/
+  /*}*/
+
   /* Chromatic aberration effect on text */
-  h1, h2, h3, h4, h5, h6, p, span, div {
-    position: relative;
-    animation: chromatic-shift 8s ease-in-out infinite;
-  }
-  
-  @keyframes chromatic-shift {
-    0%, 100% {
-      text-shadow: 
-        0.5px 0 0 rgba(255, 0, 0, 0.3),
-        -0.5px 0 0 rgba(0, 255, 255, 0.3),
-        0 0 3px rgba(140, 170, 255, 0.5);
-    }
-    50% {
-      text-shadow: 
-        0.8px 0 0 rgba(255, 0, 0, 0.3),
-        -0.8px 0 0 rgba(0, 255, 255, 0.3),
-        0 0 4px rgba(140, 170, 255, 0.6);
-    }
-  }
-  
+  /*h1, h2, h3, h4, h5, h6, p, span, div {*/
+  /*  position: relative;*/
+  /*  animation: chromatic-shift 8s ease-in-out infinite;*/
+  /*}*/
+
+  /*@keyframes chromatic-shift {*/
+  /*  0%, 100% {*/
+  /*    text-shadow:*/
+  /*      0.5px 0 0 rgba(255, 0, 0, 0.3),*/
+  /*      -0.5px 0 0 rgba(0, 255, 255, 0.3),*/
+  /*      0 0 3px rgba(140, 170, 255, 0.5);*/
+  /*  }*/
+  /*  50% {*/
+  /*    text-shadow:*/
+  /*      0.8px 0 0 rgba(255, 0, 0, 0.3),*/
+  /*      -0.8px 0 0 rgba(0, 255, 255, 0.3),*/
+  /*      0 0 4px rgba(140, 170, 255, 0.6);*/
+  /*  }*/
+  /*}*/
+
   /* Status badges in C64 colors */
   .bg-green-500, .bg-green-600 {
     background-color: hsl(154 50% 40%) !important;
     color: hsl(221 50% 75%) !important;
   }
-  
+
   .bg-blue-500, .bg-blue-600 {
     background-color: hsl(221 70% 35%) !important;
     color: hsl(221 50% 75%) !important;
   }
-  
+
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
     background-color: hsl(30 50% 45%) !important;
     color: hsl(221 89% 25%) !important;
   }
-  
+
   .bg-red-500, .bg-red-600 {
     background-color: hsl(0 50% 45%) !important;
     color: hsl(0 0% 100%) !important;
   }
-  
+
   .bg-purple-500, .bg-purple-600 {
     background-color: hsl(291 50% 40%) !important;
     color: hsl(221 50% 75%) !important;
   }
-  
+
   /* Hover states */
   .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
   .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
@@ -1110,67 +1110,67 @@ body {
   .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
     background-color: hsl(221 70% 40%) !important;
   }
-  
+
   /* Text colors in C64 palette */
   .text-green-400, .text-green-500, .text-green-600 {
     color: hsl(154 50% 50%) !important;
   }
-  
+
   .text-blue-400, .text-blue-500, .text-blue-600 {
     color: hsl(221 50% 75%) !important;
   }
-  
+
   .text-yellow-400, .text-yellow-500, .text-yellow-600,
   .text-orange-400, .text-orange-500, .text-orange-600 {
     color: hsl(30 50% 50%) !important;
   }
-  
+
   .text-red-400, .text-red-500, .text-red-600 {
     color: hsl(0 50% 50%) !important;
   }
-  
+
   .text-purple-400, .text-purple-500, .text-purple-600 {
     color: hsl(291 50% 50%) !important;
   }
-  
+
   /* Dimmer text */
   .text-muted-foreground {
     color: hsl(221 40% 65%) !important;
   }
-  
+
   /* Charts and graphs */
   svg polyline {
     stroke: hsl(221 50% 75%) !important;
     stroke-width: 2px !important;
   }
-  
+
   svg path {
     stroke: hsl(221 50% 75%) !important;
     stroke-width: 2px !important;
   }
-  
+
   /* Icons */
   svg.lucide {
     color: hsl(221 50% 75%) !important;
   }
-  
+
   button svg.lucide,
   .hover\:text-foreground:hover svg.lucide {
     color: currentColor !important;
   }
-  
+
   /* Borders - thick C64 style */
   .border {
     border-color: hsl(221 50% 75%) !important;
     border-width: 2px !important;
   }
-  
+
   /* Cards */
   .bg-card {
     background-color: hsl(221 89% 28%) !important;
     border: 2px solid hsl(221 50% 75%) !important;
   }
-  
+
   /* Input fields */
   input, textarea, select {
     background-color: hsl(221 89% 20%) !important;
@@ -1179,31 +1179,31 @@ body {
     font-family: 'Courier New', monospace !important;
     text-transform: uppercase !important;
   }
-  
+
   input:focus, textarea:focus, select:focus {
     background-color: hsl(221 89% 18%) !important;
     outline: 2px solid hsl(221 50% 75%) !important;
     outline-offset: 0;
   }
-  
+
   /* Radio buttons and checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(221 50% 75%) !important;
   }
-  
+
   /* Buttons */
   button {
     text-transform: uppercase !important;
     font-family: 'Courier New', monospace !important;
     font-weight: 700 !important;
   }
-  
+
   /* Footer */
   footer * {
     color: hsl(221 50% 75%) !important;
     text-transform: uppercase !important;
   }
-  
+
   /* Chalkboard colors - C64 palette */
   [style*="color: #ff0000"] { color: hsl(0 50% 50%) !important; }
   [style*="color: #00ff00"] { color: hsl(154 50% 50%) !important; }
@@ -1212,7 +1212,7 @@ body {
   [style*="color: #ffff00"] { color: hsl(60 50% 50%) !important; }
   [style*="color: #ff00ff"] { color: hsl(291 50% 50%) !important; }
   [style*="color: #00ffff"] { color: hsl(180 50% 50%) !important; }
-  
+
   /* Chalkboard stroke colors */
   [stroke="#ff0000"] { stroke: hsl(0 50% 50%) !important; }
   [stroke="#00ff00"] { stroke: hsl(154 50% 50%) !important; }
@@ -1221,13 +1221,13 @@ body {
   [stroke="#ffff00"] { stroke: hsl(60 50% 50%) !important; }
   [stroke="#ff00ff"] { stroke: hsl(291 50% 50%) !important; }
   [stroke="#00ffff"] { stroke: hsl(180 50% 50%) !important; }
-  
+
   /* Annotation overlays */
   .annotation-circle {
     border-color: hsl(221 50% 75%) !important;
     border-width: 2px !important;
   }
-  
+
   .annotation-text {
     color: hsl(221 50% 75%) !important;
     background-color: hsl(221 89% 25%) !important;
@@ -1235,30 +1235,30 @@ body {
     font-family: 'Courier New', monospace !important;
     font-weight: 700 !important;
   }
-  
+
   /* Telescope status */
   .bg-muted {
     background-color: hsl(221 89% 22%) !important;
     border: 2px solid hsl(221 50% 75%) !important;
   }
-  
+
   /* Graph backgrounds */
   .bg-muted.rounded {
     background-color: hsl(221 89% 20%) !important;
     border: 2px solid hsl(221 50% 75%) !important;
   }
-  
+
   /* Scrollbars */
   &::-webkit-scrollbar {
     width: 16px;
     background-color: hsl(221 89% 25%);
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background-color: hsl(221 50% 75%);
     border: 2px solid hsl(221 89% 25%);
   }
-  
+
   /* Blinking cursor */
   input, textarea {
     caret-color: hsl(221 50% 75%);
@@ -1273,11 +1273,11 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  
+
   /* Pip-Boy screen effect */
   position: relative;
   background-color: #000;
-  
+
   /* Terminal scanlines */
   &::before {
     content: "";
@@ -1297,7 +1297,7 @@ body {
     pointer-events: none;
     z-index: 9999;
   }
-  
+
   /* CRT flicker and glow */
   &::after {
     content: "";
@@ -1315,88 +1315,88 @@ body {
     pointer-events: none;
     z-index: 9998;
   }
-  
+
   /* Glowing text effect */
   * {
-    text-shadow: 
+    text-shadow:
       0 0 3px hsl(71 100% 60%),
       0 0 6px hsl(71 100% 60% / 0.5),
       0 0 9px hsl(71 100% 60% / 0.3);
   }
-  
+
   /* All colors become Pip-Boy green or amber */
   .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
   .bg-purple-500, .bg-purple-600, .bg-pink-500, .bg-pink-600 {
     background-color: hsl(71 80% 15%) !important;
     color: hsl(71 100% 60%) !important;
     border: 1px solid hsl(71 100% 40%) !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 10px hsl(71 100% 60% / 0.2),
       0 0 5px hsl(71 100% 60% / 0.3) !important;
   }
-  
+
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
   .bg-red-500, .bg-red-600 {
     background-color: hsl(30 80% 15%) !important;
     color: hsl(30 100% 50%) !important;
     border: 1px solid hsl(30 100% 40%) !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 10px hsl(30 100% 50% / 0.2),
       0 0 5px hsl(30 100% 50% / 0.3) !important;
   }
-  
+
   /* Hover states */
   .hover\:bg-green-600:hover, .hover\:bg-blue-600:hover {
     background-color: hsl(71 80% 20%) !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 15px hsl(71 100% 60% / 0.3),
       0 0 8px hsl(71 100% 60% / 0.4) !important;
   }
-  
+
   /* Text colors */
   .text-green-400, .text-green-500, .text-blue-400, .text-blue-500,
   .text-purple-400, .text-purple-500 {
     color: hsl(71 100% 60%) !important;
   }
-  
+
   .text-yellow-400, .text-orange-400, .text-red-400 {
     color: hsl(30 100% 50%) !important;
   }
-  
+
   .text-muted-foreground {
     color: hsl(71 60% 45%) !important;
   }
-  
+
   /* Charts with glow */
   svg polyline, svg path {
     stroke: hsl(71 100% 60%) !important;
     filter: drop-shadow(0 0 4px hsl(71 100% 60% / 0.6));
     stroke-width: 2px !important;
   }
-  
+
   /* Icons with glow */
   svg.lucide {
     color: hsl(71 100% 60%) !important;
     filter: drop-shadow(0 0 3px hsl(71 100% 60% / 0.5));
   }
-  
+
   /* Borders with terminal style */
   .border {
     border-color: hsl(71 100% 40%) !important;
     border-style: solid !important;
     box-shadow: 0 0 3px hsl(71 100% 60% / 0.3) !important;
   }
-  
+
   /* Cards - terminal windows */
   .bg-card {
     background-color: hsl(0 0% 2%) !important;
     border: 2px solid hsl(71 100% 35%) !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 30px hsl(71 100% 60% / 0.05),
       0 0 15px hsl(71 100% 60% / 0.2) !important;
     position: relative;
   }
-  
+
   /* Terminal-style inputs */
   input, textarea, select {
     background-color: hsl(0 0% 1%) !important;
@@ -1404,24 +1404,24 @@ body {
     color: hsl(71 100% 60%) !important;
     font-family: 'Courier New', monospace !important;
     text-transform: uppercase !important;
-    box-shadow: 
+    box-shadow:
       inset 0 0 10px hsl(71 100% 60% / 0.1),
       0 0 5px hsl(71 100% 60% / 0.2) !important;
   }
-  
+
   input:focus, textarea:focus, select:focus {
-    box-shadow: 
+    box-shadow:
       inset 0 0 15px hsl(71 100% 60% / 0.2),
       0 0 10px hsl(71 100% 60% / 0.4) !important;
     outline: 1px solid hsl(71 100% 50%) !important;
   }
-  
+
   /* Radio/checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(71 100% 55%) !important;
     filter: drop-shadow(0 0 4px hsl(71 100% 60%));
   }
-  
+
   /* Buttons */
   button {
     text-transform: uppercase !important;
@@ -1430,57 +1430,57 @@ body {
     font-weight: 700 !important;
     position: relative;
   }
-  
+
   button:hover::before {
     content: ">";
     position: absolute;
     left: 0.5rem;
     color: hsl(71 100% 60%);
   }
-  
+
   /* Footer */
   footer * {
     color: hsl(71 80% 50%) !important;
     text-transform: uppercase !important;
   }
-  
+
   /* Status badges */
   .bg-muted {
     background-color: hsl(0 0% 5%) !important;
     border: 1px solid hsl(71 100% 30%) !important;
   }
-  
+
   /* Graph backgrounds */
   .bg-muted.rounded {
     background-color: hsl(0 0% 3%) !important;
     border: 2px solid hsl(71 100% 30%) !important;
     box-shadow: inset 0 0 15px hsl(71 100% 60% / 0.05) !important;
   }
-  
+
   /* Scrollbars */
   &::-webkit-scrollbar {
     width: 12px;
     background-color: hsl(0 0% 2%);
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background-color: hsl(71 80% 20%);
     border: 1px solid hsl(71 100% 50%);
     box-shadow: inset 0 0 5px hsl(71 100% 60% / 0.3);
   }
-  
+
   /* Blinking cursor */
   input, textarea {
     caret-color: hsl(71 100% 60%);
     animation: blink-caret 1s step-end infinite;
   }
-  
+
   /* ASCII-style decorations for headers */
   h1::before, h2::before {
     content: "[ ";
     color: hsl(71 100% 60%);
   }
-  
+
   h1::after, h2::after {
     content: " ]";
     color: hsl(71 100% 60%);
@@ -1521,21 +1521,21 @@ body {
 /* Night Vision Mode Special Overrides */
 .night-vision {
   /* Override all colored badges to use red theme */
-  .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600, 
+  .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
   .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
   .bg-purple-500, .bg-purple-600, .bg-pink-500, .bg-pink-600 {
     background-color: hsl(0 50% 20%) !important;
     color: hsl(0 100% 50%) !important;
   }
-  
+
   /* Override hover states */
-  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover, 
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
   .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
   .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
   .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
     background-color: hsl(0 50% 25%) !important;
   }
-  
+
   /* All colored text becomes red */
   .text-green-400, .text-green-500, .text-green-600,
   .text-blue-400, .text-blue-500, .text-blue-600,
@@ -1545,44 +1545,44 @@ body {
   .text-red-400 {
     color: hsl(0 100% 50%) !important;
   }
-  
+
   /* Lighter red for secondary text */
   .text-green-300, .text-blue-300, .text-yellow-300,
   .text-orange-300, .text-purple-300 {
     color: hsl(0 100% 40%) !important;
   }
-  
+
   /* SVG stroke colors for graphs */
   svg polyline {
     stroke: hsl(0 100% 50%) !important;
   }
-  
+
   svg path {
     stroke: hsl(0 100% 50%) !important;
   }
-  
+
   /* Override Lucide icons to be red */
   svg.lucide {
     color: hsl(0 100% 50%) !important;
   }
-  
+
   /* Keep some icons darker for contrast */
   button svg.lucide,
   .hover\:text-foreground:hover svg.lucide {
     color: currentColor !important;
   }
-  
+
   /* MJPEG and status badges */
   .bg-orange-400, .bg-orange-500 {
     background-color: hsl(0 50% 20%) !important;
     color: hsl(0 100% 50%) !important;
   }
-  
+
   /* Version footer text */
   footer * {
     color: hsl(0 100% 45%) !important;
   }
-  
+
   /* Chalkboard colors - convert to shades of red */
   [style*="color: #ff0000"] { color: hsl(0 100% 50%) !important; }
   [style*="color: #00ff00"] { color: hsl(0 80% 40%) !important; }
@@ -1591,7 +1591,7 @@ body {
   [style*="color: #ffff00"] { color: hsl(0 90% 45%) !important; }
   [style*="color: #ff00ff"] { color: hsl(0 70% 40%) !important; }
   [style*="color: #00ffff"] { color: hsl(0 50% 35%) !important; }
-  
+
   /* Chalkboard stroke colors */
   [stroke="#ff0000"] { stroke: hsl(0 100% 50%) !important; }
   [stroke="#00ff00"] { stroke: hsl(0 80% 40%) !important; }
@@ -1600,32 +1600,32 @@ body {
   [stroke="#ffff00"] { stroke: hsl(0 90% 45%) !important; }
   [stroke="#ff00ff"] { stroke: hsl(0 70% 40%) !important; }
   [stroke="#00ffff"] { stroke: hsl(0 50% 35%) !important; }
-  
+
   /* Annotation overlays */
   .annotation-circle {
     border-color: hsl(0 100% 50%) !important;
   }
-  
+
   .annotation-text {
     color: hsl(0 100% 50%) !important;
     background-color: hsl(0 0% 0% / 0.8) !important;
   }
-  
+
   /* Radio buttons and checkboxes */
   input[type="radio"], input[type="checkbox"] {
     accent-color: hsl(0 100% 45%) !important;
   }
-  
+
   /* Dark backgrounds for telescope status */
   .bg-muted {
     background-color: hsl(0 0% 5%) !important;
   }
-  
+
   /* Very dark backgrounds for cards and containers */
   .bg-card {
     background-color: hsl(0 0% 3%) !important;
   }
-  
+
   /* Ensure graphs have dark backgrounds */
   .bg-muted.rounded {
     background-color: hsl(0 0% 5%) !important;
