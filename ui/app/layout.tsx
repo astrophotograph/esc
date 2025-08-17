@@ -21,6 +21,7 @@ export default function RootLayout({
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
+      themes={['light', 'dark', 'night-vision']}
       disableTransitionOnChange
     >
       <SentryErrorBoundary>

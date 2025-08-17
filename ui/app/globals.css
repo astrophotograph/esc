@@ -24,18 +24,18 @@ body {
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 0 0% 9%;
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 0 0% 92%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -58,24 +58,24 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 222 47% 11%;
+    --foreground: 213 31% 91%;
+    --card: 223 47% 15%;
+    --card-foreground: 213 31% 91%;
+    --popover: 223 47% 15%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 47% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 216 34% 25%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --border: 223 47% 20%;
+    --input: 223 47% 20%;
     --ring: 0 0% 83.1%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -91,6 +91,40 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  .night-vision {
+    --background: 0 0% 0%;
+    --foreground: 0 100% 50%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 100% 50%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 100% 50%;
+    --primary: 0 100% 45%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 100% 50%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 100% 40%;
+    --accent: 0 50% 20%;
+    --accent-foreground: 0 100% 50%;
+    --destructive: 0 100% 35%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 50% 20%;
+    --input: 0 50% 15%;
+    --ring: 0 100% 45%;
+    --chart-1: 0 100% 50%;
+    --chart-2: 0 80% 45%;
+    --chart-3: 0 90% 40%;
+    --chart-4: 0 70% 55%;
+    --chart-5: 0 85% 48%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 100% 50%;
+    --sidebar-primary: 0 100% 45%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 50% 15%;
+    --sidebar-accent-foreground: 0 100% 50%;
+    --sidebar-border: 0 50% 20%;
+    --sidebar-ring: 0 100% 45%;
+  }
 }
 
 @layer base {
@@ -99,5 +133,119 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Night Vision Mode Special Overrides */
+.night-vision {
+  /* Override all colored badges to use red theme */
+  .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600, 
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600,
+  .bg-purple-500, .bg-purple-600, .bg-pink-500, .bg-pink-600 {
+    background-color: hsl(0 50% 20%) !important;
+    color: hsl(0 100% 50%) !important;
+  }
+  
+  /* Override hover states */
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover, 
+  .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+  .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
+  .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
+    background-color: hsl(0 50% 25%) !important;
+  }
+  
+  /* All colored text becomes red */
+  .text-green-400, .text-green-500, .text-green-600,
+  .text-blue-400, .text-blue-500, .text-blue-600,
+  .text-yellow-400, .text-yellow-500, .text-yellow-600,
+  .text-orange-400, .text-orange-500, .text-orange-600,
+  .text-purple-400, .text-purple-500, .text-purple-600,
+  .text-red-400 {
+    color: hsl(0 100% 50%) !important;
+  }
+  
+  /* Lighter red for secondary text */
+  .text-green-300, .text-blue-300, .text-yellow-300,
+  .text-orange-300, .text-purple-300 {
+    color: hsl(0 100% 40%) !important;
+  }
+  
+  /* SVG stroke colors for graphs */
+  svg polyline {
+    stroke: hsl(0 100% 50%) !important;
+  }
+  
+  svg path {
+    stroke: hsl(0 100% 50%) !important;
+  }
+  
+  /* Override Lucide icons to be red */
+  svg.lucide {
+    color: hsl(0 100% 50%) !important;
+  }
+  
+  /* Keep some icons darker for contrast */
+  button svg.lucide,
+  .hover\:text-foreground:hover svg.lucide {
+    color: currentColor !important;
+  }
+  
+  /* MJPEG and status badges */
+  .bg-orange-400, .bg-orange-500 {
+    background-color: hsl(0 50% 20%) !important;
+    color: hsl(0 100% 50%) !important;
+  }
+  
+  /* Version footer text */
+  footer * {
+    color: hsl(0 100% 45%) !important;
+  }
+  
+  /* Chalkboard colors - convert to shades of red */
+  [style*="color: #ff0000"] { color: hsl(0 100% 50%) !important; }
+  [style*="color: #00ff00"] { color: hsl(0 80% 40%) !important; }
+  [style*="color: #0000ff"] { color: hsl(0 60% 35%) !important; }
+  [style*="color: #ffffff"] { color: hsl(0 100% 60%) !important; }
+  [style*="color: #ffff00"] { color: hsl(0 90% 45%) !important; }
+  [style*="color: #ff00ff"] { color: hsl(0 70% 40%) !important; }
+  [style*="color: #00ffff"] { color: hsl(0 50% 35%) !important; }
+  
+  /* Chalkboard stroke colors */
+  [stroke="#ff0000"] { stroke: hsl(0 100% 50%) !important; }
+  [stroke="#00ff00"] { stroke: hsl(0 80% 40%) !important; }
+  [stroke="#0000ff"] { stroke: hsl(0 60% 35%) !important; }
+  [stroke="#ffffff"] { stroke: hsl(0 100% 60%) !important; }
+  [stroke="#ffff00"] { stroke: hsl(0 90% 45%) !important; }
+  [stroke="#ff00ff"] { stroke: hsl(0 70% 40%) !important; }
+  [stroke="#00ffff"] { stroke: hsl(0 50% 35%) !important; }
+  
+  /* Annotation overlays */
+  .annotation-circle {
+    border-color: hsl(0 100% 50%) !important;
+  }
+  
+  .annotation-text {
+    color: hsl(0 100% 50%) !important;
+    background-color: hsl(0 0% 0% / 0.8) !important;
+  }
+  
+  /* Radio buttons and checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(0 100% 45%) !important;
+  }
+  
+  /* Dark backgrounds for telescope status */
+  .bg-muted {
+    background-color: hsl(0 0% 5%) !important;
+  }
+  
+  /* Very dark backgrounds for cards and containers */
+  .bg-card {
+    background-color: hsl(0 0% 3%) !important;
+  }
+  
+  /* Ensure graphs have dark backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(0 0% 5%) !important;
   }
 }

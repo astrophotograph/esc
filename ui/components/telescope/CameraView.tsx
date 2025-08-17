@@ -1052,17 +1052,17 @@ export function CameraView() {
     <>
     <TooltipProvider>
       <div className={liveViewFullscreen ?
-        "fixed inset-0 z-40 bg-gray-800" :
+        "fixed inset-0 z-40 bg-background" :
         `transition-all duration-300 ${isControlsCollapsed ? "col-span-full" : "lg:col-span-4"}`
       }>
       <Card className={liveViewFullscreen ?
-        "bg-gray-800 border-none h-full rounded-none" :
-        "bg-gray-800 border-gray-700"
+        "bg-background border-none h-full rounded-none" :
+        "bg-card border-border"
       }
       data-tour="camera-view">
         <CardHeader className="pb-2">
           <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'}`}>
-            <CardTitle className={`text-white flex items-center ${isMobile ? 'text-sm' : ''} gap-2 flex-wrap`}>
+            <CardTitle className={`flex items-center ${isMobile ? 'text-sm' : ''} gap-2 flex-wrap`}>
               <Crosshair className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} flex-shrink-0`} />
               <span className="flex-shrink-0">Live View</span>
               {targetName && (
@@ -1095,7 +1095,7 @@ export function CameraView() {
                       ) : (
                         <Battery className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
                       )}
-                      <span className="text-gray-300">{Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%</span>
+                      <span className="text-foreground">{Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1116,7 +1116,7 @@ export function CameraView() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-default">
                       <Layers className={`w-4 h-4 ${stackedFrames > 0 ? "text-blue-400" : "text-gray-400"}`} />
-                      <span className="text-gray-300">{stackedFrames}</span>
+                      <span className="text-foreground">{stackedFrames}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1134,7 +1134,7 @@ export function CameraView() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-default">
                       <XCircle className={`w-4 h-4 ${droppedFrames > 0 ? "text-red-400" : "text-gray-400"}`} />
-                      <span className="text-gray-300">{droppedFrames}</span>
+                      <span className="text-foreground">{droppedFrames}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1153,7 +1153,7 @@ export function CameraView() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-default">
                       <AlertTriangle className={`w-4 h-4 ${skippedFrames > 0 ? "text-yellow-400" : "text-gray-400"}`} />
-                      <span className="text-gray-300">{skippedFrames}</span>
+                      <span className="text-foreground">{skippedFrames}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1173,7 +1173,7 @@ export function CameraView() {
                       <Thermometer
                         className={`w-4 h-4 ${localStreamStatus?.status?.temp < 30 ? "text-blue-400" : "text-orange-400"}`}
                       />
-                      <span className="text-gray-300">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
+                      <span className="text-foreground">{localStreamStatus?.status?.temp?.toFixed(1) || 'N/A'}°C</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1205,7 +1205,7 @@ export function CameraView() {
                           return "text-green-400"
                         })()}`}
                       />
-                      <span className="text-gray-300">
+                      <span className="text-foreground">
                         {localStreamStatus?.status?.freeMB && localStreamStatus?.status?.totalMB
                           ? Math.round(((localStreamStatus?.status?.totalMB - localStreamStatus?.status?.freeMB) / localStreamStatus?.status?.totalMB) * 100)
                           : Math.round(systemStats.diskUsage) || 'N/A'}%
@@ -1241,7 +1241,7 @@ export function CameraView() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-default">
                       <Settings className="w-4 h-4 text-purple-400" />
-                      <span className="text-gray-300">{localStreamStatus?.status?.gain ?? 'N/A'}</span>
+                      <span className="text-foreground">{localStreamStatus?.status?.gain ?? 'N/A'}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1260,7 +1260,7 @@ export function CameraView() {
                       <Filter
                         className={`w-4 h-4 ${localStreamStatus?.status?.lp_filter ? "text-amber-400" : "text-gray-400"}`}
                       />
-                      <span className="text-gray-300">
+                      <span className="text-foreground">
                         {localStreamStatus?.status?.lp_filter ? 'ON' : 'OFF'}
                       </span>
                     </div>
@@ -1284,7 +1284,7 @@ export function CameraView() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCelestialSearch(true)}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  className={`${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title="Search Celestial Objects (⌘K)"
                 >
                   <Search className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
@@ -1295,7 +1295,7 @@ export function CameraView() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowStreamStatus(!showStreamStatus)}
-                  className={`text-gray-400 hover:text-white ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  className={`text-muted-foreground hover:text-foreground ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title={showStreamStatus ? "Hide Stream Status" : "Show Stream Status"}
                 >
                   {showStreamStatus ? <Eye className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /> : <EyeOff className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />}
@@ -1305,7 +1305,7 @@ export function CameraView() {
                   variant="ghost"
                   size="sm"
                   onClick={() => _setShowAnnotations(!_showAnnotations)}
-                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-white"} ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  className={`relative ${_showAnnotations ? "text-yellow-400 hover:text-yellow-300" : "text-muted-foreground hover:text-foreground"} ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title={_showAnnotations ? "Hide Annotations" : "Show Annotations"}
                 >
                   <Crosshair className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${_showAnnotations ? "" : "opacity-50"}`} />
@@ -1320,7 +1320,7 @@ export function CameraView() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowChalkboard(!showChalkboard)}
-                    className={`${showChalkboard ? "text-orange-400 hover:text-orange-300" : "text-gray-400 hover:text-white"}`}
+                    className={`${showChalkboard ? "text-orange-400 hover:text-orange-300" : "text-muted-foreground hover:text-foreground"}`}
                     title={showChalkboard ? "Hide Chalkboard" : "Show Chalkboard"}
                   >
                     <Pen className={`h-4 w-4 ${showChalkboard ? "" : "opacity-50"}`} />
@@ -1334,7 +1334,7 @@ export function CameraView() {
                     // Rotate by 90 degrees on each click
                     setRotationAngle((prevAngle) => (prevAngle + 90) % 360);
                   }}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  className={`${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title="Rotate"
                 >
                   <RotateCw className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
@@ -1344,7 +1344,7 @@ export function CameraView() {
                   variant="outline"
                   size="sm"
                   onClick={() => setLiveViewFullscreen(!liveViewFullscreen)}
-                  className={`border-gray-600 text-white hover:bg-gray-700 ${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
+                  className={`${isMobile ? 'min-w-[32px] h-8 p-1' : 'min-w-[36px]'} flex-shrink-0`}
                   title={liveViewFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 >
                   {liveViewFullscreen ?
@@ -1359,7 +1359,7 @@ export function CameraView() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsControlsCollapsed(!isControlsCollapsed)}
-                    className="border-gray-600 text-white hover:bg-gray-700 ml-1"
+                    className="ml-1"
                   >
                     {isControlsCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </Button>
@@ -1414,10 +1414,10 @@ export function CameraView() {
 
               {/* Show placeholder only when no telescope is available (WebRTCLiveView handles its own states) */}
               {!currentTelescope && (
-                <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                  <div className="text-center text-gray-400">
-                    <div className="w-24 h-24 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
-                      <Crosshair className="w-12 h-12 text-gray-500" />
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <div className="text-center text-muted-foreground">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                      <Crosshair className="w-12 h-12 text-muted-foreground" />
                     </div>
                     <p className="text-lg font-medium mb-2">
                       {imageLoading ? 'Connecting to telescope...' : 'No telescope feed available'}
@@ -1525,7 +1525,7 @@ export function CameraView() {
                 variant="outline"
                 size="sm"
                 onClick={zoomIn}
-                className={`border-gray-600 text-white hover:bg-gray-700 p-0 ${
+                className={`p-0 ${
                   isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8'
                 }`}
                 title="Zoom In"
@@ -1554,7 +1554,7 @@ export function CameraView() {
                 variant="outline"
                 size="sm"
                 onClick={zoomOut}
-                className={`border-gray-600 text-white hover:bg-gray-700 p-0 ${
+                className={`p-0 ${
                   isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8'
                 }`}
                 title="Zoom Out"
@@ -1566,7 +1566,7 @@ export function CameraView() {
                 variant="outline"
                 size="sm"
                 onClick={resetZoomAndPan}
-                className={`border-gray-600 text-white hover:bg-gray-700 p-0 mt-1 ${
+                className={`p-0 mt-1 ${
                   isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8 mt-2'
                 }`}
                 title="Reset View"
@@ -1578,7 +1578,7 @@ export function CameraView() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowImageEnhancement(!showImageEnhancement)}
-                className={`border-gray-600 text-white hover:bg-gray-700 p-0 mt-1 ${
+                className={`p-0 mt-1 ${
                   isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8 mt-2'
                 } ${showImageEnhancement ? 'bg-purple-600 border-purple-500' : ''}`}
                 title="Image Enhancement"

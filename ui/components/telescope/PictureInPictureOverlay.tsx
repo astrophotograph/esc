@@ -170,7 +170,7 @@ export function PictureInPictureOverlay() {
   return (
     <div
       ref={pipRef}
-      className={`fixed z-[9999] bg-gray-800 shadow-2xl border border-gray-600 ${
+      className={`fixed z-[9999] bg-card shadow-2xl border border-border ${
         pipFullscreen 
           ? "inset-0 rounded-none" 
           : "rounded-lg"
@@ -191,20 +191,20 @@ export function PictureInPictureOverlay() {
     >
       {/* Header */}
       <div
-        className={`flex items-center justify-between p-1 bg-gray-700 min-w-0 ${
+        className={`flex items-center justify-between p-1 bg-muted min-w-0 ${
           pipFullscreen ? "rounded-none cursor-default" : "rounded-t-lg cursor-grab"
         }`}
         onMouseDown={pipFullscreen ? undefined : handleMouseDown}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Camera className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <Camera className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           {(pipSize === "large" || pipSize === "extra-large") && (
-            <span className="text-sm text-gray-300 font-medium truncate">
+            <span className="text-sm text-muted-foreground font-medium truncate">
               {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)} Camera
             </span>
           )}
           {pipSize === "medium" && (
-            <span className="text-xs text-gray-300 font-medium truncate">
+            <span className="text-xs text-muted-foreground font-medium truncate">
               {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)}
             </span>
           )}
@@ -232,12 +232,12 @@ export function PictureInPictureOverlay() {
               {/* Camera Selector - show for medium and larger */}
               {(pipSize === "medium" || pipSize === "large" || pipSize === "extra-large") && (
                 <Select value={pipCamera} onValueChange={(value: "allsky" | "guide" | "finder") => setPipCamera(value)}>
-                  <SelectTrigger className={`h-6 text-xs bg-gray-600 border-gray-500 ${
+                  <SelectTrigger className={`h-6 text-xs ${
                     pipSize === "medium" ? "w-14" : "w-20"
                   }`}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectContent>
                     <SelectItem value="allsky">All-Sky</SelectItem>
                     <SelectItem value="guide">Guide</SelectItem>
                     <SelectItem value="finder">Finder</SelectItem>
@@ -262,7 +262,7 @@ export function PictureInPictureOverlay() {
                 }`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-700 border-gray-600">
+                <SelectContent>
                   <SelectItem value="small">S</SelectItem>
                   <SelectItem value="medium">M</SelectItem>
                   <SelectItem value="large">L</SelectItem>
@@ -289,7 +289,7 @@ export function PictureInPictureOverlay() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowPipOverlayControls(true)}
-                  className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                   title="Overlay Settings"
                 >
                   <Settings className="h-3 w-3" />
@@ -303,7 +303,7 @@ export function PictureInPictureOverlay() {
             variant="ghost"
             size="sm"
             onClick={() => setPipFullscreen(!pipFullscreen)}
-            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
             title={pipFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {pipFullscreen ? <Minimize className="h-3 w-3" /> : <Expand className="h-3 w-3" />}
@@ -314,7 +314,7 @@ export function PictureInPictureOverlay() {
             variant="ghost"
             size="sm"
             onClick={() => setPipMinimized(!pipMinimized)}
-            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
             title={pipMinimized ? "Maximize" : "Minimize"}
           >
             {pipMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
@@ -325,7 +325,7 @@ export function PictureInPictureOverlay() {
             variant="ghost"
             size="sm"
             onClick={() => setShowPiP(false)}
-            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
             title="Close PiP"
           >
             <X className="h-3 w-3" />
@@ -335,7 +335,7 @@ export function PictureInPictureOverlay() {
 
       {/* Camera View */}
       {!pipMinimized && (
-        <div className={`relative bg-black overflow-hidden ${
+        <div className={`relative bg-muted overflow-hidden ${
           pipFullscreen ? "rounded-none" : "rounded-b-lg"
         }`}>
           {/* Camera Feed */}
@@ -362,10 +362,10 @@ export function PictureInPictureOverlay() {
 
           {/* Live Status Indicator */}
           {/*{showPipStatus && (*/}
-          {/*  <div className="absolute top-2 left-2 bg-black/70 rounded px-2 py-1">*/}
+          {/*  <div className="absolute top-2 left-2 bg-background/70 rounded px-2 py-1">*/}
           {/*    <div className="flex items-center gap-2 text-xs">*/}
           {/*      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>*/}
-          {/*      <span className="text-white font-mono">LIVE • 30 FPS</span>*/}
+          {/*      <span className="font-mono">LIVE • 30 FPS</span>*/}
           {/*    </div>*/}
           {/*  </div>*/}
           {/*)}*/}
@@ -376,7 +376,7 @@ export function PictureInPictureOverlay() {
               variant="ghost"
               size="sm"
               onClick={() => setShowPipOverlayControls(true)}
-              className="h-6 w-6 p-0 bg-black/50 text-white hover:bg-black/70"
+              className="h-6 w-6 p-0 bg-background/50 hover:bg-background/70"
               title="Quick Settings"
             >
               <Eye className="h-3 w-3" />
@@ -384,13 +384,13 @@ export function PictureInPictureOverlay() {
           </div>
 
           {/* Overlay Status Bar */}
-          <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded px-2 py-1">
-            <div className="flex items-center justify-between text-xs text-white">
+          <div className="absolute bottom-2 left-2 right-2 bg-background/70 rounded px-2 py-1">
+            <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="font-mono">
                   {currentSize.width}×{currentSize.height}
                 </span>
-                <span className="text-gray-400">•</span>
+                <span className="text-muted-foreground">•</span>
                 <span className="capitalize">{pipCamera}</span>
               </div>
               <div className="flex items-center gap-1">

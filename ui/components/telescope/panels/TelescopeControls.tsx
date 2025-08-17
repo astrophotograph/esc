@@ -312,9 +312,9 @@ export function TelescopeControls() {
 
   return (
     <>
-      <Card className="bg-gray-800 border-gray-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white text-lg flex items-center gap-2">
+          <CardTitle className="text-lg flex items-center gap-2">
             <Settings className="w-5 h-5"/>
             Telescope Controls
           </CardTitle>
@@ -322,27 +322,27 @@ export function TelescopeControls() {
         <CardContent className="space-y-6">
           {/* Coordinates */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-300">Current Position</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">Current Position</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-400">RA:</span>
-                <span className="ml-2 text-white">{formatRaDec(streamStatus?.status?.ra, "ra") || "N/A"}</span>
+                <span className="text-muted-foreground">RA:</span>
+                <span className="ml-2">{formatRaDec(streamStatus?.status?.ra, "ra") || "N/A"}</span>
               </div>
               <div>
-                <span className="text-gray-400">Dec:</span>
-                <span className="ml-2 text-white">{formatRaDec(streamStatus?.status?.dec, "dec") || "N/A"}</span>
+                <span className="text-muted-foreground">Dec:</span>
+                <span className="ml-2">{formatRaDec(streamStatus?.status?.dec, "dec") || "N/A"}</span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-xs text-gray-400">
+            <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
               <div>
-                <span className="text-gray-500">RA (deg):</span>
-                <span className="ml-2 text-gray-300">
+                <span className="text-muted-foreground">RA (deg):</span>
+                <span className="ml-2 text-muted-foreground">
                 {streamStatus?.status?.ra !== undefined && streamStatus?.status?.ra !== null ? `${streamStatus.status.ra.toFixed(4)}°` : "N/A"}
               </span>
               </div>
               <div>
-                <span className="text-gray-500">Dec (deg):</span>
-                <span className="ml-2 text-gray-300">
+                <span className="text-muted-foreground">Dec (deg):</span>
+                <span className="ml-2 text-muted-foreground">
                 {streamStatus?.status?.dec !== undefined && streamStatus?.status?.dec !== null ? `${streamStatus.status.dec.toFixed(4)}°` : "N/A"}
               </span>
               </div>
@@ -352,9 +352,9 @@ export function TelescopeControls() {
           {/* Moon Zoom Controls - Only visible when Moon is the current target */}
           {selectedTarget && (selectedTarget.id === 'moon' || selectedTarget.name?.toLowerCase() === 'moon') && (
             <>
-              <Separator className="bg-gray-700" />
+              <Separator />
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <Moon className="w-4 h-4" />
                   Moon Zoom Controls
                 </h4>
@@ -363,7 +363,7 @@ export function TelescopeControls() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleMoonZoom('1x')}
-                    className="border-gray-600 text-white hover:bg-gray-700"
+                    className=""
                   >
                     <ZoomIn className="w-3 h-3 mr-1" />
                     1x
@@ -372,7 +372,7 @@ export function TelescopeControls() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleMoonZoom('2x')}
-                    className="border-gray-600 text-white hover:bg-gray-700"
+                    className=""
                   >
                     <ZoomIn className="w-3 h-3 mr-1" />
                     2x
@@ -381,7 +381,7 @@ export function TelescopeControls() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleMoonZoom('4x')}
-                    className="border-gray-600 text-white hover:bg-gray-700"
+                    className=""
                   >
                     <ZoomIn className="w-3 h-3 mr-1" />
                     4x
@@ -394,7 +394,7 @@ export function TelescopeControls() {
           {/* Stop Imaging Button - Only visible when in Stack mode */}
           {clientMode === "Stack" && (
             <>
-              <Separator className="bg-gray-700" />
+              <Separator />
               <div className="space-y-3">
                 <Button
                   variant="destructive"
@@ -410,7 +410,7 @@ export function TelescopeControls() {
           )}
 
           <Separator
-            className={`bg-gray-700 transition-all duration-300 ease-in-out ${
+            className={`transition-all duration-300 ease-in-out ${
               clientMode === "Stack" ? "opacity-0 h-0" : "opacity-100"
             }`}
           />
@@ -423,7 +423,7 @@ export function TelescopeControls() {
                 : "max-h-[1000px] opacity-100"
             }`}
           >
-            <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">Movement & Tracking</h4>
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">Movement & Tracking</h4>
             <div className="grid grid-cols-3 gap-2">
               <div></div>
               <Button
@@ -434,7 +434,7 @@ export function TelescopeControls() {
                 onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("north")}
                 onTouchEnd={handleTouchEnd}
-                className="border-gray-600 text-white hover:bg-gray-700"
+                className=""
               >
                 <ArrowUp className="w-4 h-4"/>
               </Button>
@@ -447,7 +447,7 @@ export function TelescopeControls() {
                 onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("west")}
                 onTouchEnd={handleTouchEnd}
-                className="border-gray-600 text-white hover:bg-gray-700"
+                className=""
               >
                 <ArrowLeft className="w-4 h-4"/>
               </Button>
@@ -455,7 +455,7 @@ export function TelescopeControls() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleTelescopeMove("stop")}
-                className="border-gray-600 text-white hover:bg-gray-700"
+                className=""
               >
                 <RotateCcw className="w-4 h-4"/>
               </Button>
@@ -467,7 +467,7 @@ export function TelescopeControls() {
                 onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("east")}
                 onTouchEnd={handleTouchEnd}
-                className="border-gray-600 text-white hover:bg-gray-700"
+                className=""
               >
                 <ArrowRight className="w-4 h-4"/>
               </Button>
@@ -480,7 +480,7 @@ export function TelescopeControls() {
                 onMouseLeave={handleMouseLeave}
                 onTouchStart={() => handleTouchStart("south")}
                 onTouchEnd={handleTouchEnd}
-                className="border-gray-600 text-white hover:bg-gray-700"
+                className=""
               >
                 <ArrowDown className="w-4 h-4"/>
               </Button>
@@ -488,7 +488,7 @@ export function TelescopeControls() {
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Tracking</span>
+              <span className="text-sm text-muted-foreground">Tracking</span>
               <Switch checked={isTracking} onCheckedChange={setIsTracking}/>
             </div>
 
@@ -496,7 +496,7 @@ export function TelescopeControls() {
               variant="outline"
               size="sm"
               onClick={() => handleTelescopePark()}
-              className="w-full border-gray-600 text-white hover:bg-gray-700"
+              className="w-full"
             >
               <Home className="w-4 h-4 mr-2"/>
               Park Telescope
@@ -506,7 +506,7 @@ export function TelescopeControls() {
               variant="outline"
               size="sm"
               onClick={handlePlateSolveAndSync}
-              className="w-full border-gray-600 text-white hover:bg-gray-700"
+              className="w-full"
             >
               <Target className="w-4 h-4 mr-2"/>
               Plate Solve
@@ -514,7 +514,7 @@ export function TelescopeControls() {
           </div>
 
           <Separator
-            className={`bg-gray-700 transition-all duration-300 ease-in-out ${
+            className={`transition-all duration-300 ease-in-out ${
               clientMode === "Stack" ? "opacity-0 h-0" : "opacity-100"
             }`}
           />
@@ -527,14 +527,14 @@ export function TelescopeControls() {
                 : "max-h-[1000px] opacity-100"
             }`}
           >
-            <h4 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Focus className="w-4 h-4"/>
               Focus Control
             </h4>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Position</span>
-                <span className="text-white">{focusPosition[0]}</span>
+                <span className="text-muted-foreground">Position</span>
+                <span>{focusPosition[0]}</span>
               </div>
               <Slider value={focusPosition} onValueChange={handleFocusSliderChange} max={10000} step={10}
                       className="w-full"/>
@@ -544,7 +544,7 @@ export function TelescopeControls() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFocusAdjust("in")}
-                className="flex-1 border-gray-600 text-white hover:bg-gray-700"
+                className="flex-1"
               >
                 Focus In
               </Button>
@@ -552,48 +552,48 @@ export function TelescopeControls() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFocusAdjust("out")}
-                className="flex-1 border-gray-600 text-white hover:bg-gray-700"
+                className="flex-1"
               >
                 Focus Out
               </Button>
             </div>
           </div>
 
-          {/*<Separator className="bg-gray-700" />*/}
+          {/*<Separator />*/}
 
           {/* Image Controls */}
           {/*<div className="space-y-4">*/}
-          {/*  <h4 className="text-sm font-medium text-gray-300">Image Settings</h4>*/}
+          {/*  <h4 className="text-sm font-medium text-muted-foreground">Image Settings</h4>*/}
 
           {/*  <div className="grid grid-cols-2 gap-4">*/}
           {/*    <div className="space-y-2">*/}
           {/*      <div className="flex justify-between text-sm">*/}
-          {/*        <span className="text-gray-300">Exposure</span>*/}
-          {/*        <span className="text-white">{exposure[0]}s</span>*/}
+          {/*        <span className="text-muted-foreground">Exposure</span>*/}
+          {/*        <span>{exposure[0]}s</span>*/}
           {/*      </div>*/}
           {/*      <Slider value={exposure} onValueChange={setExposure} min={0.1} max={30} step={0.1} className="w-full" />*/}
           {/*    </div>*/}
 
           {/*    <div className="space-y-2">*/}
           {/*      <div className="flex justify-between text-sm">*/}
-          {/*        <span className="text-gray-300">Gain</span>*/}
-          {/*        <span className="text-white">{gain[0]}</span>*/}
+          {/*        <span className="text-muted-foreground">Gain</span>*/}
+          {/*        <span>{gain[0]}</span>*/}
           {/*      </div>*/}
           {/*      <Slider value={gain} onValueChange={setGain} min={0} max={100} step={1} className="w-full" />*/}
           {/*    </div>*/}
 
           {/*    <div className="space-y-2">*/}
           {/*      <div className="flex justify-between text-sm">*/}
-          {/*        <span className="text-gray-300">Brightness</span>*/}
-          {/*        <span className="text-white">{brightness[0]}</span>*/}
+          {/*        <span className="text-muted-foreground">Brightness</span>*/}
+          {/*        <span>{brightness[0]}</span>*/}
           {/*      </div>*/}
           {/*      <Slider value={brightness} onValueChange={setBrightness} min={-50} max={50} step={1} className="w-full" />*/}
           {/*    </div>*/}
 
           {/*    <div className="space-y-2">*/}
           {/*      <div className="flex justify-between text-sm">*/}
-          {/*        <span className="text-gray-300">Contrast</span>*/}
-          {/*        <span className="text-white">{contrast[0]}%</span>*/}
+          {/*        <span className="text-muted-foreground">Contrast</span>*/}
+          {/*        <span>{contrast[0]}%</span>*/}
           {/*      </div>*/}
           {/*      <Slider value={contrast} onValueChange={setContrast} min={50} max={200} step={5} className="w-full" />*/}
           {/*    </div>*/}
@@ -605,8 +605,8 @@ export function TelescopeControls() {
           {/*      onClick={handleImagingToggle}*/}
           {/*      className={`w-full ${*/}
           {/*        isImaging */}
-          {/*          ? "bg-red-600 hover:bg-red-700 text-white" */}
-          {/*          : "bg-green-600 hover:bg-green-700 text-white"*/}
+          {/*          ? "bg-red-600 hover:bg-red-700" */}
+          {/*          : "bg-green-600 hover:bg-green-700"*/}
           {/*      }`}*/}
           {/*    >*/}
           {/*      {isImaging ? (*/}
@@ -640,23 +640,23 @@ export function TelescopeControls() {
 
       {/* Stop Imaging Confirmation Dialog */}
       <AlertDialog open={showStopImagingConfirm} onOpenChange={setShowStopImagingConfirm}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Stop Imaging?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-300">
+            <AlertDialogTitle>Stop Imaging?</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to stop the current stacking process? This will end the imaging session and you won't be able to resume from where you left off.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel 
               onClick={handleCancelStopImaging}
-              className="border-gray-600 text-white hover:bg-gray-700"
+              className=""
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmStopImaging}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
             >
               Stop Imaging
             </AlertDialogAction>

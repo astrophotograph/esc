@@ -53,6 +53,18 @@ const COLORS = [
   '#ffa500', // Orange
 ]
 
+// Night vision mode colors - various shades of red
+const NIGHT_VISION_COLORS = [
+  '#ff0000', // Bright red
+  '#cc0000', // Medium red
+  '#990000', // Dark red
+  '#ff6666', // Light red
+  '#ff3333', // Bright medium red
+  '#660000', // Very dark red
+  '#ffcccc', // Very light red
+  '#ff9999', // Light medium red
+]
+
 const STORAGE_KEY = 'telescope-chalkboard-drawings'
 
 export function ChalkboardPanel({
@@ -545,7 +557,7 @@ export function ChalkboardPanel({
         {/* Tool panel - movable like PIP window */}
         <Card 
           ref={panelRef}
-          className="absolute bg-black/70 backdrop-blur-sm border-gray-600" 
+          className="absolute bg-card/90 backdrop-blur-sm border-border" 
           style={{ 
             zIndex: 20, 
             pointerEvents: 'auto',
@@ -558,18 +570,18 @@ export function ChalkboardPanel({
             className="pb-2 cursor-grab active:cursor-grabbing"
             onMouseDown={handlePanelMouseDown}
           >
-            <CardTitle className="text-white text-sm flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Pen className="w-4 h-4" />
                 Chalkboard Tools
               </div>
-              <Move className="w-3 h-3 text-gray-400" />
+              <Move className="w-3 h-3 text-muted-foreground" />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {/* Drawing Tools */}
             <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-300 mb-1">Tools</div>
+              <div className="text-xs font-medium mb-1">Tools</div>
               <div className="flex gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -623,7 +635,7 @@ export function ChalkboardPanel({
             
             {/* Color Picker */}
             <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-300 mb-1">Colors</div>
+              <div className="text-xs font-medium mb-1">Colors</div>
               <div className="grid grid-cols-4 gap-1">
                 {COLORS.map(color => (
                   <Button
@@ -642,7 +654,7 @@ export function ChalkboardPanel({
             
             {/* Actions */}
             <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-300 mb-1">Actions</div>
+              <div className="text-xs font-medium mb-1">Actions</div>
               <div className="flex gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>

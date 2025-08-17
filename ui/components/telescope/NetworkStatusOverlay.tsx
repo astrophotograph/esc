@@ -243,7 +243,7 @@ export function NetworkStatusOverlay() {
   return (
     <div 
       ref={overlayRef} 
-      className="fixed bg-black/90 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-gray-700 max-h-[90vh] overflow-y-auto" 
+      className="fixed bg-card/95 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-border max-h-[90vh] overflow-y-auto" 
       style={{ 
         left: overlayPosition.x,
         top: overlayPosition.y,
@@ -254,7 +254,7 @@ export function NetworkStatusOverlay() {
     >
       {/* Header with drag handle */}
       <div 
-        className="cursor-move bg-gray-900/80 px-4 py-2 rounded-t-lg border-b border-gray-700 flex items-center justify-between"
+        className="cursor-move bg-background/80 px-4 py-2 rounded-t-lg border-b border-border flex items-center justify-between"
         onMouseDown={handleMouseDown}
       >
           <h3 className="font-semibold text-blue-400 flex items-center gap-2 select-none">
@@ -265,9 +265,9 @@ export function NetworkStatusOverlay() {
             variant="ghost"
             size="sm"
             onClick={() => setShowStreamStatus(false)}
-            className="h-6 w-6 p-0 hover:bg-gray-800"
+            className="h-6 w-6 p-0 hover:bg-accent"
           >
-            <X className="h-4 w-4 text-gray-400" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
 
@@ -276,7 +276,7 @@ export function NetworkStatusOverlay() {
           {/* Power & Thermal Section */}
           <div className="space-y-2">
             <h4 
-              className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-gray-300"
+              className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('powerThermal')}
             >
               Power & Thermal
@@ -296,9 +296,9 @@ export function NetworkStatusOverlay() {
                       ) : (
                         <Battery className={`w-4 h-4 ${localStreamStatus?.status?.battery_capacity > 20 ? "text-green-400" : "text-red-400"}`} />
                       )}
-                      <span className="text-gray-300">Battery</span>
+                      <span className="text-muted-foreground">Battery</span>
                     </div>
-                    <span className="text-white font-mono">{Math.round(localStreamStatus.status.battery_capacity)}%</span>
+                    <span className="font-mono">{Math.round(localStreamStatus.status.battery_capacity)}%</span>
                   </div>
                 )}
 
@@ -307,9 +307,9 @@ export function NetworkStatusOverlay() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Thermometer className={`w-4 h-4 ${localStreamStatus?.status?.temp < 30 ? "text-blue-400" : "text-orange-400"}`} />
-                      <span className="text-gray-300">Temperature</span>
+                      <span className="text-muted-foreground">Temperature</span>
                     </div>
-                    <span className="text-white font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
+                    <span className="font-mono">{localStreamStatus.status.temp.toFixed(1)}°C</span>
                   </div>
                 )}
               </>
@@ -319,7 +319,7 @@ export function NetworkStatusOverlay() {
           {/* Coordinates Section */}
           <div className="space-y-2">
             <h4 
-              className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-gray-300"
+              className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('coordinates')}
             >
               Coordinates
@@ -333,9 +333,9 @@ export function NetworkStatusOverlay() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-blue-400" />
-                      <span className="text-gray-300">Altitude</span>
+                      <span className="text-muted-foreground">Altitude</span>
                     </div>
-                    <span className="text-white font-mono">{localStreamStatus.status.alt.toFixed(1)}°</span>
+                    <span className="font-mono">{localStreamStatus.status.alt.toFixed(1)}°</span>
                   </div>
                 )}
 
@@ -344,9 +344,9 @@ export function NetworkStatusOverlay() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Compass className="w-4 h-4 text-blue-400" />
-                      <span className="text-gray-300">Azimuth</span>
+                      <span className="text-muted-foreground">Azimuth</span>
                     </div>
-                    <span className="text-white font-mono">{localStreamStatus.status.az.toFixed(1)}°</span>
+                    <span className="font-mono">{localStreamStatus.status.az.toFixed(1)}°</span>
                   </div>
                 )}
 
@@ -354,10 +354,10 @@ export function NetworkStatusOverlay() {
                 {localStreamStatus?.status?.ra !== undefined && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-gray-300">RA</span>
+                      <span className="text-muted-foreground">RA</span>
                       <div className="text-right">
-                        <div className="text-white font-mono">{raToHMS(localStreamStatus.status.ra)}</div>
-                        <div className="text-gray-400 text-xs font-mono">{localStreamStatus.status.ra.toFixed(2)}° ({(localStreamStatus.status.ra / 15).toFixed(4)}h)</div>
+                        <div className="font-mono">{raToHMS(localStreamStatus.status.ra)}</div>
+                        <div className="text-muted-foreground text-xs font-mono">{localStreamStatus.status.ra.toFixed(2)}° ({(localStreamStatus.status.ra / 15).toFixed(4)}h)</div>
                       </div>
                     </div>
                   </div>
@@ -367,10 +367,10 @@ export function NetworkStatusOverlay() {
                 {localStreamStatus?.status?.dec !== undefined && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-gray-300">Dec</span>
+                      <span className="text-muted-foreground">Dec</span>
                       <div className="text-right">
-                        <div className="text-white font-mono">{decToDMS(localStreamStatus.status.dec)}</div>
-                        <div className="text-gray-400 text-xs font-mono">{localStreamStatus.status.dec.toFixed(4)}°</div>
+                        <div className="font-mono">{decToDMS(localStreamStatus.status.dec)}</div>
+                        <div className="text-muted-foreground text-xs font-mono">{localStreamStatus.status.dec.toFixed(4)}°</div>
                       </div>
                     </div>
                   </div>
@@ -385,7 +385,7 @@ export function NetworkStatusOverlay() {
             localStreamStatus?.status?.roll !== undefined) && (
             <div className="space-y-2">
               <h4 
-                className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-gray-300"
+                className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
                 onClick={() => toggleSection('balance')}
               >
                 Balance
@@ -402,9 +402,9 @@ export function NetworkStatusOverlay() {
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
                             <Activity className="w-4 h-4 text-orange-400" />
-                            <span className="text-gray-300">Tilt Angle</span>
+                            <span className="text-muted-foreground">Tilt Angle</span>
                           </div>
-                          <span className="text-white font-mono">
+                          <span className="font-mono">
                             {(Math.acos(Math.min(1, Math.max(-1, localStreamStatus.status.balance_sensor.data.z))) * 180 / Math.PI).toFixed(1)}°
                           </span>
                         </div>
@@ -417,9 +417,9 @@ export function NetworkStatusOverlay() {
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <RotateCw className="w-4 h-4 text-yellow-400" />
-                              <span className="text-gray-300">Rotation</span>
+                              <span className="text-muted-foreground">Rotation</span>
                             </div>
-                            <span className="text-white font-mono">
+                            <span className="font-mono">
                               {(Math.atan2(
                                 localStreamStatus.status.balance_sensor.data.y, 
                                 localStreamStatus.status.balance_sensor.data.x
@@ -431,10 +431,10 @@ export function NetworkStatusOverlay() {
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-4 h-4 text-green-400" />
-                              <span className="text-gray-300">Cumulative</span>
+                              <span className="text-muted-foreground">Cumulative</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-mono">
+                              <span className="font-mono">
                                 {cumulativeRotation.toFixed(1)}°
                               </span>
                               <button
@@ -442,7 +442,7 @@ export function NetworkStatusOverlay() {
                                   setCumulativeRotation(0);
                                   previousRotationRef.current = null;
                                 }}
-                                className="text-gray-400 hover:text-white transition-colors p-0.5"
+                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
                                 title="Reset cumulative rotation"
                               >
                                 <RotateCw className="w-3 h-3" />
@@ -459,9 +459,9 @@ export function NetworkStatusOverlay() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <RotateCw className="w-4 h-4 text-green-400" />
-                        <span className="text-gray-300">Pitch</span>
+                        <span className="text-muted-foreground">Pitch</span>
                       </div>
-                      <span className="text-white font-mono">{localStreamStatus.status.pitch.toFixed(1)}°</span>
+                      <span className="font-mono">{localStreamStatus.status.pitch.toFixed(1)}°</span>
                     </div>
                   )}
 
@@ -470,9 +470,9 @@ export function NetworkStatusOverlay() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <RotateCw className="w-4 h-4 text-green-400" />
-                        <span className="text-gray-300">Roll</span>
+                        <span className="text-muted-foreground">Roll</span>
                       </div>
-                      <span className="text-white font-mono">{localStreamStatus.status.roll.toFixed(1)}°</span>
+                      <span className="font-mono">{localStreamStatus.status.roll.toFixed(1)}°</span>
                     </div>
                   )}
                 </>
@@ -483,7 +483,7 @@ export function NetworkStatusOverlay() {
           {/* Imaging Section */}
           <div className="space-y-2">
             <h4 
-              className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-gray-300"
+              className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('imaging')}
             >
               Imaging
@@ -497,9 +497,9 @@ export function NetworkStatusOverlay() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Cpu className="w-4 h-4 text-blue-400" />
-                      <span className="text-gray-300">Mode</span>
+                      <span className="text-muted-foreground">Mode</span>
                     </div>
-                    <span className="text-white font-mono">
+                    <span className="font-mono">
                       {localStreamStatus.status.stage === 'RTSP' ? 'Streaming' : 
                        localStreamStatus.status.stage === 'Stack' ? 'Stacking' :
                        localStreamStatus.status.stage === 'ContinuousExposure' ? 'Live View' :
@@ -514,17 +514,17 @@ export function NetworkStatusOverlay() {
 
                 {/* Frame Counts */}
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-gray-800 rounded px-2 py-1">
-                    <div className="text-gray-400">Stacked</div>
-                    <div className="text-white font-mono">{stackedFrames}</div>
+                  <div className="bg-muted rounded px-2 py-1">
+                    <div className="text-muted-foreground">Stacked</div>
+                    <div className="font-mono">{stackedFrames}</div>
                   </div>
-                  <div className="bg-gray-800 rounded px-2 py-1">
-                    <div className="text-gray-400">Dropped</div>
-                    <div className="text-white font-mono">{droppedFrames}</div>
+                  <div className="bg-muted rounded px-2 py-1">
+                    <div className="text-muted-foreground">Dropped</div>
+                    <div className="font-mono">{droppedFrames}</div>
                   </div>
-                  <div className="bg-gray-800 rounded px-2 py-1">
-                    <div className="text-gray-400">Skipped</div>
-                    <div className="text-white font-mono">{skippedFrames}</div>
+                  <div className="bg-muted rounded px-2 py-1">
+                    <div className="text-muted-foreground">Skipped</div>
+                    <div className="font-mono">{skippedFrames}</div>
                   </div>
                 </div>
 
@@ -534,15 +534,15 @@ export function NetworkStatusOverlay() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-yellow-400" />
-                      <span className="text-gray-300">Last Image</span>
+                      <span className="text-muted-foreground">Last Image</span>
                     </div>
-                    <span className="text-white font-mono">{Math.round(localStreamStatus.imaging_status.last_image_elapsed_ms)}ms</span>
+                    <span className="font-mono">{Math.round(localStreamStatus.imaging_status.last_image_elapsed_ms)}ms</span>
                   </div>
                 )}
 
                 {/* Mini timing graph */}
                 {imageTimingHistory.length > 1 && (
-                  <div className="h-12 bg-gray-800 rounded p-1">
+                  <div className="h-12 bg-muted rounded p-1">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <polyline
                         fill="none"
@@ -567,7 +567,7 @@ export function NetworkStatusOverlay() {
           {/* Network Section */}
           <div className="space-y-2">
             <h4 
-              className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-gray-300"
+              className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('network')}
             >
               Network
@@ -580,9 +580,9 @@ export function NetworkStatusOverlay() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Activity className={`w-4 h-4 ${localStreamStatus?.status?.server_browser_rtt_ms ? "text-green-400" : "text-red-400"}`} />
-                    <span className="text-gray-300">Status</span>
+                    <span className="text-muted-foreground">Status</span>
                   </div>
-                  <span className="text-white font-mono">
+                  <span className="font-mono">
                     {localStreamStatus?.status?.server_browser_rtt_ms ? "Connected" : "Disconnected"}
                   </span>
                 </div>
@@ -590,22 +590,22 @@ export function NetworkStatusOverlay() {
                 {/* RTT */}
                 {localStreamStatus?.status?.server_browser_rtt_ms !== undefined && (
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-300">Browser RTT</span>
-                    <span className="text-white font-mono">{Math.round(localStreamStatus.status.server_browser_rtt_ms)}ms</span>
+                    <span className="text-muted-foreground">Browser RTT</span>
+                    <span className="font-mono">{Math.round(localStreamStatus.status.server_browser_rtt_ms)}ms</span>
                   </div>
                 )}
 
                 {/* Telescope RTT */}
                 {localStreamStatus?.status?.server_telescope_rtt_ms !== undefined && (
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-gray-300">Telescope RTT</span>
-                    <span className="text-white font-mono">{Math.round(localStreamStatus.status.server_telescope_rtt_ms)}ms</span>
+                    <span className="text-muted-foreground">Telescope RTT</span>
+                    <span className="font-mono">{Math.round(localStreamStatus.status.server_telescope_rtt_ms)}ms</span>
                   </div>
                 )}
 
                 {/* Mini RTT graph */}
                 {rttHistory.length > 1 && (
-                  <div className="h-12 bg-gray-800 rounded p-1">
+                  <div className="h-12 bg-muted rounded p-1">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <polyline
                         fill="none"

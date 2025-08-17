@@ -21,6 +21,7 @@ import {TelescopeSelector} from "@/components/telescope/TelescopeSelector"
 import {useRouter} from "next/navigation"
 import {SystemAdminDialog} from "./modals/SystemAdminDialog"
 import {useIsMobile} from "../../hooks/use-mobile"
+import {ThemeToggle} from "@/components/theme-toggle"
 
 export function Header() {
   const router = useRouter()
@@ -89,6 +90,9 @@ export function Header() {
             <Camera className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
             {!isMobile && 'PiP'}
           </Button>
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
 
           {/* Scenery Mode Button */}
           {/*<Button*/}

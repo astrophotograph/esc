@@ -108,11 +108,11 @@ function TelescopeControlContent() {
   }, [currentObservingLocation, wsIsConnected])
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Draggable title bar for Electron only */}
       {isElectron && (
-        <div className="h-8 bg-gray-800 flex items-center justify-center px-4 electron-drag">
-          <span className="text-sm text-gray-400">Experimental Scope Creep</span>
+        <div className="h-8 bg-muted flex items-center justify-center px-4 electron-drag">
+          <span className="text-sm text-muted-foreground">Experimental Scope Creep</span>
         </div>
       )}
 
@@ -172,7 +172,7 @@ function TelescopeControlContent() {
 
         {/* Mobile Controls Panel - Show as overlay when on mobile */}
         {isMobile && !isControlsCollapsed && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 max-h-80 overflow-y-auto">
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border max-h-80 overflow-y-auto">
             <ControlPanel />
           </div>
         )}

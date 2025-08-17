@@ -44,7 +44,7 @@ const getStatusIcon = (status: TelescopeInfo["status"]) => {
     case "error":
       return <AlertTriangle className="w-4 h-4 text-yellow-500"/>
     default:
-      return <WifiOff className="w-4 h-4 text-gray-500"/>
+      return <WifiOff className="w-4 h-4 text-muted-foreground"/>
   }
 }
 
@@ -66,15 +66,15 @@ const getStatusTooltip = (status: TelescopeInfo["status"]) => {
 const getStatusColor = (status: TelescopeInfo["status"]) => {
   switch (status) {
     case "online":
-      return "bg-green-500 hover:bg-green-600"
+      return "bg-green-500 hover:bg-green-600 text-white"
     case "offline":
-      return "bg-red-500 hover:bg-red-600"
+      return "bg-red-500 hover:bg-red-600 text-white"
     case "maintenance":
-      return "bg-blue-500 hover:bg-blue-600"
+      return "bg-blue-500 hover:bg-blue-600 text-white"
     case "error":
-      return "bg-yellow-500 hover:bg-yellow-600"
+      return "bg-yellow-500 hover:bg-yellow-600 text-white"
     default:
-      return "bg-gray-500 hover:bg-gray-600"
+      return "bg-muted hover:bg-muted/80 text-muted-foreground"
   }
 }
 
@@ -125,7 +125,7 @@ export function TelescopeSelector() {
 
   if (isLoadingTelescopes && (telescopes?.length || 0) === 0) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400">
+      <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
         <RefreshCw className="w-4 h-4 animate-spin"/>
         <span>Loading telescopes...</span>
       </div>
@@ -143,7 +143,7 @@ export function TelescopeSelector() {
           variant="outline"
           size="sm"
           onClick={() => setShowTelescopeManagement(true)}
-          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          className=""
           title="Add Telescope"
         >
           <Cog className="w-3 h-3"/>
@@ -152,7 +152,7 @@ export function TelescopeSelector() {
           variant="outline"
           size="sm"
           onClick={fetchTelescopes}
-          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          className=""
           title="Refresh"
         >
           <RefreshCw className="w-3 h-3"/>
@@ -164,7 +164,7 @@ export function TelescopeSelector() {
   if ((telescopes?.length ?? 0) === 0) {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400">
+        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
           <TelescopeIcon className="w-4 h-4"/>
           <span>No telescopes available</span>
         </div>
@@ -172,7 +172,7 @@ export function TelescopeSelector() {
           variant="outline"
           size="sm"
           onClick={() => setShowTelescopeManagement(true)}
-          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          className=""
           title="Add Telescope"
         >
           <Cog className="w-3 h-3"/>
@@ -181,7 +181,7 @@ export function TelescopeSelector() {
           variant="outline"
           size="sm"
           onClick={fetchTelescopes}
-          className="border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+          className=""
           title="Refresh"
         >
           <RefreshCw className="w-3 h-3"/>
@@ -197,7 +197,7 @@ export function TelescopeSelector() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="flex items-center gap-2 min-w-[220px] justify-between border-gray-600 bg-gray-800 hover:bg-gray-700 text-white"
+            className="flex items-center gap-2 min-w-[220px] justify-between"
             data-tour="telescope-selector"
           >
             <div className="flex items-center gap-2 flex-1">
@@ -233,43 +233,43 @@ export function TelescopeSelector() {
             <ChevronDown className="w-4 h-4 ml-1"/>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[480px] bg-gray-800 border-gray-700">
-          <DropdownMenuLabel className="text-gray-300 flex items-center justify-between">
+        <DropdownMenuContent align="start" className="w-[480px]">
+          <DropdownMenuLabel className="flex items-center justify-between">
             <span>Available Telescopes</span>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowTelescopeManagement(true)}
-                className="h-6 w-6 p-0 hover:bg-gray-700"
+                className="h-6 w-6 p-0 hover:bg-accent"
                 title="Manage Telescopes"
               >
-                <Cog className="w-3 h-3 text-gray-400"/>
+                <Cog className="w-3 h-3 text-muted-foreground"/>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={fetchTelescopes}
-                className="h-6 w-6 p-0 hover:bg-gray-700"
+                className="h-6 w-6 p-0 hover:bg-accent"
                 disabled={isLoadingTelescopes}
                 title="Refresh Telescopes"
               >
-                <RefreshCw className={`w-3 h-3 text-gray-400 ${isLoadingTelescopes ? 'animate-spin' : ''}`}/>
+                <RefreshCw className={`w-3 h-3 text-muted-foreground ${isLoadingTelescopes ? 'animate-spin' : ''}`}/>
               </Button>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-gray-700"/>
+          <DropdownMenuSeparator/>
 
           {telescopes.map((telescope) => (
             <DropdownMenuItem
               key={telescope.id}
               onClick={() => selectTelescope(telescope)}
-              className="flex items-center justify-between p-3 hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
+              className="flex items-center justify-between p-3 hover:bg-accent focus:bg-accent cursor-pointer"
             >
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-white">{getTelescopeDisplayName(telescope)}</span>
+                    <span className="font-medium">{getTelescopeDisplayName(telescope)}</span>
                     {telescope.is_remote && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -291,33 +291,33 @@ export function TelescopeSelector() {
                       </TooltipContent>
                     </Tooltip>
                     {currentTelescope?.id === telescope.id && (
-                      <Badge variant="secondary" className="text-xs bg-blue-600 text-white">
+                      <Badge variant="secondary" className="text-xs bg-blue-600 text-white border-0">
                         Active
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-400">{telescope.type || 'Unknown Type'}</span>
+                    <span className="text-muted-foreground">{telescope.type || 'Unknown Type'}</span>
                     {telescope.location && (
                       <>
-                        <span className="text-gray-500">•</span>
-                        <MapPin className="w-3 h-3 text-gray-500"/>
-                        <span className="text-gray-500">{telescope.location}</span>
+                        <span className="text-muted-foreground">•</span>
+                        <MapPin className="w-3 h-3 text-muted-foreground"/>
+                        <span className="text-muted-foreground">{telescope.location}</span>
                       </>
                     )}
-                    {/*<span className="text-gray-500">•</span>*/}
-                    {/*<span className="text-gray-500">{telescope.host}:{telescope.port}</span>*/}
+                    {/*<span className="text-muted-foreground">•</span>*/}
+                    {/*<span className="text-muted-foreground">{telescope.host}:{telescope.port}</span>*/}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     {telescope.host && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                       {telescope.host}
                     </span>
                     )}
                     {telescope.ssid && (
                       <>
-                        <Radio className="w-3 h-3 text-gray-500"/>
-                        <span className="text-xs text-gray-500">
+                        <Radio className="w-3 h-3 text-muted-foreground"/>
+                        <span className="text-xs text-muted-foreground">
                          {telescope.ssid}
                         </span>
                       </>
@@ -328,7 +328,7 @@ export function TelescopeSelector() {
               <div className="flex flex-col items-end gap-1 ml-2">
                 <Badge
                   variant="secondary"
-                  className={`text-xs ${getStatusColor(telescope.status)} text-white border-0`}
+                  className={`text-xs ${getStatusColor(telescope.status)} border-0`}
                 >
                   {getStatusText(telescope.status)}
                 </Badge>
@@ -342,7 +342,7 @@ export function TelescopeSelector() {
           ))}
 
           {telescopes.length === 0 && (
-            <DropdownMenuItem disabled className="p-3 text-gray-500">
+            <DropdownMenuItem disabled className="p-3 text-muted-foreground">
               No telescopes found
             </DropdownMenuItem>
           )}
@@ -356,7 +356,7 @@ export function TelescopeSelector() {
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1 cursor-default">
                   <div className={`w-2 h-2 rounded-full ${getStatusColor(currentTelescope.status).split(' ')[0]}`}/>
-                  <span className="text-gray-400">{getStatusText(currentTelescope.status)}</span>
+                  <span className="text-muted-foreground">{getStatusText(currentTelescope.status)}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -366,7 +366,7 @@ export function TelescopeSelector() {
             {connectionType !== 'disconnected' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 cursor-default">
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted cursor-default">
                     <div className={`w-1.5 h-1.5 rounded-full ${
                       connectionType === 'webrtc' ? 'bg-green-400' : 'bg-yellow-400'
                     }`}/>

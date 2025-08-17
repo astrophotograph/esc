@@ -145,7 +145,7 @@ export function ControlPanel() {
   return (
     <div className={`${isMobile ? 'space-y-2' : 'space-y-4'}`} data-tour="control-panel">
       <Tabs defaultValue={isImaging ? "imaging" : "telescope"} className="w-full">
-        <ScrollableTabs className="bg-gray-800 border-gray-700 rounded-md">
+        <ScrollableTabs className="bg-card border-border rounded-md">
           <TabsList className={`flex bg-transparent border-0 ${isMobile ? 'p-0.5' : 'p-1'}`}>
             {/*<TabsTrigger*/}
             {/*  value="session"*/}
@@ -175,7 +175,7 @@ export function ControlPanel() {
               <>
                 <TabsTrigger
                   value="telescope"
-                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-gray-700 ${
+                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-accent ${
                     isMobile ? 'px-2 py-3 text-xs' : 'px-4 py-2'
                   }`}
                   data-tour="telescope-controls-tab"
@@ -195,7 +195,7 @@ export function ControlPanel() {
                 {/*</TabsTrigger>*/}
                 <TabsTrigger
                   value="location"
-                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-gray-700 ${
+                  className={`flex items-center gap-2 text-sm whitespace-nowrap min-w-fit data-[state=active]:bg-accent ${
                     isMobile ? 'px-2 py-3 text-xs' : 'px-4 py-2'
                   }`}
                   data-tour="location-tab"
@@ -264,10 +264,10 @@ export function ControlPanel() {
               <TelescopeControls />
               {/*<ImageControls />*/}
               {/* System Control Section - positioned below Image Controls */}
-              <Card className="bg-gray-800 border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
                   <div className="space-y-3 border-2 border-red-600 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-300">System Control</h4>
+                    <h4 className="text-sm font-semibold">System Control</h4>
                     <Button
                       variant="outline"
                       size="sm"
