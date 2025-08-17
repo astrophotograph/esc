@@ -412,7 +412,8 @@ const CrtMonitor: React.FC<CrtMonitorProps> = ({
           if (src) {
             gl.bindTexture(gl.TEXTURE_2D, tex)
             // For video/canvas sources
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0)
+            // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0)
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
             gl.texImage2D(
               gl.TEXTURE_2D,
               0,
@@ -562,14 +563,9 @@ export default function CrtDemo() {
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100 flex items-center justify-center p-10">
       <CrtMonitor width={960} height={560} bezelLabel="VINTAGE-3200" curvature={0.22}>
-        {/* The children will be captured invisibly. This is only for demo purposes.
-          Put anything you want inside; it will render on the CRT. */}
-        <div className="z-999">
-          <div
-            className="w-[960px] h-[560px] flex flex-col items-center justify-center bg-black text-green-300 font-mono">
-            <div className="text-5xl mb-6">HELLO, WORLD_</div>
-            <div className="opacity-80">Press any key to continue…</div>
-          </div>
+        <div className="w-[960px] h-[560] flex flex-col items-center justify-center bg-black text-green-300 font-mono">
+          <div className="text-5xl mb-6">HELLO, WORLD_</div>
+          <div className="opacity-80">Press any key to continue…</div>
         </div>
       </CrtMonitor>
     </div>
