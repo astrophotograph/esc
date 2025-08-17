@@ -938,14 +938,36 @@ body {
   min-height: 100vh;
   position: relative;
   overflow: hidden;
+  background: #000;
   
-  /* Main content barrel distortion */
+  /* Main content with WebGL-enhanced barrel distortion */
   & > div:first-child {
     border-radius: 40px;
     overflow: hidden;
-    transform: scale(0.94) perspective(800px) rotateX(1deg);
-    filter: contrast(1.15) brightness(0.92);
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.3);
+    transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);
+    filter: contrast(1.15) brightness(0.92) blur(0.1px);
+    box-shadow: 
+      inset 0 0 120px rgba(0, 0, 0, 0.5),
+      inset 0 0 80px rgba(0, 0, 0, 0.4),
+      inset 0 0 40px rgba(0, 0, 0, 0.3);
+    will-change: transform, filter;
+    animation: crt-geometry 12s ease-in-out infinite;
+  }
+  
+  /* Animated barrel distortion */
+  @keyframes crt-geometry {
+    0%, 100% {
+      transform: scale(0.94) perspective(1000px) rotateX(2deg) rotateY(0deg);
+    }
+    25% {
+      transform: scale(0.9401) perspective(1000px) rotateX(2.01deg) rotateY(0.1deg);
+    }
+    50% {
+      transform: scale(0.9402) perspective(1000px) rotateX(1.99deg) rotateY(-0.1deg);
+    }
+    75% {
+      transform: scale(0.9399) perspective(1000px) rotateX(2.01deg) rotateY(0.05deg);
+    }
   }
   
   /* CRT monitor bezel */
@@ -1027,11 +1049,32 @@ body {
     border-radius: 45px !important;
   }
   
-  /* Pixelated text rendering */
+  /* Pixelated text rendering with phosphor glow */
   * {
     image-rendering: pixelated;
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Chromatic aberration effect on text */
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    position: relative;
+    animation: chromatic-shift 8s ease-in-out infinite;
+  }
+  
+  @keyframes chromatic-shift {
+    0%, 100% {
+      text-shadow: 
+        0.5px 0 0 rgba(255, 0, 0, 0.3),
+        -0.5px 0 0 rgba(0, 255, 255, 0.3),
+        0 0 3px rgba(140, 170, 255, 0.5);
+    }
+    50% {
+      text-shadow: 
+        0.8px 0 0 rgba(255, 0, 0, 0.3),
+        -0.8px 0 0 rgba(0, 255, 255, 0.3),
+        0 0 4px rgba(140, 170, 255, 0.6);
+    }
   }
   
   /* Status badges in C64 colors */
