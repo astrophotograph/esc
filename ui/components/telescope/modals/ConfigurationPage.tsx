@@ -60,8 +60,20 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
     if (!open) {
       setErrors([])
       setSaving(false)
+      // Remove pointer-events: none that might be left on body
+      document.body.style.pointerEvents = ''
+      document.body.style.removeProperty('pointer-events')
+      // Also check for data-scroll-locked attribute that some libraries use
+      document.body.removeAttribute('data-scroll-locked')
       // Restore focus to body when dialog closes
       document.body.focus()
+    }
+    
+    // Cleanup function to ensure body styles are reset when component unmounts
+    return () => {
+      document.body.style.pointerEvents = ''
+      document.body.style.removeProperty('pointer-events')
+      document.body.removeAttribute('data-scroll-locked')
     }
   }, [open])
 
