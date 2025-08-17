@@ -1456,7 +1456,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       }
       
       // Send JNow coordinates with epoch marked as JNow
-      await wsSendGotoMessage(targetName, jNowCoords.ra, jNowCoords.dec, startImaging, targetType, magnitude, description, currentTelescope, 'JNow', gain, lightPollutionFilter)
+      await wsSendGotoMessage(jNowCoords.ra, jNowCoords.dec, targetName)
 
       addStatusAlert({
         type: "success",

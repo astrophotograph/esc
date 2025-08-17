@@ -1192,7 +1192,8 @@ class WebSocketManager:
     ) -> Dict[str, Any]:
         """Execute goto command - stub handler that logs the target information."""
         try:
-            target_name = parameters.get("target_name", "unknown")
+            # Ensure target_name is always a string (sometimes coordinates are passed as numbers)
+            target_name = str(parameters.get("target_name", "unknown"))
             coordinates = parameters.get("coordinates", {})
 
             # Parse RA and Dec with multiple format support

@@ -748,17 +748,29 @@ class MessageFactory:
                 timestamp=data.get("timestamp")
             )
         elif message_type == MessageType.CATALOG_SEARCH:
-            return CatalogSearchMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return CatalogSearchMessage(**filtered_data)
         elif message_type == MessageType.CATALOG_QUICK_SEARCH:
-            return CatalogQuickSearchMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return CatalogQuickSearchMessage(**filtered_data)
         elif message_type == MessageType.REMOTE_CONTROLLERS_LIST:
-            return RemoteControllersListMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return RemoteControllersListMessage(**filtered_data)
         elif message_type == MessageType.REMOTE_CONTROLLER_ADD:
-            return RemoteControllerAddMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return RemoteControllerAddMessage(**filtered_data)
         elif message_type == MessageType.REMOTE_CONTROLLER_REMOVE:
-            return RemoteControllerRemoveMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return RemoteControllerRemoveMessage(**filtered_data)
         elif message_type == MessageType.REMOTE_CONTROLLER_RECONNECT:
-            return RemoteControllerReconnectMessage(**data)
+            # Remove 'type' from data to avoid conflict with class field
+            filtered_data = {k: v for k, v in data.items() if k != 'type'}
+            return RemoteControllerReconnectMessage(**filtered_data)
         else:
             # Default to base WebSocket message
             return WebSocketMessage.model_validate(data)
