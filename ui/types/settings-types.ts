@@ -110,6 +110,22 @@ export interface NotificationSettings {
   }
 }
 
+export interface ApiKeysSettings {
+  astrometry: {
+    apiKey: string
+    apiUrl?: string
+    enabled: boolean
+  }
+  openWeatherMap?: {
+    apiKey: string
+    enabled: boolean
+  }
+  ipgeolocation?: {
+    apiKey: string
+    enabled: boolean
+  }
+}
+
 export interface AppSettings {
   pip: PipSettings
   subframeSaving: SubframeSavingSettings
@@ -118,6 +134,7 @@ export interface AppSettings {
   ui: UISettings
   session: SessionSettings
   notifications: NotificationSettings
+  apiKeys: ApiKeysSettings
   version: string
   lastModified: string
 }

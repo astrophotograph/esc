@@ -21,14 +21,25 @@ async def test_plate_solve():
         image=dummy_image
     )
     
-    # Get API key from environment
-    api_key = os.getenv("ASTROMETRY_API_KEY")
+    # Get API key from settings or environment
+    from services.settings_manager import get_settings_manager
+    settings_manager = get_settings_manager()
+    api_key = settings_manager.get_astrometry_api_key()
+    
     if not api_key:
-        print("Please set ASTROMETRY_API_KEY environment variable")
+        print("Please configure Astrometry.net API key in Settings > API Keys")
+        print("Or set ASTROMETRY_API_KEY environment variable")
         return
     
+    # Get custom API URL if configured
+    api_url = settings_manager.get_astrometry_api_url()
+    
     # Create client and test
-    client = AstrometryClient(api_key)
+    if api_url:
+        print(f"Using custom API URL: {api_url}")
+        client = AstrometryClient(api_key, api_url)
+    else:
+        client = AstrometryClient(api_key)
     
     try:
         print("Testing plate solve...")

@@ -111,6 +111,21 @@ const DEFAULT_SETTINGS: AppSettings = {
       endTime: "06:00",
     },
   },
+  apiKeys: {
+    astrometry: {
+      apiKey: "",
+      apiUrl: "",
+      enabled: false,
+    },
+    openWeatherMap: {
+      apiKey: "",
+      enabled: false,
+    },
+    ipgeolocation: {
+      apiKey: "",
+      enabled: false,
+    },
+  },
   version: "1.0.0",
   lastModified: new Date().toISOString(),
 }
@@ -178,6 +193,21 @@ function validateSettings(settings: Partial<AppSettings>): SettingsValidationErr
     }
   }
 
+  // Validate API keys
+  if (settings.apiKeys) {
+    if (settings.apiKeys.astrometry?.enabled && !settings.apiKeys.astrometry?.apiKey) {
+      errors.push({ field: 'apiKeys.astrometry.apiKey', message: 'API key is required when Astrometry.net is enabled' })
+    }
+    
+    if (settings.apiKeys.openWeatherMap?.enabled && !settings.apiKeys.openWeatherMap?.apiKey) {
+      errors.push({ field: 'apiKeys.openWeatherMap.apiKey', message: 'API key is required when OpenWeatherMap is enabled' })
+    }
+    
+    if (settings.apiKeys.ipgeolocation?.enabled && !settings.apiKeys.ipgeolocation?.apiKey) {
+      errors.push({ field: 'apiKeys.ipgeolocation.apiKey', message: 'API key is required when IPGeolocation is enabled' })
+    }
+  }
+
   return errors
 }
 
@@ -207,6 +237,7 @@ async function loadSettings(): Promise<AppSettings> {
       ui: { ...DEFAULT_SETTINGS.ui, ...settings.ui },
       session: { ...DEFAULT_SETTINGS.session, ...settings.session },
       notifications: { ...DEFAULT_SETTINGS.notifications, ...settings.notifications },
+      apiKeys: { ...DEFAULT_SETTINGS.apiKeys, ...settings.apiKeys },
     }
   } catch (_error) {
     console.log('Settings file not found, using defaults')
@@ -225,9 +256,32 @@ export async function GET(): Promise<NextResponse<SettingsApiResponse>> {
   try {
     const settings = await loadSettings()
     
+    // Mask API keys for security
+    const maskedSettings = {
+      ...settings,
+      apiKeys: {
+        ...settings.apiKeys,
+        astrometry: {
+          ...settings.apiKeys.astrometry,
+          apiKey: settings.apiKeys.astrometry?.apiKey ? 
+            '•'.repeat(8) + settings.apiKeys.astrometry.apiKey.slice(-4) : ''
+        },
+        openWeatherMap: settings.apiKeys.openWeatherMap ? {
+          ...settings.apiKeys.openWeatherMap,
+          apiKey: settings.apiKeys.openWeatherMap.apiKey ? 
+            '•'.repeat(8) + settings.apiKeys.openWeatherMap.apiKey.slice(-4) : ''
+        } : undefined,
+        ipgeolocation: settings.apiKeys.ipgeolocation ? {
+          ...settings.apiKeys.ipgeolocation,
+          apiKey: settings.apiKeys.ipgeolocation.apiKey ? 
+            '•'.repeat(8) + settings.apiKeys.ipgeolocation.apiKey.slice(-4) : ''
+        } : undefined,
+      },
+    }
+    
     return NextResponse.json({
       success: true,
-      settings,
+      settings: maskedSettings,
     })
   } catch (error) {
     console.error('Error loading settings:', error)
@@ -247,6 +301,25 @@ export async function POST(request: NextRequest): Promise<NextResponse<SettingsA
     const body = await request.json()
     const newSettings = body as Partial<AppSettings>
     
+    // Load current settings first to preserve masked API keys
+    const currentSettings = await loadSettings()
+    
+    // Preserve existing API keys if new ones are masked (contain bullets)
+    if (newSettings.apiKeys) {
+      if (newSettings.apiKeys.astrometry?.apiKey?.includes('•')) {
+        if (!newSettings.apiKeys.astrometry) newSettings.apiKeys.astrometry = {} as any
+        newSettings.apiKeys.astrometry.apiKey = currentSettings.apiKeys.astrometry?.apiKey || ''
+      }
+      if (newSettings.apiKeys.openWeatherMap?.apiKey?.includes('•')) {
+        if (!newSettings.apiKeys.openWeatherMap) newSettings.apiKeys.openWeatherMap = {} as any
+        newSettings.apiKeys.openWeatherMap.apiKey = currentSettings.apiKeys.openWeatherMap?.apiKey || ''
+      }
+      if (newSettings.apiKeys.ipgeolocation?.apiKey?.includes('•')) {
+        if (!newSettings.apiKeys.ipgeolocation) newSettings.apiKeys.ipgeolocation = {} as any
+        newSettings.apiKeys.ipgeolocation.apiKey = currentSettings.apiKeys.ipgeolocation?.apiKey || ''
+      }
+    }
+    
     // Validate the settings
     const validationErrors = validateSettings(newSettings)
     if (validationErrors.length > 0) {
@@ -260,8 +333,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<SettingsA
       )
     }
     
-    // Load current settings and merge
-    const currentSettings = await loadSettings()
+    // Merge settings
     const mergedSettings: AppSettings = {
       ...currentSettings,
       ...newSettings,
@@ -272,6 +344,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<SettingsA
       ui: { ...currentSettings.ui, ...newSettings.ui },
       session: { ...currentSettings.session, ...newSettings.session },
       notifications: { ...currentSettings.notifications, ...newSettings.notifications },
+      apiKeys: { ...currentSettings.apiKeys, ...newSettings.apiKeys },
     }
     
     // Save the merged settings

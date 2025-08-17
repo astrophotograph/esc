@@ -872,12 +872,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
 
             # Check if we have an API key
             if not api_key:
-                # Try to get from environment variable
-                api_key = os.getenv("ASTROMETRY_API_KEY")
+                # Try to get from settings first, then environment variable
+                from services.settings_manager import get_settings_manager
+                settings_manager = get_settings_manager()
+                api_key = settings_manager.get_astrometry_api_key()
                 if not api_key:
                     raise HTTPException(
                         status_code=400,
-                        detail="Astrometry.net API key required. Pass as parameter or set ASTROMETRY_API_KEY environment variable",
+                        detail="Astrometry.net API key required. Configure in Settings > API Keys or set ASTROMETRY_API_KEY environment variable",
                     )
 
             # Generate a unique job ID
@@ -895,9 +897,17 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 try:
                     # Import here to avoid circular dependencies
                     from services.astrometry_client import AstrometryClient
+                    from services.settings_manager import get_settings_manager
 
+                    # Get custom API URL if configured
+                    settings_manager = get_settings_manager()
+                    api_url = settings_manager.get_astrometry_api_url()
+                    
                     # Create astrometry client
-                    astrometry_client = AstrometryClient(api_key)
+                    if api_url:
+                        astrometry_client = AstrometryClient(api_key, api_url)
+                    else:
+                        astrometry_client = AstrometryClient(api_key)
 
                     try:
                         # Get telescope's current position if available for better solving

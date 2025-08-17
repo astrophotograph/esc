@@ -28,7 +28,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
-  FolderOpen
+  FolderOpen,
+  Key,
+  Globe,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { AppSettings, SettingsApiResponse, SettingsValidationError } from "@/types/settings-types"
 import { useToast } from "@/hooks/use-toast"
@@ -43,6 +47,7 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<SettingsValidationError[]>([])
+  const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({})
   const { toast } = useToast()
 
   // Load settings when modal opens
@@ -263,7 +268,7 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
 
         <div className="flex-1 min-h-0">
           <Tabs defaultValue="pip" className="h-full flex flex-col">
-            <TabsList className="grid grid-cols-7 w-full flex-shrink-0">
+            <TabsList className="grid grid-cols-8 w-full flex-shrink-0">
               <TabsTrigger value="pip" className="flex items-center gap-1">
                 <Monitor className="h-4 w-4" />
                 PIP
@@ -291,6 +296,10 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
               <TabsTrigger value="notifications" className="flex items-center gap-1">
                 <Bell className="h-4 w-4" />
                 Alerts
+              </TabsTrigger>
+              <TabsTrigger value="apikeys" className="flex items-center gap-1">
+                <Key className="h-4 w-4" />
+                API Keys
               </TabsTrigger>
             </TabsList>
 
@@ -1008,6 +1017,251 @@ export function ConfigurationPage({ open, onOpenChange }: ConfigurationPageProps
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
+
+                {/* API Keys Settings */}
+                <TabsContent value="apikeys" className="space-y-6 pr-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>API Keys Configuration</CardTitle>
+                      <CardDescription>
+                        Manage third-party service API keys for enhanced functionality
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Astrometry.net API Key */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label className="text-base font-medium">Astrometry.net</Label>
+                            <p className="text-sm text-muted-foreground">
+                              API key for plate solving and celestial coordinate determination
+                            </p>
+                          </div>
+                          <Switch
+                            checked={settings?.apiKeys?.astrometry?.enabled ?? false}
+                            onCheckedChange={(checked) => 
+                              updateSettings('apiKeys.astrometry.enabled', checked)
+                            }
+                          />
+                        </div>
+                        
+                        {settings?.apiKeys?.astrometry?.enabled && (
+                          <div className="space-y-2 ml-6">
+                            <div className="space-y-2">
+                              <Label htmlFor="astrometry-key">API Key</Label>
+                              <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                  <Input
+                                    id="astrometry-key"
+                                    type={showApiKeys['astrometry'] ? 'text' : 'password'}
+                                    value={settings?.apiKeys?.astrometry?.apiKey || ''}
+                                    onChange={(e) => 
+                                      updateSettings('apiKeys.astrometry.apiKey', e.target.value)
+                                    }
+                                    placeholder="Enter your Astrometry.net API key"
+                                    className={getFieldError('apiKeys.astrometry.apiKey') ? 'border-red-500' : ''}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                    onClick={() => setShowApiKeys(prev => ({
+                                      ...prev,
+                                      astrometry: !prev.astrometry
+                                    }))}
+                                  >
+                                    {showApiKeys['astrometry'] ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              {getFieldError('apiKeys.astrometry.apiKey') && (
+                                <p className="text-sm text-red-500">
+                                  {getFieldError('apiKeys.astrometry.apiKey')}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="astrometry-url">API URL (Optional)</Label>
+                              <Input
+                                id="astrometry-url"
+                                type="url"
+                                value={settings?.apiKeys?.astrometry?.apiUrl || ''}
+                                onChange={(e) => 
+                                  updateSettings('apiKeys.astrometry.apiUrl', e.target.value)
+                                }
+                                placeholder="https://nova.astrometry.net (default)"
+                              />
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Globe className="h-4 w-4 text-blue-400" />
+                              <a 
+                                href="https://nova.astrometry.net/api_help" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline"
+                              >
+                                Get your Astrometry.net API key
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      {/* OpenWeatherMap API Key */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label className="text-base font-medium">OpenWeatherMap</Label>
+                            <p className="text-sm text-muted-foreground">
+                              API key for weather data and cloud coverage information
+                            </p>
+                          </div>
+                          <Switch
+                            checked={settings?.apiKeys?.openWeatherMap?.enabled ?? false}
+                            onCheckedChange={(checked) => 
+                              updateSettings('apiKeys.openWeatherMap.enabled', checked)
+                            }
+                          />
+                        </div>
+                        
+                        {settings?.apiKeys?.openWeatherMap?.enabled && (
+                          <div className="space-y-2 ml-6">
+                            <div className="space-y-2">
+                              <Label htmlFor="openweather-key">API Key</Label>
+                              <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                  <Input
+                                    id="openweather-key"
+                                    type={showApiKeys['openweather'] ? 'text' : 'password'}
+                                    value={settings?.apiKeys?.openWeatherMap?.apiKey || ''}
+                                    onChange={(e) => 
+                                      updateSettings('apiKeys.openWeatherMap.apiKey', e.target.value)
+                                    }
+                                    placeholder="Enter your OpenWeatherMap API key"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                    onClick={() => setShowApiKeys(prev => ({
+                                      ...prev,
+                                      openweather: !prev.openweather
+                                    }))}
+                                  >
+                                    {showApiKeys['openweather'] ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Globe className="h-4 w-4 text-blue-400" />
+                              <a 
+                                href="https://openweathermap.org/api" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline"
+                              >
+                                Get your OpenWeatherMap API key
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      {/* IPGeolocation API Key */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label className="text-base font-medium">IPGeolocation</Label>
+                            <p className="text-sm text-muted-foreground">
+                              API key for automatic location detection
+                            </p>
+                          </div>
+                          <Switch
+                            checked={settings?.apiKeys?.ipgeolocation?.enabled ?? false}
+                            onCheckedChange={(checked) => 
+                              updateSettings('apiKeys.ipgeolocation.enabled', checked)
+                            }
+                          />
+                        </div>
+                        
+                        {settings?.apiKeys?.ipgeolocation?.enabled && (
+                          <div className="space-y-2 ml-6">
+                            <div className="space-y-2">
+                              <Label htmlFor="ipgeo-key">API Key</Label>
+                              <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                  <Input
+                                    id="ipgeo-key"
+                                    type={showApiKeys['ipgeo'] ? 'text' : 'password'}
+                                    value={settings?.apiKeys?.ipgeolocation?.apiKey || ''}
+                                    onChange={(e) => 
+                                      updateSettings('apiKeys.ipgeolocation.apiKey', e.target.value)
+                                    }
+                                    placeholder="Enter your IPGeolocation API key"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                    onClick={() => setShowApiKeys(prev => ({
+                                      ...prev,
+                                      ipgeo: !prev.ipgeo
+                                    }))}
+                                  >
+                                    {showApiKeys['ipgeo'] ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Globe className="h-4 w-4 text-blue-400" />
+                              <a 
+                                href="https://ipgeolocation.io" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline"
+                              >
+                                Get your IPGeolocation API key
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      API keys are stored securely on the server and are never exposed to the client.
+                      Make sure to save your settings after entering or updating API keys.
+                    </AlertDescription>
+                  </Alert>
                 </TabsContent>
               </ScrollArea>
             </div>
