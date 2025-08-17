@@ -428,12 +428,17 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
         annotate_result = pydash.get(data, "Stack.Annotate.result", None)
 
         if annotate_result is not None:
-            annotation = AnnotateEvent(
-                Timestamp=datetime.now().isoformat(),
-                result=annotate_result,
-            )
-            self.status.annotate = annotate_result
-            self.event_bus.emit("Annotate", annotation)
+            # Ensure annotate_result is an AnnotateResult instance
+            if not isinstance(annotate_result, AnnotateResult):
+                annotate_result = AnnotateResult(**annotate_result) if isinstance(annotate_result, dict) else None
+            
+            if annotate_result:
+                annotation = AnnotateEvent(
+                    Timestamp=datetime.now().isoformat(),
+                    result=annotate_result,
+                )
+                self.status.annotate = annotate_result
+                self.event_bus.emit("Annotate", annotation)
 
         # Update client mode
         self._update_client_mode(stage, state, mode)
@@ -626,6 +631,9 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
                     self.event_bus.emit("Stack", parser.event)
                 case "Annotate":
                     annotate_event = AnnotateEvent(**parser.event)
+                    # Ensure result is an AnnotateResult instance if it exists
+                    if annotate_event.result and not isinstance(annotate_event.result, AnnotateResult):
+                        annotate_event.result = AnnotateResult(**annotate_event.result) if isinstance(annotate_event.result, dict) else None
                     self.status.annotate = annotate_event.result
                     self.event_bus.emit("Annotate", annotate_event)
                 case "FocuserMove":
