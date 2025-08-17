@@ -125,6 +125,40 @@ body {
     --sidebar-border: 0 50% 20%;
     --sidebar-ring: 0 100% 45%;
   }
+  .tufte {
+    --background: 44 39% 97%;  /* Warm off-white (fffff8) */
+    --foreground: 0 0% 7%;      /* Near-black for text */
+    --card: 44 39% 97%;
+    --card-foreground: 0 0% 7%;
+    --popover: 44 39% 97%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 20%;        /* Dark gray for primary elements */
+    --primary-foreground: 44 39% 97%;
+    --secondary: 0 0% 96%;      /* Light gray */
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 94%;          /* Very light gray */
+    --muted-foreground: 0 0% 40%;
+    --accent: 30 5% 85%;        /* Subtle warm accent */
+    --accent-foreground: 0 0% 20%;
+    --destructive: 0 60% 50%;   /* Muted red */
+    --destructive-foreground: 44 39% 97%;
+    --border: 0 0% 85%;         /* Light borders */
+    --input: 0 0% 92%;
+    --ring: 0 0% 60%;
+    --chart-1: 0 0% 40%;        /* Grayscale chart colors */
+    --chart-2: 0 0% 50%;
+    --chart-3: 0 0% 60%;
+    --chart-4: 0 0% 70%;
+    --chart-5: 0 0% 30%;
+    --sidebar-background: 44 39% 98%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 20%;
+    --sidebar-primary-foreground: 44 39% 97%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 60%;
+  }
 }
 
 @layer base {
@@ -133,6 +167,197 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Tufte Theme Special Overrides */
+.tufte {
+  /* Typography refinements */
+  font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+  line-height: 1.6;
+  
+  /* Apply serif font to body text and content areas */
+  body, 
+  p, 
+  .prose,
+  .card-description,
+  .text-sm,
+  .text-base,
+  .text-lg {
+    font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
+  }
+  
+  /* Headers use a slightly different serif for distinction */
+  h1, h2, h3, h4, h5, h6,
+  .font-semibold,
+  .font-bold,
+  .font-medium {
+    font-family: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  
+  /* UI elements keep sans-serif for clarity */
+  button,
+  input,
+  select,
+  textarea,
+  .button,
+  .badge,
+  .toast,
+  .dropdown-menu,
+  .tooltip,
+  code,
+  pre,
+  .font-mono {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  /* Data and numbers use tabular figures */
+  .tabular-nums,
+  .data-value,
+  td,
+  .stat {
+    font-variant-numeric: tabular-nums;
+    font-family: 'Georgia', 'Cambria', serif;
+  }
+  
+  /* Subtle, muted colors for status indicators */
+  .bg-green-500, .bg-green-600 {
+    background-color: hsl(120 5% 85%) !important;
+    color: hsl(0 0% 20%) !important;
+  }
+  
+  .bg-blue-500, .bg-blue-600 {
+    background-color: hsl(210 5% 85%) !important;
+    color: hsl(0 0% 20%) !important;
+  }
+  
+  .bg-yellow-500, .bg-yellow-600, .bg-orange-500, .bg-orange-600 {
+    background-color: hsl(45 10% 85%) !important;
+    color: hsl(0 0% 20%) !important;
+  }
+  
+  .bg-red-500, .bg-red-600 {
+    background-color: hsl(0 10% 85%) !important;
+    color: hsl(0 0% 20%) !important;
+  }
+  
+  /* Hover states - slightly darker */
+  .hover\:bg-green-600:hover, .hover\:bg-green-700:hover,
+  .hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover,
+  .hover\:bg-yellow-600:hover, .hover\:bg-yellow-700:hover,
+  .hover\:bg-orange-600:hover, .hover\:bg-orange-700:hover {
+    background-color: hsl(0 0% 80%) !important;
+  }
+  
+  /* Text colors - muted */
+  .text-green-400, .text-green-500, .text-green-600 {
+    color: hsl(120 20% 35%) !important;
+  }
+  
+  .text-blue-400, .text-blue-500, .text-blue-600 {
+    color: hsl(210 20% 35%) !important;
+  }
+  
+  .text-yellow-400, .text-yellow-500, .text-yellow-600,
+  .text-orange-400, .text-orange-500, .text-orange-600 {
+    color: hsl(30 25% 35%) !important;
+  }
+  
+  .text-red-400, .text-red-500, .text-red-600 {
+    color: hsl(0 25% 40%) !important;
+  }
+  
+  /* Charts and graphs - grayscale with thin lines */
+  svg polyline {
+    stroke: hsl(0 0% 40%) !important;
+    stroke-width: 1px !important;
+  }
+  
+  svg path {
+    stroke: hsl(0 0% 40%) !important;
+    stroke-width: 1px !important;
+  }
+  
+  /* Icons - subtle gray */
+  svg.lucide {
+    color: hsl(0 0% 40%) !important;
+  }
+  
+  button svg.lucide,
+  .hover\:text-foreground:hover svg.lucide {
+    color: currentColor !important;
+  }
+  
+  /* Minimal borders */
+  .border {
+    border-color: hsl(0 0% 85%) !important;
+    border-width: 1px !important;
+  }
+  
+  /* Cards with subtle shadows */
+  .bg-card {
+    background-color: hsl(44 39% 97%) !important;
+    box-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.05) !important;
+  }
+  
+  /* Input fields - minimal styling */
+  input, textarea, select {
+    background-color: hsl(44 39% 99%) !important;
+    border: 1px solid hsl(0 0% 85%) !important;
+  }
+  
+  /* Radio buttons and checkboxes */
+  input[type="radio"], input[type="checkbox"] {
+    accent-color: hsl(0 0% 40%) !important;
+  }
+  
+  /* Footer text */
+  footer * {
+    color: hsl(0 0% 50%) !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Chalkboard colors - muted palette */
+  [style*="color: #ff0000"] { color: hsl(0 25% 40%) !important; }
+  [style*="color: #00ff00"] { color: hsl(120 20% 35%) !important; }
+  [style*="color: #0000ff"] { color: hsl(210 20% 35%) !important; }
+  [style*="color: #ffffff"] { color: hsl(0 0% 20%) !important; }
+  [style*="color: #ffff00"] { color: hsl(45 25% 40%) !important; }
+  [style*="color: #ff00ff"] { color: hsl(300 15% 40%) !important; }
+  [style*="color: #00ffff"] { color: hsl(180 15% 40%) !important; }
+  
+  /* Chalkboard stroke colors */
+  [stroke="#ff0000"] { stroke: hsl(0 25% 40%) !important; }
+  [stroke="#00ff00"] { stroke: hsl(120 20% 35%) !important; }
+  [stroke="#0000ff"] { stroke: hsl(210 20% 35%) !important; }
+  [stroke="#ffffff"] { stroke: hsl(0 0% 20%) !important; }
+  [stroke="#ffff00"] { stroke: hsl(45 25% 40%) !important; }
+  [stroke="#ff00ff"] { stroke: hsl(300 15% 40%) !important; }
+  [stroke="#00ffff"] { stroke: hsl(180 15% 40%) !important; }
+  
+  /* Annotation overlays */
+  .annotation-circle {
+    border-color: hsl(0 0% 40%) !important;
+    border-width: 1px !important;
+  }
+  
+  .annotation-text {
+    color: hsl(0 0% 20%) !important;
+    background-color: hsl(44 39% 97% / 0.9) !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Telescope status - minimal styling */
+  .bg-muted {
+    background-color: hsl(0 0% 96%) !important;
+  }
+  
+  /* Graph backgrounds */
+  .bg-muted.rounded {
+    background-color: hsl(0 0% 98%) !important;
+    border: 1px solid hsl(0 0% 90%) !important;
   }
 }
 

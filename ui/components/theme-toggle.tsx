@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Monitor, Eye } from "lucide-react"
+import { Moon, Sun, Monitor, Eye, BookOpen } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -41,10 +41,13 @@ export function ThemeToggle() {
     if (theme === "night-vision") {
       return <Eye className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} text-red-500`} />
     }
+    if (theme === "tufte") {
+      return <BookOpen className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"}`} />
+    }
     return (
       <>
-        <Sun className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 night-vision:scale-0`} />
-        <Moon className={`absolute ${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 night-vision:scale-0`} />
+        <Sun className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 night-vision:scale-0 tufte:scale-0`} />
+        <Moon className={`absolute ${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 night-vision:scale-0 tufte:scale-0`} />
       </>
     )
   }
@@ -74,6 +77,10 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("night-vision")}>
           <Eye className="mr-2 h-4 w-4 text-red-500" />
           Night Vision
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("tufte")}>
+          <BookOpen className="mr-2 h-4 w-4" />
+          Tufte
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="mr-2 h-4 w-4" />
