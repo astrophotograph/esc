@@ -1,6 +1,6 @@
 {
   "name": "experimental-scope-creep",
-  "version": "25.08.16-alpha.203",
+  "version": "25.08.17-alpha.225",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -75,6 +75,7 @@
     "embla-carousel-react": "8.6.0",
     "framer-motion": "^12.23.12",
     "fuse.js": "^7.1.0",
+    "html2canvas": "^1.4.1",
     "i18next": "latest",
     "input-otp": "1.4.2",
     "lucide-react": "^0.525.0",

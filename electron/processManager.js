@@ -143,11 +143,17 @@ class ProcessManager {
             const output = data.toString();
             log.info(`Frontend: ${output}`);
             
-            if (output.includes('Ready on') || output.includes('started on')) {
+            if (output.includes('Ready on') || output.includes('started on') || output.includes('Listening on')) {
               log.info('Production frontend server is ready');
               resolve();
             }
           });
+          
+          // Set a timeout to resolve even if we don't see the ready message
+          setTimeout(() => {
+            log.info('Frontend server startup timeout reached, assuming ready');
+            resolve();
+          }, 5000);
 
           this.processes.frontend.stderr.on('data', (data) => {
             log.error(`Frontend Error: ${data.toString()}`);

@@ -1,7 +1,7 @@
 {
-  "name": "alp-experimental-electron",
+  "name": "esc-electron",
   "version": "1.0.0",
-  "description": "ALP Experimental telescope control application",
+  "description": "ESC telescope control application",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,7 +9,7 @@
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux",
-    "build:local": "electron-builder --mac --dir",
+    "build:local": "electron-builder --mac --dir --config electron-builder.json",
     "dist": "electron-builder --publish=never",
     "dist:all": "electron-builder --mac --win --linux --publish=never",
     "postinstall": "electron-builder install-app-deps"
@@ -24,57 +24,5 @@
   "dependencies": {
     "electron-log": "^5.0.1",
     "electron-updater": "^6.1.7"
-  },
-  "build": {
-    "appId": "com.alp.experimental",
-    "productName": "ALP Experimental",
-    "directories": {
-      "output": "../dist"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "processManager.js",
-      "node_modules/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "../ui/.next/standalone",
-        "to": "ui",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../ui/.next/static",
-        "to": "ui/.next/static",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../ui/public",
-        "to": "ui/public",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../server/dist",
-        "to": "server",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.utilities"
-    },
-    "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage"
-    }
   }
 }
