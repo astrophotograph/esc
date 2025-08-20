@@ -26,11 +26,16 @@ let mainWindow;
 let processManager;
 
 // Enable live reload for Electron in development
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
   require('electron-reload')(__dirname, {
     electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
     hardResetMethod: 'exit'
   });
+  
+  // Force app to show in dock in development
+  if (process.platform === 'darwin') {
+    app.dock.show();
+  }
 }
 
 function createWindow() {
@@ -56,12 +61,27 @@ function createWindow() {
 
   // Load the app - always connect to localhost:3000
   const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+  log.info(`Loading URL: ${startUrl}`);
   mainWindow.loadURL(startUrl);
 
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+  
+  // Add debugging for page load
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    log.error(`Failed to load ${validatedURL}: ${errorDescription} (${errorCode})`);
+  });
+  
+  mainWindow.webContents.on('did-finish-load', () => {
+    log.info('Page finished loading');
+  });
+  
+  // Open DevTools in development or when debugging
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

@@ -13,6 +13,75 @@ class ProcessManager {
     this.isShuttingDown = false;
   }
 
+  setupBackendHandlers(resolve, reject) {
+    // Handle stdout
+    this.processes.backend.stdout.on('data', (data) => {
+      const output = data.toString();
+      log.info(`Backend: ${output}`);
+    });
+
+    // Handle stderr (Python logs often go to stderr even for INFO messages)
+    this.processes.backend.stderr.on('data', (data) => {
+      const output = data.toString();
+      // Check if it's actually an error or just regular Python logging
+      if (output.includes('ERROR') || output.includes('CRITICAL') || output.includes('Exception')) {
+        log.error(`Backend Error: ${output}`);
+      } else {
+        log.info(`Backend: ${output}`);
+      }
+    });
+
+    // Handle process exit
+    this.processes.backend.on('error', (error) => {
+      log.error('Failed to start backend:', error);
+      reject(error);
+    });
+
+    this.processes.backend.on('exit', (code, signal) => {
+      log.info(`Backend process exited with code ${code} and signal ${signal}`);
+      this.processes.backend = null;
+      
+      if (!this.isShuttingDown) {
+        log.error('Backend process exited unexpectedly');
+      }
+    });
+
+    // Poll health endpoint
+    const checkHealth = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/health');
+        if (response.ok) {
+          log.info('Backend server is ready (health check passed)');
+          resolve();
+          return true;
+        }
+      } catch (error) {
+        // Server not ready yet
+      }
+      return false;
+    };
+
+    // Wait a bit before starting health checks
+    setTimeout(() => {
+      const pollInterval = setInterval(async () => {
+        if (await checkHealth()) {
+          clearInterval(pollInterval);
+        }
+      }, 500);
+      this.healthCheckInterval = pollInterval;
+    }, 1000);
+
+    // Set a timeout for server startup
+    setTimeout(() => {
+      if (this.healthCheckInterval) {
+        clearInterval(this.healthCheckInterval);
+      }
+      if (this.processes.backend && !this.isShuttingDown) {
+        reject(new Error('Backend server startup timeout'));
+      }
+    }, 60000);
+  }
+
   async startBackend() {
     return new Promise((resolve, reject) => {
       try {
@@ -21,14 +90,50 @@ class ProcessManager {
         let backendArgs = ['server'];
         
         if (app.isPackaged) {
-          // In production, use the bundled backend
+          // In production, check if bundled backend exists
           const resourcesPath = process.resourcesPath;
-          if (process.platform === 'win32') {
-            backendPath = path.join(resourcesPath, 'server', 'main.exe');
+          const bundledBackend = process.platform === 'win32' 
+            ? path.join(resourcesPath, 'server', 'main.exe')
+            : path.join(resourcesPath, 'server', 'main');
+          
+          if (fs.existsSync(bundledBackend)) {
+            // Use bundled backend if it exists
+            backendPath = bundledBackend;
             backendArgs = ['server'];
           } else {
-            backendPath = path.join(resourcesPath, 'server', 'main');
-            backendArgs = ['server'];
+            // For production builds without bundled backend, 
+            // we need the user to have the server running separately
+            log.error('Bundled backend not found. Please ensure the Python server is running separately.');
+            log.info('Run the following in a terminal:');
+            log.info('cd server && uv run python main.py server');
+            
+            // Still try to connect to see if it's already running
+            const checkHealth = async () => {
+              try {
+                const response = await fetch('http://127.0.0.1:8000/health');
+                if (response.ok) {
+                  log.info('Found existing backend server at port 8000');
+                  return true;
+                }
+              } catch (error) {
+                // Server not running
+              }
+              return false;
+            };
+            
+            // Check if server is already running
+            checkHealth().then(isRunning => {
+              if (isRunning) {
+                resolve();
+              } else {
+                // If not running, we can't start it from the sandboxed app
+                reject(new Error('Backend server is not running. Please start it manually.'));
+              }
+            }).catch(error => {
+              reject(error);
+            });
+            
+            return;
           }
         } else {
           // In development, run with Python
@@ -50,70 +155,8 @@ class ProcessManager {
           cwd: app.isPackaged ? undefined : path.join(__dirname, '..', 'server')
         });
 
-        // Handle stdout
-        this.processes.backend.stdout.on('data', (data) => {
-          const output = data.toString();
-          log.info(`Backend: ${output}`);
-        });
-
-        // Handle stderr
-        this.processes.backend.stderr.on('data', (data) => {
-          log.error(`Backend Error: ${data.toString()}`);
-        });
-
-        // Handle process exit
-        this.processes.backend.on('error', (error) => {
-          log.error('Failed to start backend:', error);
-          reject(error);
-        });
-
-        this.processes.backend.on('exit', (code, signal) => {
-          log.info(`Backend process exited with code ${code} and signal ${signal}`);
-          this.processes.backend = null;
-          
-          if (!this.isShuttingDown) {
-            log.error('Backend process exited unexpectedly');
-            // Could implement auto-restart here
-          }
-        });
-
-        // Poll health endpoint to check if server is ready
-        const checkHealth = async () => {
-          try {
-            const response = await fetch('http://127.0.0.1:8000/health');
-            if (response.ok) {
-              log.info('Backend server is ready (health check passed)');
-              resolve();
-              return true;
-            }
-          } catch (error) {
-            // Server not ready yet
-          }
-          return false;
-        };
-
-        // Wait a bit before starting health checks
-        setTimeout(() => {
-          // Poll every 500ms
-          const pollInterval = setInterval(async () => {
-            if (await checkHealth()) {
-              clearInterval(pollInterval);
-            }
-          }, 500);
-
-          // Store interval reference for cleanup
-          this.healthCheckInterval = pollInterval;
-        }, 1000); // Wait 1 second before starting health checks
-
-        // Set a timeout for server startup
-        setTimeout(() => {
-          if (this.healthCheckInterval) {
-            clearInterval(this.healthCheckInterval);
-          }
-          if (this.processes.backend && !this.isShuttingDown) {
-            reject(new Error('Backend server startup timeout'));
-          }
-        }, 60000); // 60 second timeout
+        // Set up handlers
+        this.setupBackendHandlers(resolve, reject);
 
       } catch (error) {
         log.error('Error starting backend:', error);
@@ -133,10 +176,19 @@ class ProcessManager {
           log.info('Starting production frontend server...');
           
           const frontendPath = path.join(process.resourcesPath, 'ui');
+          log.info(`Frontend path: ${frontendPath}`);
+          
+          // Check if server.js exists
+          const serverJsPath = path.join(frontendPath, 'server.js');
+          if (!fs.existsSync(serverJsPath)) {
+            log.error(`server.js not found at ${serverJsPath}`);
+            reject(new Error('Frontend server.js not found'));
+            return;
+          }
           
           this.processes.frontend = spawn('node', ['server.js'], {
             cwd: frontendPath,
-            env: { ...process.env, PORT: '3000', NODE_ENV: 'production' }
+            env: { ...process.env, PORT: '3000', NODE_ENV: 'production', HOSTNAME: 'localhost' }
           });
 
           this.processes.frontend.stdout.on('data', (data) => {

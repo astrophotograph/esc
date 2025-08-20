@@ -27,8 +27,8 @@
       ]
     },
     {
-      "from": "../server/dist",
-      "to": "server",
+      "from": "../server/dist/main",
+      "to": "server/main",
       "filter": [
         "**/*"
       ]
