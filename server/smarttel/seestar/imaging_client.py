@@ -45,8 +45,8 @@ class SeestarImagingStatus(BaseModel):
     is_receiving_image: bool = False  # True while receiving image data
     
     # Image retrieval timing
-    last_image_start_time: float | None = None  # Timestamp when image started being received
-    last_image_end_time: float | None = None    # Timestamp when image was fully received
+    last_image_start_time: float | None = None  # Timestamp when image started being received (milliseconds)
+    last_image_end_time: float | None = None    # Timestamp when image was fully received (milliseconds)
     last_image_elapsed_ms: float | None = None  # Time taken to receive the image in milliseconds
     last_image_size_bytes: int | None = None    # Size of the last image in bytes
     avg_image_elapsed_ms: float | None = None   # Rolling average of image retrieval times
@@ -150,9 +150,9 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
         logging.info(f"Starting reader task for {self}")
         while self.is_connected:
             try:
-                # Start timing when we begin receiving header
+                # Start timing when we begin receiving header (in milliseconds)
                 import time
-                image_start_time = time.time()
+                image_start_time = time.time() * 1000
                 
                 header = await self.connection.read_exactly(80)
                 if header is None:
@@ -201,9 +201,9 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     # Skip small control messages (like TestConnection responses)
                     # Actual images should have reasonable dimensions and data size
                     if width and height and width > 0 and height > 0 and size and size > 1000:
-                        # Calculate timing for actual images
-                        image_end_time = time.time()
-                        elapsed_ms = (image_end_time - image_start_time) * 1000
+                        # Calculate timing for actual images (already in milliseconds)
+                        image_end_time = time.time() * 1000
+                        elapsed_ms = image_end_time - image_start_time
                         
                         # Ensure minimum of 0.1ms to avoid showing 0 for very fast operations
                         # (can happen with cached or local images)
