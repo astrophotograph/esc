@@ -53,7 +53,8 @@ function createLoadingWindow() {
     alwaysOnTop: true,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload-loading.js')
     },
     icon: path.join(__dirname, 'icons', 'icon.png')
   });
@@ -426,50 +427,78 @@ app.whenReady().then(async () => {
   // Initialize process manager
   processManager = new ProcessManager();
   
-  // Set up log forwarding to log windows
+  // Set up log forwarding to log windows and loading window
   processManager.addLogListener((logData) => {
     // Send to appropriate log window if open
     if (logWindows[logData.type] && !logWindows[logData.type].isDestroyed()) {
       logWindows[logData.type].webContents.send('log-data', logData);
     }
+    
+    // Send progress to loading window
+    if (loadingWindow && !loadingWindow.isDestroyed()) {
+      const text = logData.text || '';
+      // Filter for relevant startup messages
+      if (text.includes('Starting') || text.includes('Listening') || 
+          text.includes('Ready') || text.includes('Connected') ||
+          text.includes('server') || text.includes('INFO') ||
+          text.includes('Loading') || text.includes('Initialized')) {
+        // Clean up the message for display
+        let cleanMessage = text;
+        // Remove timestamp if present
+        const timestampMatch = text.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
+        if (timestampMatch) {
+          cleanMessage = text.substring(text.indexOf(timestampMatch[0]) + timestampMatch[0].length + 1);
+        }
+        // Remove log level prefixes
+        cleanMessage = cleanMessage.replace(/^\s*\|\s*(INFO|DEBUG|WARNING|ERROR)\s*\|/, '');
+        // Truncate if too long
+        if (cleanMessage.length > 80) {
+          cleanMessage = cleanMessage.substring(0, 77) + '...';
+        }
+        loadingWindow.webContents.send('loading-progress', cleanMessage.trim());
+      }
+    }
   });
 
-  try {
-    // Start backend server
-    log.info('Starting backend server...');
-    if (loadingWindow && !loadingWindow.isDestroyed()) {
-      loadingWindow.webContents.executeJavaScript(`
-        document.getElementById('status').textContent = 'Starting backend server...';
-      `);
-    }
-    await processManager.startBackend();
+  // Make startServices accessible globally for retry
+  const startServices = async function() {
+    try {
+      // Start backend server
+      log.info('Starting backend server...');
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-status', 'Starting backend server...');
+        loadingWindow.webContents.send('loading-progress', 'Initializing Python environment...');
+      }
+      await processManager.startBackend();
 
-    // Start frontend
-    log.info('Starting frontend server...');
-    if (loadingWindow && !loadingWindow.isDestroyed()) {
-      loadingWindow.webContents.executeJavaScript(`
-        document.getElementById('status').textContent = 'Starting frontend server...';
-      `);
-    }
-    await processManager.startFrontend();
+      // Start frontend
+      log.info('Starting frontend server...');
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-status', 'Starting frontend server...');
+        loadingWindow.webContents.send('loading-progress', 'Building Next.js application...');
+      }
+      await processManager.startFrontend();
 
-    // Wait a bit for servers to initialize
-    if (loadingWindow && !loadingWindow.isDestroyed()) {
-      loadingWindow.webContents.executeJavaScript(`
-        document.getElementById('status').textContent = 'Loading application...';
-      `);
-    }
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait a bit for servers to initialize
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-status', 'Loading application...');
+        loadingWindow.webContents.send('loading-progress', 'Establishing connections...');
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Create main window
-    createWindow();
-  } catch (error) {
-    log.error('Failed to start services:', error);
-    if (loadingWindow && !loadingWindow.isDestroyed()) {
-      loadingWindow.close();
+      // Create main window
+      createWindow();
+    } catch (error) {
+      log.error('Failed to start services:', error);
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-error', 
+          `Failed to start services: ${error.message || error}`);
+      }
     }
-    app.quit();
   }
+  
+  // Start the services
+  startServices();
 });
 
 app.on('activate', () => {
@@ -526,4 +555,53 @@ ipcMain.on('request-logs', (event, { type }) => {
       });
     });
   }
+});
+
+// Loading window IPC handlers
+ipcMain.on('retry-start', async () => {
+  log.info('Retrying service startup...');
+  if (processManager) {
+    // Stop any running processes
+    await processManager.stopAll();
+    // Restart services - need to call this in the app ready context
+    const { app } = require('electron');
+    if (app.isReady()) {
+      // Re-initialize process manager and start services
+      processManager = new ProcessManager();
+      
+      // Re-register log listeners
+      processManager.addLogListener((type, message) => {
+        const logWindow = logWindows[type];
+        if (logWindow && !logWindow.isDestroyed()) {
+          logWindow.webContents.send('log-data', {
+            type,
+            text: message.text,
+            timestamp: message.timestamp
+          });
+        }
+        
+        // Send progress to loading window
+        if (loadingWindow && !loadingWindow.isDestroyed()) {
+          const text = message.text;
+          if (text.includes('Starting') || text.includes('Listening') || 
+              text.includes('Ready') || text.includes('Connected') ||
+              text.includes('server') || text.includes('INFO')) {
+            loadingWindow.webContents.send('loading-progress', text.substring(0, 100));
+          }
+        }
+      });
+      
+      // Start services again
+      startServices();
+    }
+  }
+});
+
+ipcMain.on('view-logs', () => {
+  // Create a backend log window to view the startup logs
+  createLogWindow('backend');
+});
+
+ipcMain.on('exit-app', () => {
+  app.quit();
 });

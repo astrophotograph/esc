@@ -125,6 +125,15 @@
             <div class="loader-bar"></div>
         </div>
         <div class="status" id="status">Initializing application...</div>
+        <div id="progress-log" style="margin-top: 20px; max-height: 100px; overflow-y: auto; font-size: 10px; color: #999; text-align: left; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; display: none;"></div>
+        <div id="error-container" style="display: none; margin-top: 20px;">
+            <div style="color: #ff4444; margin-bottom: 10px; font-size: 14px;" id="error-message"></div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="retryStart()" style="padding: 8px 16px; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                <button onclick="viewLogs()" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">View Logs</button>
+                <button onclick="exitApp()" style="padding: 8px 16px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Exit</button>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -139,26 +148,71 @@
             starsContainer.appendChild(star);
         }
         
-        // Update status messages
+        // Status and progress tracking
         const statusElement = document.getElementById('status');
-        const messages = [
-            'Initializing application...',
-            'Starting backend services...',
-            'Loading telescope drivers...',
-            'Preparing user interface...',
-            'Connecting to services...'
-        ];
-        let messageIndex = 0;
+        const progressLog = document.getElementById('progress-log');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessage = document.getElementById('error-message');
+        let progressMessages = [];
+        let hasError = false;
         
-        setInterval(() => {
-            messageIndex = (messageIndex + 1) % messages.length;
-            statusElement.textContent = messages[messageIndex];
-        }, 2000);
+        function addProgressMessage(msg) {
+            progressMessages.push(msg);
+            if (progressMessages.length > 10) {
+                progressMessages.shift();
+            }
+            progressLog.innerHTML = progressMessages.join('<br>');
+            progressLog.style.display = 'block';
+            progressLog.scrollTop = progressLog.scrollHeight;
+        }
+        
+        function showError(error) {
+            hasError = true;
+            errorMessage.textContent = error;
+            errorContainer.style.display = 'block';
+            document.querySelector('.loader').style.display = 'none';
+        }
+        
+        function retryStart() {
+            if (window.electronAPI) {
+                window.electronAPI.retryStart();
+                errorContainer.style.display = 'none';
+                document.querySelector('.loader').style.display = 'block';
+                hasError = false;
+                progressMessages = [];
+                progressLog.innerHTML = '';
+                statusElement.textContent = 'Retrying...';
+            }
+        }
+        
+        function viewLogs() {
+            if (window.electronAPI) {
+                window.electronAPI.viewLogs();
+            }
+        }
+        
+        function exitApp() {
+            if (window.electronAPI) {
+                window.electronAPI.exitApp();
+            }
+        }
         
         // Listen for IPC messages from main process
         if (window.electronAPI) {
             window.electronAPI.onLoadingStatus((status) => {
-                statusElement.textContent = status;
+                if (!hasError) {
+                    statusElement.textContent = status;
+                }
+            });
+            
+            window.electronAPI.onLoadingProgress((progress) => {
+                if (!hasError) {
+                    addProgressMessage(progress);
+                }
+            });
+            
+            window.electronAPI.onLoadingError((error) => {
+                showError(error);
             });
         }
     </script>
