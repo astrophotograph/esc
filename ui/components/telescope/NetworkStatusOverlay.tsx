@@ -192,7 +192,8 @@ export function NetworkStatusOverlay() {
     if (localStreamStatus?.imaging_status?.current_image_request_start_time) {
       // Update elapsed time every 100ms
       const updateElapsed = () => {
-        const startTime = new Date(localStreamStatus.imaging_status.current_image_request_start_time).getTime();
+        // Backend sends Unix timestamp in seconds, convert to milliseconds
+        const startTime = localStreamStatus.imaging_status.current_image_request_start_time * 1000;
         const elapsed = Date.now() - startTime;
         setCurrentImageElapsed(elapsed);
       };
