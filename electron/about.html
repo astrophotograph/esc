@@ -223,12 +223,8 @@
     </div>
     
     <script>
-        console.log('About window script loading...');
-        console.log('electronAPI available:', !!window.electronAPI);
-        
         // Open external links using IPC
         function openExternal(url) {
-            console.log('Opening external URL:', url);
             // Use the Electron IPC to open external links
             if (window.electronAPI && window.electronAPI.openExternal) {
                 window.electronAPI.openExternal(url);
@@ -240,18 +236,12 @@
         
         // Set version from IPC message
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOMContentLoaded fired');
-            console.log('Version element found:', !!document.getElementById('version'));
-            
             // Listen for app version from main process
             if (window.electronAPI && window.electronAPI.onAppVersion) {
-                console.log('Setting up app version listener');
                 window.electronAPI.onAppVersion((version) => {
-                    console.log('Received app version:', version);
                     document.getElementById('version').textContent = version;
                 });
             } else {
-                console.log('electronAPI not available, using default version');
                 document.getElementById('version').textContent = '1.0.0';
             }
         });

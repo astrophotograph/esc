@@ -248,14 +248,8 @@ function createAboutWindow() {
   // Send app version to the about window
   aboutWindow.webContents.on('did-finish-load', () => {
     const packageJson = require('./package.json');
-    log.info('Sending app version to about window:', packageJson.version);
     aboutWindow.webContents.send('app-version', packageJson.version || '1.0.0');
   });
-  
-  // Open DevTools in development for debugging
-  if (!app.isPackaged) {
-    aboutWindow.webContents.openDevTools({ mode: 'detach' });
-  }
   
   // Remove menu bar on Windows/Linux
   if (process.platform !== 'darwin') {
