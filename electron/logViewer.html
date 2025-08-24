@@ -295,6 +295,12 @@
                     Wrap lines
                 </label>
             </div>
+            <div class="control-group" id="viewModeGroup" style="display: none;">
+                <label>
+                    <input type="checkbox" id="rawMode">
+                    Raw logs
+                </label>
+            </div>
             <div class="control-group">
                 <button id="clearBtn">Clear</button>
                 <button id="exportBtn">Export</button>
@@ -324,27 +330,32 @@
         
         // Update title
         document.getElementById('logTitle').textContent = 
-            logType === 'backend' ? 'Backend Server Logs' : 'Frontend Server Logs';
-        
-        // Show level filters and view mode only for backend logs
-        if (logType === 'backend') {
-            document.getElementById('levelFilters').style.display = 'flex';
-            viewModeGroup.style.display = 'flex';
-        }
+            logType === 'backend' ? 'Backend Logs' : 'Frontend Logs';
         
         // Elements
         const logContainer = document.getElementById('logContainer');
         const searchInput = document.getElementById('searchInput');
         const autoScrollCheckbox = document.getElementById('autoScroll');
         const wordWrapCheckbox = document.getElementById('wordWrap');
+        const rawModeCheckbox = document.getElementById('rawMode');
         const clearBtn = document.getElementById('clearBtn');
         const exportBtn = document.getElementById('exportBtn');
         const lineCountSpan = document.getElementById('lineCount');
         const lastUpdateSpan = document.getElementById('lastUpdate');
+        const viewModeGroup = document.getElementById('viewModeGroup');
+        
+        // Show level filters and view mode only for backend logs
+        if (logType === 'backend') {
+            document.getElementById('levelFilters').style.display = 'flex';
+            if (viewModeGroup) {
+                viewModeGroup.style.display = 'flex';
+            }
+        }
         
         let logs = [];
         let filteredLogs = [];
         let autoScroll = true;
+        let rawMode = false;
         let activeLevels = new Set(['info', 'warning', 'error', 'critical']); // DEBUG unchecked by default
         
         // Parse log level from text
@@ -378,6 +389,11 @@
         
         // Format log entry with syntax highlighting
         function formatLogEntry(text) {
+            // If raw mode is enabled, just escape and return
+            if (rawMode) {
+                return escapeHtml(text);
+            }
+            
             // Try to parse as JSON first
             try {
                 const jsonMatch = text.match(/\{.*\}/);
@@ -574,6 +590,19 @@
                 entry.style.whiteSpace = e.target.checked ? 'pre-wrap' : 'pre';
             });
         });
+        
+        // Toggle raw mode
+        if (rawModeCheckbox) {
+            rawModeCheckbox.addEventListener('change', (e) => {
+                rawMode = e.target.checked;
+                // Re-render all logs
+                const entries = logContainer.querySelectorAll('.log-entry');
+                entries.forEach(entry => {
+                    const text = entry.dataset.text || entry.textContent;
+                    entry.innerHTML = formatLogEntry(text);
+                });
+            });
+        }
         
         searchInput.addEventListener('input', filterLogs);
         clearBtn.addEventListener('click', clearLogs);
