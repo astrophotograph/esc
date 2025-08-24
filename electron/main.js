@@ -94,6 +94,7 @@ if (!gotTheLock) {
 let mainWindow;
 let loadingWindow;
 let logWindows = {};
+let aboutWindow = null;
 let processManager;
 
 // Enable live reload for Electron in development
@@ -210,6 +211,47 @@ function createWindow() {
 
   // Create application menu
   createMenu();
+}
+
+function createAboutWindow() {
+  if (aboutWindow && !aboutWindow.isDestroyed()) {
+    aboutWindow.focus();
+    return;
+  }
+
+  aboutWindow = new BrowserWindow({
+    width: 500,
+    height: 600,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    title: 'About ESC',
+    icon: path.join(__dirname, 'icons', 'icon.png'),
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true
+    },
+    backgroundColor: '#0f0f23',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    show: false
+  });
+
+  aboutWindow.loadFile(path.join(__dirname, 'about.html'));
+  
+  // Remove menu bar on Windows/Linux
+  if (process.platform !== 'darwin') {
+    aboutWindow.setMenuBarVisibility(false);
+  }
+
+  aboutWindow.once('ready-to-show', () => {
+    aboutWindow.show();
+  });
+
+  aboutWindow.on('closed', () => {
+    aboutWindow = null;
+  });
 }
 
 function createLogWindow(type) {
@@ -461,7 +503,7 @@ function createMenu() {
         {
           label: 'About ESC',
           click: () => {
-            shell.openExternal('https://github.com/astrophotograph/esc');
+            createAboutWindow();
           }
         }
       ]
