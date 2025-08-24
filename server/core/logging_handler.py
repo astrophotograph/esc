@@ -31,19 +31,34 @@ class InterceptHandler(orig_logging.Handler):
         )
 
 
-def setup_logging():
-    """Configure logging for the application."""
+def setup_logging(no_color=False):
+    """Configure logging for the application.
+    
+    Args:
+        no_color: If True, disable colored output in logs
+    """
     # Intercept standard logging
     orig_logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
     # Configure loguru
     logging.remove()  # Remove default handler
-    log_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{module}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
-        "<level>{message}</level>"
-    )
+    
+    if no_color:
+        # Plain format without color tags
+        log_format = (
+            "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
+            "{level: <8} | "
+            "{module}:{function}:{line} | "
+            "{message}"
+        )
+    else:
+        # Colored format
+        log_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{module}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+            "<level>{message}</level>"
+        )
 
     # Add console handler
     log_level = "DEBUG"
@@ -51,7 +66,7 @@ def setup_logging():
         sys.stderr,
         format=log_format,
         level=log_level,
-        colorize=True,
+        colorize=not no_color,  # Disable colorization if no_color is True
         # backtrace=True,
         diagnose=True
     )

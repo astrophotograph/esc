@@ -64,6 +64,7 @@ export function NetworkStatusOverlay() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [cumulativeRotation, setCumulativeRotation] = useState(0)
   const previousRotationRef = useRef<number | null>(null)
+  const [currentImageElapsed, setCurrentImageElapsed] = useState<number | null>(null)
   
   // State for collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -183,6 +184,31 @@ export function NetworkStatusOverlay() {
     
     previousRotationRef.current = currentRotation;
   }, [localStreamStatus?.status?.balance_sensor?.data])
+  
+  // Update current image elapsed time in real-time
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    
+    if (localStreamStatus?.imaging_status?.current_image_request_start_time) {
+      // Update elapsed time every 100ms
+      const updateElapsed = () => {
+        const startTime = new Date(localStreamStatus.imaging_status.current_image_request_start_time).getTime();
+        const elapsed = Date.now() - startTime;
+        setCurrentImageElapsed(elapsed);
+      };
+      
+      updateElapsed(); // Initial update
+      intervalId = setInterval(updateElapsed, 100);
+    } else {
+      setCurrentImageElapsed(null);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [localStreamStatus?.imaging_status?.current_image_request_start_time])
 
   const toggleSection = (section: keyof typeof collapsedSections) => {
     setCollapsedSections(prev => ({
@@ -537,6 +563,24 @@ export function NetworkStatusOverlay() {
                       <span className="text-muted-foreground">Last Image</span>
                     </div>
                     <span className="font-mono">{Math.round(localStreamStatus.imaging_status.last_image_elapsed_ms)}ms</span>
+                  </div>
+                )}
+                
+                {/* Current Image Request Timing */}
+                {currentImageElapsed !== null && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-cyan-400 animate-pulse" />
+                      <span className="text-muted-foreground">Current Request</span>
+                    </div>
+                    <span className={`font-mono ${
+                      (() => {
+                        const avgTime = localStreamStatus?.imaging_status?.avg_image_elapsed_ms || 1000;
+                        return currentImageElapsed > avgTime * 1.5 ? 'text-red-400 font-bold animate-pulse' : '';
+                      })()
+                    }`}>
+                      {Math.round(currentImageElapsed)}ms
+                    </span>
                   </div>
                 )}
 

@@ -98,18 +98,18 @@ export function ThemeToggle() {
           <BookOpenCheck className="mr-2 h-4 w-4" />
           Dark Tufte
         </DropdownMenuItem>
-        {/*<DropdownMenuItem onClick={() => setTheme("green-screen")}>*/}
-        {/*  <Tv className="mr-2 h-4 w-4 text-green-500" />*/}
-        {/*  Green Screen*/}
-        {/*</DropdownMenuItem>*/}
-        {/*<DropdownMenuItem onClick={() => setTheme("c64")}>*/}
-        {/*  <Gamepad2 className="mr-2 h-4 w-4 text-blue-400" />*/}
-        {/*  C64*/}
-        {/*</DropdownMenuItem>*/}
-        {/*<DropdownMenuItem onClick={() => setTheme("fallout")}>*/}
-        {/*  <Zap className="mr-2 h-4 w-4 text-green-400" />*/}
-        {/*  Fallout*/}
-        {/*</DropdownMenuItem>*/}
+        <DropdownMenuItem onClick={() => setTheme("green-screen")}>
+          <Tv className="mr-2 h-4 w-4 text-green-500" />
+          Green Screen
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("c64")}>
+          <Gamepad2 className="mr-2 h-4 w-4 text-blue-400" />
+          C64
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("fallout")}>
+          <Zap className="mr-2 h-4 w-4 text-green-400" />
+          Fallout
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="mr-2 h-4 w-4" />
           System

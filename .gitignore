@@ -13,3 +13,4 @@ logs
 /dist
 /electron/assets
 /node_modules
+electron/python-server-dist/

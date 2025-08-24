@@ -214,6 +214,11 @@ def panorama(
     type=float,
     help="Custom network simulation bandwidth limit in KB/s (overrides preset)",
 )
+@click.option(
+    "--no-color",
+    is_flag=True,
+    help="Disable colored output in logs",
+)
 def server(
     server_port,
     seestar_host,
@@ -225,9 +230,10 @@ def server(
     network_sim_delay,
     network_sim_packet_loss,
     network_sim_bandwidth,
+    no_color,
 ):
     """Start a FastAPI server for controlling a Seestar device."""
-    setup_logging()
+    setup_logging(no_color=no_color)
     
     # Clear screen and show banner
     click.clear()

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, Menu, shell, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const { ProcessManager } = require('./processManager');
 const log = require('electron-log');
@@ -23,19 +23,48 @@ if (!gotTheLock) {
 }
 
 let mainWindow;
+let loadingWindow;
+let logWindows = {};
 let processManager;
 
 // Enable live reload for Electron in development
 if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
-    hardResetMethod: 'exit'
-  });
+  try {
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+      hardResetMethod: 'exit'
+    });
+  } catch (err) {
+    log.warn('Electron reload not available:', err.message);
+  }
   
   // Force app to show in dock in development
   if (process.platform === 'darwin') {
     app.dock.show();
   }
+}
+
+function createLoadingWindow() {
+  loadingWindow = new BrowserWindow({
+    width: 400,
+    height: 500,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    },
+    icon: path.join(__dirname, 'icons', 'icon.png')
+  });
+
+  loadingWindow.loadFile(path.join(__dirname, 'loading.html'));
+  loadingWindow.center();
+  
+  // Prevent loading window from being closed
+  loadingWindow.on('closed', () => {
+    loadingWindow = null;
+  });
 }
 
 function createWindow() {
@@ -54,9 +83,15 @@ function createWindow() {
     show: false // Don't show until ready
   });
 
-  // Show window when ready
+  // Show window when ready and close loading window
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    setTimeout(() => {
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.close();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+    }, 500); // Small delay for smooth transition
   });
 
   // Load the app - always connect to localhost:3000
@@ -91,6 +126,50 @@ function createWindow() {
 
   // Create application menu
   createMenu();
+}
+
+function createLogWindow(type) {
+  // If window already exists, focus it
+  if (logWindows[type] && !logWindows[type].isDestroyed()) {
+    logWindows[type].focus();
+    return;
+  }
+  
+  // Create new log window
+  logWindows[type] = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    title: `${type === 'backend' ? 'Backend' : 'Frontend'} Logs`,
+    icon: path.join(__dirname, 'icons', 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    backgroundColor: '#1e1e1e'
+  });
+  
+  // Load log viewer HTML with type parameter
+  logWindows[type].loadFile(path.join(__dirname, 'logViewer.html'), {
+    query: { type }
+  });
+  
+  // Handle window closed
+  logWindows[type].on('closed', () => {
+    logWindows[type] = null;
+  });
+  
+  // Send initial logs
+  const logs = processManager ? processManager.getLogs(type) : [];
+  logWindows[type].webContents.on('did-finish-load', () => {
+    logs.forEach(log => {
+      logWindows[type].webContents.send('log-data', {
+        type,
+        text: log.text,
+        timestamp: log.timestamp
+      });
+    });
+  });
 }
 
 function createMenu() {
@@ -204,6 +283,21 @@ function createMenu() {
         { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
         { type: 'separator' },
         {
+          label: 'Backend Logs',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          click: () => {
+            createLogWindow('backend');
+          }
+        },
+        {
+          label: 'Frontend Logs',
+          accelerator: 'CmdOrCtrl+Shift+F',
+          click: () => {
+            createLogWindow('frontend');
+          }
+        },
+        { type: 'separator' },
+        {
           label: 'Toggle Overlay',
           accelerator: 'CmdOrCtrl+L',
           click: () => {
@@ -309,6 +403,9 @@ if (process.platform === 'darwin' && app.dock) {
 app.whenReady().then(async () => {
   log.info('App is ready');
   
+  // Create loading window first
+  createLoadingWindow();
+  
   // Set dock icon after app is ready
   if (process.platform === 'darwin' && app.dock) {
     const iconPath = path.join(__dirname, 'icons', 'icon.png');
@@ -328,23 +425,49 @@ app.whenReady().then(async () => {
 
   // Initialize process manager
   processManager = new ProcessManager();
+  
+  // Set up log forwarding to log windows
+  processManager.addLogListener((logData) => {
+    // Send to appropriate log window if open
+    if (logWindows[logData.type] && !logWindows[logData.type].isDestroyed()) {
+      logWindows[logData.type].webContents.send('log-data', logData);
+    }
+  });
 
   try {
     // Start backend server
     log.info('Starting backend server...');
+    if (loadingWindow && !loadingWindow.isDestroyed()) {
+      loadingWindow.webContents.executeJavaScript(`
+        document.getElementById('status').textContent = 'Starting backend server...';
+      `);
+    }
     await processManager.startBackend();
 
     // Start frontend
     log.info('Starting frontend server...');
+    if (loadingWindow && !loadingWindow.isDestroyed()) {
+      loadingWindow.webContents.executeJavaScript(`
+        document.getElementById('status').textContent = 'Starting frontend server...';
+      `);
+    }
     await processManager.startFrontend();
 
     // Wait a bit for servers to initialize
+    if (loadingWindow && !loadingWindow.isDestroyed()) {
+      loadingWindow.webContents.executeJavaScript(`
+        document.getElementById('status').textContent = 'Loading application...';
+      `);
+    }
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Create window
+    // Create main window
     createWindow();
   } catch (error) {
     log.error('Failed to start services:', error);
+    if (loadingWindow && !loadingWindow.isDestroyed()) {
+      loadingWindow.close();
+    }
     app.quit();
   }
 });
@@ -388,5 +511,19 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
   } else {
     // Use default behavior for other URLs
     callback(false);
+  }
+});
+
+// IPC handlers for log viewer
+ipcMain.on('request-logs', (event, { type }) => {
+  if (processManager) {
+    const logs = processManager.getLogs(type);
+    logs.forEach(log => {
+      event.reply('log-data', {
+        type,
+        text: log.text,
+        timestamp: log.timestamp
+      });
+    });
   }
 });

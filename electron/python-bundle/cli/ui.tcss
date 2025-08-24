@@ -1,0 +1,13 @@
+#events {
+    background: $boost;
+    margin: 1;
+    padding: 1;
+    height: 8;
+}
+
+#response {
+    background: $boost;
+    margin: 1;
+    padding: 1;
+    height: 8;
+}

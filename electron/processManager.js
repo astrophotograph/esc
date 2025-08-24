@@ -11,21 +11,89 @@ class ProcessManager {
       frontend: null
     };
     this.isShuttingDown = false;
+    this.logs = {
+      backend: [],
+      frontend: []
+    };
+    this.logListeners = new Set();
+    this.maxLogLines = 10000; // Keep last 10000 lines per process
+  }
+  
+  // Add a log listener
+  addLogListener(callback) {
+    this.logListeners.add(callback);
+  }
+  
+  // Remove a log listener
+  removeLogListener(callback) {
+    this.logListeners.delete(callback);
+  }
+  
+  // Add log entry and notify listeners
+  addLog(type, text) {
+    const timestamp = new Date().toISOString();
+    const logEntry = { timestamp, text };
+    
+    // Add to buffer
+    this.logs[type].push(logEntry);
+    
+    // Trim if too many logs
+    if (this.logs[type].length > this.maxLogLines) {
+      this.logs[type] = this.logs[type].slice(-this.maxLogLines);
+    }
+    
+    // Notify listeners
+    this.logListeners.forEach(listener => {
+      listener({ type, text, timestamp });
+    });
+  }
+  
+  // Get logs for a specific type
+  getLogs(type) {
+    return this.logs[type] || [];
   }
 
   setupBackendHandlers(resolve, reject) {
+    let hasStarted = false;
+    
     // Handle stdout
     this.processes.backend.stdout.on('data', (data) => {
       const output = data.toString();
       log.info(`Backend: ${output}`);
+      
+      // Add to logs
+      this.addLog('backend', output);
+      
+      // Check for successful startup indicators
+      if (!hasStarted && (output.includes('Uvicorn running on') || 
+                          output.includes('Application startup complete') ||
+                          output.includes('Starting Seestar API server'))) {
+        hasStarted = true;
+        log.info('Backend server detected as started via stdout');
+      }
     });
 
     // Handle stderr (Python logs often go to stderr even for INFO messages)
     this.processes.backend.stderr.on('data', (data) => {
       const output = data.toString();
+      
+      // Add to logs
+      this.addLog('backend', output);
+      
       // Check if it's actually an error or just regular Python logging
       if (output.includes('ERROR') || output.includes('CRITICAL') || output.includes('Exception')) {
         log.error(`Backend Error: ${output}`);
+        if (output.includes('Address already in use')) {
+          log.error('Port 8000 is already in use. Attempting to connect to existing server...');
+          // Try to connect to existing server
+          this.checkHealth().then((isHealthy) => {
+            if (isHealthy) {
+              resolve();
+            } else {
+              reject(new Error('Port 8000 is in use but server is not responding'));
+            }
+          });
+        }
       } else {
         log.info(`Backend: ${output}`);
       }
@@ -52,14 +120,20 @@ class ProcessManager {
         const response = await fetch('http://127.0.0.1:8000/health');
         if (response.ok) {
           log.info('Backend server is ready (health check passed)');
-          resolve();
+          if (!hasStarted) {
+            hasStarted = true;
+            resolve();
+          }
           return true;
         }
       } catch (error) {
         // Server not ready yet
+        log.debug('Health check failed:', error.message);
       }
       return false;
     };
+    
+    this.checkHealth = checkHealth;
 
     // Wait a bit before starting health checks
     setTimeout(() => {
@@ -77,9 +151,10 @@ class ProcessManager {
         clearInterval(this.healthCheckInterval);
       }
       if (this.processes.backend && !this.isShuttingDown) {
-        reject(new Error('Backend server startup timeout'));
+        log.warn('Backend server startup timeout - proceeding anyway');
+        resolve(); // Proceed even if backend isn't ready
       }
-    }, 60000);
+    }, 15000); // Reduced timeout to 15 seconds
   }
 
   async startBackend() {
@@ -90,16 +165,37 @@ class ProcessManager {
         let backendArgs = ['server'];
         
         if (app.isPackaged) {
-          // In production, check if bundled backend exists
+          // In production, check for different backend builds
           const resourcesPath = process.resourcesPath;
-          const bundledBackend = process.platform === 'win32' 
+          
+          // PyInstaller build (primary option)
+          const pyinstallerBackend = process.platform === 'win32' 
+            ? path.join(resourcesPath, 'python-server', 'esc-server.exe')
+            : path.join(resourcesPath, 'python-server', 'esc-server');
+          
+          // Python bundle with launcher script (fallback)
+          const pythonBundle = path.join(resourcesPath, 'python-bundle', 'launch.sh');
+          
+          // Legacy location for PyInstaller
+          const legacyPyinstaller = process.platform === 'win32' 
             ? path.join(resourcesPath, 'server', 'main.exe')
             : path.join(resourcesPath, 'server', 'main');
           
-          if (fs.existsSync(bundledBackend)) {
-            // Use bundled backend if it exists
-            backendPath = bundledBackend;
-            backendArgs = ['server'];
+          if (fs.existsSync(pyinstallerBackend)) {
+            // Use PyInstaller build (preferred for speed and reliability)
+            backendPath = pyinstallerBackend;
+            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            log.info('Using PyInstaller backend from python-server directory');
+          } else if (fs.existsSync(legacyPyinstaller)) {
+            // Fall back to legacy PyInstaller location
+            backendPath = legacyPyinstaller;
+            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            log.info('Using PyInstaller backend from legacy location');
+          } else if (fs.existsSync(pythonBundle)) {
+            // Use Python bundle with launcher script (slowest but most flexible)
+            backendPath = pythonBundle;
+            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            log.info('Using Python bundle launcher');
           } else {
             // For production builds without bundled backend, 
             // we need the user to have the server running separately
@@ -138,7 +234,7 @@ class ProcessManager {
         } else {
           // In development, run with Python
           backendPath = 'uv';
-          backendArgs = ['run', path.join(__dirname, '..', 'server', 'main.py'), 'server'];
+          backendArgs = ['run', 'python', path.join(__dirname, '..', 'server', 'main.py'), 'server', '--no-color'];  // Add --no-color flag
         }
 
         log.info(`Starting backend: ${backendPath} ${backendArgs.join(' ')}`);
@@ -178,47 +274,91 @@ class ProcessManager {
           const frontendPath = path.join(process.resourcesPath, 'ui');
           log.info(`Frontend path: ${frontendPath}`);
           
-          // Check if server.js exists
-          const serverJsPath = path.join(frontendPath, 'server.js');
+          // Check if the Next.js standalone output exists
+          const standaloneDir = path.join(frontendPath, '.next', 'standalone');
+          const serverJsPath = path.join(standaloneDir, 'server.js');
+          
+          // Check both possible locations
+          let finalServerPath = serverJsPath;
+          let finalCwd = standaloneDir;
+          
           if (!fs.existsSync(serverJsPath)) {
-            log.error(`server.js not found at ${serverJsPath}`);
-            reject(new Error('Frontend server.js not found'));
-            return;
+            // Try the frontendPath directly
+            const altServerPath = path.join(frontendPath, 'server.js');
+            if (fs.existsSync(altServerPath)) {
+              finalServerPath = altServerPath;
+              finalCwd = frontendPath;
+            } else {
+              log.error(`server.js not found at ${serverJsPath} or ${altServerPath}`);
+              reject(new Error('Frontend server.js not found'));
+              return;
+            }
           }
           
-          this.processes.frontend = spawn('node', ['server.js'], {
-            cwd: frontendPath,
-            env: { ...process.env, PORT: '3000', NODE_ENV: 'production', HOSTNAME: 'localhost' }
-          });
+          log.info(`Starting Node.js server from ${finalServerPath}`);
+          
+          try {
+            this.processes.frontend = spawn('node', ['server.js'], {
+              cwd: finalCwd,
+              env: { ...process.env, PORT: '3000', NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: 'localhost:8000' }
+            });
+            
+            log.info(`Frontend process spawned with PID: ${this.processes.frontend.pid}`);
+          } catch (error) {
+            log.error('Failed to spawn frontend process:', error);
+            reject(error);
+            return;
+          }
 
+          let hasResolved = false;
+          
           this.processes.frontend.stdout.on('data', (data) => {
             const output = data.toString();
             log.info(`Frontend: ${output}`);
             
-            if (output.includes('Ready on') || output.includes('started on') || output.includes('Listening on')) {
+            // Add to logs
+            this.addLog('frontend', output);
+            
+            if (!hasResolved && (output.includes('Ready on') || output.includes('Ready in') || output.includes('started on') || output.includes('Listening on'))) {
               log.info('Production frontend server is ready');
+              hasResolved = true;
               resolve();
             }
           });
           
           // Set a timeout to resolve even if we don't see the ready message
           setTimeout(() => {
-            log.info('Frontend server startup timeout reached, assuming ready');
-            resolve();
+            if (!hasResolved) {
+              log.info('Frontend server startup timeout reached, assuming ready');
+              hasResolved = true;
+              resolve();
+            }
           }, 5000);
 
           this.processes.frontend.stderr.on('data', (data) => {
-            log.error(`Frontend Error: ${data.toString()}`);
+            const output = data.toString();
+            log.error(`Frontend Error: ${output}`);
+            
+            // Add to logs
+            this.addLog('frontend', output);
           });
 
           this.processes.frontend.on('error', (error) => {
             log.error('Failed to start production frontend:', error);
-            reject(error);
+            if (!hasResolved) {
+              hasResolved = true;
+              reject(error);
+            }
           });
 
-          this.processes.frontend.on('exit', (code) => {
-            log.info(`Frontend process exited with code ${code}`);
+          this.processes.frontend.on('exit', (code, signal) => {
+            log.info(`Frontend process exited with code ${code} and signal ${signal}`);
             this.processes.frontend = null;
+            if (!hasResolved && !this.isShuttingDown) {
+              log.error('Frontend process exited unexpectedly during startup');
+              hasResolved = true;
+              reject(new Error(`Frontend exited with code ${code}`));
+            }
           });
           
           return;
@@ -248,6 +388,9 @@ class ProcessManager {
             const output = data.toString();
             log.info(`Frontend: ${output}`);
             
+            // Add to logs
+            this.addLog('frontend', output);
+            
             if (output.includes('Ready in') || output.includes('compiled successfully')) {
               log.info('Frontend server is ready');
               resolve();
@@ -255,7 +398,11 @@ class ProcessManager {
           });
 
           this.processes.frontend.stderr.on('data', (data) => {
-            log.error(`Frontend Error: ${data.toString()}`);
+            const output = data.toString();
+            log.error(`Frontend Error: ${output}`);
+            
+            // Add to logs
+            this.addLog('frontend', output);
           });
 
           this.processes.frontend.on('error', (error) => {
