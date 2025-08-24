@@ -226,7 +226,7 @@ function createAboutWindow() {
 
   aboutWindow = new BrowserWindow({
     width: 500,
-    height: 600,
+    height: 650,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -239,7 +239,7 @@ function createAboutWindow() {
       contextIsolation: true
     },
     backgroundColor: '#0f0f23',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    titleBarStyle: 'default',
     show: false
   });
 
@@ -248,8 +248,14 @@ function createAboutWindow() {
   // Send app version to the about window
   aboutWindow.webContents.on('did-finish-load', () => {
     const packageJson = require('./package.json');
+    log.info('Sending app version to about window:', packageJson.version);
     aboutWindow.webContents.send('app-version', packageJson.version || '1.0.0');
   });
+  
+  // Open DevTools in development for debugging
+  if (!app.isPackaged) {
+    aboutWindow.webContents.openDevTools({ mode: 'detach' });
+  }
   
   // Remove menu bar on Windows/Linux
   if (process.platform !== 'darwin') {
