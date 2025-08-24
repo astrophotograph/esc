@@ -283,8 +283,8 @@ function createLogWindow(type) {
       icon: path.join(__dirname, 'icons', 'icon.png'),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
-        nodeIntegration: true,
-        contextIsolation: false
+        nodeIntegration: false,
+        contextIsolation: true
       },
       backgroundColor: '#1e1e1e'
     });

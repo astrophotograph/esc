@@ -38,6 +38,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('app-version', (event, version) => {
       callback(version);
     });
+  },
+  
+  // Log viewer functions
+  requestLogs: (type) => {
+    ipcRenderer.send('request-logs', { type });
+  },
+  
+  onLogData: (callback) => {
+    ipcRenderer.on('log-data', (event, data) => {
+      callback(data);
+    });
   }
 });
 

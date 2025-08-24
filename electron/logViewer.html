@@ -148,14 +148,66 @@
         /* Syntax highlighting for common patterns */
         .timestamp {
             color: #608b4e;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
         }
         
         .module {
             color: #4ec9b0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
         }
         
         .highlight {
             background: rgba(255, 235, 59, 0.2);
+        }
+        
+        /* JSON log formatting */
+        .level-badge {
+            display: inline-block;
+            padding: 0 4px;
+            border-radius: 2px;
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            min-width: 60px;
+        }
+        
+        .level-badge.debug {
+            background: rgba(133, 133, 133, 0.2);
+            color: #858585;
+        }
+        
+        .level-badge.info {
+            background: rgba(78, 201, 176, 0.2);
+            color: #4ec9b0;
+        }
+        
+        .level-badge.warning {
+            background: rgba(220, 220, 170, 0.2);
+            color: #dcdcaa;
+        }
+        
+        .level-badge.error {
+            background: rgba(244, 135, 113, 0.2);
+            color: #f48771;
+        }
+        
+        .level-badge.critical {
+            background: rgba(255, 0, 0, 0.3);
+            color: #ff6b6b;
+        }
+        
+        .event {
+            color: #c586c0;
+            font-weight: 500;
+        }
+        
+        .message {
+            color: #d4d4d4;
+        }
+        
+        .extras {
+            color: #808080;
+            font-size: 11px;
+            margin-left: 10px;
         }
         
         .status-bar {
@@ -266,8 +318,6 @@
     </div>
     
     <script>
-        const { ipcRenderer } = require('electron');
-        
         // Get log type from URL params
         const params = new URLSearchParams(window.location.search);
         const logType = params.get('type') || 'backend';
@@ -298,6 +348,18 @@
         
         // Parse log level from text
         function getLogLevel(text) {
+            // Try to parse JSON first
+            try {
+                const jsonMatch = text.match(/\{.*\}/);
+                if (jsonMatch) {
+                    const json = JSON.parse(jsonMatch[0]);
+                    const level = json.level || json.levelname || 'INFO';
+                    return level.toLowerCase();
+                }
+            } catch (e) {
+                // Not JSON, continue with text parsing
+            }
+            
             // For backend logs with the format: "2025-08-23 19:56:23.022 | INFO     | module:function:line | message"
             const match = text.match(/\|\s*(DEBUG|INFO|WARNING|ERROR|CRITICAL)\s*\|/);
             if (match) {
@@ -315,7 +377,18 @@
         
         // Format log entry with syntax highlighting
         function formatLogEntry(text) {
-            // Escape HTML
+            // Try to parse as JSON first
+            try {
+                const jsonMatch = text.match(/\{.*\}/);
+                if (jsonMatch) {
+                    const jsonData = JSON.parse(jsonMatch[0]);
+                    return formatJsonLog(jsonData);
+                }
+            } catch (e) {
+                // Not JSON, format as plain text
+            }
+            
+            // Escape HTML for plain text
             text = text.replace(/&/g, '&amp;')
                       .replace(/</g, '&lt;')
                       .replace(/>/g, '&gt;');
@@ -329,6 +402,58 @@
                               '<span class="module">$1</span>:');
             
             return text;
+        }
+        
+        // Format JSON log in tabular format
+        function formatJsonLog(json) {
+            const timestamp = json.time || json.timestamp || new Date().toISOString();
+            const level = (json.level || json.levelname || 'INFO').toUpperCase();
+            const message = json.message || json.msg || '';
+            const module = json.name || json.module || json.logger || '';
+            const event = json.event || '';
+            
+            // Build formatted output
+            let parts = [];
+            
+            // Timestamp
+            parts.push(`<span class="timestamp">${timestamp.substring(11, 23)}</span>`);
+            
+            // Level with appropriate coloring
+            const levelClass = level.toLowerCase();
+            parts.push(`<span class="level-badge ${levelClass}">${level.padEnd(8)}</span>`);
+            
+            // Module/Logger
+            if (module) {
+                parts.push(`<span class="module">${module.padEnd(20)}</span>`);
+            }
+            
+            // Event (if present)
+            if (event) {
+                parts.push(`<span class="event">[${event}]</span>`);
+            }
+            
+            // Message
+            parts.push(`<span class="message">${escapeHtml(message)}</span>`);
+            
+            // Extra fields (if any)
+            const extraFields = Object.keys(json).filter(k => 
+                !['time', 'timestamp', 'level', 'levelname', 'message', 'msg', 'name', 'module', 'logger', 'event'].includes(k)
+            );
+            
+            if (extraFields.length > 0) {
+                const extras = extraFields.map(k => `${k}=${JSON.stringify(json[k])}`).join(' ');
+                parts.push(`<span class="extras">${escapeHtml(extras)}</span>`);
+            }
+            
+            return parts.join(' ');
+        }
+        
+        // Helper to escape HTML
+        function escapeHtml(text) {
+            if (typeof text !== 'string') text = String(text);
+            return text.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;');
         }
         
         // Add log entry to display
@@ -467,19 +592,23 @@
         });
         
         // Listen for log data from main process
-        ipcRenderer.on('log-data', (event, data) => {
-            if (data.type === logType) {
-                // Split by newlines and add each line
-                const lines = data.text.split('\n').filter(line => line.trim());
-                lines.forEach(line => {
-                    logs.push(line);
-                    addLogEntry(line, false); // Apply filters
-                });
-            }
-        });
-        
-        // Request initial logs
-        ipcRenderer.send('request-logs', { type: logType });
+        if (window.electronAPI && window.electronAPI.onLogData) {
+            window.electronAPI.onLogData((data) => {
+                if (data.type === logType) {
+                    // Split by newlines and add each line
+                    const lines = data.text.split('\n').filter(line => line.trim());
+                    lines.forEach(line => {
+                        logs.push(line);
+                        addLogEntry(line, false); // Apply filters
+                    });
+                }
+            });
+            
+            // Request initial logs
+            window.electronAPI.requestLogs(logType);
+        } else {
+            console.error('Electron API not available');
+        }
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
