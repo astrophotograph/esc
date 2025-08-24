@@ -174,8 +174,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                     if width and height and width > 0 and height > 0 and size and size > 1000:
                         # Mark that we're receiving an image
                         self.status.is_receiving_image = True
-                        # Track that we're starting to receive the image data
-                        self.status.last_image_start_time = image_start_time
+                        # Only update start time if we don't already have one
+                        # (it may have been set when we sent the request)
+                        if not self.status.last_image_start_time:
+                            self.status.last_image_start_time = image_start_time
                         self.status.last_image_size_bytes = size
                     
                     data = await self.connection.read_exactly(size)
@@ -213,6 +215,8 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
                         # Update status with timing information
                         self.status.last_image_end_time = image_end_time
                         self.status.last_image_elapsed_ms = elapsed_ms
+                        # Clear the start time now that the image is complete
+                        self.status.last_image_start_time = None
                         
                         # Update rolling average
                         self._image_timing_history.append(elapsed_ms)
@@ -372,6 +376,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             else:
                 # Only grab the frame if we're streaming in client and not currently receiving
                 logging.debug("Grabbing frame")
+                # Update the start time when we request a new image
+                import time
+                self.status.last_image_start_time = time.time() * 1000
+                # Note: Don't set is_receiving_image here, let the reader set it when data arrives
                 await self.send(GetStackedImage(id=23))
         else:
             logging.debug(f"Got stack event; ignoring {event.state=} {self.status.is_fetching_images=}")
