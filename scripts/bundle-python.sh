@@ -19,11 +19,22 @@ mkdir -p "$BUNDLE_DIR"
 echo "Copying Python source files..."
 cp -r "$SERVER_DIR"/*.py "$BUNDLE_DIR/"
 cp -r "$SERVER_DIR"/api "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/cli "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/config "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/controllers "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/core "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/exceptions "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/graxpert "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/lib "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/middleware "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/models "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/services "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/smarttel "$BUNDLE_DIR/" 2>/dev/null || true
-cp -r "$SERVER_DIR"/cli "$BUNDLE_DIR/" 2>/dev/null || true
-cp -r "$SERVER_DIR"/lib "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/static "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/templates "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/tests "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/utils "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/validators "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/pyproject.toml "$BUNDLE_DIR/" 2>/dev/null || true
 
 # Generate requirements file from uv
@@ -38,20 +49,32 @@ cat > "$BUNDLE_DIR/launch.sh" << 'EOF'
 # Launcher script for Python server
 
 # Get the directory of this script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Check if virtual environment exists
-if [ ! -d "$DIR/.venv" ]; then
-    echo "Creating Python virtual environment..."
-    python3 -m venv "$DIR/.venv"
-    
-    echo "Installing dependencies..."
-    "$DIR/.venv/bin/pip" install --upgrade pip
-    "$DIR/.venv/bin/pip" install -r "$DIR/requirements.txt"
+# Determine writable directory for virtual environment
+if [[ "$SCRIPT_DIR" == *".app/Contents/Resources"* ]]; then
+    # Running from macOS app bundle - use Application Support
+    VENV_BASE="$HOME/Library/Application Support/ESC"
+    mkdir -p "$VENV_BASE"
+    VENV_DIR="$VENV_BASE/.venv"
+else
+    # Development or other environment - use local directory
+    VENV_DIR="$SCRIPT_DIR/.venv"
 fi
 
-# Run the server
-"$DIR/.venv/bin/python" "$DIR/main.py" "$@"
+# Check if virtual environment exists
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating Python virtual environment in $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+    
+    echo "Installing dependencies..."
+    "$VENV_DIR/bin/pip" install --upgrade pip
+    "$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
+fi
+
+# Run the server with the script directory as working directory
+cd "$SCRIPT_DIR"
+"$VENV_DIR/bin/python" "$SCRIPT_DIR/main.py" "$@"
 EOF
 
 chmod +x "$BUNDLE_DIR/launch.sh"

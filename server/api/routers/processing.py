@@ -30,21 +30,18 @@ METADATA_FILE = Path("fits_metadata.json")
 
 router = APIRouter(prefix="/api/processing", tags=["processing"])
 
-# Create uploads directory
-UPLOAD_DIR = Path("uploads")
-try:
-    UPLOAD_DIR.mkdir(exist_ok=True)
-except PermissionError:
-    # Directory creation handled by Docker, just use existing directory
-    pass
+# Import app directory utilities
+import sys
+import os
+# Add parent directory to path for utils import
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from utils.app_dirs import get_writable_dir
 
-# Create processed images directory
-PROCESSED_DIR = Path("processed")
-try:
-    PROCESSED_DIR.mkdir(exist_ok=True)
-except PermissionError:
-    # Directory creation handled by Docker, just use existing directory
-    pass
+# Create uploads directory in writable location
+UPLOAD_DIR = get_writable_dir("uploads", fallback=Path("uploads"))
+
+# Create processed images directory in writable location  
+PROCESSED_DIR = get_writable_dir("processed", fallback=Path("processed"))
 
 
 class EnhancementSettings(BaseModel):

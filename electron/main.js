@@ -580,7 +580,7 @@ app.whenReady().then(async () => {
       
       // Add timeout wrapper for backend
       const backendTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Backend startup timed out after 20 seconds')), 20000)
+        setTimeout(() => reject(new Error('Backend startup timed out after 85 seconds')), 85000)
       );
       
       try {
@@ -604,7 +604,7 @@ app.whenReady().then(async () => {
       
       // Add timeout wrapper for frontend
       const frontendTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Frontend startup timed out after 20 seconds')), 20000)
+        setTimeout(() => reject(new Error('Frontend startup timed out after 85 seconds')), 85000)
       );
       
       try {
@@ -622,27 +622,47 @@ app.whenReady().then(async () => {
       // Verify both servers are actually running
       if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.webContents.send('loading-status', 'Verifying services...');
+        loadingWindow.webContents.send('loading-progress', 'Waiting for servers to initialize...');
+      }
+      
+      // Initial delay before health checks to give servers time to start
+      log.info('Waiting 5 seconds before starting health checks...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.webContents.send('loading-progress', 'Checking server health...');
       }
       
-      // Quick health check
+      // Health check - wait up to 80 seconds for servers to be ready
+      // This accounts for Python dependency installation on first run
       let serversHealthy = false;
-      for (let i = 0; i < 10; i++) {
+      const maxAttempts = 160; // 160 * 500ms = 80 seconds
+      for (let i = 0; i < maxAttempts; i++) {
         try {
           // Check backend health
           const backendResponse = await fetch('http://127.0.0.1:8000/health').catch(() => null);
-          // Check frontend (Next.js usually runs on 3000)
-          const frontendResponse = await fetch('http://127.0.0.1:3000').catch(() => null);
+          // Check frontend (Next.js usually runs on 3000) - try a specific path
+          const frontendResponse = await fetch('http://127.0.0.1:3000/api/health').catch(() => null) || 
+                                    await fetch('http://127.0.0.1:3000').catch(() => null);
           
-          if (backendResponse && frontendResponse) {
+          // For now, just check backend since frontend might not have a health endpoint
+          // The frontend startup is already detected in processManager
+          if (backendResponse) {
             serversHealthy = true;
+            log.info(`Health check passed after ${i * 0.5} seconds (backend confirmed)`);
             break;
           }
         } catch (e) {
           // Ignore errors, we'll retry
         }
         
-        if (i < 9) {
+        // Send progress updates every 5 seconds
+        if (i > 0 && i % 10 === 0 && loadingWindow && !loadingWindow.isDestroyed()) {
+          const secondsWaiting = i * 0.5;
+          loadingWindow.webContents.send('loading-progress', `Waiting for servers to respond (${secondsWaiting}s)...`);
+        }
+        
+        if (i < maxAttempts - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }

@@ -219,6 +219,11 @@ def panorama(
     is_flag=True,
     help="Disable colored output in logs",
 )
+@click.option(
+    "--json-logs",
+    is_flag=True,
+    help="Output logs in JSON format for machine parsing",
+)
 def server(
     server_port,
     seestar_host,
@@ -231,23 +236,34 @@ def server(
     network_sim_packet_loss,
     network_sim_bandwidth,
     no_color,
+    json_logs,
 ):
     """Start a FastAPI server for controlling a Seestar device."""
-    setup_logging(no_color=no_color)
+    import json
+    import sys
     
-    # Clear screen and show banner
-    click.clear()
-    click.secho("=" * 60, fg="cyan")
-    click.secho("Seestar API Server", fg="cyan", bold=True)
-    click.secho("=" * 60, fg="cyan")
-    click.echo(f"Starting Seestar API server on port {server_port}")
-    
-    if no_discovery:
-        click.echo("Auto-discovery is disabled")
+    if json_logs:
+        # Setup JSON logging for Electron integration
+        setup_logging(no_color=True, json_format=True)
+        # Emit startup event
+        print(json.dumps({"event": "server_starting", "port": server_port, "level": "INFO"}))
+        sys.stdout.flush()
     else:
-        click.echo("Auto-discovery is enabled")
+        setup_logging(no_color=no_color)
+        # Clear screen and show banner
+        click.clear()
+        click.secho("=" * 60, fg="cyan")
+        click.secho("Seestar API Server", fg="cyan", bold=True)
+        click.secho("=" * 60, fg="cyan")
+        click.echo(f"Starting Seestar API server on port {server_port}")
     
-    if reload:
+    if not json_logs:
+        if no_discovery:
+            click.echo("Auto-discovery is disabled")
+        else:
+            click.echo("Auto-discovery is enabled")
+    
+    if reload and not json_logs:
         click.echo("Auto-reload enabled - server will restart when code changes")
     
     # Create FastAPI app
@@ -347,7 +363,11 @@ def server(
         
         # Start WebSocket manager early (before controller runner)
         # This allows us to broadcast initialization messages
-        click.echo("Starting WebSocket server for early client connections...")
+        if json_logs:
+            print(json.dumps({"event": "websocket_starting", "level": "INFO", "message": "Starting WebSocket server"}))
+            sys.stdout.flush()
+        else:
+            click.echo("Starting WebSocket server for early client connections...")
         
         # Run the controller
         await controller.runner()
@@ -358,13 +378,24 @@ def server(
             host="0.0.0.0",
             port=server_port,
             reload=reload,
-            log_level="info" if not reload else "debug",
+            log_level="error" if json_logs else ("info" if not reload else "debug"),  # Reduce uvicorn verbosity in JSON mode
         )
         server = uvicorn.Server(config)
         
-        click.echo(f"\n✨ Server starting on http://0.0.0.0:{server_port}")
-        click.echo("WebSocket endpoint: ws://localhost:{}/ws".format(server_port))
-        click.echo("\nClients can connect to WebSocket immediately to see initialization progress")
+        if json_logs:
+            # Emit server started event for Electron
+            print(json.dumps({
+                "event": "server_started", 
+                "level": "INFO",
+                "message": f"Server starting on http://0.0.0.0:{server_port}",
+                "port": server_port,
+                "websocket_endpoint": f"ws://localhost:{server_port}/ws"
+            }))
+            sys.stdout.flush()
+        else:
+            click.echo(f"\n✨ Server starting on http://0.0.0.0:{server_port}")
+            click.echo("WebSocket endpoint: ws://localhost:{}/ws".format(server_port))
+            click.echo("\nClients can connect to WebSocket immediately to see initialization progress")
         
         await server.serve()
     

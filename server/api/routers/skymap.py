@@ -33,12 +33,13 @@ except ImportError:
 router = APIRouter(prefix="/api/skymap", tags=["skymap"])
 
 # Create cache directory for tiles
-TILE_CACHE_DIR = Path("sky_tiles")
-try:
-    TILE_CACHE_DIR.mkdir(exist_ok=True)
-except PermissionError:
-    # Directory creation handled by Docker, just use existing directory
-    pass
+import os
+import sys
+# Add parent directory to path for utils import
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from utils.app_dirs import get_writable_dir
+
+TILE_CACHE_DIR = get_writable_dir("sky_tiles", fallback=Path("sky_tiles"))
 
 # Constants for sky tiling
 TILE_WIDTH = 256 * 2   # pixels

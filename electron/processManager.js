@@ -55,6 +55,17 @@ class ProcessManager {
 
   setupBackendHandlers(resolve, reject) {
     let hasStarted = false;
+    let hasResolved = false;
+    
+    const safeResolve = (source) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        log.info(`Backend startup resolved by: ${source}`);
+        resolve();
+      } else {
+        log.info(`Backend startup already resolved, ignoring: ${source}`);
+      }
+    };
     
     // Handle stdout
     this.processes.backend.stdout.on('data', (data) => {
@@ -64,12 +75,29 @@ class ProcessManager {
       // Add to logs
       this.addLog('backend', output);
       
-      // Check for successful startup indicators
-      if (!hasStarted && (output.includes('Uvicorn running on') || 
-                          output.includes('Application startup complete') ||
-                          output.includes('Starting Seestar API server'))) {
-        hasStarted = true;
-        log.info('Backend server detected as started via stdout');
+      // Try to parse as JSON for better structured logging
+      try {
+        const jsonLog = JSON.parse(output.trim());
+        if (!hasStarted && (jsonLog.event === 'server_started' || 
+                           jsonLog.event === 'startup_complete' ||
+                           (jsonLog.level === 'INFO' && (
+                             jsonLog.message?.includes('Application startup complete') ||
+                             jsonLog.message?.includes('Uvicorn running on')
+                           )))) {
+          hasStarted = true;
+          log.info('Backend server started successfully (JSON event from stdout)');
+          safeResolve('JSON event from stdout');
+        }
+      } catch (e) {
+        // Not JSON, check for text patterns
+        if (!hasStarted && (output.includes('Uvicorn running on') || 
+                            output.includes('Application startup complete') ||
+                            output.includes('Starting Seestar API server') ||
+                            output.includes('✨ Server starting on'))) {
+          hasStarted = true;
+          log.info('Backend server detected as started via stdout');
+          safeResolve('text pattern from stdout');
+        }
       }
     });
 
@@ -80,22 +108,69 @@ class ProcessManager {
       // Add to logs
       this.addLog('backend', output);
       
-      // Check if it's actually an error or just regular Python logging
-      if (output.includes('ERROR') || output.includes('CRITICAL') || output.includes('Exception')) {
-        log.error(`Backend Error: ${output}`);
-        if (output.includes('Address already in use')) {
-          log.error('Port 8000 is already in use. Attempting to connect to existing server...');
-          // Try to connect to existing server
-          this.checkHealth().then((isHealthy) => {
-            if (isHealthy) {
-              resolve();
-            } else {
-              reject(new Error('Port 8000 is in use but server is not responding'));
-            }
-          });
+      // Try to parse as JSON log
+      try {
+        const jsonLog = JSON.parse(output.trim());
+        
+        // Check for startup success
+        if (!hasStarted && (jsonLog.event === 'server_started' || 
+                           jsonLog.level === 'INFO' && (
+                             jsonLog.message?.includes('Application startup complete') ||
+                             jsonLog.message?.includes('Uvicorn running on') ||
+                             jsonLog.message?.includes('Server starting on')
+                           ))) {
+          hasStarted = true;
+          log.info('Backend server started successfully (JSON from stderr)');
+          safeResolve('JSON from stderr');
+          return;
         }
-      } else {
-        log.info(`Backend: ${output}`);
+        
+        // Check for errors
+        if (jsonLog.level === 'ERROR' || jsonLog.level === 'CRITICAL') {
+          log.error(`Backend Error: ${jsonLog.message || output}`);
+          if (jsonLog.message?.includes('Address already in use') || jsonLog.message?.includes('[errno 48]')) {
+            if (!hasStarted) {
+              hasStarted = true; // Prevent multiple rejections
+              reject(new Error('Port 8000 is already in use. Please close any other instances of the server.'));
+            }
+          } else if (jsonLog.error || jsonLog.exception) {
+            if (!hasStarted) {
+              hasStarted = true;
+              reject(new Error(jsonLog.message || 'Backend startup failed'));
+            }
+          }
+        } else {
+          log.info(`Backend: ${jsonLog.message || output}`);
+        }
+      } catch (e) {
+        // Not JSON, parse as text
+        if (!hasStarted && (output.includes('Uvicorn running on') || 
+                           output.includes('Server starting on') ||
+                           output.includes('Application startup complete'))) {
+          hasStarted = true;
+          log.info('Backend server detected as started via stderr');
+          safeResolve('text pattern from stderr');
+        } else if (output.includes('ERROR') || output.includes('CRITICAL') || 
+                  output.includes('Exception') || output.includes('Traceback')) {
+          log.error(`Backend Error: ${output}`);
+          if (output.includes('Address already in use') || output.includes('[Errno 48]')) {
+            if (!hasStarted) {
+              hasStarted = true;
+              log.error('Port 8000 is already in use');
+              reject(new Error('Port 8000 is already in use. The port kill attempt may have failed.'));
+            }
+          } else if (output.includes('ModuleNotFoundError') || output.includes('ImportError')) {
+            if (!hasStarted) {
+              hasStarted = true;
+              reject(new Error('Python dependencies missing: ' + output.substring(0, 200)));
+            }
+          } else if (output.includes('OSError') && !hasStarted) {
+            hasStarted = true;
+            reject(new Error('Backend failed with OS error: ' + output.substring(0, 200)));
+          }
+        } else {
+          log.info(`Backend: ${output}`);
+        }
       }
     });
 
@@ -122,7 +197,7 @@ class ProcessManager {
           log.info('Backend server is ready (health check passed)');
           if (!hasStarted) {
             hasStarted = true;
-            resolve();
+            safeResolve('health check');
           }
           return true;
         }
@@ -152,14 +227,30 @@ class ProcessManager {
       }
       if (this.processes.backend && !this.isShuttingDown) {
         log.warn('Backend server startup timeout - proceeding anyway');
-        resolve(); // Proceed even if backend isn't ready
+        safeResolve('timeout - proceeding anyway'); // Proceed even if backend isn't ready
       }
-    }, 15000); // Reduced timeout to 15 seconds
+    }, 85000); // Extended timeout to 85 seconds (slightly less than loading screen timeout)
   }
 
   async startBackend() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
+        // Kill any existing process on port 8000
+        try {
+          const { exec } = require('child_process');
+          await new Promise((killResolve) => {
+            exec('lsof -ti:8000 | xargs kill -9 2>/dev/null', (error) => {
+              // Ignore errors - it just means no process was using the port
+              if (!error) {
+                log.info('Killed existing process on port 8000');
+              }
+              killResolve();
+            });
+          });
+        } catch (e) {
+          // Ignore errors
+        }
+        
         // Determine the backend executable path
         let backendPath;
         let backendArgs = ['server'];
@@ -184,7 +275,7 @@ class ProcessManager {
           if (fs.existsSync(pyinstallerBackend)) {
             // Use PyInstaller build (preferred for speed and reliability)
             backendPath = pyinstallerBackend;
-            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            backendArgs = ['server', '--no-color', '--json-logs'];  // Add JSON logging flag
             log.info('Using PyInstaller backend from python-server directory');
           } else if (fs.existsSync(legacyPyinstaller)) {
             // Fall back to legacy PyInstaller location
@@ -194,7 +285,7 @@ class ProcessManager {
           } else if (fs.existsSync(pythonBundle)) {
             // Use Python bundle with launcher script (slowest but most flexible)
             backendPath = pythonBundle;
-            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            backendArgs = ['server', '--json-logs'];  // Add JSON logging flag
             log.info('Using Python bundle launcher');
           } else {
             // For production builds without bundled backend, 
@@ -333,7 +424,7 @@ class ProcessManager {
               hasResolved = true;
               resolve();
             }
-          }, 5000);
+          }, 30000); // Extended to 30 seconds for production frontend startup
 
           this.processes.frontend.stderr.on('data', (data) => {
             const output = data.toString();
@@ -420,7 +511,7 @@ class ProcessManager {
             if (this.processes.frontend && !this.isShuttingDown) {
               reject(new Error('Frontend server startup timeout'));
             }
-          }, 60000); // 60 second timeout for Next.js
+          }, 85000); // Extended timeout to 85 seconds for Next.js
         });
 
       } catch (error) {

@@ -7,8 +7,11 @@
   "files": [
     "main.js",
     "preload.js",
+    "preload-loading.js",
     "processManager.js",
+    "pythonRunner.js",
     "loading.html",
+    "logViewer.html",
     "node_modules/**/*",
     "icons/**/*"
   ],
@@ -28,10 +31,10 @@
       ]
     },
     {
-      "from": "./python-server-dist",
-      "to": "python-server",
+      "from": "./python-bundle",
+      "to": "python-bundle",
       "filter": [
-        "esc-server*"
+        "**/*"
       ]
     }
   ],

@@ -31,25 +31,58 @@ class InterceptHandler(orig_logging.Handler):
         )
 
 
-def setup_logging(no_color=False):
+def setup_logging(no_color=False, json_format=False):
     """Configure logging for the application.
     
     Args:
         no_color: If True, disable colored output in logs
+        json_format: If True, output logs in JSON format
     """
+    import json as json_module
+    
     # Intercept standard logging
     orig_logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
     # Configure loguru
     logging.remove()  # Remove default handler
     
-    if no_color:
+    if json_format:
+        # JSON format for machine parsing
+        def json_sink(message):
+            record = message.record
+            log_entry = {
+                "timestamp": record["time"].isoformat(),
+                "level": record["level"].name,
+                "module": record["module"],
+                "function": record["function"],
+                "line": record["line"],
+                "message": record["message"],
+            }
+            # Add exception info if present
+            if record["exception"]:
+                log_entry["exception"] = str(record["exception"])
+            print(json_module.dumps(log_entry), flush=True)
+        
+        logging.add(
+            json_sink,
+            format="{message}",
+            level="DEBUG",
+            serialize=False
+        )
+    elif no_color:
         # Plain format without color tags
         log_format = (
             "{time:YYYY-MM-DD HH:mm:ss.SSS} | "
             "{level: <8} | "
             "{module}:{function}:{line} | "
             "{message}"
+        )
+        logging.add(
+            sys.stderr,
+            format=log_format,
+            level="DEBUG",
+            colorize=False,
+            diagnose=True
         )
     else:
         # Colored format
@@ -59,17 +92,13 @@ def setup_logging(no_color=False):
             "<cyan>{module}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
             "<level>{message}</level>"
         )
-
-    # Add console handler
-    log_level = "DEBUG"
-    logging.add(
-        sys.stderr,
-        format=log_format,
-        level=log_level,
-        colorize=not no_color,  # Disable colorization if no_color is True
-        # backtrace=True,
-        diagnose=True
-    )
+        logging.add(
+            sys.stderr,
+            format=log_format,
+            level="DEBUG",
+            colorize=True,
+            diagnose=True
+        )
 
     # log_path = Path(log_file)
     # log_path.parent.mkdir(parents=True, exist_ok=True)

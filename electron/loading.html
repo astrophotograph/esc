@@ -158,7 +158,7 @@
         let startTime = Date.now();
         let timeoutTimer = null;
         
-        // Set a timeout for loading (30 seconds)
+        // Set a timeout for loading (90 seconds)
         function startTimeout() {
             clearTimeout(timeoutTimer);
             timeoutTimer = setTimeout(() => {
@@ -166,7 +166,7 @@
                     const elapsed = Math.round((Date.now() - startTime) / 1000);
                     showError(`Application startup timed out after ${elapsed} seconds. The servers may have failed to start.`);
                 }
-            }, 30000);
+            }, 90000);
         }
         
         // Start the timeout when page loads
