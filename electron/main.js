@@ -340,14 +340,14 @@ function createMenu() {
       submenu: [
         {
           label: 'New Session',
-          accelerator: 'CmdOrCtrl+N',
+          accelerator: 'CmdOrCtrl+Shift+S',
           click: () => {
             mainWindow.webContents.send('menu-action', 'new-session');
           }
         },
         {
           label: 'Open Session...',
-          accelerator: 'CmdOrCtrl+O',
+          accelerator: 'CmdOrCtrl+Shift+O',
           click: () => {
             mainWindow.webContents.send('menu-action', 'open-session');
           }
@@ -355,7 +355,7 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Export Data...',
-          accelerator: 'CmdOrCtrl+E',
+          accelerator: 'CmdOrCtrl+Shift+E',
           click: () => {
             mainWindow.webContents.send('menu-action', 'export-data');
           }
@@ -432,7 +432,7 @@ function createMenu() {
         },
         {
           label: 'Stop Capture',
-          accelerator: 'CmdOrCtrl+Shift+S',
+          accelerator: 'CmdOrCtrl+Shift+X',
           click: () => {
             mainWindow.webContents.send('menu-action', 'stop-capture');
           }
@@ -461,8 +461,8 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Toggle Overlay',
-          accelerator: 'CmdOrCtrl+L',
+          label: 'Toggle Network Status',
+          accelerator: 'CmdOrCtrl+Shift+N',
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send('menu-action', 'toggle-overlay');
@@ -471,7 +471,7 @@ function createMenu() {
         },
         {
           label: 'Toggle Annotations',
-          accelerator: 'CmdOrCtrl+A',
+          accelerator: 'CmdOrCtrl+Shift+A',
           click: () => {
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send('menu-action', 'toggle-annotations');
