@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, shell, nativeImage, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { ProcessManager } = require('./processManager');
 const log = require('electron-log');
 
@@ -130,47 +131,71 @@ function createWindow() {
 }
 
 function createLogWindow(type) {
-  // If window already exists, focus it
-  if (logWindows[type] && !logWindows[type].isDestroyed()) {
-    logWindows[type].focus();
-    return;
-  }
-  
-  // Create new log window
-  logWindows[type] = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    title: `${type === 'backend' ? 'Backend' : 'Frontend'} Logs`,
-    icon: path.join(__dirname, 'icons', 'icon.png'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
-      contextIsolation: false
-    },
-    backgroundColor: '#1e1e1e'
-  });
-  
-  // Load log viewer HTML with type parameter
-  logWindows[type].loadFile(path.join(__dirname, 'logViewer.html'), {
-    query: { type }
-  });
-  
-  // Handle window closed
-  logWindows[type].on('closed', () => {
-    logWindows[type] = null;
-  });
-  
-  // Send initial logs
-  const logs = processManager ? processManager.getLogs(type) : [];
-  logWindows[type].webContents.on('did-finish-load', () => {
-    logs.forEach(log => {
-      logWindows[type].webContents.send('log-data', {
-        type,
-        text: log.text,
-        timestamp: log.timestamp
-      });
+  try {
+    log.info(`Creating log window for ${type}`);
+    
+    // If window already exists, focus it
+    if (logWindows[type] && !logWindows[type].isDestroyed()) {
+      logWindows[type].focus();
+      return;
+    }
+    
+    // Create new log window
+    logWindows[type] = new BrowserWindow({
+      width: 1000,
+      height: 700,
+      title: `${type === 'backend' ? 'Backend' : 'Frontend'} Logs`,
+      icon: path.join(__dirname, 'icons', 'icon.png'),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        nodeIntegration: true,
+        contextIsolation: false
+      },
+      backgroundColor: '#1e1e1e'
     });
-  });
+    
+    // Check if logViewer.html exists
+    const logViewerPath = path.join(__dirname, 'logViewer.html');
+    if (!fs.existsSync(logViewerPath)) {
+      log.error(`Log viewer HTML not found at ${logViewerPath}`);
+      // Create a simple fallback content
+      logWindows[type].loadURL(`data:text/html,
+        <html>
+          <head><title>Logs</title></head>
+          <body style="background: #1e1e1e; color: white; padding: 20px; font-family: monospace;">
+            <h2>${type === 'backend' ? 'Backend' : 'Frontend'} Logs</h2>
+            <pre id="logs">No log viewer HTML found. Logs would appear here.</pre>
+          </body>
+        </html>
+      `);
+    } else {
+      // Load log viewer HTML with type parameter
+      logWindows[type].loadFile(logViewerPath, {
+        query: { type }
+      });
+    }
+    
+    // Handle window closed
+    logWindows[type].on('closed', () => {
+      logWindows[type] = null;
+    });
+    
+    // Send initial logs if available
+    if (processManager) {
+      const logs = processManager.getLogs(type) || [];
+      logWindows[type].webContents.on('did-finish-load', () => {
+        logs.forEach(log => {
+          logWindows[type].webContents.send('log-data', {
+            type,
+            text: log.text,
+            timestamp: log.timestamp
+          });
+        });
+      });
+    }
+  } catch (error) {
+    log.error('Error creating log window:', error);
+  }
 }
 
 function createMenu() {
@@ -627,6 +652,9 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
   }
 });
 
+// Store startServices function globally so it can be accessed by IPC handlers
+let startServicesFunc = null;
+
 // IPC handlers for log viewer
 ipcMain.on('request-logs', (event, { type }) => {
   if (processManager) {
@@ -641,10 +669,7 @@ ipcMain.on('request-logs', (event, { type }) => {
   }
 });
 
-// Store startServices function globally so it can be accessed by IPC handlers
-let startServicesFunc = null;
-
-// Loading window IPC handlers
+// Loading window IPC handlers - define these early before app.whenReady
 ipcMain.on('retry-start', async () => {
   log.info('Retrying service startup...');
   if (processManager) {
@@ -666,14 +691,32 @@ ipcMain.on('retry-start', async () => {
           'Unable to retry - please restart the application');
       }
     }
+  } else {
+    log.warn('ProcessManager not available for retry');
   }
 });
 
 ipcMain.on('view-logs', () => {
+  log.info('View logs requested');
   // Create a backend log window to view the startup logs
-  createLogWindow('backend');
+  // Check if we can create the window
+  if (BrowserWindow) {
+    createLogWindow('backend');
+  } else {
+    log.error('Cannot create log window - BrowserWindow not available');
+  }
 });
 
 ipcMain.on('exit-app', () => {
-  app.quit();
+  log.info('Exit app requested');
+  // Force quit the app
+  if (processManager) {
+    processManager.stopAll().then(() => {
+      app.quit();
+    }).catch(() => {
+      app.quit();
+    });
+  } else {
+    app.quit();
+  }
 });

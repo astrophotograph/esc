@@ -204,14 +204,22 @@
         }
         
         function viewLogs() {
+            console.log('View logs button clicked');
             if (window.electronAPI) {
+                console.log('Calling electronAPI.viewLogs()');
                 window.electronAPI.viewLogs();
+            } else {
+                console.error('electronAPI not available');
             }
         }
         
         function exitApp() {
+            console.log('Exit button clicked');
             if (window.electronAPI) {
+                console.log('Calling electronAPI.exitApp()');
                 window.electronAPI.exitApp();
+            } else {
+                console.error('electronAPI not available');
             }
         }
         

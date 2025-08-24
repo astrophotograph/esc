@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+console.log('Loading preload script initialized');
+
 // Expose protected methods for the loading window
 contextBridge.exposeInMainWorld('electronAPI', {
   // Listen for status updates
@@ -18,7 +20,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // Actions
-  retryStart: () => ipcRenderer.send('retry-start'),
-  viewLogs: () => ipcRenderer.send('view-logs'),
-  exitApp: () => ipcRenderer.send('exit-app')
+  retryStart: () => {
+    console.log('Sending retry-start IPC message');
+    ipcRenderer.send('retry-start');
+  },
+  viewLogs: () => {
+    console.log('Sending view-logs IPC message');
+    ipcRenderer.send('view-logs');
+  },
+  exitApp: () => {
+    console.log('Sending exit-app IPC message');
+    ipcRenderer.send('exit-app');
+  }
 });
+
+console.log('electronAPI exposed to window');
