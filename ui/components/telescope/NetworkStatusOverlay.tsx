@@ -73,7 +73,9 @@ export function NetworkStatusOverlay() {
   const previousRotationRef = useRef<number | null>(null)
   const [currentImageElapsed, setCurrentImageElapsed] = useState<number | null>(null)
   const [stackEventIndices, setStackEventIndices] = useState<number[]>([])
+  const [dropEventIndices, setDropEventIndices] = useState<number[]>([])
   const previousStackedFrameRef = useRef<number>(0)
+  const previousDroppedFrameRef = useRef<number>(0)
   
   // State for collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -161,14 +163,31 @@ export function NetworkStatusOverlay() {
       }
       previousStackedFrameRef.current = currentStackedFrames
       
+      // Check for dropped frame events (when dropped_frame count increases)
+      const currentDroppedFrames = contextStreamStatus.status?.dropped_frame || 0
+      if (currentDroppedFrames > previousDroppedFrameRef.current) {
+        // A frame drop occurred - mark it at the current position in history
+        setDropEventIndices(prev => {
+          const currentIndex = imageTimingHistory.length
+          // Keep only recent indices (matching the history length)
+          const recentIndices = prev.filter(idx => idx > currentIndex - 20)
+          return [...recentIndices, currentIndex]
+        })
+      }
+      previousDroppedFrameRef.current = currentDroppedFrames
+      
       // Update timing history if available (only positive values)
+      // This updates roughly every time a new image is received
       if (contextStreamStatus.imaging_status?.last_image_elapsed_ms && 
           contextStreamStatus.imaging_status.last_image_elapsed_ms > 0) {
         setImageTimingHistory(prev => {
           const newHistory = [...prev.slice(-19), contextStreamStatus.imaging_status.last_image_elapsed_ms]
           
-          // Adjust stack event indices when history shifts
+          // Adjust stack and drop event indices when history shifts
           setStackEventIndices(indices => 
+            indices.map(idx => idx - 1).filter(idx => idx >= 0)
+          )
+          setDropEventIndices(indices => 
             indices.map(idx => idx - 1).filter(idx => idx >= 0)
           )
           
@@ -629,7 +648,7 @@ export function NetworkStatusOverlay() {
                 {imageTimingHistory.length > 1 && (
                   <div className="h-12 bg-muted rounded p-1 relative">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      {/* Stack event markers */}
+                      {/* Stack event markers (green) */}
                       {stackEventIndices.map((index, i) => {
                         const x = (index / (imageTimingHistory.length - 1)) * 100
                         return (
@@ -642,6 +661,24 @@ export function NetworkStatusOverlay() {
                             stroke="#10b981"
                             strokeWidth="1"
                             strokeOpacity="0.5"
+                            strokeDasharray="2,2"
+                          />
+                        )
+                      })}
+                      
+                      {/* Drop event markers (red) */}
+                      {dropEventIndices.map((index, i) => {
+                        const x = (index / (imageTimingHistory.length - 1)) * 100
+                        return (
+                          <line
+                            key={`drop-${i}`}
+                            x1={x}
+                            y1="0"
+                            x2={x}
+                            y2="100"
+                            stroke="#ef4444"
+                            strokeWidth="1"
+                            strokeOpacity="0.7"
                             strokeDasharray="2,2"
                           />
                         )
@@ -664,7 +701,7 @@ export function NetworkStatusOverlay() {
                     </svg>
                     
                     {/* Legend */}
-                    <div className="absolute top-0 right-0 flex items-center gap-2 text-[10px] bg-background/80 px-1 rounded">
+                    <div className="absolute top-0 right-0 flex flex-col gap-0.5 text-[9px] bg-background/80 px-1 py-0.5 rounded">
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                         <span className="text-muted-foreground">Time</span>
@@ -672,6 +709,10 @@ export function NetworkStatusOverlay() {
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-0.5 bg-green-400"></div>
                         <span className="text-muted-foreground">Stack</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-0.5 bg-red-400"></div>
+                        <span className="text-muted-foreground">Drop</span>
                       </div>
                     </div>
                   </div>
