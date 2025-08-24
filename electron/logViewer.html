@@ -326,9 +326,10 @@
         document.getElementById('logTitle').textContent = 
             logType === 'backend' ? 'Backend Server Logs' : 'Frontend Server Logs';
         
-        // Show level filters only for backend logs
+        // Show level filters and view mode only for backend logs
         if (logType === 'backend') {
             document.getElementById('levelFilters').style.display = 'flex';
+            viewModeGroup.style.display = 'flex';
         }
         
         // Elements
