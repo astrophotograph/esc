@@ -1,6 +1,6 @@
 {
-  "appId": "com.alp.experimental.local",
-  "productName": "ALP Experimental",
+  "appId": "tv.astrophotograph.experimental.local",
+  "productName": "Experimental Scope Creep",
   "directories": {
     "output": "../dist"
   },
