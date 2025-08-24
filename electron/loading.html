@@ -223,6 +223,20 @@
             }
         }
         
+        // Check if electronAPI is available
+        console.log('Checking for electronAPI:', typeof window.electronAPI);
+        if (window.electronAPI) {
+            console.log('electronAPI found, methods:', Object.keys(window.electronAPI));
+        } else {
+            console.error('electronAPI NOT FOUND - preload script may not be loaded');
+            // Try to show this error to user
+            setTimeout(() => {
+                if (!window.electronAPI) {
+                    showError('Application initialization error: IPC not available. Please restart the application.');
+                }
+            }, 2000);
+        }
+        
         // Listen for IPC messages from main process
         if (window.electronAPI) {
             window.electronAPI.onLoadingStatus((status) => {

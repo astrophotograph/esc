@@ -8,6 +8,74 @@ const log = require('electron-log');
 log.transports.file.level = 'info';
 log.info('App starting...');
 
+// Setup IPC handlers early - these need to be registered before windows are created
+// IPC handlers for log viewer
+ipcMain.on('request-logs', (event, { type }) => {
+  log.info(`Logs requested for ${type}`);
+  if (processManager) {
+    const logs = processManager.getLogs(type);
+    logs.forEach(log => {
+      event.reply('log-data', {
+        type,
+        text: log.text,
+        timestamp: log.timestamp
+      });
+    });
+  }
+});
+
+// Loading window IPC handlers
+ipcMain.on('retry-start', async (event) => {
+  log.info('IPC: retry-start received');
+  if (processManager) {
+    // Stop any running processes
+    log.info('Stopping existing processes...');
+    await processManager.stopAll().catch(e => log.error('Error stopping processes:', e));
+    
+    // Wait a moment for processes to fully stop
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Call the stored startServices function if available
+    if (startServicesFunc && typeof startServicesFunc === 'function') {
+      log.info('Restarting services...');
+      startServicesFunc();
+    } else {
+      log.error('startServices function not available for retry');
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-error', 
+          'Unable to retry - please restart the application');
+      }
+    }
+  } else {
+    log.warn('ProcessManager not available for retry');
+  }
+});
+
+ipcMain.on('view-logs', (event) => {
+  log.info('IPC: view-logs received');
+  try {
+    // Create a backend log window to view the startup logs
+    createLogWindow('backend');
+  } catch (error) {
+    log.error('Error creating log window:', error);
+  }
+});
+
+ipcMain.on('exit-app', (event) => {
+  log.info('IPC: exit-app received');
+  // Force quit the app
+  if (processManager) {
+    log.info('Stopping processes before exit...');
+    processManager.stopAll().then(() => {
+      app.quit();
+    }).catch(() => {
+      app.quit();
+    });
+  } else {
+    app.quit();
+  }
+});
+
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -62,6 +130,18 @@ function createLoadingWindow() {
 
   loadingWindow.loadFile(path.join(__dirname, 'loading.html'));
   loadingWindow.center();
+  
+  // Test IPC communication once window is loaded
+  loadingWindow.webContents.on('did-finish-load', () => {
+    log.info('Loading window finished loading');
+    // Send a test message to verify IPC is working
+    loadingWindow.webContents.send('loading-progress', 'Initializing application components...');
+  });
+  
+  // Open DevTools in development for debugging
+  if (!app.isPackaged) {
+    loadingWindow.webContents.openDevTools({ mode: 'detach' });
+  }
   
   // Prevent loading window from being closed
   loadingWindow.on('closed', () => {
@@ -654,69 +734,3 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 
 // Store startServices function globally so it can be accessed by IPC handlers
 let startServicesFunc = null;
-
-// IPC handlers for log viewer
-ipcMain.on('request-logs', (event, { type }) => {
-  if (processManager) {
-    const logs = processManager.getLogs(type);
-    logs.forEach(log => {
-      event.reply('log-data', {
-        type,
-        text: log.text,
-        timestamp: log.timestamp
-      });
-    });
-  }
-});
-
-// Loading window IPC handlers - define these early before app.whenReady
-ipcMain.on('retry-start', async () => {
-  log.info('Retrying service startup...');
-  if (processManager) {
-    // Stop any running processes
-    log.info('Stopping existing processes...');
-    await processManager.stopAll().catch(e => log.error('Error stopping processes:', e));
-    
-    // Wait a moment for processes to fully stop
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Call the stored startServices function if available
-    if (startServicesFunc && typeof startServicesFunc === 'function') {
-      log.info('Restarting services...');
-      startServicesFunc();
-    } else {
-      log.error('startServices function not available for retry');
-      if (loadingWindow && !loadingWindow.isDestroyed()) {
-        loadingWindow.webContents.send('loading-error', 
-          'Unable to retry - please restart the application');
-      }
-    }
-  } else {
-    log.warn('ProcessManager not available for retry');
-  }
-});
-
-ipcMain.on('view-logs', () => {
-  log.info('View logs requested');
-  // Create a backend log window to view the startup logs
-  // Check if we can create the window
-  if (BrowserWindow) {
-    createLogWindow('backend');
-  } else {
-    log.error('Cannot create log window - BrowserWindow not available');
-  }
-});
-
-ipcMain.on('exit-app', () => {
-  log.info('Exit app requested');
-  // Force quit the app
-  if (processManager) {
-    processManager.stopAll().then(() => {
-      app.quit();
-    }).catch(() => {
-      app.quit();
-    });
-  } else {
-    app.quit();
-  }
-});
