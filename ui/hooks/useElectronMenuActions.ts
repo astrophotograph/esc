@@ -24,8 +24,8 @@ export function useElectronMenuActions() {
   const {
     currentTelescope,
     selectTelescope,
-    showOverlay,
-    setShowOverlay,
+    showStreamStatus,
+    setShowStreamStatus,
     showAnnotations,
     setShowAnnotations,
     wsConnectionState,
@@ -85,7 +85,7 @@ export function useElectronMenuActions() {
           break;
 
         case 'toggle-overlay':
-          setShowOverlay(!showOverlay);
+          setShowStreamStatus(!showStreamStatus);
           break;
 
         case 'toggle-annotations':
@@ -123,8 +123,8 @@ export function useElectronMenuActions() {
   }, [
     currentTelescope,
     selectTelescope,
-    showOverlay,
-    setShowOverlay,
+    showStreamStatus,
+    setShowStreamStatus,
     showAnnotations,
     setShowAnnotations,
     wsConnectionState,

@@ -9,6 +9,11 @@ log.transports.file.level = 'info';
 log.info('App starting...');
 
 // Setup IPC handlers early - these need to be registered before windows are created
+// Handle open external links
+ipcMain.on('open-external', (event, url) => {
+  shell.openExternal(url);
+});
+
 // IPC handlers for log viewer
 ipcMain.on('request-logs', (event, { type }) => {
   log.info(`Logs requested for ${type}`);
@@ -229,9 +234,9 @@ function createAboutWindow() {
     title: 'About ESC',
     icon: path.join(__dirname, 'icons', 'icon.png'),
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
     },
     backgroundColor: '#0f0f23',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
@@ -239,6 +244,12 @@ function createAboutWindow() {
   });
 
   aboutWindow.loadFile(path.join(__dirname, 'about.html'));
+  
+  // Send app version to the about window
+  aboutWindow.webContents.on('did-finish-load', () => {
+    const packageJson = require('./package.json');
+    aboutWindow.webContents.send('app-version', packageJson.version || '1.0.0');
+  });
   
   // Remove menu bar on Windows/Linux
   if (process.platform !== 'darwin') {
@@ -514,7 +525,12 @@ function createMenu() {
     template.unshift({
       label: app.getName(),
       submenu: [
-        { label: 'About ' + app.getName(), role: 'about' },
+        { 
+          label: 'About ' + app.getName(), 
+          click: () => {
+            createAboutWindow();
+          }
+        },
         { type: 'separator' },
         { label: 'Services', role: 'services', submenu: [] },
         { type: 'separator' },

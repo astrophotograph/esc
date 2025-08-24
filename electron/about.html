@@ -221,24 +221,28 @@
     </div>
     
     <script>
-        const { shell } = require('electron').remote || require('@electron/remote');
-        const packageJson = require('./package.json');
-        
-        // Set version
-        document.getElementById('version').textContent = packageJson.version || '1.0.0';
-        
-        // Open external links
+        // Open external links using IPC
         function openExternal(url) {
-            if (shell) {
-                shell.openExternal(url);
+            // Use the Electron IPC to open external links
+            if (window.electronAPI && window.electronAPI.openExternal) {
+                window.electronAPI.openExternal(url);
             } else {
-                // Fallback for newer Electron versions
+                // Try using window.open as fallback
                 window.open(url, '_blank');
             }
         }
         
-        // Make function available globally
-        window.openExternal = openExternal;
+        // Set version from IPC message
+        window.addEventListener('DOMContentLoaded', () => {
+            // Listen for app version from main process
+            if (window.electronAPI && window.electronAPI.onAppVersion) {
+                window.electronAPI.onAppVersion((version) => {
+                    document.getElementById('version').textContent = version;
+                });
+            } else {
+                document.getElementById('version').textContent = '1.0.0';
+            }
+        });
         
         // Close on Escape key
         document.addEventListener('keydown', (e) => {

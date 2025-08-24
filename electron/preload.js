@@ -13,6 +13,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     electron: process.versions.electron
   },
   
+  // App version (will be set by main process)
+  appVersion: '',
+  
+  // Open external links
+  openExternal: (url) => {
+    ipcRenderer.send('open-external', url);
+  },
+  
   // Listen for menu actions
   onMenuAction: (callback) => {
     ipcRenderer.on('menu-action', (event, action) => {
@@ -23,6 +31,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Remove menu action listener
   removeMenuActionListener: () => {
     ipcRenderer.removeAllListeners('menu-action');
+  },
+  
+  // Listen for app version
+  onAppVersion: (callback) => {
+    ipcRenderer.on('app-version', (event, version) => {
+      callback(version);
+    });
   }
 });
 
