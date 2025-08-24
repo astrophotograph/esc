@@ -277,10 +277,9 @@ class ProcessManager {
   async startBackend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Find an available port for the backend, starting from a random port in range
-        // Never use default port 8000 to avoid conflicts
-        const randomStart = 8001 + Math.floor(Math.random() * 900); // Random port between 8001-8900
-        this.ports.backend = await this.findAvailablePort(randomStart, 8999);
+        // Use a fixed port for the backend to ensure consistency
+        // Start with 8100 as the preferred port, but find another if it's in use
+        this.ports.backend = await this.findAvailablePort(8100, 8999);
         log.info(`Backend will use port ${this.ports.backend}`);
         
         // No need to kill processes since we found an available port
@@ -402,10 +401,9 @@ class ProcessManager {
   async startFrontend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Find an available port for the frontend, starting from a random port in range
-        // Never use default port 3000 to avoid conflicts
-        const randomStart = 3001 + Math.floor(Math.random() * 900); // Random port between 3001-3900
-        this.ports.frontend = await this.findAvailablePort(randomStart, 3999);
+        // Use a fixed port for the frontend to ensure localStorage persistence
+        // Start with 3100 as the preferred port, but find another if it's in use
+        this.ports.frontend = await this.findAvailablePort(3100, 3999);
         log.info(`Frontend will use port ${this.ports.frontend}`);
         // In production, the frontend should be served as static files
         // This method is mainly for development where Next.js dev server might be needed

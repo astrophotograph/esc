@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { saveToStorage, loadFromStorage, isStorageAvailable } from "../utils/storage-utils"
 
 /**
@@ -11,21 +11,38 @@ import { saveToStorage, loadFromStorage, isStorageAvailable } from "../utils/sto
  * @returns A stateful value and a function to update it, like useState
  */
 export function usePersistentState<T>(key: string, defaultValue: T): [T, (value: T | ((prevValue: T) => T)) => void] {
-  // Check if localStorage is available
-  const storageAvailable = isStorageAvailable()
-
-  // Initialize state with value from localStorage or default
+  const isInitialized = useRef(false)
+  
+  // Initialize state - try to load from localStorage immediately on client side
   const [state, setState] = useState<T>(() => {
-    if (!storageAvailable) return defaultValue
-    return loadFromStorage<T>(key, defaultValue)
+    // During SSR, always return default value
+    if (typeof window === 'undefined') {
+      return defaultValue
+    }
+    
+    // On client side, try to load from localStorage immediately
+    try {
+      const item = localStorage.getItem(key)
+      if (item !== null) {
+        return JSON.parse(item) as T
+      }
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error)
+    }
+    
+    return defaultValue
   })
 
-  // Update localStorage when state changes
+  // Save to localStorage when state changes
   useEffect(() => {
+    // Mark as initialized after first render
+    isInitialized.current = true
+    
+    const storageAvailable = isStorageAvailable()
     if (storageAvailable) {
       saveToStorage(key, state)
     }
-  }, [key, state, storageAvailable])
+  }, [key, state])
 
   return [state, setState]
 }

@@ -23,6 +23,8 @@ export default function RootLayout({
       defaultTheme="dark"
       themes={['light', 'dark', 'night-vision', 'tufte', 'dark-tufte', 'green-screen', 'c64', 'fallout']}
       disableTransitionOnChange
+      storageKey="esc-theme"
+      enableSystem={false}
     >
       {/*<ThemeEffects/>*/}
       <SentryErrorBoundary>

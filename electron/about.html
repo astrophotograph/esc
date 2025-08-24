@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>About ESC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -55,6 +56,87 @@
             margin-bottom: 30px;
             max-width: 400px;
             line-height: 1.5;
+            position: relative;
+            min-height: 60px;
+        }
+        
+        .strikethrough-text {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .strikethrough-line {
+            position: absolute;
+            top: 50%;
+            left: -5px;
+            right: -5px;
+            height: 3px;
+            background: #ff3333;
+            transform: translateY(-50%) scaleX(0);
+            transform-origin: left center;
+            animation: drawStrike 0.5s ease-out 2.5s forwards;
+            z-index: 1;
+        }
+        
+        .strikethrough-line::before,
+        .strikethrough-line::after {
+            content: '';
+            position: absolute;
+            background: #ff3333;
+            height: 100%;
+        }
+        
+        .strikethrough-line::before {
+            left: -3px;
+            top: -1px;
+            width: 6px;
+            height: 5px;
+            border-radius: 50%;
+            transform: rotate(-15deg);
+        }
+        
+        .strikethrough-line::after {
+            right: -3px;
+            top: 1px;
+            width: 6px;
+            height: 5px;
+            border-radius: 50%;
+            transform: rotate(15deg);
+        }
+        
+        .handwritten-text {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Kalam', 'Bradley Hand', 'Segoe Print', 'Marker Felt', cursive, -apple-system, sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: #ffffff;
+            opacity: 0;
+            letter-spacing: 0.5px;
+            animation: fadeInHandwritten 0.8s ease-out 3s forwards;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+            font-style: italic;
+            transform: translateX(-50%) rotate(-2deg);
+        }
+        
+        @keyframes drawStrike {
+            to {
+                transform: translateY(-50%) scaleX(1);
+            }
+        }
+        
+        @keyframes fadeInHandwritten {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px) rotate(-2deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) rotate(-1deg);
+            }
         }
         
         .links {
@@ -170,7 +252,12 @@
         <div class="version">Version <span id="version">1.0.0</span></div>
         
         <div class="description">
-            Electronic Scope Control - Advanced telescope control system for astrophotography
+            <span class="handwritten-text">Experimental Scope Creep</span>
+            <span class="strikethrough-text">
+                Electronic Scope Control
+                <span class="strikethrough-line"></span>
+            </span>
+            - Advanced telescope control system for astrophotography
         </div>
         
         <div class="links">

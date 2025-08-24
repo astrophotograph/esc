@@ -24,6 +24,11 @@ export const CURRENT_DATA_VERSION = 1
  * Save data to localStorage with error handling
  */
 export function saveToStorage<T>(key: string, data: T): boolean {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return false
+  }
+  
   try {
     localStorage.setItem(key, JSON.stringify(data))
     return true
@@ -37,6 +42,11 @@ export function saveToStorage<T>(key: string, data: T): boolean {
  * Load data from localStorage with error handling
  */
 export function loadFromStorage<T>(key: string, defaultValue: T): T {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return defaultValue
+  }
+  
   try {
     const storedData = localStorage.getItem(key)
     if (storedData === null) return defaultValue
@@ -51,6 +61,11 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
  * Check if localStorage is available
  */
 export function isStorageAvailable(): boolean {
+  // Check if we're on the client side
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return false
+  }
+  
   try {
     const testKey = "__storage_test__"
     localStorage.setItem(testKey, testKey)

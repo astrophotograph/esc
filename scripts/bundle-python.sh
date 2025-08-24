@@ -35,6 +35,7 @@ cp -r "$SERVER_DIR"/templates "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/tests "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/utils "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/validators "$BUNDLE_DIR/" 2>/dev/null || true
+cp -r "$SERVER_DIR"/data "$BUNDLE_DIR/" 2>/dev/null || true
 cp -r "$SERVER_DIR"/pyproject.toml "$BUNDLE_DIR/" 2>/dev/null || true
 
 # Generate requirements file from uv

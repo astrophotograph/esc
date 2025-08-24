@@ -419,7 +419,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [showTelescopeManagement, setShowTelescopeManagement] = useState(false)
 
   // State variables
-  const [showOverlay, setShowOverlay] = useState(true)
+  const [showOverlay, setShowOverlay] = usePersistentState("alp-overlay-visible", true)
   const [exposure, setExposure] = useState([1.0])
   const [gain, setGain] = useState([50])
   const [brightness, setBrightness] = useState([0])

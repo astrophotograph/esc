@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useTelescopeContext } from "../../context/TelescopeContext"
+import { usePersistentState } from "../../hooks/use-persistent-state"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
@@ -88,19 +89,29 @@ export function AppTour() {
   const [position, setPosition] = useState({ top: 0, left: 0 })
   const { setShowKeyboardHelp } = useTelescopeContext()
   const tourRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+  
+  // Use persistent state for tour completion and skip status
+  const [tourCompleted, setTourCompleted] = usePersistentState("alp-tour-completed", false)
+  const [tourSkipped, setTourSkipped] = usePersistentState("alp-tour-skip", false)
+
+  // Track when component is mounted (client-side)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Check if this is the user's first visit
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem("alp-tour-completed")
-    const skipTour = localStorage.getItem("alp-tour-skip")
-    
-    if (!hasSeenTour && !skipTour) {
+    // Only start tour after mounting and if not completed/skipped
+    if (mounted && !tourCompleted && !tourSkipped) {
       // Delay the tour start to ensure all components are mounted
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsRunning(true)
       }, 1500)
+      
+      return () => clearTimeout(timer)
     }
-  }, [])
+  }, [mounted, tourCompleted, tourSkipped])
 
   // Position the tour tooltip
   useEffect(() => {
@@ -185,25 +196,25 @@ export function AppTour() {
   }, [currentStep])
 
   const handleSkip = useCallback(() => {
-    localStorage.setItem("alp-tour-skip", "true")
+    setTourSkipped(true)
     setIsRunning(false)
-  }, [])
+  }, [setTourSkipped])
 
   const completeTour = useCallback(() => {
-    localStorage.setItem("alp-tour-completed", "true")
+    setTourCompleted(true)
     setIsRunning(false)
     
     // Show keyboard shortcuts after tour
     setTimeout(() => {
       setShowKeyboardHelp(true)
     }, 500)
-  }, [setShowKeyboardHelp])
+  }, [setShowKeyboardHelp, setTourCompleted])
 
   // Allow manual tour restart
   useEffect(() => {
     const handleRestartTour = () => {
-      localStorage.removeItem("alp-tour-completed")
-      localStorage.removeItem("alp-tour-skip")
+      setTourCompleted(false)
+      setTourSkipped(false)
       setCurrentStep(0)
       setIsRunning(true)
     }
@@ -212,7 +223,7 @@ export function AppTour() {
     return () => {
       window.removeEventListener("restart-tour" as any, handleRestartTour)
     }
-  }, [])
+  }, [setTourCompleted, setTourSkipped])
 
   if (!isRunning) return null
 

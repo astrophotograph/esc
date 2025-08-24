@@ -166,7 +166,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true
+      webSecurity: true,
+      partition: 'persist:main' // Ensure localStorage persists
     },
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     show: false // Don't show until ready
@@ -188,6 +189,23 @@ function createWindow() {
   const startUrl = process.env.ELECTRON_START_URL || `http://localhost:${frontendPort}`;
   log.info(`Loading URL: ${startUrl}`);
   mainWindow.loadURL(startUrl);
+  
+  // Debug localStorage on page load
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      console.log('=== localStorage Debug ===');
+      console.log('localStorage available:', typeof(Storage) !== "undefined");
+      console.log('localStorage items:', Object.keys(localStorage).length);
+      console.log('localStorage keys:', Object.keys(localStorage));
+      
+      // Test localStorage
+      const testKey = '__test_persist__';
+      const testValue = new Date().toISOString();
+      localStorage.setItem(testKey, testValue);
+      console.log('Test write:', testKey, '=', testValue);
+      console.log('Test read:', localStorage.getItem(testKey));
+    `).catch(err => log.error('Error executing debug script:', err));
+  });
 
   // Handle window closed
   mainWindow.on('closed', () => {
@@ -247,8 +265,21 @@ function createAboutWindow() {
   
   // Send app version to the about window
   aboutWindow.webContents.on('did-finish-load', () => {
-    const packageJson = require('./package.json');
-    aboutWindow.webContents.send('app-version', packageJson.version || '1.0.0');
+    // Try to get version from UI package.json first (has the build version)
+    let version = '1.0.0';
+    try {
+      const uiPackageJson = require('../ui/package.json');
+      version = uiPackageJson.version;
+    } catch (e) {
+      // Fallback to electron package.json
+      try {
+        const packageJson = require('./package.json');
+        version = packageJson.version;
+      } catch (e2) {
+        // Use default
+      }
+    }
+    aboutWindow.webContents.send('app-version', version);
   });
   
   // Remove menu bar on Windows/Linux
