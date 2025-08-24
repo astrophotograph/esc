@@ -26,7 +26,24 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     
     return NextResponse.json(data)
-  } catch (error) {
+  } catch (error: any) {
+    // Check if it's a connection error
+    if (error?.cause?.code === 'ECONNREFUSED') {
+      console.warn('Backend server not available at', BACKEND_URL)
+      // Return empty results when backend is not available
+      return NextResponse.json(
+        { 
+          messier: [],
+          ngc: [],
+          ic: [],
+          stars: [],
+          solar_system: [],
+          total_count: 0
+        },
+        { status: 200 }
+      )
+    }
+    
     console.error('Quick catalog search error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch catalog data' },
