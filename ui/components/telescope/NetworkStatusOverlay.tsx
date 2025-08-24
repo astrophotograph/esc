@@ -16,9 +16,16 @@ import {
   Compass,
   RotateCw,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Info
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // Helper function to convert RA degrees to HMS format
 function raToHMS(raDegrees: number): string {
@@ -268,17 +275,18 @@ export function NetworkStatusOverlay() {
   const skippedFrames = localStreamStatus?.status?.skipped_frame || 0
 
   return (
-    <div 
-      ref={overlayRef} 
-      className="fixed bg-card/95 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-border max-h-[90vh] overflow-y-auto" 
-      style={{ 
-        left: overlayPosition.x,
-        top: overlayPosition.y,
-        zIndex: 9999, 
-        minHeight: '200px',
-        cursor: isDragging ? "grabbing" : "default"
-      }}
-    >
+    <TooltipProvider>
+      <div 
+        ref={overlayRef} 
+        className="fixed bg-card/95 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-border max-h-[90vh] overflow-y-auto" 
+        style={{ 
+          left: overlayPosition.x,
+          top: overlayPosition.y,
+          zIndex: 9999, 
+          minHeight: '200px',
+          cursor: isDragging ? "grabbing" : "default"
+        }}
+      >
       {/* Header with drag handle */}
       <div 
         className="cursor-move bg-background/80 px-4 py-2 rounded-t-lg border-b border-border flex items-center justify-between"
@@ -513,7 +521,20 @@ export function NetworkStatusOverlay() {
               className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('imaging')}
             >
-              Imaging
+              <div className="flex items-center gap-2">
+                Imaging
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground hover:text-foreground cursor-help" onClick={(e) => e.stopPropagation()} />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">
+                      The elapsed time shown represents the communication delay between the Seestar telescope and the computer running ESC. 
+                      Higher values may indicate that the connection between your Seestar and computer isn't strong enough.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               {collapsedSections.imaging ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
             </h4>
 
@@ -613,7 +634,21 @@ export function NetworkStatusOverlay() {
               className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
               onClick={() => toggleSection('network')}
             >
-              Network
+              <div className="flex items-center gap-2">
+                Network
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground hover:text-foreground cursor-help" onClick={(e) => e.stopPropagation()} />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">
+                      The RTT (Round Trip Time) represents the communication delay between the computer running ESC and your browser. 
+                      If you're running a local distribution, this value should be very low. 
+                      Otherwise, it will reflect the time across your network connection.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               {collapsedSections.network ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
             </h4>
 
@@ -670,6 +705,7 @@ export function NetworkStatusOverlay() {
             )}
           </div>
         </div>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
