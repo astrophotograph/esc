@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const log = require('electron-log');
 const { app } = require('electron');
+const net = require('net');
 
 class ProcessManager {
   constructor() {
@@ -17,6 +18,10 @@ class ProcessManager {
     };
     this.logListeners = new Set();
     this.maxLogLines = 10000; // Keep last 10000 lines per process
+    this.ports = {
+      backend: 8000,
+      frontend: 3000
+    };
   }
   
   // Add a log listener
@@ -51,6 +56,43 @@ class ProcessManager {
   // Get logs for a specific type
   getLogs(type) {
     return this.logs[type] || [];
+  }
+
+  // Find an available port
+  async findAvailablePort(startPort = 8000, maxPort = 9999) {
+    return new Promise((resolve, reject) => {
+      const tryPort = (port) => {
+        if (port > maxPort) {
+          reject(new Error(`No available ports between ${startPort} and ${maxPort}`));
+          return;
+        }
+
+        const server = net.createServer();
+        
+        server.listen(port, '127.0.0.1', () => {
+          server.close(() => {
+            log.info(`Found available port: ${port}`);
+            resolve(port);
+          });
+        });
+
+        server.on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            // Port is in use, try the next one
+            tryPort(port + 1);
+          } else {
+            reject(err);
+          }
+        });
+      };
+
+      tryPort(startPort);
+    });
+  }
+
+  // Get the ports being used
+  getPorts() {
+    return this.ports;
   }
 
   setupBackendHandlers(resolve, reject) {
@@ -192,7 +234,7 @@ class ProcessManager {
     // Poll health endpoint
     const checkHealth = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/health');
+        const response = await fetch(`http://127.0.0.1:${this.ports.backend}/health`);
         if (response.ok) {
           log.info('Backend server is ready (health check passed)');
           if (!hasStarted) {
@@ -235,21 +277,11 @@ class ProcessManager {
   async startBackend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Kill any existing process on port 8000
-        try {
-          const { exec } = require('child_process');
-          await new Promise((killResolve) => {
-            exec('lsof -ti:8000 | xargs kill -9 2>/dev/null', (error) => {
-              // Ignore errors - it just means no process was using the port
-              if (!error) {
-                log.info('Killed existing process on port 8000');
-              }
-              killResolve();
-            });
-          });
-        } catch (e) {
-          // Ignore errors
-        }
+        // Find an available port for the backend
+        this.ports.backend = await this.findAvailablePort(8000, 8999);
+        log.info(`Backend will use port ${this.ports.backend}`);
+        
+        // No need to kill processes since we found an available port
         
         // Determine the backend executable path
         let backendPath;
@@ -275,17 +307,17 @@ class ProcessManager {
           if (fs.existsSync(pyinstallerBackend)) {
             // Use PyInstaller build (preferred for speed and reliability)
             backendPath = pyinstallerBackend;
-            backendArgs = ['server', '--no-color', '--json-logs'];  // Add JSON logging flag
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];  // Add port and JSON logging flag
             log.info('Using PyInstaller backend from python-server directory');
           } else if (fs.existsSync(legacyPyinstaller)) {
             // Fall back to legacy PyInstaller location
             backendPath = legacyPyinstaller;
-            backendArgs = ['server', '--no-color'];  // Add --no-color flag
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color'];  // Add port and --no-color flag
             log.info('Using PyInstaller backend from legacy location');
           } else if (fs.existsSync(pythonBundle)) {
             // Use Python bundle with launcher script (slowest but most flexible)
             backendPath = pythonBundle;
-            backendArgs = ['server', '--json-logs'];  // Add JSON logging flag
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--json-logs'];  // Add port and JSON logging flag
             log.info('Using Python bundle launcher');
           } else {
             // For production builds without bundled backend, 
@@ -308,8 +340,21 @@ class ProcessManager {
               return false;
             };
             
-            // Check if server is already running
-            checkHealth().then(isRunning => {
+            // Check if server is already running on the selected port
+            const checkExistingHealth = async () => {
+              try {
+                const response = await fetch(`http://127.0.0.1:${this.ports.backend}/health`); 
+                if (response.ok) {
+                  log.info(`Found existing backend server at port ${this.ports.backend}`);
+                  return true;
+                }
+              } catch (error) {
+                // Server not running
+              }
+              return false;
+            };
+            
+            checkExistingHealth().then(isRunning => {
               if (isRunning) {
                 resolve();
               } else {
@@ -325,7 +370,7 @@ class ProcessManager {
         } else {
           // In development, run with Python
           backendPath = 'uv';
-          backendArgs = ['run', 'python', path.join(__dirname, '..', 'server', 'main.py'), 'server', '--no-color'];  // Add --no-color flag
+          backendArgs = ['run', 'python', path.join(__dirname, '..', 'server', 'main.py'), 'server', '--server-port', String(this.ports.backend), '--no-color'];  // Add port and --no-color flag
         }
 
         log.info(`Starting backend: ${backendPath} ${backendArgs.join(' ')}`);
@@ -334,7 +379,7 @@ class ProcessManager {
         const env = { ...process.env };
         env.PYTHONUNBUFFERED = '1'; // Ensure Python output is not buffered
         env.HOST = '127.0.0.1';
-        env.PORT = '8000';
+        env.PORT = String(this.ports.backend);
 
         // Spawn the backend process
         this.processes.backend = spawn(backendPath, backendArgs, {
@@ -353,8 +398,11 @@ class ProcessManager {
   }
 
   async startFrontend() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
+        // Find an available port for the frontend
+        this.ports.frontend = await this.findAvailablePort(3000, 3999);
+        log.info(`Frontend will use port ${this.ports.frontend}`);
         // In production, the frontend should be served as static files
         // This method is mainly for development where Next.js dev server might be needed
         
@@ -391,7 +439,7 @@ class ProcessManager {
           try {
             this.processes.frontend = spawn('node', ['server.js'], {
               cwd: finalCwd,
-              env: { ...process.env, PORT: '3000', NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: 'localhost:8000' }
+              env: { ...process.env, PORT: String(this.ports.frontend), NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: `localhost:${this.ports.backend}` }
             });
             
             log.info(`Frontend process spawned with PID: ${this.processes.frontend.pid}`);
@@ -460,8 +508,8 @@ class ProcessManager {
         
         // Check if Next.js dev server is already running
         const http = require('http');
-        const req = http.get('http://localhost:3000', (res) => {
-          log.info('Frontend dev server is already running');
+        const req = http.get(`http://localhost:${this.ports.frontend}`, (res) => {
+          log.info(`Frontend dev server is already running on port ${this.ports.frontend}`);
           resolve();
         });
         
@@ -472,7 +520,7 @@ class ProcessManager {
           this.processes.frontend = spawn('pnpm', ['run', 'dev'], {
             cwd: frontendPath,
             shell: true,
-            env: { ...process.env, BROWSER: 'none' } // Prevent opening browser
+            env: { ...process.env, BROWSER: 'none', PORT: String(this.ports.frontend), BACKEND_HOST: `localhost:${this.ports.backend}` } // Prevent opening browser
           });
 
           this.processes.frontend.stdout.on('data', (data) => {

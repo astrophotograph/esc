@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose protected methods that allow the renderer process to use
 // specific Node.js and Electron functionalities in a safe way
@@ -11,6 +11,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     node: process.versions.node,
     chrome: process.versions.chrome,
     electron: process.versions.electron
+  },
+  
+  // Listen for menu actions
+  onMenuAction: (callback) => {
+    ipcRenderer.on('menu-action', (event, action) => {
+      callback(action);
+    });
+  },
+  
+  // Remove menu action listener
+  removeMenuActionListener: () => {
+    ipcRenderer.removeAllListeners('menu-action');
   }
 });
 

@@ -120,6 +120,7 @@ function createLoadingWindow() {
     frame: false,
     transparent: true,
     alwaysOnTop: true,
+    movable: true,  // Make the loading window moveable
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -176,8 +177,9 @@ function createWindow() {
     }, 500); // Small delay for smooth transition
   });
 
-  // Load the app - always connect to localhost:3000
-  const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+  // Load the app - use the dynamically assigned port
+  const frontendPort = processManager ? processManager.getPorts().frontend : 3000;
+  const startUrl = process.env.ELECTRON_START_URL || `http://localhost:${frontendPort}`;
   log.info(`Loading URL: ${startUrl}`);
   mainWindow.loadURL(startUrl);
 
@@ -362,7 +364,9 @@ function createMenu() {
         {
           label: 'Park Telescope',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'park-telescope');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('menu-action', 'park-telescope');
+            }
           }
         },
         { type: 'separator' },
@@ -407,14 +411,18 @@ function createMenu() {
           label: 'Toggle Overlay',
           accelerator: 'CmdOrCtrl+L',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'toggle-overlay');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('menu-action', 'toggle-overlay');
+            }
           }
         },
         {
           label: 'Toggle Annotations',
           accelerator: 'CmdOrCtrl+A',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'toggle-annotations');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('menu-action', 'toggle-annotations');
+            }
           }
         },
         { type: 'separator' },
@@ -440,20 +448,20 @@ function createMenu() {
         {
           label: 'Documentation',
           click: () => {
-            shell.openExternal('https://github.com/astrophotograph/alp-experimental/wiki');
+            shell.openExternal('https://github.com/erewhon/esc/wiki');
           }
         },
         {
           label: 'Report Issue',
           click: () => {
-            shell.openExternal('https://github.com/astrophotograph/alp-experimental/issues');
+            shell.openExternal('https://github.com/erewhon/esc/issues');
           }
         },
         { type: 'separator' },
         {
           label: 'About ESC',
           click: () => {
-            shell.openExternal('https://github.com/astrophotograph/alp-experimental');
+            shell.openExternal('https://github.com/erewhon/esc');
           }
         }
       ]
@@ -497,8 +505,7 @@ if (process.platform === 'darwin' && app.dock) {
     if (!icon.isEmpty()) {
       app.dock.setIcon(icon);
       log.info('Dock icon set early from:', iconPath);
-      // Force bounce to make icon visible
-      app.dock.bounce('informational');
+      // Removed icon bounce on startup
     }
   } catch (error) {
     log.error('Error setting early dock icon:', error);
@@ -625,6 +632,10 @@ app.whenReady().then(async () => {
         loadingWindow.webContents.send('loading-progress', 'Waiting for servers to initialize...');
       }
       
+      // Get the actual ports being used
+      const ports = processManager.getPorts();
+      log.info(`Using ports - Backend: ${ports.backend}, Frontend: ${ports.frontend}`);
+      
       // Initial delay before health checks to give servers time to start
       log.info('Waiting 5 seconds before starting health checks...');
       await new Promise(resolve => setTimeout(resolve, 5000));
@@ -640,10 +651,10 @@ app.whenReady().then(async () => {
       for (let i = 0; i < maxAttempts; i++) {
         try {
           // Check backend health
-          const backendResponse = await fetch('http://127.0.0.1:8000/health').catch(() => null);
-          // Check frontend (Next.js usually runs on 3000) - try a specific path
-          const frontendResponse = await fetch('http://127.0.0.1:3000/api/health').catch(() => null) || 
-                                    await fetch('http://127.0.0.1:3000').catch(() => null);
+          const backendResponse = await fetch(`http://127.0.0.1:${ports.backend}/health`).catch(() => null);
+          // Check frontend (Next.js) - try a specific path
+          const frontendResponse = await fetch(`http://127.0.0.1:${ports.frontend}/api/health`).catch(() => null) || 
+                                    await fetch(`http://127.0.0.1:${ports.frontend}`).catch(() => null);
           
           // For now, just check backend since frontend might not have a health endpoint
           // The frontend startup is already detected in processManager

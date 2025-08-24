@@ -32,6 +32,7 @@ import { useIsMobile } from "./hooks/use-mobile"
 import { catalogAPI } from "./services/catalog-api"
 import { DEFAULT_OBSERVER_LOCATION } from "./utils/celestial-calculations"
 import { ServerInitStatus } from "./components/ServerInitStatus"
+import { useElectronMenuActions } from "./hooks/useElectronMenuActions"
 
 function TelescopeControlContent() {
   const {
@@ -68,6 +69,9 @@ function TelescopeControlContent() {
 
   // Check if running in Electron
   const isElectron = typeof window !== 'undefined' && window.navigator.userAgent.includes('Electron')
+
+  // Set up Electron menu actions if running in Electron
+  useElectronMenuActions()
 
   // Set up keyboard event listeners
   useEffect(() => {

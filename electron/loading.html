@@ -125,7 +125,10 @@
             <div class="loader-bar"></div>
         </div>
         <div class="status" id="status">Initializing application...</div>
-        <div id="progress-log" style="margin-top: 20px; max-height: 100px; overflow-y: auto; font-size: 10px; color: #999; text-align: left; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; display: none;"></div>
+        <div style="margin-top: 10px;">
+            <button id="toggle-logs" onclick="toggleLogs()" style="padding: 4px 8px; background: rgba(255,255,255,0.1); color: #999; border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; font-size: 11px; display: none;">Show Logs ▼</button>
+        </div>
+        <div id="progress-log" style="margin-top: 10px; max-height: 100px; overflow-y: auto; font-size: 10px; color: #999; text-align: left; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; display: none;"></div>
         <div id="error-container" style="display: none; margin-top: 20px;">
             <div style="color: #ff4444; margin-bottom: 10px; font-size: 14px;" id="error-message"></div>
             <div style="display: flex; gap: 10px; justify-content: center;">
@@ -157,6 +160,7 @@
         let hasError = false;
         let startTime = Date.now();
         let timeoutTimer = null;
+        let logsExpanded = false;
         
         // Set a timeout for loading (90 seconds)
         function startTimeout() {
@@ -172,14 +176,99 @@
         // Start the timeout when page loads
         startTimeout();
         
+        function toggleLogs() {
+            const toggleBtn = document.getElementById('toggle-logs');
+            logsExpanded = !logsExpanded;
+            
+            if (logsExpanded) {
+                progressLog.style.display = 'block';
+                toggleBtn.textContent = 'Hide Logs ▲';
+            } else {
+                progressLog.style.display = 'none';
+                toggleBtn.textContent = 'Show Logs ▼';
+            }
+        }
+        
+        function parseServerLog(msg) {
+            // Try to parse JSON logs from the server
+            try {
+                // Look for JSON structure in the message
+                const jsonMatch = msg.match(/\{.*\}/);
+                if (jsonMatch) {
+                    const jsonData = JSON.parse(jsonMatch[0]);
+                    
+                    // Extract meaningful messages from JSON logs
+                    if (jsonData.message) {
+                        // Clean up common server messages
+                        let cleanMsg = jsonData.message;
+                        
+                        // Update main status for important messages
+                        if (cleanMsg.includes('Starting') || 
+                            cleanMsg.includes('WebSocket manager started') ||
+                            cleanMsg.includes('Database initialized') ||
+                            cleanMsg.includes('Application startup complete')) {
+                            statusElement.textContent = cleanMsg;
+                        }
+                        
+                        return cleanMsg;
+                    } else if (jsonData.event) {
+                        // Handle event-based messages
+                        switch(jsonData.event) {
+                            case 'server_started':
+                                statusElement.textContent = 'Backend server started successfully';
+                                return 'Server started';
+                            case 'startup_complete':
+                                statusElement.textContent = 'Application startup complete';
+                                return 'Startup complete';
+                            default:
+                                return jsonData.event;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Not JSON or parsing failed, use original message
+            }
+            
+            // For non-JSON messages, clean up common patterns
+            let cleanMsg = msg;
+            
+            // Remove timestamps
+            cleanMsg = cleanMsg.replace(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+\s*\|\s*/g, '');
+            
+            // Remove log levels
+            cleanMsg = cleanMsg.replace(/^(INFO|DEBUG|WARNING|ERROR)\s*\|\s*/i, '');
+            
+            // Update status for key messages
+            if (cleanMsg.includes('Uvicorn running on') || 
+                cleanMsg.includes('Server starting on')) {
+                statusElement.textContent = 'Backend server is running';
+            } else if (cleanMsg.includes('WebSocket manager started')) {
+                statusElement.textContent = 'WebSocket connections ready';
+            } else if (cleanMsg.includes('Discovering')) {
+                statusElement.textContent = 'Discovering telescopes on network...';
+            } else if (cleanMsg.includes('Frontend server is ready')) {
+                statusElement.textContent = 'User interface ready';
+            }
+            
+            return cleanMsg.trim();
+        }
+        
         function addProgressMessage(msg) {
-            progressMessages.push(msg);
-            if (progressMessages.length > 10) {
+            // Parse the message for better display
+            const parsedMsg = parseServerLog(msg);
+            
+            progressMessages.push(parsedMsg);
+            if (progressMessages.length > 20) {
                 progressMessages.shift();
             }
             progressLog.innerHTML = progressMessages.join('<br>');
-            progressLog.style.display = 'block';
-            progressLog.scrollTop = progressLog.scrollHeight;
+            
+            // Show the toggle button once we have messages
+            document.getElementById('toggle-logs').style.display = 'inline-block';
+            
+            if (logsExpanded) {
+                progressLog.scrollTop = progressLog.scrollHeight;
+            }
         }
         
         function showError(error) {
