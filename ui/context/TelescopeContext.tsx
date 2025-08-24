@@ -356,6 +356,7 @@ const TelescopeContext = createContext<TelescopeContextType | undefined>(undefin
 export function TelescopeProvider({ children }: { children: ReactNode }) {
   // Telescope Management State
   const [telescopes, setTelescopes] = useState<TelescopeInfo[]>([])
+  const hasAutoSelected = useRef(false) // Track if we've auto-selected a telescope
 
   // Remote Controller Management State
   const [remoteControllers, setRemoteControllers] = useState<RemoteController[]>([])
@@ -1954,6 +1955,22 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
           const updated = transformedTelescopes.find(t => t.id === currentTelescope.id)
           if (updated) {
             setCurrentTelescope(updated)
+          }
+        } else if (!hasAutoSelected.current) {
+          // Auto-select the first active real telescope if no telescope is selected
+          // Only do this once on initial load
+          // Prioritize connected telescopes that are not simulators
+          const activeRealTelescope = transformedTelescopes.find(t => 
+            t.isConnected && 
+            t.status === 'online' && 
+            !t.name.toLowerCase().includes('simulator') &&
+            !t.name.toLowerCase().includes('simulated')
+          )
+          
+          if (activeRealTelescope) {
+            console.log('Auto-selecting active telescope:', activeRealTelescope.name)
+            selectTelescope(activeRealTelescope, false) // Don't show notification for auto-select
+            hasAutoSelected.current = true
           }
         }
       }
