@@ -55,8 +55,25 @@
     "entitlementsInherit": "build/entitlements.mac.plist"
   },
   "win": {
-    "target": "nsis",
-    "icon": "icons/icon.png"
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "icons/icon.png",
+    "publisherName": "ESC Team",
+    "certificateFile": null,
+    "certificatePassword": null
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "icons/icon.ico",
+    "uninstallerIcon": "icons/icon.ico",
+    "installerHeaderIcon": "icons/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   },
   "linux": {
     "target": "AppImage",

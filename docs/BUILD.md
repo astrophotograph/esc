@@ -1,13 +1,163 @@
-# ESC Build Documentation
+# Building ESC for Distribution
 
-This document describes the various build options for the ESC Electron application.
+This guide explains how to build and distribute the ESC application for different platforms.
 
-## Build Options Overview
+## Prerequisites
 
-The ESC application consists of three main components:
-1. **UI** - Next.js frontend (builds quickly)
-2. **Server** - Python backend (multiple build options)
-3. **Electron** - Desktop wrapper
+### All Platforms
+- Node.js 20+ and npm
+- Python 3.12+
+- uv (Python package manager)
+- Git
+
+### Platform-Specific
+
+**macOS:**
+- Xcode Command Line Tools
+- macOS 10.13+ for building
+- Apple Developer certificate (for signing, optional)
+
+**Windows:**
+- Windows 10/11
+- Visual Studio Build Tools or Visual Studio 2019+
+- Windows SDK
+
+**Linux:**
+- build-essential package
+- Various libraries: `libgtk-3-0`, `libnotify4`, `libnss3`, `libxss1`, `libxtst6`
+
+## Quick Build
+
+### Local Development Build
+
+```bash
+# Build for current platform
+./scripts/build-app.sh current
+```
+
+### Platform-Specific Builds
+
+```bash
+# macOS
+./scripts/build-app.sh mac
+
+# Windows
+./scripts/build-app.sh win
+
+# Linux
+./scripts/build-app.sh linux
+
+# All platforms (only works on macOS with Wine installed)
+./scripts/build-app.sh all
+```
+
+## Manual Build Process
+
+### 1. Build Frontend
+
+```bash
+cd ui
+npm ci --legacy-peer-deps
+npm run build
+```
+
+### 2. Bundle Python Backend
+
+```bash
+./scripts/bundle-python.sh
+```
+
+### 3. Build Electron App
+
+```bash
+cd electron
+npm ci
+npm run build:mac    # For macOS
+npm run build:win    # For Windows
+npm run build:linux  # For Linux
+```
+
+## Distribution
+
+### macOS
+
+The build produces:
+- **Universal App (x64 + arm64)**: `electron/dist/mac/ESC.app`
+- Can be distributed as:
+  - ZIP file (right-click → Compress)
+  - DMG (using `create-dmg` or similar tools)
+
+#### Code Signing (Optional)
+
+For distribution outside the Mac App Store:
+
+```bash
+# Sign the app
+codesign --deep --force --verbose --sign "Developer ID Application: Your Name" electron/dist/mac/ESC.app
+
+# Notarize (requires Apple Developer account)
+xcrun altool --notarize-app --file electron/dist/mac/ESC.zip --type osx --primary-bundle-id com.esc.app
+```
+
+### Windows
+
+The build produces:
+- **NSIS Installer**: `electron/dist/ESC Setup *.exe`
+- Includes auto-update support
+
+#### Code Signing (Optional)
+
+```powershell
+# Sign with certificate
+signtool sign /f certificate.pfx /p password /t http://timestamp.digicert.com electron/dist/*.exe
+```
+
+### Linux
+
+The build produces:
+- **AppImage**: `electron/dist/ESC-*.AppImage`
+- Universal, runs on most Linux distributions
+
+## GitHub Actions Automation
+
+### Automatic Builds
+
+The repository includes GitHub Actions workflow that automatically builds for all platforms.
+
+#### Trigger a Build
+
+1. **Via Git Tag:**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **Via GitHub UI:**
+   - Go to Actions tab
+   - Select "Build and Release" workflow
+   - Click "Run workflow"
+
+### Release Process
+
+1. **Create a version tag:**
+   ```bash
+   # Update version in package.json files first
+   git add .
+   git commit -m "Release v1.0.0"
+   git tag v1.0.0
+   git push origin main --tags
+   ```
+
+2. **GitHub Actions will:**
+   - Build for all platforms
+   - Create a draft release
+   - Upload artifacts
+
+3. **Finalize release:**
+   - Go to GitHub Releases
+   - Edit the draft release
+   - Add release notes
+   - Publish
 
 ## Server Build Options
 

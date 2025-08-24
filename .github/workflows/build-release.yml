@@ -1,0 +1,201 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'draft'
+        type: choice
+        options:
+          - draft
+          - prerelease
+          - release
+
+jobs:
+  build-ui:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Cache UI dependencies
+        uses: actions/cache@v3
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-ui-${{ hashFiles('ui/package-lock.json') }}
+          
+      - name: Install dependencies
+        working-directory: ui
+        run: npm ci --legacy-peer-deps
+        
+      - name: Build frontend
+        working-directory: ui
+        run: npm run build
+        
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: |
+            ui/.next/standalone
+            ui/.next/static
+
+  bundle-python:
+    name: Bundle Python Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          
+      - name: Bundle Python
+        run: ./scripts/bundle-python.sh
+        
+      - name: Copy catalog data
+        run: |
+          if [ -d "server/data" ]; then
+            cp -r server/data electron/python-bundle/
+          fi
+          
+      - name: Upload Python bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-bundle
+          path: electron/python-bundle
+
+  build-electron:
+    name: Build Electron App
+    needs: [build-ui, bundle-python]
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            platform: mac
+            artifact: mac-build
+          - os: windows-latest
+            platform: win
+            artifact: win-build
+          - os: ubuntu-latest
+            platform: linux
+            artifact: linux-build
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Download frontend build
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: ui/
+          
+      - name: Download Python bundle
+        uses: actions/download-artifact@v3
+        with:
+          name: python-bundle
+          path: electron/python-bundle
+          
+      - name: Cache Electron dependencies
+        uses: actions/cache@v3
+        with:
+          path: electron/node_modules
+          key: ${{ runner.os }}-electron-${{ hashFiles('electron/package-lock.json') }}
+          
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: npm ci
+        
+      - name: Build for ${{ matrix.platform }}
+        working-directory: electron
+        run: npm run build:${{ matrix.platform }}
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact }}
+          path: electron/dist/
+          
+  create-release:
+    name: Create Release
+    needs: build-electron
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Mac build
+        uses: actions/download-artifact@v3
+        with:
+          name: mac-build
+          path: dist/mac
+          
+      - name: Download Windows build
+        uses: actions/download-artifact@v3
+        with:
+          name: win-build
+          path: dist/win
+          
+      - name: Download Linux build
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-build
+          path: dist/linux
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: ${{ github.event.inputs.release_type == 'draft' }}
+          prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
+          files: |
+            dist/mac/*.dmg
+            dist/mac/*.zip
+            dist/win/*.exe
+            dist/linux/*.AppImage
+          body: |
+            ## ESC Release ${{ github.ref_name }}
+            
+            ### Installation
+            
+            **macOS:**
+            - Download the `.dmg` file for your architecture
+            - Open the DMG and drag ESC to Applications
+            
+            **Windows:**
+            - Download the `.exe` installer
+            - Run the installer and follow the prompts
+            
+            **Linux:**
+            - Download the `.AppImage` file
+            - Make it executable: `chmod +x ESC-*.AppImage`
+            - Run it: `./ESC-*.AppImage`
+            
+            ### Changes
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
