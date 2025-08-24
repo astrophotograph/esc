@@ -568,22 +568,20 @@ export function NetworkStatusOverlay() {
                 )}
                 
                 {/* Current Image Request Timing */}
-                {currentImageElapsed !== null && (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-cyan-400 animate-pulse" />
-                      <span className="text-muted-foreground">Current Request</span>
-                    </div>
-                    <span className={`font-mono ${
-                      (() => {
-                        const avgTime = localStreamStatus?.imaging_status?.avg_image_elapsed_ms || 1000;
-                        return currentImageElapsed > avgTime * 1.5 ? 'text-red-400 font-bold animate-pulse' : '';
-                      })()
-                    }`}>
-                      {Math.round(currentImageElapsed)}ms
-                    </span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 ${currentImageElapsed !== null ? 'text-cyan-400 animate-pulse' : 'text-gray-400'}`} />
+                    <span className="text-muted-foreground">Current Request</span>
                   </div>
-                )}
+                  <span className={`font-mono ${
+                    currentImageElapsed !== null && (() => {
+                      const avgTime = localStreamStatus?.imaging_status?.avg_image_elapsed_ms || 1000;
+                      return currentImageElapsed > avgTime * 1.5 ? 'text-red-400 font-bold animate-pulse' : '';
+                    })()
+                  }`}>
+                    {currentImageElapsed !== null ? `${Math.round(currentImageElapsed)}ms` : '—'}
+                  </span>
+                </div>
 
                 {/* Mini timing graph */}
                 {imageTimingHistory.length > 1 && (
