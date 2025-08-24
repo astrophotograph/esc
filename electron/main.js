@@ -448,20 +448,20 @@ function createMenu() {
         {
           label: 'Documentation',
           click: () => {
-            shell.openExternal('https://github.com/erewhon/esc/wiki');
+            shell.openExternal('https://github.com/astrophotograph/esc/wiki');
           }
         },
         {
           label: 'Report Issue',
           click: () => {
-            shell.openExternal('https://github.com/erewhon/esc/issues');
+            shell.openExternal('https://github.com/astrophotograph/esc/issues');
           }
         },
         { type: 'separator' },
         {
           label: 'About ESC',
           click: () => {
-            shell.openExternal('https://github.com/erewhon/esc');
+            shell.openExternal('https://github.com/astrophotograph/esc');
           }
         }
       ]
