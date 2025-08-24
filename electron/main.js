@@ -461,44 +461,128 @@ app.whenReady().then(async () => {
   });
 
   // Make startServices accessible globally for retry
-  const startServices = async function() {
+  startServicesFunc = async function() {
+    let backendStarted = false;
+    let frontendStarted = false;
+    
     try {
-      // Start backend server
+      // Start backend server with timeout
       log.info('Starting backend server...');
       if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.webContents.send('loading-status', 'Starting backend server...');
         loadingWindow.webContents.send('loading-progress', 'Initializing Python environment...');
       }
-      await processManager.startBackend();
+      
+      // Add timeout wrapper for backend
+      const backendTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Backend startup timed out after 20 seconds')), 20000)
+      );
+      
+      try {
+        await Promise.race([
+          processManager.startBackend(),
+          backendTimeout
+        ]);
+        backendStarted = true;
+        log.info('Backend started successfully');
+      } catch (error) {
+        log.error('Backend failed to start:', error);
+        throw new Error(`Backend failed to start: ${error.message}`);
+      }
 
-      // Start frontend
+      // Start frontend with timeout
       log.info('Starting frontend server...');
       if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.webContents.send('loading-status', 'Starting frontend server...');
         loadingWindow.webContents.send('loading-progress', 'Building Next.js application...');
       }
-      await processManager.startFrontend();
+      
+      // Add timeout wrapper for frontend
+      const frontendTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Frontend startup timed out after 20 seconds')), 20000)
+      );
+      
+      try {
+        await Promise.race([
+          processManager.startFrontend(),
+          frontendTimeout
+        ]);
+        frontendStarted = true;
+        log.info('Frontend started successfully');
+      } catch (error) {
+        log.error('Frontend failed to start:', error);
+        throw new Error(`Frontend failed to start: ${error.message}`);
+      }
 
-      // Wait a bit for servers to initialize
+      // Verify both servers are actually running
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-status', 'Verifying services...');
+        loadingWindow.webContents.send('loading-progress', 'Checking server health...');
+      }
+      
+      // Quick health check
+      let serversHealthy = false;
+      for (let i = 0; i < 10; i++) {
+        try {
+          // Check backend health
+          const backendResponse = await fetch('http://127.0.0.1:8000/health').catch(() => null);
+          // Check frontend (Next.js usually runs on 3000)
+          const frontendResponse = await fetch('http://127.0.0.1:3000').catch(() => null);
+          
+          if (backendResponse && frontendResponse) {
+            serversHealthy = true;
+            break;
+          }
+        } catch (e) {
+          // Ignore errors, we'll retry
+        }
+        
+        if (i < 9) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      if (!serversHealthy) {
+        throw new Error('Servers started but are not responding to health checks');
+      }
+
+      // Wait a bit for servers to fully initialize
       if (loadingWindow && !loadingWindow.isDestroyed()) {
         loadingWindow.webContents.send('loading-status', 'Loading application...');
-        loadingWindow.webContents.send('loading-progress', 'Establishing connections...');
+        loadingWindow.webContents.send('loading-progress', 'Services ready, opening main window...');
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Create main window
       createWindow();
     } catch (error) {
       log.error('Failed to start services:', error);
+      
+      // Try to clean up any partially started services
+      if (backendStarted || frontendStarted) {
+        log.info('Cleaning up partially started services...');
+        await processManager.stopAll().catch(e => log.error('Error during cleanup:', e));
+      }
+      
       if (loadingWindow && !loadingWindow.isDestroyed()) {
-        loadingWindow.webContents.send('loading-error', 
-          `Failed to start services: ${error.message || error}`);
+        let errorMessage = error.message || 'Unknown error occurred';
+        
+        // Add more helpful error messages
+        if (errorMessage.includes('Backend')) {
+          errorMessage += '\n\nThe Python server failed to start. This could be due to missing dependencies or a port conflict.';
+        } else if (errorMessage.includes('Frontend')) {
+          errorMessage += '\n\nThe Next.js server failed to start. This could be due to missing node modules or a build error.';
+        } else if (errorMessage.includes('health check')) {
+          errorMessage += '\n\nThe servers started but are not responding. There may be a configuration issue.';
+        }
+        
+        loadingWindow.webContents.send('loading-error', errorMessage);
       }
     }
   }
   
   // Start the services
-  startServices();
+  startServicesFunc();
 });
 
 app.on('activate', () => {
@@ -557,42 +641,30 @@ ipcMain.on('request-logs', (event, { type }) => {
   }
 });
 
+// Store startServices function globally so it can be accessed by IPC handlers
+let startServicesFunc = null;
+
 // Loading window IPC handlers
 ipcMain.on('retry-start', async () => {
   log.info('Retrying service startup...');
   if (processManager) {
     // Stop any running processes
-    await processManager.stopAll();
-    // Restart services - need to call this in the app ready context
-    const { app } = require('electron');
-    if (app.isReady()) {
-      // Re-initialize process manager and start services
-      processManager = new ProcessManager();
-      
-      // Re-register log listeners
-      processManager.addLogListener((type, message) => {
-        const logWindow = logWindows[type];
-        if (logWindow && !logWindow.isDestroyed()) {
-          logWindow.webContents.send('log-data', {
-            type,
-            text: message.text,
-            timestamp: message.timestamp
-          });
-        }
-        
-        // Send progress to loading window
-        if (loadingWindow && !loadingWindow.isDestroyed()) {
-          const text = message.text;
-          if (text.includes('Starting') || text.includes('Listening') || 
-              text.includes('Ready') || text.includes('Connected') ||
-              text.includes('server') || text.includes('INFO')) {
-            loadingWindow.webContents.send('loading-progress', text.substring(0, 100));
-          }
-        }
-      });
-      
-      // Start services again
-      startServices();
+    log.info('Stopping existing processes...');
+    await processManager.stopAll().catch(e => log.error('Error stopping processes:', e));
+    
+    // Wait a moment for processes to fully stop
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Call the stored startServices function if available
+    if (startServicesFunc && typeof startServicesFunc === 'function') {
+      log.info('Restarting services...');
+      startServicesFunc();
+    } else {
+      log.error('startServices function not available for retry');
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-error', 
+          'Unable to retry - please restart the application');
+      }
     }
   }
 });

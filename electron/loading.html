@@ -155,6 +155,22 @@
         const errorMessage = document.getElementById('error-message');
         let progressMessages = [];
         let hasError = false;
+        let startTime = Date.now();
+        let timeoutTimer = null;
+        
+        // Set a timeout for loading (30 seconds)
+        function startTimeout() {
+            clearTimeout(timeoutTimer);
+            timeoutTimer = setTimeout(() => {
+                if (!hasError) {
+                    const elapsed = Math.round((Date.now() - startTime) / 1000);
+                    showError(`Application startup timed out after ${elapsed} seconds. The servers may have failed to start.`);
+                }
+            }, 30000);
+        }
+        
+        // Start the timeout when page loads
+        startTimeout();
         
         function addProgressMessage(msg) {
             progressMessages.push(msg);
@@ -182,6 +198,8 @@
                 progressMessages = [];
                 progressLog.innerHTML = '';
                 statusElement.textContent = 'Retrying...';
+                startTime = Date.now();
+                startTimeout(); // Reset the timeout
             }
         }
         
