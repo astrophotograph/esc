@@ -1011,12 +1011,15 @@ class Controller:
                                             else:
                                                 imaging_status = {}
                                             
-                                            # Add current image request timing info
-                                            if tel.imaging.status.last_image_start_time and tel.imaging.status.is_fetching_images:
+                                            # Add current image request timing info (check if attributes exist)
+                                            if (hasattr(tel.imaging.status, 'last_image_start_time') and 
+                                                hasattr(tel.imaging.status, 'is_fetching_images') and
+                                                tel.imaging.status.last_image_start_time and 
+                                                tel.imaging.status.is_fetching_images):
                                                 # Image request is in flight - include start time
                                                 imaging_status["current_image_request_start_time"] = tel.imaging.status.last_image_start_time
                                             else:
-                                                # No image request in flight
+                                                # No image request in flight or attributes not available
                                                 imaging_status["current_image_request_start_time"] = None
                                             
                                             # Add imaging status to the main status dict
@@ -1301,12 +1304,15 @@ class Controller:
                                             else:
                                                 imaging_status = {}
                                             
-                                            # Add current image request timing info
-                                            if tel.imaging.status.last_image_start_time and tel.imaging.status.is_fetching_images:
+                                            # Add current image request timing info (check if attributes exist)
+                                            if (hasattr(tel.imaging.status, 'last_image_start_time') and 
+                                                hasattr(tel.imaging.status, 'is_fetching_images') and
+                                                tel.imaging.status.last_image_start_time and 
+                                                tel.imaging.status.is_fetching_images):
                                                 # Image request is in flight - include start time
                                                 imaging_status["current_image_request_start_time"] = tel.imaging.status.last_image_start_time
                                             else:
-                                                # No image request in flight
+                                                # No image request in flight or attributes not available
                                                 imaging_status["current_image_request_start_time"] = None
                                             
                                             # Add imaging status to the main status dict
