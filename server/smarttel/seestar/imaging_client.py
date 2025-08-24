@@ -368,11 +368,13 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
             if self.status.is_receiving_image:
                 # Skip this frame request since we're already receiving an image
                 self.status.skipped_frame += 1
-                logging.trace(f"Skipped frame request (already receiving image). Total skipped: {self.status.skipped_frame}")
+                logging.debug(f"Skipped frame request (already receiving image). Total skipped: {self.status.skipped_frame}")
             else:
                 # Only grab the frame if we're streaming in client and not currently receiving
-                logging.trace("Grabbing frame")
+                logging.debug("Grabbing frame")
                 await self.send(GetStackedImage(id=23))
+        else:
+            logging.debug(f"Got stack event; ignoring {event.state=} {self.status.is_fetching_images=}")
 
     async def _handle_client_mode(self, event: BaseEvent):
         if isinstance(event, InternalEvent):
