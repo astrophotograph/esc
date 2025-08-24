@@ -72,6 +72,8 @@ export function NetworkStatusOverlay() {
   const [cumulativeRotation, setCumulativeRotation] = useState(0)
   const previousRotationRef = useRef<number | null>(null)
   const [currentImageElapsed, setCurrentImageElapsed] = useState<number | null>(null)
+  const [stackEventIndices, setStackEventIndices] = useState<number[]>([])
+  const previousStackedFrameRef = useRef<number>(0)
   
   // State for collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -146,11 +148,30 @@ export function NetworkStatusOverlay() {
     if (contextStreamStatus) {
       setLocalStreamStatus(contextStreamStatus)
       
+      // Check for stack events (when stacked_frame count increases)
+      const currentStackedFrames = contextStreamStatus.status?.stacked_frame || 0
+      if (currentStackedFrames > previousStackedFrameRef.current) {
+        // A stack event occurred - mark it at the current position in history
+        setStackEventIndices(prev => {
+          const currentIndex = imageTimingHistory.length
+          // Keep only recent indices (matching the history length)
+          const recentIndices = prev.filter(idx => idx > currentIndex - 20)
+          return [...recentIndices, currentIndex]
+        })
+      }
+      previousStackedFrameRef.current = currentStackedFrames
+      
       // Update timing history if available (only positive values)
       if (contextStreamStatus.imaging_status?.last_image_elapsed_ms && 
           contextStreamStatus.imaging_status.last_image_elapsed_ms > 0) {
         setImageTimingHistory(prev => {
           const newHistory = [...prev.slice(-19), contextStreamStatus.imaging_status.last_image_elapsed_ms]
+          
+          // Adjust stack event indices when history shifts
+          setStackEventIndices(indices => 
+            indices.map(idx => idx - 1).filter(idx => idx >= 0)
+          )
+          
           return newHistory
         })
       }
@@ -164,7 +185,7 @@ export function NetworkStatusOverlay() {
         })
       }
     }
-  }, [contextStreamStatus])
+  }, [contextStreamStatus, imageTimingHistory.length])
 
   // Track cumulative rotation from balance sensor
   useEffect(() => {
@@ -606,8 +627,27 @@ export function NetworkStatusOverlay() {
 
                 {/* Mini timing graph */}
                 {imageTimingHistory.length > 1 && (
-                  <div className="h-12 bg-muted rounded p-1">
+                  <div className="h-12 bg-muted rounded p-1 relative">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      {/* Stack event markers */}
+                      {stackEventIndices.map((index, i) => {
+                        const x = (index / (imageTimingHistory.length - 1)) * 100
+                        return (
+                          <line
+                            key={`stack-${i}`}
+                            x1={x}
+                            y1="0"
+                            x2={x}
+                            y2="100"
+                            stroke="#10b981"
+                            strokeWidth="1"
+                            strokeOpacity="0.5"
+                            strokeDasharray="2,2"
+                          />
+                        )
+                      })}
+                      
+                      {/* Timing line */}
                       <polyline
                         fill="none"
                         stroke="#fbbf24"
@@ -622,6 +662,18 @@ export function NetworkStatusOverlay() {
                         }).join(' ')}
                       />
                     </svg>
+                    
+                    {/* Legend */}
+                    <div className="absolute top-0 right-0 flex items-center gap-2 text-[10px] bg-background/80 px-1 rounded">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        <span className="text-muted-foreground">Time</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-0.5 bg-green-400"></div>
+                        <span className="text-muted-foreground">Stack</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
