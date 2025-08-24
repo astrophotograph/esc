@@ -84,8 +84,8 @@ def setup_logging(
 def setup_component_logging():
     """Set up specific logging for different components."""
     # Create separate log files for critical components
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
+    from .app_dirs import get_writable_dir
+    log_dir = get_writable_dir("logs", fallback=Path("logs"))
     
     # Telescope communication logs
     logger.add(

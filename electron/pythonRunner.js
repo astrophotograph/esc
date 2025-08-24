@@ -98,7 +98,7 @@ class PythonRunner {
             log.warn('Python backend startup timeout - proceeding anyway');
             resolve();
           }
-        }, 30000); // 30 second timeout
+        }, 85000); // 85 second timeout
         
       } catch (error) {
         log.error('Error starting Python backend:', error);
