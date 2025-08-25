@@ -293,11 +293,13 @@ class ProcessManager {
           const resourcesPath = process.resourcesPath;
           const bundlePath = path.join(resourcesPath, 'python-bundle');
           
-          // Check for embedded Python bundle (primary option for Windows)
-          const embeddedPythonExe = path.join(bundlePath, 'python-embed', 'python.exe');
-          const windowsBatch = path.join(bundlePath, 'esc-server.exe.bat');
-          const windowsBatch2 = path.join(bundlePath, 'esc-server.bat');
+          // Check for uv-based launchers (primary option)
+          const windowsBatch = path.join(bundlePath, 'esc-server.bat');
+          const windowsPowerShell = path.join(bundlePath, 'esc-server.ps1');
           const unixScript = path.join(bundlePath, 'esc-server.sh');
+          
+          // Check for embedded Python (legacy)
+          const embeddedPythonExe = path.join(bundlePath, 'python-embed', 'python.exe');
           
           // Check for PyInstaller builds (fallback)
           let pyinstallerBackend;
@@ -314,28 +316,21 @@ class ProcessManager {
           }
           
           // Determine which backend to use
-          if (process.platform === 'win32' && fs.existsSync(embeddedPythonExe)) {
-            // Use embedded Python on Windows (most reliable)
-            if (fs.existsSync(windowsBatch)) {
-              backendPath = windowsBatch;
-            } else if (fs.existsSync(windowsBatch2)) {
-              backendPath = windowsBatch2;
-            } else {
-              // Direct Python execution
-              backendPath = embeddedPythonExe;
-              backendArgs = [path.join(bundlePath, 'main.py'), 'server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            }
-            
-            if (backendPath !== embeddedPythonExe) {
-              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            }
-            
-            log.info('Using embedded Python backend for Windows');
+          if (process.platform === 'win32' && fs.existsSync(windowsBatch)) {
+            // Use uv-based launcher on Windows (primary)
+            backendPath = windowsBatch;
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            log.info('Using uv-based launcher for Windows');
           } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
             // Use shell script launcher on Unix
             backendPath = unixScript;
             backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            log.info('Using embedded Python backend with shell launcher');
+            log.info('Using uv-based launcher for Unix');
+          } else if (process.platform === 'win32' && fs.existsSync(embeddedPythonExe)) {
+            // Fall back to embedded Python on Windows
+            backendPath = embeddedPythonExe;
+            backendArgs = [path.join(bundlePath, 'main.py'), 'server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            log.info('Using embedded Python backend for Windows');
           } else if (fs.existsSync(pyinstallerBackend)) {
             // Fall back to PyInstaller build
             backendPath = pyinstallerBackend;

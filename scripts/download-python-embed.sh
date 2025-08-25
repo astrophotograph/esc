@@ -69,6 +69,16 @@ if %ERRORLEVEL% EQU 0 (
 )
 EOF
 
+# If we're in CI or can run Windows commands via Wine, try to install pip
+if [ -n "$CI" ] || command -v wine &> /dev/null; then
+    echo "🔧 Attempting to install pip in embedded Python..."
+    if command -v wine &> /dev/null; then
+        cd python-embed
+        wine python.exe get-pip.py --no-warn-script-location 2>/dev/null || true
+        cd ..
+    fi
+fi
+
 # Create a batch script to install requirements
 cat > "install-requirements.bat" << 'EOF'
 @echo off
