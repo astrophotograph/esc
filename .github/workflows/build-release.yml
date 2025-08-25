@@ -105,8 +105,14 @@ jobs:
         if: runner.os == 'macOS'
         working-directory: server
         run: |
+          # Check if data directory exists
+          DATA_ARG=""
+          if [ -d "data" ]; then
+            DATA_ARG="--add-data data:data"
+          fi
+          
           uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm \
-            --add-data "data:data" \
+            $DATA_ARG \
             --collect-all pydash \
             --collect-all tzlocal \
             --collect-all smarttel \
@@ -157,9 +163,15 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: server
         run: |
+          # Check if data directory exists
+          DATA_ARG=""
+          if [ -d "data" ]; then
+            DATA_ARG="--add-data data:data"
+          fi
+          
           # Use folder mode for Linux to avoid size limitations
           uv run pyinstaller --onedir --name esc-server --console --clean --noconfirm \
-            --add-data "data:data" \
+            $DATA_ARG \
             --collect-all pydash \
             --collect-all tzlocal \
             --collect-all smarttel \
@@ -210,8 +222,14 @@ jobs:
         if: runner.os == 'Windows'
         working-directory: server
         run: |
+          # Check if data directory exists (PowerShell syntax)
+          $dataArg = ""
+          if (Test-Path "data") {
+            $dataArg = "--add-data `"data;data`""
+          }
+          
           uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm `
-            --add-data "data;data" `
+            $dataArg `
             --collect-all pydash `
             --collect-all tzlocal `
             --collect-all smarttel `

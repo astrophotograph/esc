@@ -43,7 +43,17 @@ echo "Platform: $OSTYPE"
 echo "Build mode: $ONEFILE"
 echo ""
 
-# Run PyInstaller with all the flags we use in CI
+# Check if data directory exists and add it if it does
+DATA_ARG=""
+if [ -d "$SERVER_DIR/data" ]; then
+    echo "📚 Found data directory, will include in build"
+    DATA_ARG="--add-data ${SERVER_DIR}/data${DATA_SEP}data"
+else
+    echo "📝 No data directory found, skipping"
+fi
+
+# Run PyInstaller with all the flags we use in CI (run from server dir)
+cd "$SERVER_DIR"
 uv run pyinstaller $ONEFILE \
     --name esc-server \
     --console \
@@ -52,7 +62,7 @@ uv run pyinstaller $ONEFILE \
     --distpath "$TEST_BUILD_DIR/dist" \
     --workpath "$TEST_BUILD_DIR/build" \
     --specpath "$TEST_BUILD_DIR" \
-    --add-data "data${DATA_SEP}data" \
+    $DATA_ARG \
     --collect-all pydash \
     --collect-all tzlocal \
     --collect-all smarttel \
