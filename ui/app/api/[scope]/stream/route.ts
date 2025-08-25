@@ -1,5 +1,5 @@
 import {NextRequest} from 'next/server'
-// import {getBackendBaseUrl} from "@/lib/telescopes"
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -161,7 +161,7 @@ function buildStreamUrl(scope: string, streamType: string): string | null {
   // Get telescope host from scope - in production this would come from telescope configuration
   // For now, assume scope contains the telescope identifier
   // Use direct backend URL to avoid circular proxy calls
-  const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+  const backendBaseUrl = getBackendUrl()
 
   switch (streamType) {
     case 'video':

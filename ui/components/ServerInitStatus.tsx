@@ -6,6 +6,7 @@ import { Loader2, CheckCircle, AlertCircle, Server, Database, Search, Telescope,
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { getBackendUrl } from "@/lib/backend-config"
 
 interface InitializationStep {
   stage: string
@@ -64,7 +65,7 @@ export function ServerInitStatus() {
     
     // Use the backend server directly for WebSocket connections
     // In production, this should be configured via environment variable
-    const backendHost = process.env.NEXT_PUBLIC_BACKEND_HOST || 'localhost:8000'
+    const backendHost = getBackendUrl().replace('http://', '')
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${wsProtocol}//${backendHost}/api/ws`
     let ws: WebSocket | null = null

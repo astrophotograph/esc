@@ -7,6 +7,7 @@
  */
 
 import { EventEmitter } from 'events'
+import { getBackendUrl } from '@/lib/backend-config'
 
 // WebSocket message types (matching backend protocol)
 export enum MessageType {
@@ -390,7 +391,7 @@ export class WebSocketService extends EventEmitter {
       backendHost = `${hostname}:8000`
     } else if (!backendHost) {
       // Fallback for server-side rendering
-      backendHost = 'localhost:8000'
+      backendHost = getBackendUrl().replace('http://', '')
     }
     
     const defaultWsUrl = typeof window !== 'undefined' ?

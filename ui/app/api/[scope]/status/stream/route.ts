@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createSafeTransformStream, checkMemoryPressure } from '@/lib/stream-utils';
 import { getConnectionPool } from '@/lib/connection-pool';
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest,
       );
     }
     // Use direct backend URL to avoid circular proxy calls
-    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const backendBaseUrl = process.env.BACKEND_URL || getBackendUrl();
     const statusStreamUrl = `${backendBaseUrl}/api/telescopes/${scope}/status/stream`;
 
     console.log(`Proxying SSE status stream for ${scope}: ${statusStreamUrl}`);

@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { spawn, fork } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const log = require('electron-log');
@@ -397,16 +397,23 @@ class ProcessManager {
               return false;
             };
             
-            // Check if server is already running on the selected port
+            // Check if server is already running on the selected port with retries
             const checkExistingHealth = async () => {
-              try {
-                const response = await fetch(`http://127.0.0.1:${this.ports.backend}/health`); 
-                if (response.ok) {
-                  log.info(`Found existing backend server at port ${this.ports.backend}`);
-                  return true;
+              // Try multiple times with a delay
+              for (let i = 0; i < 10; i++) {
+                try {
+                  const response = await fetch(`http://127.0.0.1:${this.ports.backend}/health`); 
+                  if (response.ok) {
+                    log.info(`Found existing backend server at port ${this.ports.backend}`);
+                    return true;
+                  }
+                } catch (error) {
+                  // Server not running yet, wait and retry
+                  if (i < 9) {
+                    log.info(`Backend health check attempt ${i + 1}/10 failed, retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                  }
                 }
-              } catch (error) {
-                // Server not running
               }
               return false;
             };
@@ -415,7 +422,8 @@ class ProcessManager {
               if (isRunning) {
                 resolve();
               } else {
-                // If not running, we can't start it from the sandboxed app
+                // If not running after retries, we can't start it from the sandboxed app
+                log.error('Backend server is not responding after 10 attempts. Please start it manually.');
                 reject(new Error('Backend server is not running. Please start it manually.'));
               }
             }).catch(error => {
@@ -493,10 +501,26 @@ class ProcessManager {
           log.info(`Starting Node.js server from ${finalServerPath}`);
           
           try {
-            this.processes.frontend = spawn('node', ['server.js'], {
-              cwd: finalCwd,
-              env: { ...process.env, PORT: String(this.ports.frontend), NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: `localhost:${this.ports.backend}` }
-            });
+            // Use Electron's node through electron.fork or use execPath
+            const nodeExecutable = process.execPath;
+            
+            // Check if we can use fork (preferred for Node.js scripts)
+            if (process.versions.electron) {
+              // We're in Electron, use fork which uses Electron's built-in Node
+              log.info('Using Electron\'s built-in Node.js via fork()');
+              this.processes.frontend = fork(finalServerPath, [], {
+                cwd: finalCwd,
+                env: { ...process.env, PORT: String(this.ports.frontend), NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: `localhost:${this.ports.backend}` },
+                silent: true // Capture stdout/stderr
+              });
+            } else {
+              // Fallback to spawn with node
+              log.info('Using spawn with node (fallback)');
+              this.processes.frontend = spawn('node', ['server.js'], {
+                cwd: finalCwd,
+                env: { ...process.env, PORT: String(this.ports.frontend), NODE_ENV: 'production', HOSTNAME: 'localhost', BACKEND_HOST: `localhost:${this.ports.backend}` }
+              });
+            }
             
             log.info(`Frontend process spawned with PID: ${this.processes.frontend.pid}`);
           } catch (error) {

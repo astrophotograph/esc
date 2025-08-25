@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export async function DELETE(request: NextRequest, { params }: { params: { file_id: string } }) {
   try {
     const { file_id } = params
 
     // Forward request to Python backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendUrl = process.env.BACKEND_URL || getBackendUrl()
     const response = await fetch(`${backendUrl}/api/processing/persisted-files/${file_id}`, {
       method: 'DELETE',
       headers: {

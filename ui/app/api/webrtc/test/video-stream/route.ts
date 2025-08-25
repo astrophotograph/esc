@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
+import {getBackendUrl} from '@/lib/backend-config'
 // import { getBackendBaseUrl } from '../../../../../lib/telescopes';
 
 export async function GET(_request: NextRequest) {
   // Use direct backend URL to avoid circular proxy calls
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = process.env.BACKEND_URL || getBackendUrl();
   const targetUrl = `${backendUrl}/api/webrtc/test/video-stream`;
   
   console.log('Proxying test video stream request to:', targetUrl);

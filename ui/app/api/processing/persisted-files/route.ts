@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export async function GET(_request: NextRequest) {
   try {
     // Forward request to Python backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendUrl = process.env.BACKEND_URL || getBackendUrl()
     const response = await fetch(`${backendUrl}/api/processing/persisted-files`, {
       method: 'GET',
       headers: {

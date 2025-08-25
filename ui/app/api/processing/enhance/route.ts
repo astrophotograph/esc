@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const maxDuration = 60 // 60 seconds timeout for processing
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward to Python backend for enhancement processing
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || getBackendUrl()
     const backendResponse = await fetch(`${backendUrl}/api/processing/enhance`, {
       method: 'POST',
       headers: {

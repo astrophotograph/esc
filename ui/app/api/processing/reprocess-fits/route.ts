@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward request to Python backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || getBackendUrl()
     const response = await fetch(`${backendUrl}/api/processing/reprocess-fits`, {
       method: 'POST',
       headers: {

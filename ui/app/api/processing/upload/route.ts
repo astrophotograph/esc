@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const maxDuration = 60 // 60 seconds timeout for large file uploads
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer)
 
     // Forward to Python backend for FITS processing
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || getBackendUrl()
     const backendFormData = new FormData()
     backendFormData.append('file', new Blob([buffer], { type: 'application/octet-stream' }), file.name)
 

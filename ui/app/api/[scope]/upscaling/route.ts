@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -23,7 +24,7 @@ export async function GET(
 ) {
   try {
     const { scope } = await params
-    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendBaseUrl = process.env.BACKEND_URL || getBackendUrl()
     
     // Proxy request to backend
     const backendUrl = `${backendBaseUrl}/api/${scope}/upscaling`
@@ -71,7 +72,7 @@ export async function POST(
   try {
     const { scope } = await params
     const body = await req.json()
-    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendBaseUrl = process.env.BACKEND_URL || getBackendUrl()
     
     // Proxy request to backend
     const backendUrl = `${backendBaseUrl}/api/${scope}/upscaling`

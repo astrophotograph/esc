@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import {getBackendUrl} from '@/lib/backend-config'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Use backend URL to proxy to Python server
-    const backendBaseUrl = process.env.BACKEND_URL || process.env.LOCAL_API || 'http://localhost:8000';
+    const backendBaseUrl = process.env.BACKEND_URL || process.env.LOCAL_API || getBackendUrl();
     const starmapUrl = `${backendBaseUrl}/api/starmap?ra=${ra}&dec=${dec}&width=${width}&height=${height}`;
 
     console.log(`Proxying starmap request: ${starmapUrl}`);

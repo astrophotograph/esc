@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getBackendUrl } from '@/lib/backend-config';
 import { 
   getWebSocketService,
   CommandAction, 
@@ -120,7 +121,7 @@ export function useTelescopeWebSocket(
         }
         
         // Fallback for server-side rendering
-        return 'ws://localhost:8000';
+        return getBackendUrl().replace('http://', 'ws://');
       };
 
       wsServiceRef.current = getWebSocketService({
