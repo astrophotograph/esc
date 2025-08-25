@@ -120,6 +120,21 @@ jobs:
             --collect-all netifaces \
             --collect-all click \
             --collect-all appdirs \
+            --collect-all numpy \
+            --collect-submodules cv2 \
+            --collect-submodules PIL \
+            --collect-submodules skimage \
+            --collect-all aiortc \
+            --collect-all aiosqlite \
+            --collect-all websockets \
+            --hidden-import numpy.typing \
+            --hidden-import numpy._typing \
+            --hidden-import cv2 \
+            --hidden-import PIL._imaging \
+            --hidden-import skimage.filters \
+            --hidden-import skimage.restoration \
+            --hidden-import skimage.exposure \
+            --hidden-import skimage.util \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops \
             --hidden-import uvicorn.loops.auto \
@@ -158,6 +173,21 @@ jobs:
             --collect-all netifaces \
             --collect-all click \
             --collect-all appdirs \
+            --collect-all numpy \
+            --collect-submodules cv2 \
+            --collect-submodules PIL \
+            --collect-submodules skimage \
+            --collect-all aiortc \
+            --collect-all aiosqlite \
+            --collect-all websockets \
+            --hidden-import numpy.typing \
+            --hidden-import numpy._typing \
+            --hidden-import cv2 \
+            --hidden-import PIL._imaging \
+            --hidden-import skimage.filters \
+            --hidden-import skimage.restoration \
+            --hidden-import skimage.exposure \
+            --hidden-import skimage.util \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops \
             --hidden-import uvicorn.loops.auto \
