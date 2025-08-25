@@ -55,9 +55,22 @@ jobs:
             ui/.next/standalone
             ui/.next/static
 
-  bundle-python:
-    name: Bundle Python Backend
-    runs-on: ubuntu-latest
+  build-python:
+    name: Build Python Backend
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact: python-linux
+          - os: windows-latest
+            platform: windows
+            artifact: python-windows
+          - os: macos-latest
+            platform: macos
+            artifact: python-macos
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       
@@ -66,29 +79,64 @@ jobs:
         with:
           python-version: '3.12'
           
-      - name: Install uv
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          
+      - name: Install uv (Unix)
+        if: runner.os != 'Windows'
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           
-      - name: Bundle Python
-        run: ./scripts/bundle-python.sh
-        
-      - name: Copy catalog data
+      - name: Install uv (Windows)
+        if: runner.os == 'Windows'
         run: |
-          if [ -d "server/data" ]; then
-            cp -r server/data electron/python-bundle/
-          fi
+          irm https://astral.sh/uv/install.ps1 | iex
+          echo "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+      - name: Install Python dependencies
+        working-directory: server
+        run: |
+          uv sync
+          
+      - name: Build with PyInstaller (Unix)
+        if: runner.os != 'Windows'
+        working-directory: server
+        run: |
+          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm --add-data "data:data" --hidden-import tzlocal --hidden-import pydash --hidden-import smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          
+      - name: Build with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        working-directory: server
+        run: |
+          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm --add-data "data;data" --hidden-import tzlocal --hidden-import pydash --hidden-import smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          
+      - name: Create bundle directory
+        run: |
+          mkdir -p electron/python-bundle
+          
+      - name: Copy executable (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp server/dist/esc-server electron/python-bundle/
+          chmod +x electron/python-bundle/esc-server
+          
+      - name: Copy executable (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Copy-Item server\dist\esc-server.exe electron\python-bundle\
           
       - name: Upload Python bundle
         uses: actions/upload-artifact@v4
         with:
-          name: python-bundle
+          name: ${{ matrix.artifact }}
           path: electron/python-bundle
 
   build-electron:
     name: Build Electron App
-    needs: [build-ui, bundle-python]
+    needs: [build-ui, build-python]
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
@@ -96,12 +144,15 @@ jobs:
           - os: macos-latest
             platform: mac
             artifact: mac-build
+            python-artifact: python-macos
           - os: windows-latest
             platform: win
             artifact: win-build
+            python-artifact: python-windows
           - os: ubuntu-latest
             platform: linux
             artifact: linux-build
+            python-artifact: python-linux
     
     runs-on: ${{ matrix.os }}
     
@@ -127,7 +178,7 @@ jobs:
       - name: Download Python bundle
         uses: actions/download-artifact@v4
         with:
-          name: python-bundle
+          name: ${{ matrix.python-artifact }}
           path: electron/python-bundle
           
       - name: Cache Electron dependencies

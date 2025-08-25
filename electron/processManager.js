@@ -292,34 +292,35 @@ class ProcessManager {
           // In production, check for different backend builds
           const resourcesPath = process.resourcesPath;
           
-          // PyInstaller build (primary option)
+          // PyInstaller build in python-bundle (primary option)
           const pyinstallerBackend = process.platform === 'win32' 
+            ? path.join(resourcesPath, 'python-bundle', 'esc-server.exe')
+            : path.join(resourcesPath, 'python-bundle', 'esc-server');
+          
+          // Legacy locations for backwards compatibility
+          const legacyPyinstaller1 = process.platform === 'win32' 
             ? path.join(resourcesPath, 'python-server', 'esc-server.exe')
             : path.join(resourcesPath, 'python-server', 'esc-server');
-          
-          // Python bundle with launcher script (fallback)
-          const pythonBundle = path.join(resourcesPath, 'python-bundle', 'launch.sh');
-          
-          // Legacy location for PyInstaller
-          const legacyPyinstaller = process.platform === 'win32' 
+            
+          const legacyPyinstaller2 = process.platform === 'win32' 
             ? path.join(resourcesPath, 'server', 'main.exe')
             : path.join(resourcesPath, 'server', 'main');
           
           if (fs.existsSync(pyinstallerBackend)) {
-            // Use PyInstaller build (preferred for speed and reliability)
+            // Use PyInstaller build from python-bundle (preferred)
             backendPath = pyinstallerBackend;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];  // Add port and JSON logging flag
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            log.info('Using PyInstaller backend from python-bundle directory');
+          } else if (fs.existsSync(legacyPyinstaller1)) {
+            // Fall back to python-server location
+            backendPath = legacyPyinstaller1;
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
             log.info('Using PyInstaller backend from python-server directory');
-          } else if (fs.existsSync(legacyPyinstaller)) {
-            // Fall back to legacy PyInstaller location
-            backendPath = legacyPyinstaller;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color'];  // Add port and --no-color flag
-            log.info('Using PyInstaller backend from legacy location');
-          } else if (fs.existsSync(pythonBundle)) {
-            // Use Python bundle with launcher script (slowest but most flexible)
-            backendPath = pythonBundle;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--json-logs'];  // Add port and JSON logging flag
-            log.info('Using Python bundle launcher');
+          } else if (fs.existsSync(legacyPyinstaller2)) {
+            // Fall back to legacy server location
+            backendPath = legacyPyinstaller2;
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color'];
+            log.info('Using PyInstaller backend from legacy server directory');
           } else {
             // For production builds without bundled backend, 
             // we need the user to have the server running separately

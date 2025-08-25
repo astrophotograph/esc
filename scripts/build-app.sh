@@ -16,17 +16,19 @@ cd "$PROJECT_ROOT/ui"
 pnpm install --frozen-lockfile
 pnpm run build
 
-# Step 2: Bundle Python backend
-echo "🐍 Bundling Python backend..."
+# Step 2: Build Python backend with PyInstaller
+echo "🐍 Building Python backend..."
 cd "$PROJECT_ROOT"
-./scripts/bundle-python.sh
-
-# Step 3: Copy catalog data to bundle
-echo "📚 Copying catalog data..."
-if [ -d "$PROJECT_ROOT/server/data" ]; then
-    cp -r "$PROJECT_ROOT/server/data" "$PROJECT_ROOT/electron/python-bundle/"
+if [ -f "./scripts/build-server-pyinstaller.sh" ]; then
+    ./scripts/build-server-pyinstaller.sh
 else
-    echo "⚠️  Warning: Catalog data not found at server/data"
+    # Fallback to old bundle method if new script doesn't exist
+    ./scripts/bundle-python.sh
+    # Copy catalog data to bundle
+    echo "📚 Copying catalog data..."
+    if [ -d "$PROJECT_ROOT/server/data" ]; then
+        cp -r "$PROJECT_ROOT/server/data" "$PROJECT_ROOT/electron/python-bundle/"
+    fi
 fi
 
 # Step 4: Build Electron app
