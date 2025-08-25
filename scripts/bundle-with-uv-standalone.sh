@@ -51,12 +51,15 @@ download_uv() {
         return 1
     fi
     
-    # Extract if it's a zip file
+    # Extract if it's a zip file  
     if [[ "$output" == *.zip ]]; then
         unzip -q -o "$output" -d "$BUNDLE_DIR/bin"
         rm "$output"
     elif [[ "$output" == *.tar.gz ]]; then
+        # Extract directly to bin/ - the tar files already contain the correct subdirectory structure
         tar -xzf "$output" -C "$BUNDLE_DIR/bin"
+        # Make the binaries executable
+        find "$BUNDLE_DIR/bin" -name "uv" -type f -exec chmod +x {} \;
         rm "$output"
     fi
 }

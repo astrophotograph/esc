@@ -334,6 +334,24 @@ class ProcessManager {
               backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
               log.info('Using standalone uv launcher for Windows (Python will be auto-installed if needed)');
             } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
+              // Ensure the script has execute permissions on Unix systems
+              try {
+                fs.chmodSync(unixScript, '755');
+                log.info(`Set execute permissions on ${unixScript}`);
+              } catch (chmodError) {
+                log.warn(`Could not set execute permissions on ${unixScript}:`, chmodError);
+              }
+              
+              // Also ensure uv binary has execute permissions
+              if (fs.existsSync(uvBinary)) {
+                try {
+                  fs.chmodSync(uvBinary, '755');
+                  log.info(`Set execute permissions on ${uvBinary}`);
+                } catch (chmodError) {
+                  log.warn(`Could not set execute permissions on ${uvBinary}:`, chmodError);
+                }
+              }
+              
               backendPath = unixScript;
               backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
               log.info('Using standalone uv launcher for Unix (Python will be auto-installed if needed)');
@@ -345,6 +363,16 @@ class ProcessManager {
             log.info('Using embedded Python backend for Windows');
           } else if (fs.existsSync(pyinstallerBackend)) {
             // Fall back to PyInstaller build
+            // Ensure execute permissions on Unix systems
+            if (process.platform !== 'win32') {
+              try {
+                fs.chmodSync(pyinstallerBackend, '755');
+                log.info(`Set execute permissions on ${pyinstallerBackend}`);
+              } catch (chmodError) {
+                log.warn(`Could not set execute permissions on ${pyinstallerBackend}:`, chmodError);
+              }
+            }
+            
             backendPath = pyinstallerBackend;
             backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
             log.info('Using PyInstaller backend');
