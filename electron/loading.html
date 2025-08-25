@@ -130,9 +130,10 @@
         </div>
         <div id="progress-log" style="margin-top: 10px; max-height: 100px; overflow-y: auto; font-size: 10px; color: #999; text-align: left; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; display: none;"></div>
         <div id="error-container" style="display: none; margin-top: 20px;">
-            <div style="color: #ff4444; margin-bottom: 10px; font-size: 14px;" id="error-message"></div>
-            <div style="display: flex; gap: 10px; justify-content: center;">
+            <div style="color: #ff4444; margin-bottom: 10px; font-size: 14px; white-space: pre-line;" id="error-message"></div>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;" id="error-buttons">
                 <button onclick="retryStart()" style="padding: 8px 16px; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                <button id="force-kill-btn" onclick="forceKillPorts()" style="padding: 8px 16px; background: #ff8800; color: white; border: none; border-radius: 4px; cursor: pointer; display: none;">Force Close Ports</button>
                 <button onclick="viewLogs()" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">View Logs</button>
                 <button onclick="exitApp()" style="padding: 8px 16px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Exit</button>
             </div>
@@ -276,6 +277,14 @@
             errorMessage.textContent = error;
             errorContainer.style.display = 'block';
             document.querySelector('.loader').style.display = 'none';
+            
+            // Show force kill button if it's a port conflict error
+            const forceKillBtn = document.getElementById('force-kill-btn');
+            if (error.includes('ports are already in use') || error.includes('Port') && error.includes('already in use')) {
+                forceKillBtn.style.display = 'inline-block';
+            } else {
+                forceKillBtn.style.display = 'none';
+            }
         }
         
         function retryStart() {
@@ -307,6 +316,24 @@
             if (window.electronAPI) {
                 console.log('Calling electronAPI.exitApp()');
                 window.electronAPI.exitApp();
+            } else {
+                console.error('electronAPI not available');
+            }
+        }
+        
+        function forceKillPorts() {
+            console.log('Force kill ports button clicked');
+            if (window.electronAPI) {
+                console.log('Calling electronAPI.forceKillPorts()');
+                window.electronAPI.forceKillPorts();
+                errorContainer.style.display = 'none';
+                document.querySelector('.loader').style.display = 'block';
+                hasError = false;
+                progressMessages = [];
+                progressLog.innerHTML = '';
+                statusElement.textContent = 'Force closing ports and retrying...';
+                startTime = Date.now();
+                startTimeout(); // Reset the timeout
             } else {
                 console.error('electronAPI not available');
             }

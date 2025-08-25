@@ -56,6 +56,84 @@ ipcMain.on('retry-start', async (event) => {
   }
 });
 
+ipcMain.on('force-kill-ports', async (event) => {
+  log.info('IPC: force-kill-ports received');
+  const { exec } = require('child_process');
+  const ports = processManager.getPorts();
+  
+  if (process.platform === 'win32') {
+    // Windows: Find and kill processes using the ports
+    exec(`netstat -ano | findstr :${ports.backend}`, (err, stdout) => {
+      if (stdout) {
+        const lines = stdout.trim().split('\n');
+        const pids = new Set();
+        lines.forEach(line => {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0') pids.add(pid);
+        });
+        pids.forEach(pid => {
+          exec(`taskkill /F /PID ${pid}`, (err) => {
+            if (!err) log.info(`Killed process ${pid} using port ${ports.backend}`);
+          });
+        });
+      }
+    });
+    
+    exec(`netstat -ano | findstr :${ports.frontend}`, (err, stdout) => {
+      if (stdout) {
+        const lines = stdout.trim().split('\n');
+        const pids = new Set();
+        lines.forEach(line => {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0') pids.add(pid);
+        });
+        pids.forEach(pid => {
+          exec(`taskkill /F /PID ${pid}`, (err) => {
+            if (!err) log.info(`Killed process ${pid} using port ${ports.frontend}`);
+          });
+        });
+      }
+    });
+  } else {
+    // macOS/Linux: Use lsof to find and kill processes
+    exec(`lsof -ti:${ports.backend}`, (err, stdout) => {
+      if (stdout) {
+        const pids = stdout.trim().split('\n');
+        pids.forEach(pid => {
+          if (pid) {
+            exec(`kill -9 ${pid}`, (err) => {
+              if (!err) log.info(`Killed process ${pid} using port ${ports.backend}`);
+            });
+          }
+        });
+      }
+    });
+    
+    exec(`lsof -ti:${ports.frontend}`, (err, stdout) => {
+      if (stdout) {
+        const pids = stdout.trim().split('\n');
+        pids.forEach(pid => {
+          if (pid) {
+            exec(`kill -9 ${pid}`, (err) => {
+              if (!err) log.info(`Killed process ${pid} using port ${ports.frontend}`);
+            });
+          }
+        });
+      }
+    });
+  }
+  
+  // Wait a moment then retry
+  setTimeout(() => {
+    if (startServicesFunc && typeof startServicesFunc === 'function') {
+      log.info('Retrying after force kill...');
+      startServicesFunc();
+    }
+  }, 2000);
+});
+
 ipcMain.on('view-logs', (event) => {
   log.info('IPC: view-logs received');
   try {
@@ -667,6 +745,28 @@ app.whenReady().then(async () => {
     let frontendStarted = false;
     
     try {
+      // First check if ports are available
+      log.info('Checking if required ports are available...');
+      if (loadingWindow && !loadingWindow.isDestroyed()) {
+        loadingWindow.webContents.send('loading-status', 'Checking ports...');
+        loadingWindow.webContents.send('loading-progress', `Checking ports ${processManager.getPorts().backend} and ${processManager.getPorts().frontend}...`);
+      }
+      
+      const portCheck = await processManager.checkPorts();
+      if (!portCheck.available) {
+        // Ports are in use, show error with specific details
+        const errorMsg = `The following ports are already in use:\n\n${portCheck.conflicts.join('\n')}\n\nPlease close any applications using these ports and retry.`;
+        log.error('Port conflict detected:', portCheck.conflicts);
+        
+        if (loadingWindow && !loadingWindow.isDestroyed()) {
+          loadingWindow.webContents.send('loading-error', errorMsg);
+        }
+        return; // Don't proceed with startup
+      }
+      
+      // Ports are available, proceed with startup
+      log.info('Required ports are available, proceeding with startup...');
+      
       // Start backend server with timeout
       log.info('Starting backend server...');
       if (loadingWindow && !loadingWindow.isDestroyed()) {

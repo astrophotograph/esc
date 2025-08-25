@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exitApp: () => {
     console.log('Sending exit-app IPC message');
     ipcRenderer.send('exit-app');
+  },
+  forceKillPorts: () => {
+    console.log('Sending force-kill-ports IPC message');
+    ipcRenderer.send('force-kill-ports');
   }
 });
 

@@ -18,9 +18,10 @@ class ProcessManager {
     };
     this.logListeners = new Set();
     this.maxLogLines = 10000; // Keep last 10000 lines per process
+    // Use hardcoded ports for consistency
     this.ports = {
-      backend: 8000,
-      frontend: 3000
+      backend: 8100,
+      frontend: 3100
     };
   }
   
@@ -58,36 +59,45 @@ class ProcessManager {
     return this.logs[type] || [];
   }
 
-  // Find an available port
-  async findAvailablePort(startPort = 8000, maxPort = 9999) {
-    return new Promise((resolve, reject) => {
-      const tryPort = (port) => {
-        if (port > maxPort) {
-          reject(new Error(`No available ports between ${startPort} and ${maxPort}`));
-          return;
+  // Check if a port is available
+  async isPortAvailable(port) {
+    return new Promise((resolve) => {
+      const server = net.createServer();
+      
+      server.listen(port, '127.0.0.1', () => {
+        server.close(() => {
+          resolve(true);
+        });
+      });
+
+      server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          resolve(false);
+        } else {
+          // Other errors, consider port unavailable
+          resolve(false);
         }
-
-        const server = net.createServer();
-        
-        server.listen(port, '127.0.0.1', () => {
-          server.close(() => {
-            log.info(`Found available port: ${port}`);
-            resolve(port);
-          });
-        });
-
-        server.on('error', (err) => {
-          if (err.code === 'EADDRINUSE') {
-            // Port is in use, try the next one
-            tryPort(port + 1);
-          } else {
-            reject(err);
-          }
-        });
-      };
-
-      tryPort(startPort);
+      });
     });
+  }
+
+  // Check all required ports
+  async checkPorts() {
+    const backendAvailable = await this.isPortAvailable(this.ports.backend);
+    const frontendAvailable = await this.isPortAvailable(this.ports.frontend);
+    
+    const conflicts = [];
+    if (!backendAvailable) {
+      conflicts.push(`Port ${this.ports.backend} (backend)`);
+    }
+    if (!frontendAvailable) {
+      conflicts.push(`Port ${this.ports.frontend} (frontend)`);
+    }
+    
+    return {
+      available: backendAvailable && frontendAvailable,
+      conflicts
+    };
   }
 
   // Get the ports being used
@@ -277,9 +287,7 @@ class ProcessManager {
   async startBackend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Use a fixed port for the backend to ensure consistency
-        // Start with 8100 as the preferred port, but find another if it's in use
-        this.ports.backend = await this.findAvailablePort(8100, 8999);
+        // Use hardcoded port 8100 for the backend
         log.info(`Backend will use port ${this.ports.backend}`);
         
         // No need to kill processes since we found an available port
@@ -421,9 +429,7 @@ class ProcessManager {
   async startFrontend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Use a fixed port for the frontend to ensure localStorage persistence
-        // Start with 3100 as the preferred port, but find another if it's in use
-        this.ports.frontend = await this.findAvailablePort(3100, 3999);
+        // Use hardcoded port 3100 for the frontend
         log.info(`Frontend will use port ${this.ports.frontend}`);
         // In production, the frontend should be served as static files
         // This method is mainly for development where Next.js dev server might be needed
