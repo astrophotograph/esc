@@ -101,11 +101,18 @@ jobs:
         run: |
           uv sync
           
-      - name: Build with PyInstaller (Unix)
-        if: runner.os != 'Windows'
+      - name: Build with PyInstaller (macOS)
+        if: runner.os == 'macOS'
         working-directory: server
         run: |
           uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm --add-data "data:data" --hidden-import tzlocal --hidden-import pydash --hidden-import smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          
+      - name: Build with PyInstaller (Linux)
+        if: runner.os == 'Linux'
+        working-directory: server
+        run: |
+          # Use folder mode for Linux to avoid size limitations
+          uv run pyinstaller --onedir --name esc-server --console --clean --noconfirm --add-data "data:data" --hidden-import tzlocal --hidden-import pydash --hidden-import smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
           
       - name: Build with PyInstaller (Windows)
         if: runner.os == 'Windows'
@@ -117,11 +124,23 @@ jobs:
         run: |
           mkdir -p electron/python-bundle
           
-      - name: Copy executable (Unix)
-        if: runner.os != 'Windows'
+      - name: Copy executable (macOS)
+        if: runner.os == 'macOS'
         run: |
           cp server/dist/esc-server electron/python-bundle/
           chmod +x electron/python-bundle/esc-server
+          
+      - name: Copy executable folder (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # For Linux, copy the entire dist folder contents
+          cp -r server/dist/esc-server/* electron/python-bundle/
+          chmod +x electron/python-bundle/esc-server
+          # Create a launcher script for consistency
+          echo '#!/bin/bash' > electron/python-bundle/esc-server-launcher
+          echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"' >> electron/python-bundle/esc-server-launcher
+          echo '"$DIR/esc-server" "$@"' >> electron/python-bundle/esc-server-launcher
+          chmod +x electron/python-bundle/esc-server-launcher
           
       - name: Copy executable (Windows)
         if: runner.os == 'Windows'

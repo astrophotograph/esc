@@ -293,9 +293,18 @@ class ProcessManager {
           const resourcesPath = process.resourcesPath;
           
           // PyInstaller build in python-bundle (primary option)
-          const pyinstallerBackend = process.platform === 'win32' 
-            ? path.join(resourcesPath, 'python-bundle', 'esc-server.exe')
-            : path.join(resourcesPath, 'python-bundle', 'esc-server');
+          let pyinstallerBackend;
+          if (process.platform === 'win32') {
+            pyinstallerBackend = path.join(resourcesPath, 'python-bundle', 'esc-server.exe');
+          } else if (process.platform === 'linux') {
+            // Linux uses folder distribution, check for launcher script first
+            const launcher = path.join(resourcesPath, 'python-bundle', 'esc-server-launcher');
+            const direct = path.join(resourcesPath, 'python-bundle', 'esc-server');
+            pyinstallerBackend = fs.existsSync(launcher) ? launcher : direct;
+          } else {
+            // macOS and others
+            pyinstallerBackend = path.join(resourcesPath, 'python-bundle', 'esc-server');
+          }
           
           // Legacy locations for backwards compatibility
           const legacyPyinstaller1 = process.platform === 'win32' 
