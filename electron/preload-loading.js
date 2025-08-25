@@ -24,9 +24,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('Sending retry-start IPC message');
     ipcRenderer.send('retry-start');
   },
-  viewLogs: () => {
-    console.log('Sending view-logs IPC message');
-    ipcRenderer.send('view-logs');
+  viewBackendLogs: () => {
+    console.log('Sending view-backend-logs IPC message');
+    ipcRenderer.send('view-logs', 'backend');
+  },
+  viewFrontendLogs: () => {
+    console.log('Sending view-frontend-logs IPC message');
+    ipcRenderer.send('view-logs', 'frontend');
   },
   exitApp: () => {
     console.log('Sending exit-app IPC message');

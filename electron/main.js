@@ -134,11 +134,11 @@ ipcMain.on('force-kill-ports', async (event) => {
   }, 2000);
 });
 
-ipcMain.on('view-logs', (event) => {
-  log.info('IPC: view-logs received');
+ipcMain.on('view-logs', (event, type) => {
+  log.info(`IPC: view-logs received for ${type || 'backend'}`);
   try {
-    // Create a backend log window to view the startup logs
-    createLogWindow('backend');
+    // Create a log window for the specified type (default to backend)
+    createLogWindow(type || 'backend');
   } catch (error) {
     log.error('Error creating log window:', error);
   }
