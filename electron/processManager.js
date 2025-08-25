@@ -291,45 +291,56 @@ class ProcessManager {
         if (app.isPackaged) {
           // In production, check for different backend builds
           const resourcesPath = process.resourcesPath;
+          const bundlePath = path.join(resourcesPath, 'python-bundle');
           
-          // PyInstaller build in python-bundle (primary option)
+          // Check for embedded Python bundle (primary option for Windows)
+          const embeddedPythonExe = path.join(bundlePath, 'python-embed', 'python.exe');
+          const windowsBatch = path.join(bundlePath, 'esc-server.exe.bat');
+          const windowsBatch2 = path.join(bundlePath, 'esc-server.bat');
+          const unixScript = path.join(bundlePath, 'esc-server.sh');
+          
+          // Check for PyInstaller builds (fallback)
           let pyinstallerBackend;
           if (process.platform === 'win32') {
-            pyinstallerBackend = path.join(resourcesPath, 'python-bundle', 'esc-server.exe');
+            pyinstallerBackend = path.join(bundlePath, 'esc-server.exe');
           } else if (process.platform === 'linux') {
             // Linux uses folder distribution, check for launcher script first
-            const launcher = path.join(resourcesPath, 'python-bundle', 'esc-server-launcher');
-            const direct = path.join(resourcesPath, 'python-bundle', 'esc-server');
+            const launcher = path.join(bundlePath, 'esc-server-launcher');
+            const direct = path.join(bundlePath, 'esc-server');
             pyinstallerBackend = fs.existsSync(launcher) ? launcher : direct;
           } else {
             // macOS and others
-            pyinstallerBackend = path.join(resourcesPath, 'python-bundle', 'esc-server');
+            pyinstallerBackend = path.join(bundlePath, 'esc-server');
           }
           
-          // Legacy locations for backwards compatibility
-          const legacyPyinstaller1 = process.platform === 'win32' 
-            ? path.join(resourcesPath, 'python-server', 'esc-server.exe')
-            : path.join(resourcesPath, 'python-server', 'esc-server');
+          // Determine which backend to use
+          if (process.platform === 'win32' && fs.existsSync(embeddedPythonExe)) {
+            // Use embedded Python on Windows (most reliable)
+            if (fs.existsSync(windowsBatch)) {
+              backendPath = windowsBatch;
+            } else if (fs.existsSync(windowsBatch2)) {
+              backendPath = windowsBatch2;
+            } else {
+              // Direct Python execution
+              backendPath = embeddedPythonExe;
+              backendArgs = [path.join(bundlePath, 'main.py'), 'server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            }
             
-          const legacyPyinstaller2 = process.platform === 'win32' 
-            ? path.join(resourcesPath, 'server', 'main.exe')
-            : path.join(resourcesPath, 'server', 'main');
-          
-          if (fs.existsSync(pyinstallerBackend)) {
-            // Use PyInstaller build from python-bundle (preferred)
+            if (backendPath !== embeddedPythonExe) {
+              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            }
+            
+            log.info('Using embedded Python backend for Windows');
+          } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
+            // Use shell script launcher on Unix
+            backendPath = unixScript;
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            log.info('Using embedded Python backend with shell launcher');
+          } else if (fs.existsSync(pyinstallerBackend)) {
+            // Fall back to PyInstaller build
             backendPath = pyinstallerBackend;
             backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            log.info('Using PyInstaller backend from python-bundle directory');
-          } else if (fs.existsSync(legacyPyinstaller1)) {
-            // Fall back to python-server location
-            backendPath = legacyPyinstaller1;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            log.info('Using PyInstaller backend from python-server directory');
-          } else if (fs.existsSync(legacyPyinstaller2)) {
-            // Fall back to legacy server location
-            backendPath = legacyPyinstaller2;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color'];
-            log.info('Using PyInstaller backend from legacy server directory');
+            log.info('Using PyInstaller backend');
           } else {
             // For production builds without bundled backend, 
             // we need the user to have the server running separately

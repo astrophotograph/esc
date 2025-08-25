@@ -57,20 +57,7 @@ jobs:
 
   build-python:
     name: Build Python Backend
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact: python-linux
-          - os: windows-latest
-            platform: windows
-            artifact: python-windows
-          - os: macos-latest
-            platform: macos
-            artifact: python-macos
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
@@ -79,220 +66,33 @@ jobs:
         with:
           python-version: '3.12'
           
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install pyinstaller
-          
-      - name: Install uv (Unix)
-        if: runner.os != 'Windows'
+      - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           
-      - name: Install uv (Windows)
-        if: runner.os == 'Windows'
+      - name: Bundle Python with embedded distribution
         run: |
-          irm https://astral.sh/uv/install.ps1 | iex
-          echo "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          chmod +x scripts/bundle-python-embedded.sh
+          ./scripts/bundle-python-embedded.sh
           
-      - name: Install Python dependencies
-        working-directory: server
+      - name: Download Python embedded for Windows
         run: |
-          uv sync
+          chmod +x scripts/download-python-embed.sh
+          ./scripts/download-python-embed.sh electron/python-bundle
           
-      - name: Build with PyInstaller (macOS)
-        if: runner.os == 'macOS'
-        working-directory: server
+      - name: Create combined bundle
         run: |
-          # Check if data directory exists
-          DATA_ARG=""
-          if [ -d "data" ]; then
-            DATA_ARG="--add-data data:data"
-          fi
-          
-          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm \
-            $DATA_ARG \
-            --collect-all pydash \
-            --collect-all tzlocal \
-            --collect-all smarttel \
-            --collect-all fastapi \
-            --collect-all pydantic \
-            --collect-all starlette \
-            --collect-all uvicorn \
-            --collect-all httpx \
-            --collect-all loguru \
-            --collect-all beartype \
-            --collect-all netifaces \
-            --collect-all click \
-            --collect-all appdirs \
-            --collect-all numpy \
-            --collect-submodules cv2 \
-            --collect-submodules PIL \
-            --collect-submodules skimage \
-            --collect-all aiortc \
-            --collect-all aiosqlite \
-            --collect-all websockets \
-            --hidden-import numpy.typing \
-            --hidden-import numpy._typing \
-            --hidden-import cv2 \
-            --hidden-import PIL._imaging \
-            --hidden-import skimage.filters \
-            --hidden-import skimage.restoration \
-            --hidden-import skimage.exposure \
-            --hidden-import skimage.util \
-            --hidden-import uvicorn.logging \
-            --hidden-import uvicorn.loops \
-            --hidden-import uvicorn.loops.auto \
-            --hidden-import uvicorn.protocols \
-            --hidden-import uvicorn.protocols.http \
-            --hidden-import uvicorn.protocols.http.auto \
-            --hidden-import uvicorn.protocols.websockets \
-            --hidden-import uvicorn.protocols.websockets.auto \
-            --hidden-import uvicorn.lifespan \
-            --hidden-import uvicorn.lifespan.on \
-            --hidden-import websockets.legacy \
-            --hidden-import websockets.legacy.server \
-            --hidden-import multipart \
-            --hidden-import python-multipart \
-            --copy-metadata pydantic \
-            --copy-metadata beartype \
-            main.py
-          
-      - name: Build with PyInstaller (Linux)
-        if: runner.os == 'Linux'
-        working-directory: server
-        run: |
-          # Check if data directory exists
-          DATA_ARG=""
-          if [ -d "data" ]; then
-            DATA_ARG="--add-data data:data"
-          fi
-          
-          # Use folder mode for Linux to avoid size limitations
-          uv run pyinstaller --onedir --name esc-server --console --clean --noconfirm \
-            $DATA_ARG \
-            --collect-all pydash \
-            --collect-all tzlocal \
-            --collect-all smarttel \
-            --collect-all fastapi \
-            --collect-all pydantic \
-            --collect-all starlette \
-            --collect-all uvicorn \
-            --collect-all httpx \
-            --collect-all loguru \
-            --collect-all beartype \
-            --collect-all netifaces \
-            --collect-all click \
-            --collect-all appdirs \
-            --collect-all numpy \
-            --collect-submodules cv2 \
-            --collect-submodules PIL \
-            --collect-submodules skimage \
-            --collect-all aiortc \
-            --collect-all aiosqlite \
-            --collect-all websockets \
-            --hidden-import numpy.typing \
-            --hidden-import numpy._typing \
-            --hidden-import cv2 \
-            --hidden-import PIL._imaging \
-            --hidden-import skimage.filters \
-            --hidden-import skimage.restoration \
-            --hidden-import skimage.exposure \
-            --hidden-import skimage.util \
-            --hidden-import uvicorn.logging \
-            --hidden-import uvicorn.loops \
-            --hidden-import uvicorn.loops.auto \
-            --hidden-import uvicorn.protocols \
-            --hidden-import uvicorn.protocols.http \
-            --hidden-import uvicorn.protocols.http.auto \
-            --hidden-import uvicorn.protocols.websockets \
-            --hidden-import uvicorn.protocols.websockets.auto \
-            --hidden-import uvicorn.lifespan \
-            --hidden-import uvicorn.lifespan.on \
-            --hidden-import websockets.legacy \
-            --hidden-import websockets.legacy.server \
-            --hidden-import multipart \
-            --hidden-import python-multipart \
-            --copy-metadata pydantic \
-            --copy-metadata beartype \
-            main.py
-          
-      - name: Build with PyInstaller (Windows)
-        if: runner.os == 'Windows'
-        working-directory: server
-        run: |
-          # Check if data directory exists (PowerShell syntax)
-          $dataArg = ""
-          if (Test-Path "data") {
-            $dataArg = "--add-data `"data;data`""
-          }
-          
-          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm `
-            $dataArg `
-            --collect-all pydash `
-            --collect-all tzlocal `
-            --collect-all smarttel `
-            --collect-all fastapi `
-            --collect-all pydantic `
-            --collect-all starlette `
-            --collect-all uvicorn `
-            --collect-all httpx `
-            --collect-all loguru `
-            --collect-all beartype `
-            --collect-all netifaces `
-            --collect-all click `
-            --collect-all appdirs `
-            --hidden-import uvicorn.logging `
-            --hidden-import uvicorn.loops `
-            --hidden-import uvicorn.loops.auto `
-            --hidden-import uvicorn.protocols `
-            --hidden-import uvicorn.protocols.http `
-            --hidden-import uvicorn.protocols.http.auto `
-            --hidden-import uvicorn.protocols.websockets `
-            --hidden-import uvicorn.protocols.websockets.auto `
-            --hidden-import uvicorn.lifespan `
-            --hidden-import uvicorn.lifespan.on `
-            --hidden-import websockets.legacy `
-            --hidden-import websockets.legacy.server `
-            --hidden-import multipart `
-            --hidden-import python-multipart `
-            --copy-metadata pydantic `
-            --copy-metadata beartype `
-            main.py
-          
-      - name: Create bundle directory
-        run: |
-          mkdir -p electron/python-bundle
-          
-      - name: Copy executable (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          cp server/dist/esc-server electron/python-bundle/
-          chmod +x electron/python-bundle/esc-server
-          
-      - name: Copy executable folder (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          # For Linux, copy the entire dist folder contents
-          cp -r server/dist/esc-server/* electron/python-bundle/
-          chmod +x electron/python-bundle/esc-server
-          # Create a launcher script for consistency
-          echo '#!/bin/bash' > electron/python-bundle/esc-server-launcher
-          echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"' >> electron/python-bundle/esc-server-launcher
-          echo '"$DIR/esc-server" "$@"' >> electron/python-bundle/esc-server-launcher
-          chmod +x electron/python-bundle/esc-server-launcher
-          
-      - name: Copy executable (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          Copy-Item server\dist\esc-server.exe electron\python-bundle\
+          cd electron/python-bundle
+          # Add a marker file
+          echo "embedded" > .build-type
           
       - name: Upload Python bundle
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
+          name: python-bundle
           path: electron/python-bundle
+          
 
   build-electron:
     name: Build Electron App
@@ -338,7 +138,7 @@ jobs:
       - name: Download Python bundle
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.python-artifact }}
+          name: python-bundle
           path: electron/python-bundle
           
       - name: Cache Electron dependencies
