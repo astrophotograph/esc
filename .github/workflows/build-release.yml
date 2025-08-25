@@ -105,20 +105,113 @@ jobs:
         if: runner.os == 'macOS'
         working-directory: server
         run: |
-          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm --add-data "data:data" --collect-all pydash --collect-all tzlocal --collect-all smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm \
+            --add-data "data:data" \
+            --collect-all pydash \
+            --collect-all tzlocal \
+            --collect-all smarttel \
+            --collect-all fastapi \
+            --collect-all pydantic \
+            --collect-all starlette \
+            --collect-all uvicorn \
+            --collect-all httpx \
+            --collect-all loguru \
+            --collect-all beartype \
+            --collect-all netifaces \
+            --collect-all click \
+            --collect-all appdirs \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.auto \
+            --hidden-import uvicorn.lifespan \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import websockets.legacy \
+            --hidden-import websockets.legacy.server \
+            --hidden-import multipart \
+            --hidden-import python-multipart \
+            --copy-metadata pydantic \
+            --copy-metadata beartype \
+            main.py
           
       - name: Build with PyInstaller (Linux)
         if: runner.os == 'Linux'
         working-directory: server
         run: |
           # Use folder mode for Linux to avoid size limitations
-          uv run pyinstaller --onedir --name esc-server --console --clean --noconfirm --add-data "data:data" --collect-all pydash --collect-all tzlocal --collect-all smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          uv run pyinstaller --onedir --name esc-server --console --clean --noconfirm \
+            --add-data "data:data" \
+            --collect-all pydash \
+            --collect-all tzlocal \
+            --collect-all smarttel \
+            --collect-all fastapi \
+            --collect-all pydantic \
+            --collect-all starlette \
+            --collect-all uvicorn \
+            --collect-all httpx \
+            --collect-all loguru \
+            --collect-all beartype \
+            --collect-all netifaces \
+            --collect-all click \
+            --collect-all appdirs \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.auto \
+            --hidden-import uvicorn.lifespan \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import websockets.legacy \
+            --hidden-import websockets.legacy.server \
+            --hidden-import multipart \
+            --hidden-import python-multipart \
+            --copy-metadata pydantic \
+            --copy-metadata beartype \
+            main.py
           
       - name: Build with PyInstaller (Windows)
         if: runner.os == 'Windows'
         working-directory: server
         run: |
-          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm --add-data "data;data" --collect-all pydash --collect-all tzlocal --collect-all smarttel --hidden-import uvicorn.logging --hidden-import uvicorn.loops --hidden-import uvicorn.loops.auto --hidden-import uvicorn.protocols --hidden-import uvicorn.protocols.http --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan --hidden-import uvicorn.lifespan.on main.py
+          uv run pyinstaller --onefile --name esc-server --console --clean --noconfirm `
+            --add-data "data;data" `
+            --collect-all pydash `
+            --collect-all tzlocal `
+            --collect-all smarttel `
+            --collect-all fastapi `
+            --collect-all pydantic `
+            --collect-all starlette `
+            --collect-all uvicorn `
+            --collect-all httpx `
+            --collect-all loguru `
+            --collect-all beartype `
+            --collect-all netifaces `
+            --collect-all click `
+            --collect-all appdirs `
+            --hidden-import uvicorn.logging `
+            --hidden-import uvicorn.loops `
+            --hidden-import uvicorn.loops.auto `
+            --hidden-import uvicorn.protocols `
+            --hidden-import uvicorn.protocols.http `
+            --hidden-import uvicorn.protocols.http.auto `
+            --hidden-import uvicorn.protocols.websockets `
+            --hidden-import uvicorn.protocols.websockets.auto `
+            --hidden-import uvicorn.lifespan `
+            --hidden-import uvicorn.lifespan.on `
+            --hidden-import websockets.legacy `
+            --hidden-import websockets.legacy.server `
+            --hidden-import multipart `
+            --hidden-import python-multipart `
+            --copy-metadata pydantic `
+            --copy-metadata beartype `
+            main.py
           
       - name: Create bundle directory
         run: |
