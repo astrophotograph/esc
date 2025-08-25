@@ -71,10 +71,10 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           
-      - name: Bundle Python with uv
+      - name: Bundle Python with standalone uv
         run: |
-          chmod +x scripts/bundle-with-uv.sh
-          ./scripts/bundle-with-uv.sh
+          chmod +x scripts/bundle-with-uv-standalone.sh
+          ./scripts/bundle-with-uv-standalone.sh
           
       - name: Create combined bundle
         run: |

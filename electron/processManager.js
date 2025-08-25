@@ -293,7 +293,10 @@ class ProcessManager {
           const resourcesPath = process.resourcesPath;
           const bundlePath = path.join(resourcesPath, 'python-bundle');
           
-          // Check for uv-based launchers (primary option)
+          // Check for standalone uv launchers (primary option - no Python required)
+          const uvBinary = process.platform === 'win32' 
+            ? path.join(bundlePath, 'bin', 'uv.exe')
+            : path.join(bundlePath, 'bin', `uv-${process.arch === 'arm64' ? 'aarch64' : 'x86_64'}-${process.platform === 'darwin' ? 'apple-darwin' : 'unknown-linux-gnu'}`, 'uv');
           const windowsBatch = path.join(bundlePath, 'esc-server.bat');
           const windowsPowerShell = path.join(bundlePath, 'esc-server.ps1');
           const unixScript = path.join(bundlePath, 'esc-server.sh');
@@ -316,16 +319,17 @@ class ProcessManager {
           }
           
           // Determine which backend to use
-          if (process.platform === 'win32' && fs.existsSync(windowsBatch)) {
-            // Use uv-based launcher on Windows (primary)
-            backendPath = windowsBatch;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            log.info('Using uv-based launcher for Windows');
-          } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
-            // Use shell script launcher on Unix
-            backendPath = unixScript;
-            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-            log.info('Using uv-based launcher for Unix');
+          if (fs.existsSync(uvBinary) || (process.platform === 'win32' && fs.existsSync(path.join(bundlePath, 'bin', 'uv.exe')))) {
+            // Use standalone uv launcher (primary - includes Python management)
+            if (process.platform === 'win32' && fs.existsSync(windowsBatch)) {
+              backendPath = windowsBatch;
+              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+              log.info('Using standalone uv launcher for Windows (Python will be auto-installed if needed)');
+            } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
+              backendPath = unixScript;
+              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+              log.info('Using standalone uv launcher for Unix (Python will be auto-installed if needed)');
+            }
           } else if (process.platform === 'win32' && fs.existsSync(embeddedPythonExe)) {
             // Fall back to embedded Python on Windows
             backendPath = embeddedPythonExe;
