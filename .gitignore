@@ -49,3 +49,5 @@ Thumbs.db
 *.swp
 *.swo
 *~
+# Prevent npm lock files (use pnpm only)
+**/package-lock.json
