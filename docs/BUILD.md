@@ -5,7 +5,7 @@ This guide explains how to build and distribute the ESC application for differen
 ## Prerequisites
 
 ### All Platforms
-- Node.js 20+ and npm
+- Node.js 20+ and pnpm
 - Python 3.12+
 - uv (Python package manager)
 - Git
@@ -57,8 +57,8 @@ This guide explains how to build and distribute the ESC application for differen
 
 ```bash
 cd ui
-npm ci --legacy-peer-deps
-npm run build
+pnpm install --frozen-lockfile
+pnpm run build
 ```
 
 ### 2. Bundle Python Backend
@@ -71,10 +71,10 @@ npm run build
 
 ```bash
 cd electron
-npm ci
-npm run build:mac    # For macOS
-npm run build:win    # For Windows
-npm run build:linux  # For Linux
+pnpm install --frozen-lockfile
+pnpm run build:mac    # For macOS
+pnpm run build:win    # For Windows
+pnpm run build:linux  # For Linux
 ```
 
 ## Distribution

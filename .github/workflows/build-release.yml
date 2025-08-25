@@ -28,19 +28,24 @@ jobs:
         with:
           node-version: '20'
           
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          
       - name: Cache UI dependencies
         uses: actions/cache@v4
         with:
           path: ui/node_modules
-          key: ${{ runner.os }}-ui-${{ hashFiles('ui/package-lock.json') }}
+          key: ${{ runner.os }}-ui-${{ hashFiles('ui/pnpm-lock.yaml') }}
           
       - name: Install dependencies
         working-directory: ui
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
         
       - name: Build frontend
         working-directory: ui
-        run: npm run build
+        run: pnpm run build
         
       - name: Upload frontend artifacts
         uses: actions/upload-artifact@v4
@@ -108,6 +113,11 @@ jobs:
         with:
           node-version: '20'
           
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          
       - name: Download frontend build
         uses: actions/download-artifact@v4
         with:
@@ -124,15 +134,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: electron/node_modules
-          key: ${{ runner.os }}-electron-${{ hashFiles('electron/package-lock.json') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('electron/pnpm-lock.yaml') }}
           
       - name: Install Electron dependencies
         working-directory: electron
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Build for ${{ matrix.platform }}
         working-directory: electron
-        run: npm run build:${{ matrix.platform }}
+        run: pnpm run build:${{ matrix.platform }}
         
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

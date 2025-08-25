@@ -13,8 +13,8 @@ echo "🚀 Building ESC Application..."
 # Step 1: Build the frontend
 echo "📦 Building frontend..."
 cd "$PROJECT_ROOT/ui"
-npm ci --legacy-peer-deps
-npm run build
+pnpm install --frozen-lockfile
+pnpm run build
 
 # Step 2: Bundle Python backend
 echo "🐍 Bundling Python backend..."
@@ -32,7 +32,7 @@ fi
 # Step 4: Build Electron app
 echo "⚡ Building Electron app..."
 cd "$PROJECT_ROOT/electron"
-npm ci
+pnpm install --frozen-lockfile
 
 # Check which platform to build for
 PLATFORM=${1:-current}
@@ -40,23 +40,23 @@ PLATFORM=${1:-current}
 case "$PLATFORM" in
     mac)
         echo "🍎 Building for macOS..."
-        npm run build:mac
+        pnpm run build:mac
         ;;
     win)
         echo "🪟 Building for Windows..."
-        npm run build:win
+        pnpm run build:win
         ;;
     linux)
         echo "🐧 Building for Linux..."
-        npm run build:linux
+        pnpm run build:linux
         ;;
     all)
         echo "🌍 Building for all platforms..."
-        npm run dist:all
+        pnpm run dist:all
         ;;
     current)
         echo "💻 Building for current platform..."
-        npm run build
+        pnpm run build
         ;;
     *)
         echo "❌ Unknown platform: $PLATFORM"
