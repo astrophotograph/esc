@@ -2377,7 +2377,6 @@ dependencies = [
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "minio" },
-    { name = "netifaces" },
     { name = "numpy" },
     { name = "numpy-typing" },
     { name = "onnxruntime" },
@@ -2409,6 +2408,9 @@ dev = [
     { name = "nuitka" },
     { name = "py2app" },
 ]
+network = [
+    { name = "netifaces" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2427,7 +2429,6 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "matplotlib", specifier = ">=3.10.3" },
     { name = "minio", specifier = ">=7.2.15" },
-    { name = "netifaces", specifier = ">=0.11.0" },
     { name = "numpy", specifier = "<2.0" },
     { name = "numpy-typing", specifier = ">=1.1.1" },
     { name = "onnxruntime", specifier = ">=1.22.1" },
@@ -2459,6 +2460,7 @@ dev = [
     { name = "nuitka", specifier = ">=2.7.12" },
     { name = "py2app", specifier = ">=0.28.8" },
 ]
+network = [{ name = "netifaces", specifier = ">=0.11.0" }]
 
 [[package]]
 name = "sniffio"

@@ -76,7 +76,6 @@ class WebRTCService:
 
         # Log network info for debugging
         import socket
-        import netifaces
 
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
@@ -85,10 +84,11 @@ class WebRTCService:
         )
 
         # List all network interfaces
+        valid_interfaces = []
         try:
+            import netifaces
             interfaces = netifaces.interfaces()
             logger.info(f"Available network interfaces: {interfaces}")
-            valid_interfaces = []
             for interface in interfaces:
                 addrs = netifaces.ifaddresses(interface)
                 if netifaces.AF_INET in addrs:
@@ -100,24 +100,40 @@ class WebRTCService:
                     ]
                     if non_loopback:
                         valid_interfaces.extend(non_loopback)
-
-            if not valid_interfaces:
-                logger.error(
-                    "No valid non-loopback IPv4 interfaces found! This will prevent ICE candidate generation."
-                )
-                logger.error(
-                    "aiortc needs at least one non-loopback network interface to generate candidates."
-                )
-            else:
-                logger.info(f"Valid interfaces for WebRTC: {valid_interfaces}")
-
         except ImportError:
-            logger.warning("netifaces not available, using basic socket info")
-            logger.warning(
-                "Install netifaces for detailed network debugging: pip install netifaces"
-            )
+            # Try psutil as fallback
+            try:
+                import psutil
+                logger.info("Using psutil for network interface detection")
+                for interface_name, addrs in psutil.net_if_addrs().items():
+                    ipv4_addrs = []
+                    for addr in addrs:
+                        if addr.family == socket.AF_INET:
+                            ipv4_addrs.append(addr.address)
+                            if not addr.address.startswith("127."):
+                                valid_interfaces.append(addr.address)
+                    if ipv4_addrs:
+                        logger.info(f"Interface {interface_name} IPv4: {ipv4_addrs}")
+            except ImportError:
+                logger.warning("Neither netifaces nor psutil available, using basic socket info")
+                logger.info(
+                    "For better network debugging, install: uv add netifaces"
+                )
+                # Basic fallback
+                if local_ip and not local_ip.startswith("127."):
+                    valid_interfaces.append(local_ip)
         except Exception as e:
             logger.error(f"Error getting network interfaces: {e}")
+
+        if not valid_interfaces:
+            logger.error(
+                "No valid non-loopback IPv4 interfaces found! This will prevent ICE candidate generation."
+            )
+            logger.error(
+                "aiortc needs at least one non-loopback network interface to generate candidates."
+            )
+        else:
+            logger.info(f"Valid interfaces for WebRTC: {valid_interfaces}")
 
     async def create_peer_connection(self, session_id: str) -> RTCPeerConnection:
         """Create a new RTCPeerConnection with configured ICE servers."""

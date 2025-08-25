@@ -14,7 +14,6 @@ dependencies = [
     "fastapi-restful[all]>=0.6.0",
     "httpx[brotli,http2,zstd]>=0.28.1",
     "loguru>=0.7.3",
-    "netifaces>=0.11.0",
     "numpy<2.0",
     "opencv-python>=4.11.0.86",
     "pydantic>=2.11.4",
@@ -99,4 +98,7 @@ exclude_lines = [
 dev = [
     "nuitka>=2.7.12",
     "py2app>=0.28.8",
+]
+network = [
+    "netifaces>=0.11.0",
 ]

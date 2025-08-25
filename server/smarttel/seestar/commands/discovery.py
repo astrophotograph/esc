@@ -32,15 +32,30 @@ def get_all_network_interfaces() -> List[Tuple[str, str]]:
                         broadcast = str(network.broadcast_address)
                         interfaces.append((ip, broadcast))
     except ImportError:
-        # Fallback if netifaces is not available
-        hostname = socket.gethostname()
-        for addr_info in socket.getaddrinfo(hostname, None, socket.AF_INET):
-            ip = addr_info[4][0]
-            if not ip.startswith("127."):
-                # Simple broadcast calculation
-                ip_parts = ip.split(".")
-                broadcast = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.255"
-                interfaces.append((ip, broadcast))
+        # Try psutil as second option (usually available)
+        try:
+            import psutil
+            
+            for interface_name, addrs in psutil.net_if_addrs().items():
+                for addr in addrs:
+                    if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+                        ip = addr.address
+                        netmask = addr.netmask
+                        if ip and netmask:
+                            # Calculate broadcast address
+                            network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+                            broadcast = str(network.broadcast_address)
+                            interfaces.append((ip, broadcast))
+        except (ImportError, Exception):
+            # Final fallback if neither netifaces nor psutil is available
+            hostname = socket.gethostname()
+            for addr_info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+                ip = addr_info[4][0]
+                if not ip.startswith("127."):
+                    # Simple broadcast calculation
+                    ip_parts = ip.split(".")
+                    broadcast = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.255"
+                    interfaces.append((ip, broadcast))
 
     # If no interfaces found, use the old method
     if not interfaces:

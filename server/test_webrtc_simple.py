@@ -108,13 +108,14 @@ async def test_network_interfaces():
     """Test network interface availability."""
     logger.info("=== Network Interface Test ===")
 
+    valid_ips = []
+    
     try:
         import netifaces
 
         interfaces = netifaces.interfaces()
-        logger.info(f"Available interfaces: {interfaces}")
+        logger.info(f"Available interfaces (netifaces): {interfaces}")
 
-        valid_ips = []
         for interface in interfaces:
             try:
                 addrs = netifaces.ifaddresses(interface)
@@ -127,17 +128,32 @@ async def test_network_interfaces():
             except Exception as e:
                 logger.warning(f"Error checking interface {interface}: {e}")
 
-        if not valid_ips:
-            logger.error("No valid non-loopback IP addresses found!")
-            logger.error("This will prevent WebRTC from working.")
-            return False
-        else:
-            logger.info(f"Valid IPs for WebRTC: {valid_ips}")
-            return True
-
     except ImportError:
-        logger.error("netifaces not available - install with: pip install netifaces")
+        # Try psutil as fallback
+        try:
+            import psutil
+            import socket
+            
+            logger.info("Using psutil for network interface detection")
+            for interface_name, addrs in psutil.net_if_addrs().items():
+                for addr in addrs:
+                    if addr.family == socket.AF_INET:
+                        ip = addr.address
+                        logger.info(f"Interface {interface_name}: {ip}")
+                        if not ip.startswith("127."):
+                            valid_ips.append(ip)
+        except ImportError:
+            logger.warning("Neither netifaces nor psutil available")
+            logger.info("Install with: uv add netifaces")
+            return False
+
+    if not valid_ips:
+        logger.error("No valid non-loopback IP addresses found!")
+        logger.error("This will prevent WebRTC from working.")
         return False
+    else:
+        logger.info(f"Valid IPs for WebRTC: {valid_ips}")
+        return True
 
 
 if __name__ == "__main__":
