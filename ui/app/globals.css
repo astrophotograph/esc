@@ -27,8 +27,8 @@ body {
     --foreground: 0 0% 9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 98%;
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
@@ -62,8 +62,8 @@ body {
     --foreground: 213 31% 91%;
     --card: 223 47% 15%;
     --card-foreground: 213 31% 91%;
-    --popover: 223 47% 15%;
-    --popover-foreground: 213 31% 91%;
+    --popover: 223 47% 25%;
+    --popover-foreground: 213 31% 95%;
     --primary: 210 40% 98%;
     --primary-foreground: 222 47% 11%;
     --secondary: 217 33% 17%;
@@ -96,8 +96,8 @@ body {
     --foreground: 0 100% 50%;
     --card: 0 0% 5%;
     --card-foreground: 0 100% 50%;
-    --popover: 0 0% 5%;
-    --popover-foreground: 0 100% 50%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 100% 55%;
     --primary: 0 100% 45%;
     --primary-foreground: 0 0% 0%;
     --secondary: 0 0% 10%;
@@ -130,8 +130,8 @@ body {
     --foreground: 0 0% 7%;      /* Near-black for text */
     --card: 44 39% 97%;
     --card-foreground: 0 0% 7%;
-    --popover: 44 39% 97%;
-    --popover-foreground: 0 0% 7%;
+    --popover: 44 39% 20%;
+    --popover-foreground: 44 39% 95%;
     --primary: 0 0% 20%;        /* Dark gray for primary elements */
     --primary-foreground: 44 39% 97%;
     --secondary: 0 0% 96%;      /* Light gray */
@@ -164,8 +164,8 @@ body {
     --foreground: 120 100% 50%;    /* Green phosphor text */
     --card: 0 0% 8%;
     --card-foreground: 120 100% 50%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 120 100% 50%;
+    --popover: 0 0% 18%;
+    --popover-foreground: 120 100% 55%;
     --primary: 120 100% 45%;       /* Bright green */
     --primary-foreground: 0 0% 0%;
     --secondary: 0 0% 12%;
@@ -198,8 +198,8 @@ body {
     --foreground: 221 50% 75%;     /* C64 Light Blue */
     --card: 221 89% 28%;
     --card-foreground: 221 50% 75%;
-    --popover: 221 89% 28%;
-    --popover-foreground: 221 50% 75%;
+    --popover: 221 89% 18%;
+    --popover-foreground: 221 50% 90%;
     --primary: 221 50% 75%;        /* Light blue primary */
     --primary-foreground: 221 89% 25%;
     --secondary: 221 89% 20%;
@@ -232,8 +232,8 @@ body {
     --foreground: 37 14% 76%;       /* Warm cream text */
     --card: 0 0% 10%;
     --card-foreground: 37 14% 76%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 37 14% 76%;
+    --popover: 0 0% 20%;
+    --popover-foreground: 37 14% 85%;
     --primary: 37 14% 76%;          /* Cream for primary */
     --primary-foreground: 0 0% 8%;
     --secondary: 0 0% 15%;
@@ -266,8 +266,8 @@ body {
     --foreground: 71 100% 60%;      /* Pip-Boy green */
     --card: 0 0% 3%;
     --card-foreground: 71 100% 60%;
-    --popover: 0 0% 3%;
-    --popover-foreground: 71 100% 60%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 71 100% 65%;
     --primary: 71 100% 55%;         /* Bright Pip-Boy green */
     --primary-foreground: 0 0% 0%;
     --secondary: 0 0% 8%;
