@@ -1,8 +1,8 @@
 {
-  "version": "25.08.26-alpha.284",
-  "buildDate": "2025-08-27T03:23:48.856Z",
-  "buildNumber": "286",
-  "buildTime": "2025-08-27T03:23:48.856Z",
+  "version": "25.08.27-alpha.284",
+  "buildDate": "2025-08-27T05:06:36.210Z",
+  "buildNumber": "287",
+  "buildTime": "2025-08-27T05:06:36.210Z",
   "git": {
     "hash": "0f9238a",
     "isDirty": true,
