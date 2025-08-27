@@ -2407,6 +2407,7 @@ dependencies = [
 dev = [
     { name = "nuitka" },
     { name = "py2app" },
+    { name = "pyinstaller" },
 ]
 network = [
     { name = "netifaces" },
@@ -2459,6 +2460,7 @@ requires-dist = [
 dev = [
     { name = "nuitka", specifier = ">=2.7.12" },
     { name = "py2app", specifier = ">=0.28.8" },
+    { name = "pyinstaller", specifier = ">=6.15.0" },
 ]
 network = [{ name = "netifaces", specifier = ">=0.11.0" }]
 
