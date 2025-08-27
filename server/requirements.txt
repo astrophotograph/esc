@@ -36,7 +36,7 @@ sniffio==1.3.1
 sqlalchemy==2.0.43
 starlette==0.47.2
 tifffile==2025.6.11
-typing-extensions==4.14.1
+typing-extensions==4.15.0
 typing-inspect==0.9.0
 typing-inspection==0.4.1
 uvicorn==0.35.0
