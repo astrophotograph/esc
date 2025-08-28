@@ -11,6 +11,9 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - SERVER_PORT=${SERVER_PORT:-8000}
+      - PYTHON_ENV=${PYTHON_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       # Mount server code for development
       - ./server:/app
@@ -33,8 +36,9 @@ services:
       # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
     network_mode: host
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=${NODE_ENV:-development}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - BACKEND_HOST=${BACKEND_HOST:-localhost:8000}
     volumes:
       # Mount UI code for development
       - ./ui:/app

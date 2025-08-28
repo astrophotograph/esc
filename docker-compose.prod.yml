@@ -19,6 +19,8 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - BACKEND_HOST=localhost:8000
     volumes: []  # Remove development volume mounts
     restart: always
 
