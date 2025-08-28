@@ -559,18 +559,23 @@ class AstronomicalCatalogProcessor:
         with open(full_file, 'w', encoding='utf-8') as f:
             json.dump({
                 'metadata': {
-                    'description': 'Comprehensive catalog of Messier, NGC, IC objects and bright stars',
+                    'description': 'Comprehensive catalog of Messier, NGC, IC, Sharpless, LDN, LBN, Barnard objects and bright stars',
                     'total_objects': len(self.objects),
                     'sources': [
                         'OpenNGC Database (NGC/IC/Messier objects)',
                         'OpenNGC Addendum (M40, M45, etc.)',
-                        'HYG Stellar Database v4.1 (bright stars)'
+                        'HYG Stellar Database v4.1 (bright stars)',
+                        'Sharpless Catalog of HII Regions (Sh2)',
+                        'Lynds Dark Nebulae Catalog (LDN)',
+                        'Lynds Bright Nebulae Catalog (LBN)',
+                        'Barnard Dark Objects Catalog'
                     ],
                     'licenses': 'CC-BY-SA-4.0',
                     'special_notes': {
                         'M40': 'Double star (Winnecke 4) in Ursa Major',
                         'M45': 'Pleiades open cluster in Taurus',
-                        'M102': 'Disputed object, possibly NGC 5866 or duplicate of M101'
+                        'M102': 'Disputed object, possibly NGC 5866 or duplicate of M101',
+                        'Additional Catalogs': 'Includes curated selection of Sharpless, LDN, LBN, and Barnard objects'
                     }
                 },
                 'objects': self.objects
@@ -623,6 +628,151 @@ class AstronomicalCatalogProcessor:
             else:
                 print(f"⚠ Found {len(messier_numbers)} of 110 Messier objects")
 
+    def process_additional_catalogs(self):
+        """Process Sharpless, LDN, LBN, and Barnard catalogs from JSON file."""
+        print("\nProcessing additional catalogs (Sharpless, LDN, LBN, Barnard)...")
+        
+        json_file = Path("source_data/additional_catalogs.json")
+        if not json_file.exists():
+            json_file = self.output_dir.parent / "source_data" / "additional_catalogs.json"
+        
+        if not json_file.exists():
+            print(f"Additional catalogs file not found at {json_file}")
+            return
+        
+        with open(json_file, 'r', encoding='utf-8') as f:
+            catalogs_data = json.load(f)
+        
+        catalog_count = 0
+        
+        # Process each catalog
+        for catalog_name, objects in catalogs_data.items():
+            print(f"\nProcessing {catalog_name.upper()} catalog...")
+            
+            for obj_data in objects:
+                # Parse coordinates
+                coords = self.parse_ra_dec(obj_data.get('ra', ''), obj_data.get('dec', ''))
+                
+                if coords.get('ra_decimal') is None or coords.get('dec_decimal') is None:
+                    print(f"  Skipping {obj_data.get('id')} - invalid coordinates")
+                    continue
+                
+                # Determine catalog IDs
+                catalog_ids = {
+                    'messier': None,
+                    'ngc': None,
+                    'ic': None,
+                    'hr': None,
+                    'hd': None,
+                    'hip': None,
+                    'gl': None
+                }
+                
+                # Add custom catalog ID field
+                if catalog_name == 'sharpless':
+                    catalog_ids['sharpless'] = obj_data.get('id')
+                elif catalog_name == 'ldn':
+                    catalog_ids['ldn'] = obj_data.get('id')
+                elif catalog_name == 'lbn':
+                    catalog_ids['lbn'] = obj_data.get('id')
+                elif catalog_name == 'barnard':
+                    catalog_ids['barnard'] = obj_data.get('id')
+                
+                # Build names structure
+                names = {
+                    'proper': obj_data.get('name'),
+                    'bayer_flamsteed': None,
+                    'common': obj_data.get('common_names', []),
+                    'other': [obj_data.get('id')]
+                }
+                
+                # Map object type
+                obj_type = obj_data.get('type', 'Unknown')
+                if 'Dark' in obj_type:
+                    obj_type = 'DrkN'  # Dark Nebula
+                elif 'Emission' in obj_type:
+                    obj_type = 'HII'  # HII region/Emission nebula
+                elif 'Reflection' in obj_type:
+                    obj_type = 'RfN'  # Reflection Nebula
+                elif 'Planetary' in obj_type:
+                    obj_type = 'PN'  # Planetary Nebula
+                elif 'Supernova' in obj_type:
+                    obj_type = 'SNR'  # Supernova Remnant
+                elif 'Wolf-Rayet' in obj_type:
+                    obj_type = 'WR*'  # Wolf-Rayet nebula
+                elif 'Bright' in obj_type:
+                    obj_type = 'Neb'  # Generic nebula
+                
+                # Build object structure
+                obj = {
+                    'id': obj_data.get('id'),
+                    'catalog_ids': catalog_ids,
+                    'names': names,
+                    'object_type': obj_type,
+                    'coordinates': {
+                        'ra_j2000': {
+                            'decimal': coords['ra_decimal'],
+                            'sexagesimal': coords.get('ra_sexagesimal', self.decimal_to_sexagesimal_ra(coords['ra_decimal']))
+                        },
+                        'dec_j2000': {
+                            'decimal': coords['dec_decimal'],
+                            'sexagesimal': coords.get('dec_sexagesimal', self.decimal_to_sexagesimal_dec(coords['dec_decimal']))
+                        },
+                        'constellation': obj_data.get('constellation', ''),
+                        'galactic': {
+                            'l': None,
+                            'b': None
+                        }
+                    },
+                    'magnitudes': {
+                        'v': None,
+                        'b': None,
+                        'u': None,
+                        'r': None,
+                        'i': None,
+                        'j': None,
+                        'h': None,
+                        'k': None
+                    },
+                    'physical_properties': {
+                        'size': {
+                            'major_axis_arcmin': obj_data.get('size'),
+                            'minor_axis_arcmin': obj_data.get('size'),
+                            'position_angle_deg': None
+                        },
+                        'spectral_type': None,
+                        'color_index_bv': None,
+                        'absolute_magnitude': None,
+                        'luminosity_solar': None,
+                        'surface_brightness': obj_data.get('brightness') if catalog_name == 'lbn' else None,
+                        'opacity': obj_data.get('opacity') if catalog_name == 'ldn' else None
+                    },
+                    'motion': {
+                        'proper_motion_ra_mas_yr': None,
+                        'proper_motion_dec_mas_yr': None,
+                        'radial_velocity_km_s': None
+                    },
+                    'variability': {
+                        'is_variable': False,
+                        'variable_type': None,
+                        'magnitude_range': {
+                            'min': None,
+                            'max': None
+                        }
+                    },
+                    'morphology': {
+                        'hubble_type': None,
+                        'morphology_code': None
+                    },
+                    'notes': obj_data.get('description', ''),
+                    'catalog_source': catalog_name.upper()
+                }
+                
+                self.objects.append(obj)
+                catalog_count += 1
+        
+        print(f"\nAdded {catalog_count} objects from additional catalogs")
+
     def run(self):
         """Run the complete processing pipeline."""
         print("Astronomical Catalog Processor")
@@ -633,6 +783,9 @@ class AstronomicalCatalogProcessor:
 
         # Process HYG star data
         self.process_hyg_stars()
+        
+        # Process additional catalogs (Sharpless, LDN, LBN, Barnard)
+        self.process_additional_catalogs()
 
         # Save results
         if self.objects:

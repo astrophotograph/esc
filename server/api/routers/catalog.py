@@ -154,6 +154,14 @@ def get_object_name(obj: Dict[str, Any]) -> str:
         return f"NGC {catalog_ids['ngc']}"
     elif catalog_ids.get('ic'):
         return f"IC {catalog_ids['ic']}"
+    elif catalog_ids.get('sharpless'):
+        return catalog_ids['sharpless']  # Already formatted as "Sh2-XXX"
+    elif catalog_ids.get('barnard'):
+        return catalog_ids['barnard']  # Already formatted as "BXXX"
+    elif catalog_ids.get('ldn'):
+        return catalog_ids['ldn']  # Already formatted as "LDN XXX"
+    elif catalog_ids.get('lbn'):
+        return catalog_ids['lbn']  # Already formatted as "LBN XXX"
     elif obj_id.startswith('NGC'):
         # Parse NGC number from ID field and format with space
         num = obj_id[3:]  # Remove 'NGC' prefix
@@ -162,6 +170,14 @@ def get_object_name(obj: Dict[str, Any]) -> str:
         # Parse IC number from ID field and format with space
         num = obj_id[2:]  # Remove 'IC' prefix
         return f"IC {num}"
+    elif obj_id.startswith('Sh2-'):
+        return obj_id  # Sharpless catalog ID
+    elif obj_id.startswith('B'):
+        return obj_id  # Barnard catalog ID
+    elif obj_id.startswith('LDN'):
+        return obj_id  # Lynds Dark Nebula
+    elif obj_id.startswith('LBN'):
+        return obj_id  # Lynds Bright Nebula
     elif names.get('proper'):
         return names['proper']
     elif names.get('bayer_flamsteed'):
@@ -217,6 +233,36 @@ def get_all_object_names(obj: Dict[str, Any]) -> List[str]:
         all_names.append(f"HD {catalog_ids['hd']}")
     if catalog_ids.get('hip'):
         all_names.append(f"HIP {catalog_ids['hip']}")
+    
+    # New catalog identifiers
+    if catalog_ids.get('sharpless'):
+        sharpless_id = catalog_ids['sharpless']
+        all_names.extend([
+            sharpless_id,
+            sharpless_id.replace('-', ''),  # Sh2123 variant
+            f"Sharpless {sharpless_id[3:]}"  # "Sharpless 123" variant
+        ])
+    if catalog_ids.get('barnard'):
+        barnard_id = catalog_ids['barnard']
+        all_names.extend([
+            barnard_id,
+            f"Barnard {barnard_id[1:]}",  # "Barnard 33" variant
+            f"B {barnard_id[1:]}"  # "B 33" variant
+        ])
+    if catalog_ids.get('ldn'):
+        ldn_id = catalog_ids['ldn']
+        all_names.extend([
+            ldn_id,
+            ldn_id.replace(' ', ''),  # "LDN1622" variant
+            f"Lynds {ldn_id[3:].strip()}"  # "Lynds 1622" variant
+        ])
+    if catalog_ids.get('lbn'):
+        lbn_id = catalog_ids['lbn']
+        all_names.extend([
+            lbn_id,
+            lbn_id.replace(' ', ''),  # "LBN437" variant
+            f"Lynds {lbn_id[3:].strip()}"  # "Lynds 437" variant
+        ])
     
     # Proper names and common names
     if names.get('proper'):

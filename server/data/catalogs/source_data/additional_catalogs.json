@@ -1,0 +1,474 @@
+{
+  "sharpless": [
+    {
+      "id": "Sh2-1",
+      "name": "Sharpless 1", 
+      "ra": "00:11:00",
+      "dec": "+65:50:00",
+      "size": 60,
+      "type": "Emission Nebula",
+      "constellation": "Cepheus",
+      "description": "Emission nebula in Cepheus"
+    },
+    {
+      "id": "Sh2-29",
+      "name": "Soul Nebula",
+      "common_names": ["IC 1848", "W5"],
+      "ra": "02:51:00",
+      "dec": "+60:26:00",
+      "size": 150,
+      "type": "Emission Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Large star-forming region often paired with the Heart Nebula"
+    },
+    {
+      "id": "Sh2-101",
+      "name": "Tulip Nebula",
+      "ra": "20:00:00",
+      "dec": "+35:20:00",
+      "size": 16,
+      "type": "Emission Nebula",
+      "constellation": "Cygnus",
+      "description": "Emission nebula that resembles a tulip"
+    },
+    {
+      "id": "Sh2-106",
+      "name": "Bipolar Nebula",
+      "ra": "20:27:26",
+      "dec": "+37:22:48",
+      "size": 3,
+      "type": "Emission Nebula",
+      "constellation": "Cygnus",
+      "description": "Star-forming region with distinctive bipolar shape"
+    },
+    {
+      "id": "Sh2-129",
+      "name": "Flying Bat Nebula",
+      "common_names": ["Squid Nebula"],
+      "ra": "21:53:00",
+      "dec": "+59:57:00",
+      "size": 150,
+      "type": "Emission Nebula",
+      "constellation": "Cepheus",
+      "description": "Large emission nebula with Ou4 squid nebula inside"
+    },
+    {
+      "id": "Sh2-132",
+      "name": "Lion Nebula",
+      "ra": "22:19:00",
+      "dec": "+56:05:00",
+      "size": 40,
+      "type": "Emission Nebula",
+      "constellation": "Cepheus",
+      "description": "Large HII region at edge of Cepheus"
+    },
+    {
+      "id": "Sh2-155",
+      "name": "Cave Nebula",
+      "common_names": ["Caldwell 9"],
+      "ra": "22:56:48",
+      "dec": "+62:37:00",
+      "size": 50,
+      "type": "Emission Nebula",
+      "constellation": "Cepheus",
+      "description": "Diffuse nebula within larger star-forming region"
+    },
+    {
+      "id": "Sh2-157",
+      "name": "Lobster Claw Nebula",
+      "common_names": ["NGC 7635 region"],
+      "ra": "23:20:45",
+      "dec": "+61:12:00",
+      "size": 11,
+      "type": "Emission Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Near the Bubble Nebula"
+    },
+    {
+      "id": "Sh2-162",
+      "name": "Bubble Nebula",
+      "common_names": ["NGC 7635"],
+      "ra": "23:20:48",
+      "dec": "+61:12:42",
+      "size": 15,
+      "type": "Emission Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Wind-blown bubble created by massive star"
+    },
+    {
+      "id": "Sh2-171",
+      "name": "NGC 7822",
+      "ra": "00:03:00",
+      "dec": "+68:37:00",
+      "size": 60,
+      "type": "Emission Nebula",
+      "constellation": "Cepheus",
+      "description": "Star-forming complex"
+    },
+    {
+      "id": "Sh2-188",
+      "name": "Prawn Nebula",
+      "common_names": ["Shrimp Nebula"],
+      "ra": "01:30:30",
+      "dec": "+58:25:00",
+      "size": 10,
+      "type": "Planetary Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Asymmetric planetary nebula"
+    },
+    {
+      "id": "Sh2-190",
+      "name": "Heart Nebula",
+      "common_names": ["IC 1805"],
+      "ra": "02:32:42",
+      "dec": "+61:27:00",
+      "size": 150,
+      "type": "Emission Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Large heart-shaped emission nebula"
+    },
+    {
+      "id": "Sh2-240",
+      "name": "Simeis 147",
+      "common_names": ["Spaghetti Nebula"],
+      "ra": "05:42:00",
+      "dec": "+28:00:00",
+      "size": 180,
+      "type": "Supernova Remnant",
+      "constellation": "Taurus",
+      "description": "Large, faint supernova remnant"
+    },
+    {
+      "id": "Sh2-264",
+      "name": "Lambda Orionis Nebula",
+      "common_names": ["Angelfish Nebula"],
+      "ra": "05:35:00",
+      "dec": "+09:56:00",
+      "size": 480,
+      "type": "Emission Nebula",
+      "constellation": "Orion",
+      "description": "Circular nebula around Lambda Orionis"
+    },
+    {
+      "id": "Sh2-308",
+      "name": "Dolphin Head Nebula",
+      "common_names": ["Wolf-Rayet Bubble"],
+      "ra": "06:54:13",
+      "dec": "-23:55:42",
+      "size": 40,
+      "type": "Wolf-Rayet Nebula",
+      "constellation": "Canis Major",
+      "description": "Bubble blown by Wolf-Rayet star WR 6"
+    }
+  ],
+  "ldn": [
+    {
+      "id": "LDN 1622",
+      "name": "Boogeyman Nebula",
+      "ra": "05:34:30",
+      "dec": "+01:34:00",
+      "size": 30,
+      "opacity": 5,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula that appears to have a humanoid shape"
+    },
+    {
+      "id": "LDN 1641",
+      "name": "Orion Dark Cloud",
+      "ra": "05:36:00",
+      "dec": "-06:22:00",
+      "size": 120,
+      "opacity": 4,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Southern part of Orion molecular cloud"
+    },
+    {
+      "id": "LDN 483",
+      "name": "Serpens Dark Cloud",
+      "ra": "18:17:30",
+      "dec": "-04:40:00",
+      "size": 45,
+      "opacity": 6,
+      "type": "Dark Nebula",
+      "constellation": "Serpens",
+      "description": "Dense molecular cloud with active star formation"
+    },
+    {
+      "id": "LDN 673",
+      "name": "Aquila Dark Cloud",
+      "ra": "19:20:30",
+      "dec": "+11:02:00",
+      "size": 40,
+      "opacity": 5,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud complex in Aquila Rift"
+    },
+    {
+      "id": "LDN 988",
+      "name": "Northern Coal Sack",
+      "ra": "21:00:00",
+      "dec": "+43:00:00",
+      "size": 60,
+      "opacity": 6,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud dividing Cygnus Milky Way"
+    },
+    {
+      "id": "LDN 1235",
+      "name": "Dark Shark Nebula",
+      "ra": "22:56:00",
+      "dec": "+65:30:00",
+      "size": 15,
+      "opacity": 5,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula with shark-like appearance"
+    },
+    {
+      "id": "LDN 1251",
+      "name": "Cepheus Dark Complex",
+      "ra": "22:35:00",
+      "dec": "+75:15:00",
+      "size": 35,
+      "opacity": 4,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Molecular cloud complex"
+    }
+  ],
+  "lbn": [
+    {
+      "id": "LBN 437",
+      "name": "Gecko Nebula",
+      "ra": "22:16:00",
+      "dec": "+55:37:00",
+      "size": 120,
+      "brightness": 3,
+      "type": "Bright Nebula",
+      "constellation": "Lacerta",
+      "description": "Large molecular cloud complex"
+    },
+    {
+      "id": "LBN 438",
+      "name": "Lacerta Molecular Cloud",
+      "ra": "22:18:00",
+      "dec": "+55:20:00",
+      "size": 60,
+      "brightness": 4,
+      "type": "Bright Nebula",
+      "constellation": "Lacerta",
+      "description": "Part of Lacerta molecular cloud region"
+    },
+    {
+      "id": "LBN 667",
+      "name": "Baby Eagle Nebula",
+      "ra": "02:20:30",
+      "dec": "+57:08:00",
+      "size": 10,
+      "brightness": 4,
+      "type": "Bright Nebula",
+      "constellation": "Perseus",
+      "description": "Small emission nebula"
+    },
+    {
+      "id": "LBN 762",
+      "name": "Witch Head Nebula",
+      "common_names": ["IC 2118"],
+      "ra": "05:06:59",
+      "dec": "-07:13:00",
+      "size": 180,
+      "brightness": 3,
+      "type": "Reflection Nebula",
+      "constellation": "Eridanus",
+      "description": "Reflection nebula illuminated by Rigel"
+    },
+    {
+      "id": "LBN 974",
+      "name": "Sh2-264 Complex",
+      "ra": "05:35:00",
+      "dec": "+09:56:00",
+      "size": 240,
+      "brightness": 2,
+      "type": "Bright Nebula",
+      "constellation": "Orion",
+      "description": "Lambda Orionis molecular cloud"
+    }
+  ],
+  "barnard": [
+    {
+      "id": "B33",
+      "name": "Horsehead Nebula",
+      "ra": "05:40:59",
+      "dec": "-02:27:30",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "One of the most photographed objects in the sky"
+    },
+    {
+      "id": "B59",
+      "name": "Pipe Stem",
+      "ra": "17:11:00",
+      "dec": "-27:26:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Part of the Pipe Nebula complex"
+    },
+    {
+      "id": "B68",
+      "name": "Black Cloud",
+      "ra": "17:22:38",
+      "dec": "-23:49:34",
+      "size": 7,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Small, dense Bok globule"
+    },
+    {
+      "id": "B72",
+      "name": "Snake Nebula",
+      "ra": "17:23:30",
+      "dec": "-23:38:00",
+      "size": 6,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "S-shaped dark nebula"
+    },
+    {
+      "id": "B78",
+      "name": "Pipe Bowl",
+      "common_names": ["Pipe Nebula"],
+      "ra": "17:33:00",
+      "dec": "-26:00:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud resembling a smoking pipe"
+    },
+    {
+      "id": "B86",
+      "name": "Ink Spot",
+      "ra": "18:02:58",
+      "dec": "-27:52:36",
+      "size": 5,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula near open cluster NGC 6520"
+    },
+    {
+      "id": "B92",
+      "name": "Small Sagittarius Star Cloud Dark Nebula",
+      "ra": "18:15:30",
+      "dec": "-18:15:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Small Sagittarius Star Cloud"
+    },
+    {
+      "id": "B93",
+      "name": "Dark Nebula",
+      "ra": "18:16:48",
+      "dec": "-18:03:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark lanes in Small Sagittarius Star Cloud"
+    },
+    {
+      "id": "B142",
+      "name": "E Nebula",
+      "ra": "19:40:00",
+      "dec": "+10:31:00",
+      "size": 80,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "E-shaped dark nebula"
+    },
+    {
+      "id": "B143",
+      "name": "Dark Nebula",
+      "ra": "19:40:42",
+      "dec": "+10:57:00",
+      "size": 40,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Adjacent to B142, forms part of E complex"
+    },
+    {
+      "id": "B144",
+      "name": "Fish on Platter",
+      "ra": "19:58:00",
+      "dec": "+41:00:00",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula with distinctive shape"
+    },
+    {
+      "id": "B145",
+      "name": "Dark Cloud",
+      "ra": "20:00:00",
+      "dec": "+37:00:00",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Small dark cloud in Cygnus"
+    },
+    {
+      "id": "B150",
+      "name": "Seahorse Nebula",
+      "ra": "20:20:00",
+      "dec": "+41:00:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula resembling a seahorse"
+    },
+    {
+      "id": "B168",
+      "name": "Cocoon Dark Nebula",
+      "ra": "21:53:42",
+      "dec": "+47:16:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud associated with Cocoon Nebula"
+    },
+    {
+      "id": "B169",
+      "name": "Dark Nebula",
+      "ra": "22:05:00",
+      "dec": "+58:00:00",
+      "size": 18,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B171",
+      "name": "Dark Nebula",
+      "ra": "22:15:00",
+      "dec": "+58:30:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud complex"
+    },
+    {
+      "id": "B174",
+      "name": "Dark Nebula",
+      "ra": "22:50:00",
+      "dec": "+58:00:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Small dark cloud"
+    }
+  ]
+}
