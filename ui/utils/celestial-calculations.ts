@@ -18,25 +18,87 @@ interface HorizonInfo {
 }
 
 // Convert RA/Dec string format to decimal degrees
-export function parseRA(ra: string): number {
-  const matches = ra.match(/(\d+)h\s*(\d+)m\s*(\d+)s/)
-  if (!matches) return 0
+export function parseRA(ra: string | number): number {
+  // Handle numeric input
+  if (typeof ra === 'number') {
+    return ra
+  }
   
-  const hours = parseInt(matches[1])
-  const minutes = parseInt(matches[2])
-  const seconds = parseInt(matches[3])
+  // Handle string input
+  if (!ra || typeof ra !== 'string') {
+    return 0
+  }
+  
+  // Try to parse as decimal degrees first
+  const decimalValue = parseFloat(ra)
+  if (!isNaN(decimalValue) && !ra.includes('h') && !ra.includes('m') && !ra.includes('s')) {
+    return decimalValue
+  }
+  
+  // Try colon format first (to avoid conflict with decimal degrees)
+  // Format: "12:34:56" or "12:34:56.7"
+  const colonMatches = ra.match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/)
+  if (colonMatches) {
+    const hours = parseFloat(colonMatches[1])
+    const minutes = parseFloat(colonMatches[2])
+    const seconds = parseFloat(colonMatches[3])
+    return (hours + minutes / 60 + seconds / 3600) * 15
+  }
+  
+  // Match various HMS formats with flexible spacing
+  // Supports: "12h34m56s", "12h 34m 56s", "12h34m56.7s", etc.
+  const matches = ra.match(/(\d+(?:\.\d+)?)\s*h\s*(\d+(?:\.\d+)?)\s*m\s*(\d+(?:\.\d+)?)\s*s?/i)
+  if (!matches) {
+    console.warn(`Unable to parse RA format: ${ra}`)
+    return 0
+  }
+  
+  const hours = parseFloat(matches[1])
+  const minutes = parseFloat(matches[2])
+  const seconds = parseFloat(matches[3])
   
   return (hours + minutes / 60 + seconds / 3600) * 15 // Convert hours to degrees
 }
 
-export function parseDec(dec: string): number {
-  const matches = dec.match(/([+-]?)(\d+)°\s*(\d+)′\s*(\d+)″/)
-  if (!matches) return 0
+export function parseDec(dec: string | number): number {
+  // Handle numeric input
+  if (typeof dec === 'number') {
+    return dec
+  }
+  
+  // Handle string input
+  if (!dec || typeof dec !== 'string') {
+    return 0
+  }
+  
+  // Try to parse as decimal degrees first
+  const decimalValue = parseFloat(dec)
+  if (!isNaN(decimalValue) && !dec.includes('°') && !dec.includes('′') && !dec.includes('″')) {
+    return decimalValue
+  }
+  
+  // Try colon format first: "-45:12:34"
+  const colonMatches = dec.match(/^([+-]?)(\d+):(\d+):(\d+(?:\.\d+)?)$/)
+  if (colonMatches) {
+    const sign = colonMatches[1] === '-' ? -1 : 1
+    const degrees = parseFloat(colonMatches[2])
+    const arcminutes = parseFloat(colonMatches[3])
+    const arcseconds = parseFloat(colonMatches[4])
+    return sign * (degrees + arcminutes / 60 + arcseconds / 3600)
+  }
+  
+  // Match various DMS formats with flexible spacing and optional symbols
+  // Supports: "+45°12′34″", "-45° 12′ 34″", "45d12m34s", etc.
+  const matches = dec.match(/([+-]?)(\d+(?:\.\d+)?)\s*[°d]\s*(\d+(?:\.\d+)?)\s*[′'m]?\s*(\d+(?:\.\d+)?)\s*[″"s]?/i)
+  if (!matches) {
+    console.warn(`Unable to parse Dec format: ${dec}`)
+    return 0
+  }
   
   const sign = matches[1] === '-' ? -1 : 1
-  const degrees = parseInt(matches[2])
-  const arcminutes = parseInt(matches[3])
-  const arcseconds = parseInt(matches[4])
+  const degrees = parseFloat(matches[2])
+  const arcminutes = parseFloat(matches[3])
+  const arcseconds = parseFloat(matches[4])
   
   return sign * (degrees + arcminutes / 60 + arcseconds / 3600)
 }

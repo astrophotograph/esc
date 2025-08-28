@@ -1056,12 +1056,14 @@ class WebSocketManager:
         
         Supported formats:
         - Decimal degrees: 123.456 or "123.456"
-        - Hours/minutes/seconds: "12h34m56.7s" or "12:34:56.7"
+        - Hours/minutes/seconds: "12h34m56.7s", "12h 34m 56s", "12:34:56.7"
         - Hours with decimal: "12.5h" or "12.5"
         - Space separated: "12 34 56.7"
+        
+        Uses astropy for robust parsing when available, falls back to regex.
         """
         import re
-
+        
         if isinstance(ra_value, (int, float)):
             # Already numeric, assume degrees
             return float(ra_value)
@@ -1077,7 +1079,27 @@ class WebSocketManager:
         except ValueError:
             pass
 
-        # HMS format with h/m/s markers - handle spaces before markers
+        # Try using astropy if available for robust parsing
+        try:
+            from astropy.coordinates import Angle
+            import astropy.units as u
+            
+            # Try parsing as hours first (most common for RA)
+            try:
+                angle = Angle(ra_str, unit=u.hourangle)
+                return angle.degree
+            except Exception:
+                # Try parsing as degrees
+                try:
+                    angle = Angle(ra_str, unit=u.degree)
+                    return angle.degree
+                except Exception:
+                    pass
+        except ImportError:
+            pass
+
+        # Fallback to regex patterns
+        # HMS format with h/m/s markers - handle spaces before and after markers
         hms_pattern = r'(\d+(?:\.\d+)?)\s*[hH]\s*(\d+(?:\.\d+)?)\s*[mM]\s*(\d+(?:\.\d+)?)\s*[sS]?'
         match = re.match(hms_pattern, ra_str)
         if match:
@@ -1119,9 +1141,11 @@ class WebSocketManager:
         
         Supported formats:
         - Decimal degrees: 45.678 or "-45.678"
-        - Degrees/minutes/seconds: "+45d12m34.5s" or "45:12:34.5"
+        - Degrees/minutes/seconds: "+45d12m34.5s", "45° 12′ 34″", "45:12:34.5"
         - Degrees with decimal: "45.5d" or "-45.5"
         - Space separated: "45 12 34.5" or "-45 12 34.5"
+        
+        Uses astropy for robust parsing when available, falls back to regex.
         """
         import re
 
@@ -1140,6 +1164,16 @@ class WebSocketManager:
         except ValueError:
             pass
 
+        # Try using astropy if available for robust parsing
+        try:
+            from astropy.coordinates import Angle
+            import astropy.units as u
+            
+            angle = Angle(dec_str, unit=u.degree)
+            return angle.degree
+        except (ImportError, Exception):
+            pass
+
         # Check for sign
         negative = False
         if dec_str.startswith('-'):
@@ -1149,7 +1183,8 @@ class WebSocketManager:
             dec_str = dec_str[1:].strip()
 
         # DMS format with d/m/s markers - handle various quote styles and spaces
-        dms_pattern = r'(\d+(?:\.\d+)?)\s*[dD°]\s*(\d+(?:\.\d+)?)\s*[mM\'′]\s*(\d+(?:\.\d+)?)\s*[sS"″]?'
+        # Extended pattern to handle more variations including spaces
+        dms_pattern = r'(\d+(?:\.\d+)?)\s*[dD°]\s*(\d+(?:\.\d+)?)\s*[mM\'′]?\s*(\d+(?:\.\d+)?)\s*[sS"″]?'
         match = re.match(dms_pattern, dec_str)
         if match:
             degrees = float(match.group(1))
