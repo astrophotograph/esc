@@ -2291,6 +2291,15 @@ wheels = [
 ]
 
 [[package]]
+name = "scopinator"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/42/b7b1ddf90d8ca4a6d0a5ed2a5873ad977e417ab08755389affb71f7da1e1/scopinator-0.2.0.tar.gz", hash = "sha256:fcac7d5db8f06137d0a198d53129afdcaefa9eccfc82759f14bb1634130d99f7", size = 45337, upload-time = "2025-08-30T20:32:27.626Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/89/59c13ae1f6ade10da99ce0f0c327d6e5b6ae6e667fc6e1fe0d8073144f1e/scopinator-0.2.0-py3-none-any.whl", hash = "sha256:c186a54e129c8c661c907cd3b06b48cd33ff3f55ec08a8d72b82b5adc6793aef", size = 56640, upload-time = "2025-08-30T20:32:26.443Z" },
+]
+
+[[package]]
 name = "setuptools"
 version = "80.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2420,6 +2429,7 @@ dependencies = [
     { name = "pywavelets" },
     { name = "sc-pylibs" },
     { name = "scikit-image" },
+    { name = "scopinator" },
     { name = "starplot" },
     { name = "torch" },
     { name = "torchvision" },
@@ -2473,6 +2483,7 @@ requires-dist = [
     { name = "pywavelets", specifier = ">=1.8.0" },
     { name = "sc-pylibs", specifier = ">=0.0.0.1" },
     { name = "scikit-image", specifier = ">=0.25.2" },
+    { name = "scopinator", specifier = ">=0.2.0" },
     { name = "starplot", specifier = ">=0.9.0" },
     { name = "torch", specifier = ">=2.7.1" },
     { name = "torchvision", specifier = ">=0.22.1" },
