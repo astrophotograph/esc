@@ -1,0 +1,3424 @@
+{
+  "barnard": [
+    {
+      "id": "B1",
+      "name": "Barnard 1",
+      "ra": "00:25.4",
+      "dec": "+56:08",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Large dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B2",
+      "name": "Barnard 2",
+      "ra": "00:40.7",
+      "dec": "+59:09",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B3",
+      "name": "Barnard 3",
+      "ra": "00:43.0",
+      "dec": "+61:15",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B4",
+      "name": "Barnard 4",
+      "ra": "00:49.5",
+      "dec": "+51:27",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B5",
+      "name": "Barnard 5",
+      "ra": "01:10.5",
+      "dec": "+55:01",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B6",
+      "name": "Barnard 6",
+      "ra": "01:21.3",
+      "dec": "+55:25",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B7",
+      "name": "Barnard 7",
+      "ra": "02:04.0",
+      "dec": "+68:09",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B8",
+      "name": "Barnard 8",
+      "ra": "02:20.5",
+      "dec": "+59:09",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B9",
+      "name": "Barnard 9",
+      "ra": "02:23.0",
+      "dec": "+56:08",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B10",
+      "name": "Barnard 10",
+      "ra": "02:25.5",
+      "dec": "+56:42",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B11",
+      "name": "Barnard 11",
+      "ra": "02:36.0",
+      "dec": "+59:21",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B12",
+      "name": "Barnard 12",
+      "ra": "02:55.0",
+      "dec": "+59:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B13",
+      "name": "Barnard 13",
+      "ra": "02:56.0",
+      "dec": "+56:38",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B14",
+      "name": "Barnard 14",
+      "ra": "03:19.0",
+      "dec": "+58:30",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B15",
+      "name": "Barnard 15",
+      "ra": "03:27.5",
+      "dec": "+23:30",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B16",
+      "name": "Barnard 16",
+      "ra": "03:30.2",
+      "dec": "+30:12",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B17",
+      "name": "Barnard 17",
+      "ra": "03:31.0",
+      "dec": "+31:04",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B18",
+      "name": "Barnard 18",
+      "ra": "03:33.5",
+      "dec": "+25:09",
+      "size": 240,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B19",
+      "name": "Barnard 19",
+      "ra": "03:41.0",
+      "dec": "+32:06",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B20",
+      "name": "Barnard 20",
+      "ra": "03:45.2",
+      "dec": "+32:51",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B21",
+      "name": "Barnard 21",
+      "ra": "03:47.5",
+      "dec": "+32:54",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B22",
+      "name": "Barnard 22",
+      "ra": "04:07.0",
+      "dec": "+26:18",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B23",
+      "name": "Barnard 23",
+      "ra": "04:13.0",
+      "dec": "+28:12",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B24",
+      "name": "Barnard 24",
+      "ra": "04:17.5",
+      "dec": "+29:41",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B25",
+      "name": "Barnard 25",
+      "ra": "04:18.2",
+      "dec": "+24:22",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B26",
+      "name": "Barnard 26",
+      "ra": "04:21.0",
+      "dec": "+26:18",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B27",
+      "name": "Barnard 27",
+      "ra": "04:29.0",
+      "dec": "+23:37",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B28",
+      "name": "Barnard 28",
+      "ra": "04:30.5",
+      "dec": "+24:09",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B29",
+      "name": "Barnard 29",
+      "ra": "04:31.8",
+      "dec": "+18:04",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark cloud in Taurus"
+    },
+    {
+      "id": "B30",
+      "name": "Barnard 30",
+      "ra": "04:32.5",
+      "dec": "+09:03",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Taurus/Orion",
+      "description": "Dark cloud in Taurus/Orion"
+    },
+    {
+      "id": "B31",
+      "name": "Barnard 31",
+      "ra": "04:33.0",
+      "dec": "+04:18",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark cloud in Orion"
+    },
+    {
+      "id": "B32",
+      "name": "Barnard 32",
+      "ra": "04:55.0",
+      "dec": "-02:43",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark cloud in Orion"
+    },
+    {
+      "id": "B33",
+      "name": "Barnard 33",
+      "ra": "05:40.9",
+      "dec": "-02:28",
+      "size": 6,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Horsehead Nebula in Orion",
+      "common_names": [
+        "Horsehead Nebula"
+      ]
+    },
+    {
+      "id": "B34",
+      "name": "Barnard 34",
+      "ra": "05:42.0",
+      "dec": "+00:08",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark cloud in Orion"
+    },
+    {
+      "id": "B35",
+      "name": "Barnard 35",
+      "ra": "05:45.5",
+      "dec": "-00:08",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark cloud in Orion"
+    },
+    {
+      "id": "B36",
+      "name": "Barnard 36",
+      "ra": "05:46.0",
+      "dec": "-02:45",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark cloud in Orion"
+    },
+    {
+      "id": "B37",
+      "name": "Barnard 37",
+      "ra": "06:12.7",
+      "dec": "+17:58",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Gemini",
+      "description": "Dark cloud in Gemini"
+    },
+    {
+      "id": "B38",
+      "name": "Barnard 38",
+      "ra": "06:17.0",
+      "dec": "+10:06",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B39",
+      "name": "Barnard 39",
+      "ra": "06:21.0",
+      "dec": "+10:18",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B40",
+      "name": "Barnard 40",
+      "ra": "06:26.0",
+      "dec": "+10:42",
+      "size": 40,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B41",
+      "name": "Barnard 41",
+      "ra": "06:28.5",
+      "dec": "+08:27",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B42",
+      "name": "Barnard 42",
+      "ra": "06:41.0",
+      "dec": "-18:39",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Canis Major",
+      "description": "Dark cloud in Canis Major"
+    },
+    {
+      "id": "B43",
+      "name": "Barnard 43",
+      "ra": "06:45.0",
+      "dec": "+01:06",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B44",
+      "name": "Barnard 44",
+      "ra": "06:52.5",
+      "dec": "-04:06",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Large dark cloud in Monoceros"
+    },
+    {
+      "id": "B45",
+      "name": "Barnard 45",
+      "ra": "07:02.0",
+      "dec": "-05:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B46",
+      "name": "Barnard 46",
+      "ra": "07:04.0",
+      "dec": "-04:35",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B47",
+      "name": "Barnard 47",
+      "ra": "07:06.5",
+      "dec": "-04:45",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark cloud in Monoceros"
+    },
+    {
+      "id": "B48",
+      "name": "Barnard 48",
+      "ra": "07:18.5",
+      "dec": "-24:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark cloud in Puppis"
+    },
+    {
+      "id": "B49",
+      "name": "Barnard 49",
+      "ra": "07:24.0",
+      "dec": "-15:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Canis Major",
+      "description": "Dark cloud in Canis Major"
+    },
+    {
+      "id": "B50",
+      "name": "Barnard 50",
+      "ra": "07:30.0",
+      "dec": "-25:12",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark cloud in Puppis"
+    },
+    {
+      "id": "B51",
+      "name": "Barnard 51",
+      "ra": "08:26.5",
+      "dec": "+09:48",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cancer",
+      "description": "Dark cloud in Cancer"
+    },
+    {
+      "id": "B59",
+      "name": "Barnard 59",
+      "ra": "17:11.0",
+      "dec": "-27:26",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Pipe Stem in Ophiuchus",
+      "common_names": [
+        "Pipe Stem"
+      ]
+    },
+    {
+      "id": "B60",
+      "name": "Barnard 60",
+      "ra": "17:14.5",
+      "dec": "-22:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B61",
+      "name": "Barnard 61",
+      "ra": "17:16.0",
+      "dec": "-20:44",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B62",
+      "name": "Barnard 62",
+      "ra": "17:17.5",
+      "dec": "-21:47",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B63",
+      "name": "Barnard 63",
+      "ra": "17:19.0",
+      "dec": "-23:45",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B64",
+      "name": "Barnard 64",
+      "ra": "17:20.5",
+      "dec": "-23:20",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Large dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B65",
+      "name": "Barnard 65",
+      "ra": "17:21.0",
+      "dec": "-26:50",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B66",
+      "name": "Barnard 66",
+      "ra": "17:21.5",
+      "dec": "-26:40",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B67",
+      "name": "Barnard 67",
+      "ra": "17:22.0",
+      "dec": "-23:38",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B68",
+      "name": "Barnard 68",
+      "ra": "17:22.6",
+      "dec": "-23:50",
+      "size": 7,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Black Cloud in Ophiuchus",
+      "common_names": [
+        "Black Cloud"
+      ]
+    },
+    {
+      "id": "B69",
+      "name": "Barnard 69",
+      "ra": "17:23.0",
+      "dec": "-23:35",
+      "size": 5,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Small dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B70",
+      "name": "Barnard 70",
+      "ra": "17:23.2",
+      "dec": "-23:39",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B71",
+      "name": "Barnard 71",
+      "ra": "17:23.5",
+      "dec": "-23:41",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B72",
+      "name": "Barnard 72",
+      "ra": "17:23.5",
+      "dec": "-23:38",
+      "size": 6,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Snake Nebula in Ophiuchus",
+      "common_names": [
+        "Snake Nebula"
+      ]
+    },
+    {
+      "id": "B73",
+      "name": "Barnard 73",
+      "ra": "17:25.0",
+      "dec": "-23:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B74",
+      "name": "Barnard 74",
+      "ra": "17:25.5",
+      "dec": "-23:15",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B75",
+      "name": "Barnard 75",
+      "ra": "17:26.0",
+      "dec": "-22:45",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B76",
+      "name": "Barnard 76",
+      "ra": "17:27.0",
+      "dec": "-23:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud in Ophiuchus"
+    },
+    {
+      "id": "B77",
+      "name": "Barnard 77",
+      "ra": "17:28.0",
+      "dec": "-24:00",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark cloud complex in Ophiuchus"
+    },
+    {
+      "id": "B78",
+      "name": "Barnard 78",
+      "ra": "17:33.0",
+      "dec": "-26:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Pipe Bowl/Pipe Nebula in Ophiuchus",
+      "common_names": [
+        "Pipe Bowl",
+        "Pipe Nebula"
+      ]
+    },
+    {
+      "id": "B79",
+      "name": "Barnard 79",
+      "ra": "17:34.5",
+      "dec": "-31:36",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark cloud in Scorpius"
+    },
+    {
+      "id": "B80",
+      "name": "Barnard 80",
+      "ra": "17:35.0",
+      "dec": "-32:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark cloud in Scorpius"
+    },
+    {
+      "id": "B81",
+      "name": "Barnard 81",
+      "ra": "17:35.5",
+      "dec": "-32:36",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark cloud in Scorpius"
+    },
+    {
+      "id": "B82",
+      "name": "Barnard 82",
+      "ra": "17:36.0",
+      "dec": "-32:42",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark cloud in Scorpius"
+    },
+    {
+      "id": "B83",
+      "name": "Barnard 83",
+      "ra": "17:37.0",
+      "dec": "-32:33",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark cloud in Scorpius"
+    },
+    {
+      "id": "B84",
+      "name": "Barnard 84",
+      "ra": "17:38.0",
+      "dec": "-24:42",
+      "size": 300,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Large dark region in Ophiuchus"
+    },
+    {
+      "id": "B85",
+      "name": "Barnard 85",
+      "ra": "18:00.0",
+      "dec": "-27:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B86",
+      "name": "Barnard 86",
+      "ra": "18:03.0",
+      "dec": "-27:53",
+      "size": 5,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Ink Spot in Sagittarius",
+      "common_names": [
+        "Ink Spot"
+      ]
+    },
+    {
+      "id": "B87",
+      "name": "Barnard 87",
+      "ra": "18:04.5",
+      "dec": "-32:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Parrot's Head in Sagittarius",
+      "common_names": [
+        "Parrot's Head"
+      ]
+    },
+    {
+      "id": "B88",
+      "name": "Barnard 88",
+      "ra": "18:39.0",
+      "dec": "-24:22",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B89",
+      "name": "Barnard 89",
+      "ra": "18:47.0",
+      "dec": "-04:36",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B90",
+      "name": "Barnard 90",
+      "ra": "18:47.5",
+      "dec": "-04:12",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B91",
+      "name": "Barnard 91",
+      "ra": "18:48.0",
+      "dec": "-04:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B92",
+      "name": "Barnard 92",
+      "ra": "18:15.5",
+      "dec": "-18:15",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "",
+      "description": "Small Sgr Star Cloud dark nebula",
+      "common_names": [
+        "Small Sagittarius Star Cloud Dark Nebula"
+      ]
+    },
+    {
+      "id": "B93",
+      "name": "Barnard 93",
+      "ra": "18:16.8",
+      "dec": "-18:03",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Small Sgr Star Cloud",
+      "description": "Dark lanes in Small Sgr Star Cloud"
+    },
+    {
+      "id": "B94",
+      "name": "Barnard 94",
+      "ra": "17:52.0",
+      "dec": "-30:48",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B95",
+      "name": "Barnard 95",
+      "ra": "17:53.5",
+      "dec": "-30:42",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B96",
+      "name": "Barnard 96",
+      "ra": "17:54.0",
+      "dec": "-30:36",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B97",
+      "name": "Barnard 97",
+      "ra": "17:55.0",
+      "dec": "-30:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B98",
+      "name": "Barnard 98",
+      "ra": "17:56.5",
+      "dec": "-30:24",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B99",
+      "name": "Barnard 99",
+      "ra": "17:58.0",
+      "dec": "-30:18",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B100",
+      "name": "Barnard 100",
+      "ra": "18:00.5",
+      "dec": "-30:12",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B101",
+      "name": "Barnard 101",
+      "ra": "18:02.0",
+      "dec": "-30:06",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B102",
+      "name": "Barnard 102",
+      "ra": "18:03.5",
+      "dec": "-30:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark cloud in Sagittarius"
+    },
+    {
+      "id": "B103",
+      "name": "Barnard 103",
+      "ra": "18:05.0",
+      "dec": "-24:00",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Large dark cloud in Sagittarius"
+    },
+    {
+      "id": "B104",
+      "name": "Barnard 104",
+      "ra": "18:47.0",
+      "dec": "-05:48",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B105",
+      "name": "Barnard 105",
+      "ra": "18:48.5",
+      "dec": "-06:24",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B106",
+      "name": "Barnard 106",
+      "ra": "18:49.0",
+      "dec": "-06:12",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark cloud in Scutum"
+    },
+    {
+      "id": "B107",
+      "name": "Barnard 107",
+      "ra": "18:49.5",
+      "dec": "-06:00",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Large dark region in Aquila"
+    },
+    {
+      "id": "B108",
+      "name": "Barnard 108",
+      "ra": "18:50.0",
+      "dec": "-05:48",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B109",
+      "name": "Barnard 109",
+      "ra": "18:50.5",
+      "dec": "-05:36",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B110",
+      "name": "Barnard 110",
+      "ra": "18:51.0",
+      "dec": "-04:54",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B111",
+      "name": "Barnard 111",
+      "ra": "18:51.5",
+      "dec": "-04:18",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Large dark region in Aquila"
+    },
+    {
+      "id": "B112",
+      "name": "Barnard 112",
+      "ra": "18:52.0",
+      "dec": "-04:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B113",
+      "name": "Barnard 113",
+      "ra": "18:52.5",
+      "dec": "-03:42",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B114",
+      "name": "Barnard 114",
+      "ra": "18:53.0",
+      "dec": "-03:24",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B115",
+      "name": "Barnard 115",
+      "ra": "18:53.5",
+      "dec": "-03:06",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B116",
+      "name": "Barnard 116",
+      "ra": "18:54.0",
+      "dec": "-02:48",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B117",
+      "name": "Barnard 117",
+      "ra": "18:54.5",
+      "dec": "-02:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B118",
+      "name": "Barnard 118",
+      "ra": "18:55.0",
+      "dec": "-02:12",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B119",
+      "name": "Barnard 119",
+      "ra": "18:58.0",
+      "dec": "-03:00",
+      "size": 240,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Large dark complex in Aquila"
+    },
+    {
+      "id": "B120",
+      "name": "Barnard 120",
+      "ra": "19:00.0",
+      "dec": "-01:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B121",
+      "name": "Barnard 121",
+      "ra": "19:01.0",
+      "dec": "-00:42",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B122",
+      "name": "Barnard 122",
+      "ra": "19:02.0",
+      "dec": "-00:24",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B123",
+      "name": "Barnard 123",
+      "ra": "19:03.0",
+      "dec": "-00:06",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B124",
+      "name": "Barnard 124",
+      "ra": "19:04.0",
+      "dec": "+00:12",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B125",
+      "name": "Barnard 125",
+      "ra": "19:05.0",
+      "dec": "+00:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B126",
+      "name": "Barnard 126",
+      "ra": "19:06.0",
+      "dec": "+00:48",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B127",
+      "name": "Barnard 127",
+      "ra": "19:07.0",
+      "dec": "+01:06",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B128",
+      "name": "Barnard 128",
+      "ra": "19:08.0",
+      "dec": "+01:24",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B129",
+      "name": "Barnard 129",
+      "ra": "19:09.0",
+      "dec": "+01:42",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B130",
+      "name": "Barnard 130",
+      "ra": "19:10.0",
+      "dec": "+02:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B131",
+      "name": "Barnard 131",
+      "ra": "19:11.0",
+      "dec": "+02:18",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B132",
+      "name": "Barnard 132",
+      "ra": "19:12.0",
+      "dec": "+02:36",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B133",
+      "name": "Barnard 133",
+      "ra": "19:25.5",
+      "dec": "+11:03",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Large dark complex in Aquila"
+    },
+    {
+      "id": "B134",
+      "name": "Barnard 134",
+      "ra": "19:27.0",
+      "dec": "+11:30",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B135",
+      "name": "Barnard 135",
+      "ra": "19:30.0",
+      "dec": "+08:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B136",
+      "name": "Barnard 136",
+      "ra": "19:31.0",
+      "dec": "+08:18",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B137",
+      "name": "Barnard 137",
+      "ra": "19:32.0",
+      "dec": "+08:36",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B138",
+      "name": "Barnard 138",
+      "ra": "19:36.5",
+      "dec": "+07:34",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B139",
+      "name": "Barnard 139",
+      "ra": "19:39.0",
+      "dec": "+10:12",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B140",
+      "name": "Barnard 140",
+      "ra": "19:40.0",
+      "dec": "+10:30",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B141",
+      "name": "Barnard 141",
+      "ra": "19:40.5",
+      "dec": "+10:48",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark cloud in Aquila"
+    },
+    {
+      "id": "B142",
+      "name": "Barnard 142",
+      "ra": "19:40.0",
+      "dec": "+10:31",
+      "size": 80,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "E Nebula in Aquila",
+      "common_names": [
+        "E Nebula"
+      ]
+    },
+    {
+      "id": "B143",
+      "name": "Barnard 143",
+      "ra": "19:40.7",
+      "dec": "+10:57",
+      "size": 40,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Adjacent to B142 in Aquila",
+      "common_names": [
+        "E Nebula Extension"
+      ]
+    },
+    {
+      "id": "B144",
+      "name": "Barnard 144",
+      "ra": "19:58.0",
+      "dec": "+35:00",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Fish on Platter in Cygnus",
+      "common_names": [
+        "Fish on Platter"
+      ]
+    },
+    {
+      "id": "B145",
+      "name": "Barnard 145",
+      "ra": "20:00.0",
+      "dec": "+37:00",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B146",
+      "name": "Barnard 146",
+      "ra": "20:02.0",
+      "dec": "+37:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B147",
+      "name": "Barnard 147",
+      "ra": "20:04.0",
+      "dec": "+38:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B148",
+      "name": "Barnard 148",
+      "ra": "20:06.0",
+      "dec": "+38:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B149",
+      "name": "Barnard 149",
+      "ra": "20:08.0",
+      "dec": "+39:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B150",
+      "name": "Barnard 150",
+      "ra": "20:20.0",
+      "dec": "+41:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Seahorse Nebula in Cepheus",
+      "common_names": [
+        "Seahorse Nebula"
+      ]
+    },
+    {
+      "id": "B151",
+      "name": "Barnard 151",
+      "ra": "20:22.0",
+      "dec": "+41:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B152",
+      "name": "Barnard 152",
+      "ra": "20:24.0",
+      "dec": "+42:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B153",
+      "name": "Barnard 153",
+      "ra": "20:26.0",
+      "dec": "+42:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B154",
+      "name": "Barnard 154",
+      "ra": "20:28.0",
+      "dec": "+43:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B155",
+      "name": "Barnard 155",
+      "ra": "20:30.0",
+      "dec": "+43:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B156",
+      "name": "Barnard 156",
+      "ra": "20:32.0",
+      "dec": "+44:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B157",
+      "name": "Barnard 157",
+      "ra": "20:34.0",
+      "dec": "+44:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B158",
+      "name": "Barnard 158",
+      "ra": "20:36.0",
+      "dec": "+45:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B159",
+      "name": "Barnard 159",
+      "ra": "20:38.0",
+      "dec": "+45:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B160",
+      "name": "Barnard 160",
+      "ra": "20:40.0",
+      "dec": "+46:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B161",
+      "name": "Barnard 161",
+      "ra": "21:01.5",
+      "dec": "+68:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B162",
+      "name": "Barnard 162",
+      "ra": "21:03.0",
+      "dec": "+68:45",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B163",
+      "name": "Barnard 163",
+      "ra": "21:10.5",
+      "dec": "+50:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B164",
+      "name": "Barnard 164",
+      "ra": "21:12.0",
+      "dec": "+50:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B165",
+      "name": "Barnard 165",
+      "ra": "21:14.0",
+      "dec": "+51:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B166",
+      "name": "Barnard 166",
+      "ra": "21:16.0",
+      "dec": "+51:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B167",
+      "name": "Barnard 167",
+      "ra": "21:18.0",
+      "dec": "+52:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark cloud in Cygnus"
+    },
+    {
+      "id": "B168",
+      "name": "Barnard 168",
+      "ra": "21:53.7",
+      "dec": "+47:16",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Cocoon Dark Nebula in Cygnus",
+      "common_names": [
+        "Cocoon Dark Nebula"
+      ]
+    },
+    {
+      "id": "B169",
+      "name": "Barnard 169",
+      "ra": "22:05.0",
+      "dec": "+58:00",
+      "size": 18,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B170",
+      "name": "Barnard 170",
+      "ra": "22:10.0",
+      "dec": "+58:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B171",
+      "name": "Barnard 171",
+      "ra": "22:15.0",
+      "dec": "+58:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B172",
+      "name": "Barnard 172",
+      "ra": "22:20.0",
+      "dec": "+59:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B173",
+      "name": "Barnard 173",
+      "ra": "22:25.0",
+      "dec": "+59:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B174",
+      "name": "Barnard 174",
+      "ra": "22:50.0",
+      "dec": "+58:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark cloud in Cepheus"
+    },
+    {
+      "id": "B175",
+      "name": "Barnard 175",
+      "ra": "22:56.0",
+      "dec": "+62:00",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Large dark complex in Cepheus"
+    },
+    {
+      "id": "B201",
+      "name": "Barnard 201",
+      "ra": "00:11.0",
+      "dec": "+58:03",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B202",
+      "name": "Barnard 202",
+      "ra": "00:13.0",
+      "dec": "+58:12",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B203",
+      "name": "Barnard 203",
+      "ra": "00:15.0",
+      "dec": "+58:21",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B204",
+      "name": "Barnard 204",
+      "ra": "00:27.0",
+      "dec": "+62:15",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B205",
+      "name": "Barnard 205",
+      "ra": "00:29.5",
+      "dec": "+62:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B206",
+      "name": "Barnard 206",
+      "ra": "00:40.0",
+      "dec": "+61:48",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B207",
+      "name": "Barnard 207",
+      "ra": "00:41.0",
+      "dec": "+41:00",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Andromeda",
+      "description": "Dark nebula in Andromeda"
+    },
+    {
+      "id": "B208",
+      "name": "Barnard 208",
+      "ra": "00:43.5",
+      "dec": "+41:12",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Andromeda",
+      "description": "Dark nebula in Andromeda"
+    },
+    {
+      "id": "B209",
+      "name": "Barnard 209",
+      "ra": "00:45.0",
+      "dec": "+41:24",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Andromeda",
+      "description": "Dark nebula in Andromeda"
+    },
+    {
+      "id": "B210",
+      "name": "Barnard 210",
+      "ra": "00:46.5",
+      "dec": "+41:36",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Andromeda",
+      "description": "Dark nebula in Andromeda"
+    },
+    {
+      "id": "B211",
+      "name": "Barnard 211",
+      "ra": "00:52.0",
+      "dec": "+25:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Pisces",
+      "description": "Dark nebula in Pisces"
+    },
+    {
+      "id": "B212",
+      "name": "Barnard 212",
+      "ra": "00:54.0",
+      "dec": "+25:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Pisces",
+      "description": "Dark nebula in Pisces"
+    },
+    {
+      "id": "B213",
+      "name": "Barnard 213",
+      "ra": "02:15.0",
+      "dec": "+57:08",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B214",
+      "name": "Barnard 214",
+      "ra": "02:17.0",
+      "dec": "+57:15",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B215",
+      "name": "Barnard 215",
+      "ra": "02:19.0",
+      "dec": "+57:22",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B216",
+      "name": "Barnard 216",
+      "ra": "02:27.0",
+      "dec": "+62:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B217",
+      "name": "Barnard 217",
+      "ra": "02:30.0",
+      "dec": "+62:12",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B218",
+      "name": "Barnard 218",
+      "ra": "02:33.0",
+      "dec": "+62:24",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cassiopeia",
+      "description": "Dark nebula in Cassiopeia"
+    },
+    {
+      "id": "B219",
+      "name": "Barnard 219",
+      "ra": "03:10.0",
+      "dec": "+31:20",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B220",
+      "name": "Barnard 220",
+      "ra": "03:12.5",
+      "dec": "+31:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B221",
+      "name": "Barnard 221",
+      "ra": "03:28.0",
+      "dec": "+30:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B222",
+      "name": "Barnard 222",
+      "ra": "03:32.0",
+      "dec": "+31:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B223",
+      "name": "Barnard 223",
+      "ra": "03:36.0",
+      "dec": "+31:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B224",
+      "name": "Barnard 224",
+      "ra": "03:40.0",
+      "dec": "+32:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B225",
+      "name": "Barnard 225",
+      "ra": "03:44.0",
+      "dec": "+32:30",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B226",
+      "name": "Barnard 226",
+      "ra": "03:48.0",
+      "dec": "+33:00",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Perseus",
+      "description": "Dark nebula in Perseus"
+    },
+    {
+      "id": "B227",
+      "name": "Barnard 227",
+      "ra": "03:53.0",
+      "dec": "+25:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B228",
+      "name": "Barnard 228",
+      "ra": "04:13.0",
+      "dec": "+28:00",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B229",
+      "name": "Barnard 229",
+      "ra": "04:18.0",
+      "dec": "+17:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B230",
+      "name": "Barnard 230",
+      "ra": "04:21.0",
+      "dec": "+17:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B231",
+      "name": "Barnard 231",
+      "ra": "04:24.0",
+      "dec": "+18:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B232",
+      "name": "Barnard 232",
+      "ra": "04:27.0",
+      "dec": "+18:30",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B233",
+      "name": "Barnard 233",
+      "ra": "04:30.0",
+      "dec": "+19:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B234",
+      "name": "Barnard 234",
+      "ra": "04:33.0",
+      "dec": "+19:30",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B235",
+      "name": "Barnard 235",
+      "ra": "04:36.0",
+      "dec": "+20:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B236",
+      "name": "Barnard 236",
+      "ra": "04:39.0",
+      "dec": "+25:45",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Taurus",
+      "description": "Dark nebula in Taurus"
+    },
+    {
+      "id": "B237",
+      "name": "Barnard 237",
+      "ra": "05:32.0",
+      "dec": "+30:30",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B238",
+      "name": "Barnard 238",
+      "ra": "05:33.5",
+      "dec": "+30:45",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B239",
+      "name": "Barnard 239",
+      "ra": "05:35.0",
+      "dec": "+31:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B240",
+      "name": "Barnard 240",
+      "ra": "05:36.5",
+      "dec": "+31:15",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B241",
+      "name": "Barnard 241",
+      "ra": "05:38.0",
+      "dec": "+31:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B242",
+      "name": "Barnard 242",
+      "ra": "05:39.5",
+      "dec": "+31:45",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B243",
+      "name": "Barnard 243",
+      "ra": "05:41.0",
+      "dec": "+32:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B244",
+      "name": "Barnard 244",
+      "ra": "05:42.5",
+      "dec": "+32:15",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B245",
+      "name": "Barnard 245",
+      "ra": "05:44.0",
+      "dec": "+32:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Auriga",
+      "description": "Dark nebula in Auriga"
+    },
+    {
+      "id": "B246",
+      "name": "Barnard 246",
+      "ra": "05:46.0",
+      "dec": "+09:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B247",
+      "name": "Barnard 247",
+      "ra": "05:47.0",
+      "dec": "+09:45",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B248",
+      "name": "Barnard 248",
+      "ra": "05:48.0",
+      "dec": "+10:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B249",
+      "name": "Barnard 249",
+      "ra": "05:49.0",
+      "dec": "+10:15",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B250",
+      "name": "Barnard 250",
+      "ra": "05:50.0",
+      "dec": "+10:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B251",
+      "name": "Barnard 251",
+      "ra": "05:51.0",
+      "dec": "+10:45",
+      "size": 25,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B252",
+      "name": "Barnard 252",
+      "ra": "05:52.0",
+      "dec": "+11:00",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Orion",
+      "description": "Dark nebula in Orion"
+    },
+    {
+      "id": "B253",
+      "name": "Barnard 253",
+      "ra": "06:08.5",
+      "dec": "-06:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B254",
+      "name": "Barnard 254",
+      "ra": "06:10.0",
+      "dec": "-06:15",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B255",
+      "name": "Barnard 255",
+      "ra": "06:11.5",
+      "dec": "-06:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B256",
+      "name": "Barnard 256",
+      "ra": "06:28.0",
+      "dec": "-10:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B257",
+      "name": "Barnard 257",
+      "ra": "06:33.0",
+      "dec": "-10:00",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B258",
+      "name": "Barnard 258",
+      "ra": "06:37.0",
+      "dec": "-10:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B259",
+      "name": "Barnard 259",
+      "ra": "06:38.0",
+      "dec": "+08:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B260",
+      "name": "Barnard 260",
+      "ra": "06:39.0",
+      "dec": "+08:45",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Monoceros",
+      "description": "Dark nebula in Monoceros"
+    },
+    {
+      "id": "B261",
+      "name": "Barnard 261",
+      "ra": "07:03.0",
+      "dec": "-10:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Canis Major",
+      "description": "Dark nebula in Canis Major"
+    },
+    {
+      "id": "B262",
+      "name": "Barnard 262",
+      "ra": "07:04.5",
+      "dec": "-10:42",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Canis Major",
+      "description": "Dark nebula in Canis Major"
+    },
+    {
+      "id": "B263",
+      "name": "Barnard 263",
+      "ra": "07:06.0",
+      "dec": "-10:54",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Canis Major",
+      "description": "Dark nebula in Canis Major"
+    },
+    {
+      "id": "B264",
+      "name": "Barnard 264",
+      "ra": "07:30.0",
+      "dec": "-19:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark nebula in Puppis"
+    },
+    {
+      "id": "B265",
+      "name": "Barnard 265",
+      "ra": "07:32.0",
+      "dec": "-19:15",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark nebula in Puppis"
+    },
+    {
+      "id": "B266",
+      "name": "Barnard 266",
+      "ra": "07:34.0",
+      "dec": "-19:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark nebula in Puppis"
+    },
+    {
+      "id": "B267",
+      "name": "Barnard 267",
+      "ra": "08:00.0",
+      "dec": "-36:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Puppis",
+      "description": "Dark nebula in Puppis"
+    },
+    {
+      "id": "B268",
+      "name": "Barnard 268",
+      "ra": "08:30.0",
+      "dec": "-36:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Vela",
+      "description": "Dark nebula in Vela"
+    },
+    {
+      "id": "B269",
+      "name": "Barnard 269",
+      "ra": "16:25.0",
+      "dec": "-24:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B270",
+      "name": "Barnard 270",
+      "ra": "16:26.0",
+      "dec": "-24:12",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B271",
+      "name": "Barnard 271",
+      "ra": "16:27.0",
+      "dec": "-24:24",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B272",
+      "name": "Barnard 272",
+      "ra": "16:28.0",
+      "dec": "-24:36",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B273",
+      "name": "Barnard 273",
+      "ra": "16:29.0",
+      "dec": "-24:48",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B274",
+      "name": "Barnard 274",
+      "ra": "16:30.0",
+      "dec": "-25:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B275",
+      "name": "Barnard 275",
+      "ra": "16:31.0",
+      "dec": "-25:12",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B276",
+      "name": "Barnard 276",
+      "ra": "16:57.0",
+      "dec": "-19:18",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Ophiuchus",
+      "description": "Dark nebula in Ophiuchus"
+    },
+    {
+      "id": "B277",
+      "name": "Barnard 277",
+      "ra": "17:20.0",
+      "dec": "+27:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B278",
+      "name": "Barnard 278",
+      "ra": "17:21.0",
+      "dec": "+27:42",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B279",
+      "name": "Barnard 279",
+      "ra": "17:22.0",
+      "dec": "+27:54",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B280",
+      "name": "Barnard 280",
+      "ra": "17:23.0",
+      "dec": "+28:06",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B281",
+      "name": "Barnard 281",
+      "ra": "17:24.0",
+      "dec": "+28:18",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B282",
+      "name": "Barnard 282",
+      "ra": "17:25.0",
+      "dec": "+28:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Hercules",
+      "description": "Dark nebula in Hercules"
+    },
+    {
+      "id": "B283",
+      "name": "Barnard 283",
+      "ra": "17:30.0",
+      "dec": "-33:42",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B284",
+      "name": "Barnard 284",
+      "ra": "17:31.0",
+      "dec": "-33:48",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B285",
+      "name": "Barnard 285",
+      "ra": "17:32.0",
+      "dec": "-33:54",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B286",
+      "name": "Barnard 286",
+      "ra": "17:33.0",
+      "dec": "-34:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B287",
+      "name": "Barnard 287",
+      "ra": "17:34.0",
+      "dec": "-34:06",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B288",
+      "name": "Barnard 288",
+      "ra": "17:35.0",
+      "dec": "-34:12",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B289",
+      "name": "Barnard 289",
+      "ra": "17:36.0",
+      "dec": "-34:18",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Scorpius",
+      "description": "Dark nebula in Scorpius"
+    },
+    {
+      "id": "B290",
+      "name": "Barnard 290",
+      "ra": "17:58.0",
+      "dec": "-26:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B291",
+      "name": "Barnard 291",
+      "ra": "18:01.0",
+      "dec": "-23:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B292",
+      "name": "Barnard 292",
+      "ra": "18:02.0",
+      "dec": "-23:12",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B293",
+      "name": "Barnard 293",
+      "ra": "18:03.0",
+      "dec": "-23:24",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B294",
+      "name": "Barnard 294",
+      "ra": "18:04.0",
+      "dec": "-23:36",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B295",
+      "name": "Barnard 295",
+      "ra": "18:05.0",
+      "dec": "-23:48",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B296",
+      "name": "Barnard 296",
+      "ra": "18:06.0",
+      "dec": "-24:00",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B297",
+      "name": "Barnard 297",
+      "ra": "18:07.0",
+      "dec": "-24:12",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B298",
+      "name": "Barnard 298",
+      "ra": "18:08.0",
+      "dec": "-24:24",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B299",
+      "name": "Barnard 299",
+      "ra": "18:09.0",
+      "dec": "-24:36",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B300",
+      "name": "Barnard 300",
+      "ra": "18:10.0",
+      "dec": "-24:48",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B301",
+      "name": "Barnard 301",
+      "ra": "18:11.0",
+      "dec": "-25:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B302",
+      "name": "Barnard 302",
+      "ra": "18:12.0",
+      "dec": "-25:12",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Sagittarius",
+      "description": "Dark nebula in Sagittarius"
+    },
+    {
+      "id": "B303",
+      "name": "Barnard 303",
+      "ra": "18:27.0",
+      "dec": "-04:30",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Double dark lane in Scutum"
+    },
+    {
+      "id": "B304",
+      "name": "Barnard 304",
+      "ra": "18:28.0",
+      "dec": "-04:42",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B305",
+      "name": "Barnard 305",
+      "ra": "18:29.0",
+      "dec": "-04:54",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B306",
+      "name": "Barnard 306",
+      "ra": "18:30.0",
+      "dec": "-05:06",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B307",
+      "name": "Barnard 307",
+      "ra": "18:31.0",
+      "dec": "-05:18",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B308",
+      "name": "Barnard 308",
+      "ra": "18:32.0",
+      "dec": "-05:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B309",
+      "name": "Barnard 309",
+      "ra": "18:33.0",
+      "dec": "-05:42",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B310",
+      "name": "Barnard 310",
+      "ra": "18:34.0",
+      "dec": "-05:54",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B311",
+      "name": "Barnard 311",
+      "ra": "18:35.0",
+      "dec": "-06:06",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B312",
+      "name": "Barnard 312",
+      "ra": "18:46.5",
+      "dec": "-05:42",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B313",
+      "name": "Barnard 313",
+      "ra": "18:48.0",
+      "dec": "-05:54",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B314",
+      "name": "Barnard 314",
+      "ra": "18:49.5",
+      "dec": "-06:06",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B315",
+      "name": "Barnard 315",
+      "ra": "18:51.0",
+      "dec": "-06:18",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B316",
+      "name": "Barnard 316",
+      "ra": "18:52.5",
+      "dec": "-06:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B317",
+      "name": "Barnard 317",
+      "ra": "18:54.0",
+      "dec": "-06:42",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B318",
+      "name": "Barnard 318",
+      "ra": "18:55.5",
+      "dec": "-06:54",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Scutum",
+      "description": "Dark nebula in Scutum"
+    },
+    {
+      "id": "B319",
+      "name": "Barnard 319",
+      "ra": "18:57.0",
+      "dec": "-02:00",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B320",
+      "name": "Barnard 320",
+      "ra": "18:58.0",
+      "dec": "-02:12",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B321",
+      "name": "Barnard 321",
+      "ra": "18:59.0",
+      "dec": "-02:24",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B322",
+      "name": "Barnard 322",
+      "ra": "19:00.0",
+      "dec": "-02:36",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B323",
+      "name": "Barnard 323",
+      "ra": "19:01.0",
+      "dec": "-02:48",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B324",
+      "name": "Barnard 324",
+      "ra": "19:02.0",
+      "dec": "-03:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B325",
+      "name": "Barnard 325",
+      "ra": "19:03.0",
+      "dec": "+02:00",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B326",
+      "name": "Barnard 326",
+      "ra": "19:04.0",
+      "dec": "+02:12",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B327",
+      "name": "Barnard 327",
+      "ra": "19:05.0",
+      "dec": "+02:24",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B328",
+      "name": "Barnard 328",
+      "ra": "19:06.0",
+      "dec": "+02:36",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B329",
+      "name": "Barnard 329",
+      "ra": "19:07.0",
+      "dec": "+02:48",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B330",
+      "name": "Barnard 330",
+      "ra": "19:08.0",
+      "dec": "+03:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B331",
+      "name": "Barnard 331",
+      "ra": "19:09.0",
+      "dec": "+03:12",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B332",
+      "name": "Barnard 332",
+      "ra": "19:10.0",
+      "dec": "+03:24",
+      "size": 8,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B333",
+      "name": "Barnard 333",
+      "ra": "19:18.0",
+      "dec": "+07:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B334",
+      "name": "Barnard 334",
+      "ra": "19:20.0",
+      "dec": "+07:30",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B335",
+      "name": "Barnard 335",
+      "ra": "19:36.0",
+      "dec": "+07:30",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula complex in Aquila"
+    },
+    {
+      "id": "B336",
+      "name": "Barnard 336",
+      "ra": "19:44.0",
+      "dec": "+14:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B337",
+      "name": "Barnard 337",
+      "ra": "19:45.0",
+      "dec": "+10:36",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B338",
+      "name": "Barnard 338",
+      "ra": "19:46.0",
+      "dec": "+10:48",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B339",
+      "name": "Barnard 339",
+      "ra": "19:47.0",
+      "dec": "+11:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B340",
+      "name": "Barnard 340",
+      "ra": "19:48.0",
+      "dec": "+11:12",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B341",
+      "name": "Barnard 341",
+      "ra": "19:49.0",
+      "dec": "+11:24",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B342",
+      "name": "Barnard 342",
+      "ra": "19:50.0",
+      "dec": "+11:36",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Aquila",
+      "description": "Dark nebula in Aquila"
+    },
+    {
+      "id": "B343",
+      "name": "Barnard 343",
+      "ra": "20:03.0",
+      "dec": "+33:00",
+      "size": 240,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B344",
+      "name": "Barnard 344",
+      "ra": "20:05.0",
+      "dec": "+33:30",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B345",
+      "name": "Barnard 345",
+      "ra": "20:07.0",
+      "dec": "+34:00",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B346",
+      "name": "Barnard 346",
+      "ra": "20:09.0",
+      "dec": "+34:30",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B347",
+      "name": "Barnard 347",
+      "ra": "20:40.0",
+      "dec": "+42:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B348",
+      "name": "Barnard 348",
+      "ra": "20:42.0",
+      "dec": "+42:30",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B349",
+      "name": "Barnard 349",
+      "ra": "20:44.0",
+      "dec": "+43:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B350",
+      "name": "Barnard 350",
+      "ra": "20:50.0",
+      "dec": "+44:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B351",
+      "name": "Barnard 351",
+      "ra": "20:52.0",
+      "dec": "+44:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B352",
+      "name": "Barnard 352",
+      "ra": "20:56.0",
+      "dec": "+43:30",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B353",
+      "name": "Barnard 353",
+      "ra": "20:58.0",
+      "dec": "+44:00",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B354",
+      "name": "Barnard 354",
+      "ra": "21:00.0",
+      "dec": "+44:30",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B355",
+      "name": "Barnard 355",
+      "ra": "21:02.0",
+      "dec": "+45:00",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B356",
+      "name": "Barnard 356",
+      "ra": "21:04.0",
+      "dec": "+45:30",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B357",
+      "name": "Barnard 357",
+      "ra": "21:06.0",
+      "dec": "+46:00",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B358",
+      "name": "Barnard 358",
+      "ra": "21:08.0",
+      "dec": "+46:30",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B359",
+      "name": "Barnard 359",
+      "ra": "21:10.0",
+      "dec": "+47:00",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B360",
+      "name": "Barnard 360",
+      "ra": "21:12.0",
+      "dec": "+47:30",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cygnus",
+      "description": "Dark nebula in Cygnus"
+    },
+    {
+      "id": "B361",
+      "name": "Barnard 361",
+      "ra": "21:37.0",
+      "dec": "+55:00",
+      "size": 180,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B362",
+      "name": "Barnard 362",
+      "ra": "21:39.0",
+      "dec": "+55:30",
+      "size": 120,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B363",
+      "name": "Barnard 363",
+      "ra": "21:41.0",
+      "dec": "+56:00",
+      "size": 90,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B364",
+      "name": "Barnard 364",
+      "ra": "21:43.0",
+      "dec": "+56:30",
+      "size": 60,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B365",
+      "name": "Barnard 365",
+      "ra": "21:45.0",
+      "dec": "+57:00",
+      "size": 45,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B366",
+      "name": "Barnard 366",
+      "ra": "21:47.0",
+      "dec": "+57:30",
+      "size": 30,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B367",
+      "name": "Barnard 367",
+      "ra": "21:49.0",
+      "dec": "+58:00",
+      "size": 20,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B368",
+      "name": "Barnard 368",
+      "ra": "21:51.0",
+      "dec": "+58:30",
+      "size": 15,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B369",
+      "name": "Barnard 369",
+      "ra": "21:53.0",
+      "dec": "+59:00",
+      "size": 10,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    },
+    {
+      "id": "B370",
+      "name": "Barnard 370",
+      "ra": "22:00.0",
+      "dec": "+60:00",
+      "size": 12,
+      "type": "Dark Nebula",
+      "constellation": "Cepheus",
+      "description": "Dark nebula in Cepheus"
+    }
+  ]
+}

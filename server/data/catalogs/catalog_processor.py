@@ -632,6 +632,7 @@ class AstronomicalCatalogProcessor:
         """Process Sharpless, LDN, LBN, and Barnard catalogs from JSON file."""
         print("\nProcessing additional catalogs (Sharpless, LDN, LBN, Barnard)...")
         
+        # First process the main additional catalogs
         json_file = Path("source_data/additional_catalogs.json")
         if not json_file.exists():
             json_file = self.output_dir.parent / "source_data" / "additional_catalogs.json"
@@ -643,11 +644,24 @@ class AstronomicalCatalogProcessor:
         with open(json_file, 'r', encoding='utf-8') as f:
             catalogs_data = json.load(f)
         
+        # Check for complete Barnard catalog and override if exists
+        barnard_complete_file = Path("source_data/barnard_catalog_complete.json")
+        if not barnard_complete_file.exists():
+            barnard_complete_file = self.output_dir.parent / "source_data" / "barnard_catalog_complete.json"
+        
+        if barnard_complete_file.exists():
+            print("  Found complete Barnard catalog, using it instead...")
+            with open(barnard_complete_file, 'r', encoding='utf-8') as f:
+                barnard_data = json.load(f)
+                catalogs_data['barnard'] = barnard_data['barnard']
+        
         catalog_count = 0
+        catalog_counts = {}
         
         # Process each catalog
         for catalog_name, objects in catalogs_data.items():
             print(f"\nProcessing {catalog_name.upper()} catalog...")
+            catalog_specific_count = 0
             
             for obj_data in objects:
                 # Parse coordinates
@@ -770,8 +784,22 @@ class AstronomicalCatalogProcessor:
                 
                 self.objects.append(obj)
                 catalog_count += 1
+                catalog_specific_count += 1
+            
+            catalog_counts[catalog_name] = catalog_specific_count
+            print(f"  Added {catalog_specific_count} {catalog_name.upper()} objects")
         
-        print(f"\nAdded {catalog_count} objects from additional catalogs")
+        print(f"\nTotal: Added {catalog_count} objects from additional catalogs")
+        print("Breakdown:")
+        for name, count in catalog_counts.items():
+            expected = {
+                'sharpless': 15,
+                'ldn': 7,
+                'lbn': 5,
+                'barnard': 338  # We have 338 valid Barnard objects (some numbers are missing in the original catalog)
+            }
+            status = "✓" if count >= expected.get(name, 0) else "⚠"
+            print(f"  {status} {name.upper()}: {count} objects")
 
     def run(self):
         """Run the complete processing pipeline."""

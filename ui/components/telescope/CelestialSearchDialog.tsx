@@ -590,7 +590,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       {selectedObject.altitude.toFixed(1)}°
                     </span>
                   </div>
-                  {selectedObject.magnitude !== undefined && (
+                  {selectedObject.magnitude !== undefined && selectedObject.magnitude !== null && (
                     <div className="flex items-center gap-1">
                       <Eye className="w-3 h-3 text-muted-foreground" />
                       <span className="text-muted-foreground">Magnitude:</span>
