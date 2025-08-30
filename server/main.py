@@ -426,10 +426,10 @@ def test_command(
     host, port, action, target_name, ra, dec, ra_str, dec_str, start_imaging, exposure, gain, count
 ):
     """Test various telescope commands."""
-    from smarttel.seestar.client import SeestarClient, EventBus
-    from smarttel.seestar.commands.simple import GetViewState, Park
-    from smarttel.seestar.commands.parameterized import GotoTarget, GotoTargetParameters
-    from smarttel.seestar.commands.imaging import StartImaging, StopImaging
+    from scopinator.seestar.client import SeestarClient, EventBus
+    from scopinator.seestar.commands.simple import GetViewState, Park
+    from scopinator.seestar.commands.parameterized import GotoTarget, GotoTargetParameters
+    from scopinator.seestar.commands.imaging import StartImaging, StopImaging
     
     async def run_test():
         """Run the test command."""

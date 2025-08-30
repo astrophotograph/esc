@@ -17,8 +17,8 @@ from enum import Enum
 from loguru import logger
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.parameterized import GotoTarget, GotoTargetParameters
-from smarttel.seestar.client import SeestarClient
+from scopinator.seestar.commands.parameterized import GotoTarget, GotoTargetParameters
+from scopinator.seestar.client import SeestarClient
 from services.coordinate_service import get_coordinate_service
 from exceptions.telescope_exceptions import (
     TelescopeError,

@@ -3,9 +3,9 @@
 
 import asyncio
 import time
-from smarttel.seestar.client import SeestarClient
-from smarttel.util.eventbus import EventBus
-from smarttel.seestar.events import AutoGotoEvent, FocuserMoveEvent
+from scopinator.seestar.client import SeestarClient
+from scopinator.util.eventbus import EventBus
+from scopinator.seestar.events import AutoGotoEvent, FocuserMoveEvent
 
 
 async def test_event_completion():

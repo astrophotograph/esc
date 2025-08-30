@@ -9,7 +9,7 @@ from textual.containers import HorizontalGroup, VerticalScroll, Container
 from textual.widgets import Header, Footer, Static, Button, DataTable
 from textual.screen import Screen
 
-from smarttel.seestar.client import SeestarClient
+from scopinator.seestar.client import SeestarClient
 
 
 class DevicePickerScreen(Screen):

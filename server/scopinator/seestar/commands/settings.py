@@ -2,7 +2,7 @@ from typing import Literal, Optional, Any
 
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.common import BaseCommand
+from scopinator.seestar.commands.common import BaseCommand
 
 
 class PiSetTimeParameter(BaseModel):

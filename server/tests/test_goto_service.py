@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
 
 from services.goto_service import EnhancedGotoService, GotoStatus
-from smarttel.seestar.commands.parameterized import GotoTargetParameters
+from scopinator.seestar.commands.parameterized import GotoTargetParameters
 from exceptions.telescope_exceptions import (
     InvalidCoordinatesError,
     TelescopeCommandError,

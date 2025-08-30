@@ -576,7 +576,7 @@ class OptimizedController:
         @self.controller.app.get("/api/network-discovery")
         async def network_discovery():
             """Perform network discovery for Seestar devices."""
-            from smarttel.seestar.commands.discovery import discover_seestars
+            from scopinator.seestar.commands.discovery import discover_seestars
             
             try:
                 discovered = await discover_seestars(timeout=5.0)

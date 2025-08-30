@@ -2,13 +2,13 @@
 """Example usage of wait_for_event_completion with telescope operations."""
 
 import asyncio
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.commands.parameterized import (
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.commands.parameterized import (
     IscopeStartView,
     IscopeStartViewParams,
 )
-from smarttel.seestar.commands.simple import ScopeFocusIn, ScopeFocusOut
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.commands.simple import ScopeFocusIn, ScopeFocusOut
+from scopinator.util.eventbus import EventBus
 
 
 async def goto_with_completion(

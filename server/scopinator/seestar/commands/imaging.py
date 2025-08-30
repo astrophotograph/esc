@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from smarttel.seestar.commands.common import BaseCommand
+from scopinator.seestar.commands.common import BaseCommand
 
 
 class BeginStreaming(BaseCommand):

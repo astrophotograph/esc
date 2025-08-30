@@ -1,12 +1,12 @@
 {
-  "version": "25.08.28-alpha.303",
-  "buildDate": "2025-08-28T16:50:43.920Z",
-  "buildNumber": "290",
-  "buildTime": "2025-08-28T16:50:43.920Z",
+  "version": "25.08.28-alpha.304",
+  "buildDate": "2025-08-28T17:07:02.431Z",
+  "buildNumber": "291",
+  "buildTime": "2025-08-28T17:07:02.431Z",
   "git": {
-    "hash": "c06bcca",
+    "hash": "41db78d",
     "isDirty": true,
     "latestTag": "build-20250719-202829",
-    "commitsSinceTag": 303
+    "commitsSinceTag": 304
   }
 }

@@ -7,10 +7,10 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.imaging_client import SeestarImagingClient
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.connection import SeestarConnection
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.imaging_client import SeestarImagingClient
+from scopinator.util.eventbus import EventBus
 
 
 class TestTimeoutBasics:

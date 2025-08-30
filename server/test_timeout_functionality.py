@@ -8,10 +8,10 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import socket
 
-from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.imaging_client import SeestarImagingClient
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.connection import SeestarConnection
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.imaging_client import SeestarImagingClient
+from scopinator.util.eventbus import EventBus
 
 
 class TestSeestarConnectionTimeouts:
@@ -383,7 +383,7 @@ class TestTimeoutIntegration:
         )
 
         # Mock the connection to simulate various timeout scenarios
-        with patch("smarttel.seestar.connection.asyncio.open_connection") as mock_open:
+        with patch("scopinator.seestar.connection.asyncio.open_connection") as mock_open:
             # Simulate connection timeout
             async def slow_connect(host, port):
                 await asyncio.sleep(2.0)  # Longer than timeout

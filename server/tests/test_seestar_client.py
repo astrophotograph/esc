@@ -8,8 +8,8 @@ import asyncio
 
 # Test the Seestar client if available
 try:
-    from smarttel.seestar.client import SeestarClient
-    from smarttel.seestar.connection import SeestarConnection
+    from scopinator.seestar.client import SeestarClient
+    from scopinator.seestar.connection import SeestarConnection
 
     SEESTAR_AVAILABLE = True
 except ImportError:
@@ -32,7 +32,7 @@ class TestSeestarClient:
     @pytest.fixture
     def client(self, mock_connection):
         """Create a SeestarClient instance with mocked connection."""
-        with patch("smarttel.seestar.client.SeestarConnection") as mock_conn_class:
+        with patch("scopinator.seestar.client.SeestarConnection") as mock_conn_class:
             mock_conn_class.return_value = mock_connection
             client = SeestarClient("192.168.1.100", 4700)
             return client
@@ -158,7 +158,7 @@ class TestSeestarConnection:
 
 # Test event system if available
 try:
-    from smarttel.seestar.events import *
+    from scopinator.seestar.events import *
 
     EVENTS_AVAILABLE = True
 except ImportError:
@@ -173,7 +173,7 @@ class TestSeestarEvents:
         """Test that basic event classes exist."""
         # Test that we can import event-related classes
         # This is a basic smoke test
-        from smarttel.seestar import events
+        from scopinator.seestar import events
 
         assert hasattr(events, "__file__")
 
@@ -182,7 +182,7 @@ class TestSeestarEvents:
         try:
             # Try to create a basic event
             # Event classes might have different constructors
-            from smarttel.seestar.events import SeestarEvent
+            from scopinator.seestar.events import SeestarEvent
 
             # This is a basic structural test
             assert SeestarEvent is not None
@@ -193,8 +193,8 @@ class TestSeestarEvents:
 
 # Test command system if available
 try:
-    from smarttel.seestar.commands.simple import *
-    from smarttel.seestar.commands.parameterized import *
+    from scopinator.seestar.commands.simple import *
+    from scopinator.seestar.commands.parameterized import *
 
     COMMANDS_AVAILABLE = True
 except ImportError:
@@ -207,13 +207,13 @@ class TestSeestarCommands:
 
     def test_simple_commands_exist(self):
         """Test that simple command classes exist."""
-        from smarttel.seestar.commands import simple
+        from scopinator.seestar.commands import simple
 
         assert hasattr(simple, "__file__")
 
     def test_parameterized_commands_exist(self):
         """Test that parameterized command classes exist."""
-        from smarttel.seestar.commands import parameterized
+        from scopinator.seestar.commands import parameterized
 
         assert hasattr(parameterized, "__file__")
 
@@ -221,8 +221,8 @@ class TestSeestarCommands:
         """Test creating command instances."""
         try:
             # Try to create basic commands
-            from smarttel.seestar.commands.simple import GetTime
-            from smarttel.seestar.commands.parameterized import Goto
+            from scopinator.seestar.commands.simple import GetTime
+            from scopinator.seestar.commands.parameterized import Goto
 
             # Test command instantiation
             get_time = GetTime()
@@ -240,7 +240,7 @@ class TestSeestarCommands:
 
 # Test utility modules
 try:
-    from smarttel.util.eventbus import EventBus
+    from scopinator.util.eventbus import EventBus
 
     EVENTBUS_AVAILABLE = True
 except ImportError:
@@ -294,7 +294,7 @@ class TestEventBus:
 
 # Test imaging client if available
 try:
-    from smarttel.seestar.imaging_client import SeestarImagingClient
+    from scopinator.seestar.imaging_client import SeestarImagingClient
 
     IMAGING_AVAILABLE = True
 except ImportError:
@@ -321,7 +321,7 @@ class TestSeestarImagingClient:
     @pytest.mark.asyncio
     async def test_imaging_client_connect(self, imaging_client):
         """Test imaging client connection."""
-        with patch("smarttel.seestar.connection.SeestarConnection") as mock_conn:
+        with patch("scopinator.seestar.connection.SeestarConnection") as mock_conn:
             mock_connection = AsyncMock()
             mock_conn.return_value = mock_connection
 
@@ -350,13 +350,13 @@ class TestSeestarClientEventCompletion:
     @pytest.fixture
     def mock_event_bus(self):
         """Create a mock event bus."""
-        from smarttel.util.eventbus import EventBus
+        from scopinator.util.eventbus import EventBus
         return MagicMock(spec=EventBus)
     
     @pytest.fixture  
     def client_with_event_bus(self, mock_event_bus):
         """Create a SeestarClient with mocked event bus and connection."""
-        with patch("smarttel.seestar.client.SeestarConnection"):
+        with patch("scopinator.seestar.client.SeestarConnection"):
             client = SeestarClient("192.168.1.100", 4700, mock_event_bus)
             return client
     

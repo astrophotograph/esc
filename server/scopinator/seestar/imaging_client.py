@@ -8,22 +8,22 @@ import numpy as np
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.imaging import (
+from scopinator.seestar.commands.imaging import (
     BeginStreaming,
     StopStreaming,
     GetStackedImage,
 )
-from smarttel.seestar.commands.simple import TestConnection
-from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import (
+from scopinator.seestar.commands.simple import TestConnection
+from scopinator.seestar.connection import SeestarConnection
+from scopinator.seestar.events import (
     EventTypes,
     AnnotateResult,
     BaseEvent,
     InternalEvent,
 )
-from smarttel.seestar.protocol_handlers import BinaryProtocol, ScopeImage
-from smarttel.seestar.rtspclient import RtspClient
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.protocol_handlers import BinaryProtocol, ScopeImage
+from scopinator.seestar.rtspclient import RtspClient
+from scopinator.util.eventbus import EventBus
 
 U = TypeVar("U")
 

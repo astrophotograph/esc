@@ -12,7 +12,7 @@ import httpx
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from smarttel.seestar.protocol_handlers import ScopeImage
+from scopinator.seestar.protocol_handlers import ScopeImage
 
 
 class AstrometrySettings(BaseModel):

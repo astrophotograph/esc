@@ -3,7 +3,7 @@
 
 import json
 from datetime import datetime
-from smarttel.seestar.commands.responses import (
+from scopinator.seestar.commands.responses import (
     TelescopeMessageParser,
     MessageAnalytics,
     ParsedCommand,

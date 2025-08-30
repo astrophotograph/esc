@@ -6,10 +6,10 @@ This script shows the timeout behavior in action.
 
 import asyncio
 import time
-from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.imaging_client import SeestarImagingClient
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.connection import SeestarConnection
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.imaging_client import SeestarImagingClient
+from scopinator.util.eventbus import EventBus
 
 
 async def demo_connection_timeout():

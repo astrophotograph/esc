@@ -247,7 +247,7 @@ class TestWebSocketRouter:
 
 # Test protocol handlers if available
 try:
-    from smarttel.seestar.protocol_handlers import ProtocolHandler
+    from scopinator.seestar.protocol_handlers import ProtocolHandler
 
     PROTOCOL_HANDLERS_AVAILABLE = True
 except ImportError:

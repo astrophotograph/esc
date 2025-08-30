@@ -15,19 +15,19 @@ except ImportError:
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.parameterized import (
+from scopinator.seestar.commands.common import CommandResponse
+from scopinator.seestar.commands.parameterized import (
     IscopeStopView,
     IscopeStartView,
     IscopeStartViewParams,
 )
-from smarttel.seestar.commands.responses import (
+from scopinator.seestar.commands.responses import (
     TelescopeMessageParser,
     MessageAnalytics,
 )
-from smarttel.seestar.commands.settings import SetUserLocation, SetUserLocationParameters, PiSetTime, \
+from scopinator.seestar.commands.settings import SetUserLocation, SetUserLocationParameters, PiSetTime, \
     PiSetTimeParameter, SetSetting, SettingParameters, SetStackSetting, SetStackSettingParameters
-from smarttel.seestar.commands.simple import (
+from scopinator.seestar.commands.simple import (
     GetTime,
     GetDeviceState,
     GetViewState,
@@ -36,8 +36,8 @@ from smarttel.seestar.commands.simple import (
     ScopeGetEquCoord,
     ScopeSync, PiIsVerified, BalanceSensorInfo, GetDeviceStateResponse,
 )
-from smarttel.seestar.connection import SeestarConnection
-from smarttel.seestar.events import (
+from scopinator.seestar.connection import SeestarConnection
+from scopinator.seestar.events import (
     EventTypes,
     PiStatusEvent,
     AnnotateResult,
@@ -45,8 +45,8 @@ from smarttel.seestar.events import (
     InternalEvent,
     BaseEvent,
 )
-from smarttel.seestar.protocol_handlers import TextProtocol
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.protocol_handlers import TextProtocol
+from scopinator.util.eventbus import EventBus
 
 U = TypeVar("U")
 

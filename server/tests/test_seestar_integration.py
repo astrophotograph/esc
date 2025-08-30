@@ -10,17 +10,17 @@ from typing import Dict, Any
 
 # Test Seestar components
 try:
-    from smarttel.seestar.client import SeestarClient
-    from smarttel.seestar.connection import SeestarConnection
-    from smarttel.seestar.commands.simple import GetViewState, GetDeviceState, ScopePark
-    from smarttel.seestar.commands.parameterized import GotoTarget, ScopeSpeedMove
+    from scopinator.seestar.client import SeestarClient
+    from scopinator.seestar.connection import SeestarConnection
+    from scopinator.seestar.commands.simple import GetViewState, GetDeviceState, ScopePark
+    from scopinator.seestar.commands.parameterized import GotoTarget, ScopeSpeedMove
 
     SEESTAR_AVAILABLE = True
 except ImportError:
     SEESTAR_AVAILABLE = False
 
 try:
-    from smarttel.seestar.events import SeestarEvent
+    from scopinator.seestar.events import SeestarEvent
 
     SEESTAR_EVENTS_AVAILABLE = True
 except ImportError:
@@ -46,9 +46,9 @@ class TestSeestarClientIntegration:
     def client(self, mock_connection):
         """Create a SeestarClient with mocked connection."""
         with patch(
-            "smarttel.seestar.client.SeestarConnection", return_value=mock_connection
+            "scopinator.seestar.client.SeestarConnection", return_value=mock_connection
         ):
-            from smarttel.util.eventbus import EventBus
+            from scopinator.util.eventbus import EventBus
 
             event_bus = EventBus()
             client = SeestarClient("192.168.1.100", 4700, event_bus=event_bus)
@@ -255,7 +255,7 @@ class TestSeestarCommands:
     def test_parameterized_command_creation(self):
         """Test creating parameterized commands."""
         # Test GotoTarget command with correct structure
-        from smarttel.seestar.commands.parameterized import GotoTargetParameters
+        from scopinator.seestar.commands.parameterized import GotoTargetParameters
 
         goto_params = GotoTargetParameters(
             target_name="Test Target", is_j2000=True, ra=10.5, dec=45.0
@@ -270,7 +270,7 @@ class TestSeestarCommands:
 
         # Test ScopeSpeedMove command
         try:
-            from smarttel.seestar.commands.parameterized import ScopeSpeedMoveParameters
+            from scopinator.seestar.commands.parameterized import ScopeSpeedMoveParameters
 
             speed_params = ScopeSpeedMoveParameters(
                 angle=0,  # North direction
@@ -305,7 +305,7 @@ class TestSeestarCommands:
 
     def test_command_validation(self):
         """Test command parameter validation."""
-        from smarttel.seestar.commands.parameterized import GotoTargetParameters
+        from scopinator.seestar.commands.parameterized import GotoTargetParameters
 
         # Test invalid coordinates
         with pytest.raises((ValueError, TypeError)):
@@ -371,7 +371,7 @@ class TestSeestarIntegrationScenarios:
     @pytest.mark.asyncio
     async def test_telescope_connection_flow(self):
         """Test complete telescope connection flow."""
-        with patch("smarttel.seestar.connection.SeestarConnection") as mock_conn_class:
+        with patch("scopinator.seestar.connection.SeestarConnection") as mock_conn_class:
             # Mock connection instance
             mock_connection = AsyncMock()
             mock_connection.connect.return_value = True
@@ -379,7 +379,7 @@ class TestSeestarIntegrationScenarios:
             mock_conn_class.return_value = mock_connection
 
             # Create real event bus
-            from smarttel.util.eventbus import EventBus
+            from scopinator.util.eventbus import EventBus
 
             event_bus = EventBus()
 
@@ -398,13 +398,13 @@ class TestSeestarIntegrationScenarios:
     @pytest.mark.asyncio
     async def test_command_response_flow(self):
         """Test command-response flow."""
-        with patch("smarttel.seestar.connection.SeestarConnection") as mock_conn_class:
+        with patch("scopinator.seestar.connection.SeestarConnection") as mock_conn_class:
             mock_connection = AsyncMock()
             mock_connection.is_connected = True
             mock_conn_class.return_value = mock_connection
 
             # Create real event bus
-            from smarttel.util.eventbus import EventBus
+            from scopinator.util.eventbus import EventBus
 
             event_bus = EventBus()
 
@@ -422,7 +422,7 @@ class TestSeestarIntegrationScenarios:
         """Test telescope discovery simulation."""
         # Test that discovery components can be imported
         try:
-            from smarttel.seestar.commands.discovery import discover_seestars
+            from scopinator.seestar.commands.discovery import discover_seestars
 
             assert discover_seestars is not None
         except ImportError:
@@ -498,11 +498,11 @@ class TestTelescopeClientManager:
         telescopes = {}
 
         # Create multiple clients
-        from smarttel.util.eventbus import EventBus
+        from scopinator.util.eventbus import EventBus
 
         for i in range(3):
             host = f"192.168.1.{100 + i}"
-            with patch("smarttel.seestar.connection.SeestarConnection"):
+            with patch("scopinator.seestar.connection.SeestarConnection"):
                 event_bus = EventBus()
                 client = SeestarClient(host, 4700, event_bus=event_bus)
                 telescopes[f"telescope_{i}"] = client

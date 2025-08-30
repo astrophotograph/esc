@@ -16,7 +16,7 @@ from datetime import datetime
 # Import required models and app components
 try:
     from main import Controller, app
-    from smarttel.seestar.client import SeestarClient
+    from scopinator.seestar.client import SeestarClient
     MAIN_AVAILABLE = True
 except ImportError:
     MAIN_AVAILABLE = False

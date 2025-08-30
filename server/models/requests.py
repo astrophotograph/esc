@@ -2,7 +2,7 @@
 
 from typing import Optional
 from pydantic import BaseModel, Field
-from smarttel.imaging.upscaler import UpscalingMethod, SharpeningMethod
+from scopinator.imaging.upscaler import UpscalingMethod, SharpeningMethod
 
 
 class AddTelescopeRequest(BaseModel):

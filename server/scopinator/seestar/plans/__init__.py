@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from smarttel.util import RaDecTuple
+from scopinator.util import RaDecTuple
 
 
 class PlanItem(BaseModel):

@@ -10,7 +10,7 @@ from fastapi import FastAPI
 # Test Controller async methods
 try:
     from main import Controller, TestTelescope, Telescope
-    from smarttel.seestar.commands.discovery import discover_seestars
+    from scopinator.seestar.commands.discovery import discover_seestars
 
     CONTROLLER_ASYNC_AVAILABLE = True
 except ImportError:

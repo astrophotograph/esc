@@ -14,13 +14,13 @@ from fastapi import WebSocket
 from loguru import logger
 
 from remote_websocket_client import RemoteWebSocketManager, RemoteController
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.commands.parameterized import (
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.commands.parameterized import (
     IscopeStartView,
     IscopeStartViewParams, IscopeStartStack, StartStackParams, )
-from smarttel.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
+from scopinator.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
-from smarttel.seestar.commands.simple import PiReboot, GetViewState
+from scopinator.seestar.commands.simple import PiReboot, GetViewState
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -877,7 +877,7 @@ class WebSocketManager:
         try:
             if direction == "stop":
                 # Stop movement by sending 0 percent
-                from smarttel.seestar.commands.parameterized import (
+                from scopinator.seestar.commands.parameterized import (
                     ScopeSpeedMove,
                     ScopeSpeedMoveParameters,
                 )
@@ -892,7 +892,7 @@ class WebSocketManager:
                 )
             else:
                 # Move in specified direction
-                from smarttel.seestar.commands.parameterized import (
+                from scopinator.seestar.commands.parameterized import (
                     ScopeSpeedMove,
                     ScopeSpeedMoveParameters,
                 )
@@ -952,7 +952,7 @@ class WebSocketManager:
     ) -> Dict[str, Any]:
         """Execute telescope park command."""
         try:
-            from smarttel.seestar.commands.simple import ScopePark
+            from scopinator.seestar.commands.simple import ScopePark
 
             # Start position monitoring task (like in main.py)
             async def _position_updater():
@@ -1003,7 +1003,7 @@ class WebSocketManager:
             else:
                 new_position = current_position + increment
 
-            from smarttel.seestar.commands.parameterized import (
+            from scopinator.seestar.commands.parameterized import (
                 MoveFocuser,
                 MoveFocuserParameters,
             )

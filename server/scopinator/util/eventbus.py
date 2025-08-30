@@ -8,7 +8,7 @@ Was MIT licensed, so this file is MIT licensed too...
 import asyncio
 from typing import Any
 
-from smarttel.seestar.events import BaseEvent
+from scopinator.seestar.events import BaseEvent
 
 
 class EventBus:

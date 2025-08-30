@@ -6,7 +6,7 @@ import cv2
 from pydantic import BaseModel
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from smarttel.seestar.client import EventBus
+from scopinator.seestar.client import EventBus
 
 
 class MockImagingClient:
@@ -53,7 +53,7 @@ class MockSeestarClient:
     async def send_and_recv(self, command):
         """Mock send_and_recv method."""
         # Return empty response
-        from smarttel.seestar.commands.common import CommandResponse
+        from scopinator.seestar.commands.common import CommandResponse
 
         return CommandResponse(id=1, result={})
 
@@ -101,7 +101,7 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
         self.client = MockSeestarClient()
         self.imaging = MockImagingClient()
         # Initialize event bus if needed
-        from smarttel.seestar.client import EventBus
+        from scopinator.seestar.client import EventBus
 
         self.event_bus = EventBus()
 

@@ -4,9 +4,9 @@ import numpy as np
 from skimage.exposure import exposure
 from skimage.util import img_as_float32
 
-from smarttel.imaging.image_processor import ImageProcessor
-from smarttel.imaging.stretch import stretch, StretchParameters, StretchParameter
-from smarttel.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
+from scopinator.imaging.image_processor import ImageProcessor
+from scopinator.imaging.stretch import stretch, StretchParameters, StretchParameter
+from scopinator.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
 
 
 class GraxpertStretch(ImageProcessor):
@@ -48,7 +48,7 @@ class GraxpertStretch(ImageProcessor):
 
         # THIRD: Apply remaining enhancements (denoising, deconvolution, sharpening)
         # Create a temporary processor without upscaling since we already did it
-        from smarttel.imaging.upscaler import ImageEnhancementProcessor
+        from scopinator.imaging.upscaler import ImageEnhancementProcessor
         temp_processor = ImageEnhancementProcessor(
             upscaling_enabled=False,  # Already done
             scale_factor=1.0,

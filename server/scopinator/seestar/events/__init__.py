@@ -2,8 +2,8 @@ from typing import Literal, Annotated, Any
 
 from pydantic import BaseModel, Field
 
-from smarttel.seestar.plans import Plan
-from smarttel.util import RaDecTuple
+from scopinator.seestar.plans import Plan
+from scopinator.util import RaDecTuple
 
 EventState = Literal["start", "cancel", "working", "complete", "fail"] | None
 

@@ -5,7 +5,7 @@ import numpy as np
 from skimage.exposure import exposure
 from skimage.util import img_as_float32
 
-from smarttel.imaging.stretch import stretch, StretchParameters
+from scopinator.imaging.stretch import stretch, StretchParameters
 
 
 class ImageProcessor(ABC):

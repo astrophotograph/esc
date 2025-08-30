@@ -7,10 +7,10 @@ from typing import Optional, Dict, Any
 import numpy as np
 from loguru import logger as logging
 
-from smarttel.imaging.graxpert_stretch import GraxpertStretch
-from smarttel.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
-from smarttel.imaging.stretch import StretchParameter
-from smarttel.imaging.fits_handler import FITSHandler
+from scopinator.imaging.graxpert_stretch import GraxpertStretch
+from scopinator.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
+from scopinator.imaging.stretch import StretchParameter
+from scopinator.imaging.fits_handler import FITSHandler
 
 
 # Global thread pool for CPU-intensive tasks

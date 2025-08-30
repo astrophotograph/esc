@@ -4,7 +4,7 @@
 import asyncio
 import os
 import numpy as np
-from smarttel.seestar.protocol_handlers import ScopeImage
+from scopinator.seestar.protocol_handlers import ScopeImage
 from services.astrometry_client import AstrometryClient
 
 

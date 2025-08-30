@@ -11,9 +11,9 @@ from aiortc import VideoStreamTrack
 from av import VideoFrame
 from loguru import logger
 
-from smarttel.seestar.imaging_client import SeestarImagingClient
-from smarttel.imaging.graxpert_stretch import GraxpertStretch
-from smarttel.imaging.upscaler import ImageEnhancementProcessor
+from scopinator.seestar.imaging_client import SeestarImagingClient
+from scopinator.imaging.graxpert_stretch import GraxpertStretch
+from scopinator.imaging.upscaler import ImageEnhancementProcessor
 
 
 class TelescopeVideoTrack(VideoStreamTrack):

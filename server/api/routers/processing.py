@@ -13,10 +13,10 @@ from fastapi.responses import JSONResponse, FileResponse
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.imaging.fits_handler import FITSHandler
-from smarttel.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
-from smarttel.imaging.graxpert_stretch import GraxpertStretch
-from smarttel.imaging.stretch import StretchParameter
+from scopinator.imaging.fits_handler import FITSHandler
+from scopinator.imaging.upscaler import ImageEnhancementProcessor, UpscalingMethod, SharpeningMethod, DenoiseMethod
+from scopinator.imaging.graxpert_stretch import GraxpertStretch
+from scopinator.imaging.stretch import StretchParameter
 from services.async_image_processing import (
     process_graxpert_async,
     process_enhancement_async, 

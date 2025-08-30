@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, field_validator
 
-from smarttel.seestar.commands.common import BaseCommand
+from scopinator.seestar.commands.common import BaseCommand
 
 
 class StopStage(str, Enum):

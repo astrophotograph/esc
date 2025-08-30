@@ -4,7 +4,7 @@ from typing import Literal, NamedTuple, List, Optional, Any
 
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.common import BaseCommand
+from scopinator.seestar.commands.common import BaseCommand
 
 
 class PiReboot(BaseCommand):

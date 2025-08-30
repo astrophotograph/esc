@@ -16,26 +16,26 @@ from fastapi.responses import StreamingResponse
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.imaging.graxpert_stretch import GraxpertStretch
-from smarttel.imaging.upscaler import (
+from scopinator.imaging.graxpert_stretch import GraxpertStretch
+from scopinator.imaging.upscaler import (
     SharpeningMethod,
     ImageEnhancementProcessor,
 )
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.commands.parameterized import (
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.commands.parameterized import (
     GotoTargetParameters,
     ScopeSpeedMoveParameters,
     ScopeSpeedMove,
     MoveFocuserParameters,
     MoveFocuser,
 )
-from smarttel.seestar.commands.simple import (
+from scopinator.seestar.commands.simple import (
     GetViewState,
     ScopePark,
     GetFocuserPosition,
 )
-from smarttel.seestar.imaging_client import SeestarImagingClient
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.imaging_client import SeestarImagingClient
+from scopinator.util.eventbus import EventBus
 
 
 class Telescope(BaseModel, arbitrary_types_allowed=True):
@@ -217,7 +217,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         async def root():
             """Root endpoint with basic info."""
             # Get network scanning information
-            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            from scopinator.seestar.commands.discovery import get_all_network_interfaces
 
             network_interfaces = get_all_network_interfaces()
 
@@ -687,7 +687,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.get("/upscaling")
         async def get_upscaling_settings():
             """Get current upscaling settings."""
-            from smarttel.imaging.upscaler import ImageUpscaler
+            from scopinator.imaging.upscaler import ImageUpscaler
             from models.responses import UpscalingSettingsResponse
 
             upscaler = ImageUpscaler()
@@ -705,7 +705,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.post("/upscaling")
         async def update_upscaling_settings(settings):
             """Update upscaling settings."""
-            from smarttel.imaging.upscaler import ImageUpscaler
+            from scopinator.imaging.upscaler import ImageUpscaler
             from models.responses import UpscalingSettingsResponse
 
             # Update the image processor's upscaling settings
@@ -734,7 +734,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.get("/enhancement")
         async def get_enhancement_settings():
             """Get current comprehensive image enhancement settings."""
-            from smarttel.imaging.upscaler import ImageUpscaler
+            from scopinator.imaging.upscaler import ImageUpscaler
             from models.responses import ImageEnhancementSettingsResponse
 
             upscaler = ImageUpscaler()
@@ -769,7 +769,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         @router.post("/enhancement")
         async def update_enhancement_settings(settings):
             """Update comprehensive image enhancement settings."""
-            from smarttel.imaging.upscaler import ImageUpscaler
+            from scopinator.imaging.upscaler import ImageUpscaler
             from models.responses import ImageEnhancementSettingsResponse
 
             logging.info(f"Received enhancement settings update: {settings}")

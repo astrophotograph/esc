@@ -15,7 +15,7 @@ import cv2
 from loguru import logger as logging
 from pydantic import BaseModel
 
-from smarttel.seestar.commands.common import CommandResponse
+from scopinator.seestar.commands.common import CommandResponse
 
 U = TypeVar("U")
 

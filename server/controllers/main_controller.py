@@ -17,11 +17,11 @@ from loguru import logger as logging
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
-from smarttel.seestar.client import SeestarClient
-from smarttel.seestar.commands.common import CommandResponse
-from smarttel.seestar.commands.discovery import discover_seestars, remove_telescope_from_known
-from smarttel.seestar.commands.simple import GetDeviceState, GetDeviceStateResponse
-from smarttel.util.eventbus import EventBus
+from scopinator.seestar.client import SeestarClient
+from scopinator.seestar.commands.common import CommandResponse
+from scopinator.seestar.commands.discovery import discover_seestars, remove_telescope_from_known
+from scopinator.seestar.commands.simple import GetDeviceState, GetDeviceStateResponse
+from scopinator.util.eventbus import EventBus
 from database import TelescopeDatabase
 from webrtc_router import router as webrtc_router
 from websocket_router import router as websocket_router
@@ -153,7 +153,7 @@ class MockSeestarClient:
     async def send_and_recv(self, command):
         """Mock send_and_recv method."""
         # Return empty response
-        from smarttel.seestar.commands.common import CommandResponse
+        from scopinator.seestar.commands.common import CommandResponse
 
         return CommandResponse(id=1, result={})
 
@@ -201,7 +201,7 @@ class TestTelescope(BaseModel, arbitrary_types_allowed=True):
         self.client = MockSeestarClient()
         self.imaging = MockImagingClient()
         # Initialize event bus if needed
-        from smarttel.seestar.client import EventBus
+        from scopinator.seestar.client import EventBus
 
         self.event_bus = EventBus()
 
@@ -1834,7 +1834,7 @@ class Controller:
             telescope_count = local_telescope_count + len(self.remote_telescopes)
 
             # Get network scanning information
-            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            from scopinator.seestar.commands.discovery import get_all_network_interfaces
 
             network_interfaces = get_all_network_interfaces()
 
@@ -2479,7 +2479,7 @@ class Controller:
         @self.app.get("/api/network-discovery")
         async def get_network_discovery():
             """Get network discovery information."""
-            from smarttel.seestar.commands.discovery import get_all_network_interfaces
+            from scopinator.seestar.commands.discovery import get_all_network_interfaces
 
             network_interfaces = get_all_network_interfaces()
 
