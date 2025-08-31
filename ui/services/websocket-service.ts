@@ -949,17 +949,8 @@ export class WebSocketService extends EventEmitter {
       // Handle echo response - update heartbeat time
       if (message.type === MessageType.ECHO_RESPONSE) {
         this.lastHeartbeatReceived = Date.now()
-        // Calculate RTT for debugging
-        // The timestamps from server are in seconds, need to convert to milliseconds
-        const requestTime = message.payload.request_timestamp * 1000
-        const responseTime = message.payload.response_timestamp * 1000
-        const serverProcessingTime = responseTime - requestTime
-        const totalRtt = Date.now() - requestTime
-        console.debug('Echo response received:', {
-          serverProcessingTime: serverProcessingTime.toFixed(1) + 'ms',
-          totalRtt: totalRtt.toFixed(1) + 'ms',
-          sequence: message.payload.sequence
-        })
+        // Echo responses received from server (not common in current architecture)
+        // The server primarily sends echo requests to measure client RTT
         return
       }
 
@@ -1078,7 +1069,7 @@ export class WebSocketService extends EventEmitter {
     
     try {
       this.ws.send(JSON.stringify(response))
-      console.debug('Sent echo response for sequence:', message.payload.sequence)
+      // Debug logging removed - too verbose
     } catch (error) {
       console.error('Failed to send echo response:', error)
     }

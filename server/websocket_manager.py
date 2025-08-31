@@ -1729,10 +1729,11 @@ class WebSocketManager:
         sequence = message.payload.get('sequence', 0)
         
         # Check for duplicate echo response - use connection ID to make it unique per connection
-        message_id = f"echo_response_{connection.connection_id}_{telescope_id}_{sequence}"
-        if self._check_duplicate_message(telescope_id, message_id):
-            logger.warning(f"Ignoring duplicate echo response {sequence} from telescope {telescope_id} on connection {connection.connection_id}")
-            return
+        # Commented out - spurious duplicates may occur after browser reconnect
+        # message_id = f"echo_response_{connection.connection_id}_{telescope_id}_{sequence}"
+        # if self._check_duplicate_message(telescope_id, message_id):
+        #     logger.warning(f"Ignoring duplicate echo response {sequence} from telescope {telescope_id} on connection {connection.connection_id}")
+        #     return
         
         if telescope_id not in self.rtt_data:
             logger.warning(f"Received echo response for unknown telescope: {telescope_id}")
@@ -2020,14 +2021,15 @@ class WebSocketManager:
             # Only warn if the duplicate is recent (within 1 second)
             # Older "duplicates" might be legitimate retransmissions
             if time_diff < 1.0:
-                logger.warning(
-                    f"DUPLICATE MESSAGE DETECTED for telescope {telescope_id}: "
-                    f"ID={message_id}, first seen {time_diff:.3f}s ago, "
-                    f"total duplicates for this telescope: {self.duplicate_message_count[telescope_id]}"
-                )
-                # Log stack trace to understand where the duplicate is coming from
-                import traceback
-                logger.debug(f"Duplicate call stack:\n{''.join(traceback.format_stack())}")
+                # Commented out - may get spurious duplicates after browser reconnect
+                # logger.warning(
+                #     f"DUPLICATE MESSAGE DETECTED for telescope {telescope_id}: "
+                #     f"ID={message_id}, first seen {time_diff:.3f}s ago, "
+                #     f"total duplicates for this telescope: {self.duplicate_message_count[telescope_id]}"
+                # )
+                # # Log stack trace to understand where the duplicate is coming from
+                # import traceback
+                # logger.debug(f"Duplicate call stack:\n{''.join(traceback.format_stack())}")
                 
                 # Update timestamp to track the most recent occurrence
                 self.seen_message_ids[telescope_id][message_id] = current_time
