@@ -1243,6 +1243,17 @@ class WebSocketManager:
             except ValueError as e:
                 logger.error(f"Failed to parse Dec coordinate: {e}")
                 return {"status": "error", "message": f"Invalid Dec format: {coordinates.get('dec')}"}
+            
+            # Check for invalid (0,0) coordinates
+            if ra == 0.0 and dec == 0.0:
+                logger.error(f"ERROR: Invalid goto coordinates received - RA=0, Dec=0. "
+                           f"This typically indicates a problem with coordinate parsing or "
+                           f"missing target data. Target: {target_name}")
+                return {
+                    "status": "error", 
+                    "message": "Invalid coordinates (0,0) - please check target selection"
+                }
+            
             start_imaging = parameters.get("start_imaging", False)
             target_type = parameters.get("target_type", "unknown")
             magnitude = parameters.get("magnitude", "unknown")

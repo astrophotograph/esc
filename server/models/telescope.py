@@ -260,6 +260,15 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
             
+            # Check for invalid (0,0) coordinates early
+            if goto_params.ra == 0.0 and goto_params.dec == 0.0:
+                logging.error(f"ERROR: Invalid goto request with coordinates (0,0) for target '{goto_params.target_name}'. "
+                             f"Request rejected - this indicates a problem with the client or target data.")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Invalid coordinates (0,0) - target coordinates are missing or invalid"
+                )
+            
             try:
                 # Import the enhanced goto service
                 from services.goto_service import EnhancedGotoService

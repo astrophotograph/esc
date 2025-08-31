@@ -124,6 +124,16 @@ class EnhancedGotoService:
                         dec=goto_params.dec
                     )
                 
+                # Check for invalid (0,0) coordinates specifically
+                if goto_params.ra == 0.0 and goto_params.dec == 0.0:
+                    logger.error(f"ERROR: Invalid goto coordinates (0,0) received for target '{goto_params.target_name}'. "
+                                f"This typically indicates missing or corrupted target data.")
+                    raise InvalidCoordinatesError(
+                        "Invalid coordinates (0,0) - coordinates appear to be missing or corrupted",
+                        ra=goto_params.ra,
+                        dec=goto_params.dec
+                    )
+                
                 # Step 2: Convert coordinates if needed
                 final_ra, final_dec = await self._handle_coordinate_conversion(
                     goto_params, progress_callback

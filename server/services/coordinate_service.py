@@ -258,6 +258,12 @@ class CoordinateTransformationService:
         Returns:
             True if coordinates are valid
         """
+        # Check for invalid (0,0) coordinates
+        if ra == 0.0 and dec == 0.0:
+            logger.error(f"ERROR: Invalid coordinates (0,0) detected. This typically indicates "
+                        f"missing or corrupted target data.")
+            return False
+        
         # RA should be 0-360 degrees
         if not (0.0 <= ra <= 360.0):
             logger.warning(f"Invalid RA: {ra} (should be 0-360 degrees)")
