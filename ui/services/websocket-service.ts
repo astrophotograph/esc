@@ -940,12 +940,9 @@ export class WebSocketService extends EventEmitter {
         return
       }
       
-      // Handle echo request from server
-      // Note: In the current architecture, the server sends echo requests to itself
-      // and the frontend should NOT respond to them. The server handles its own echo loop.
+      // Handle echo request from server - respond immediately for RTT measurement
       if (message.type === MessageType.ECHO_REQUEST) {
-        // Do NOT send echo response - the server handles this internally
-        console.debug('Received echo request from server (ignoring - server handles internally)')
+        this.handleEchoRequest(message as EchoRequestMessage)
         return
       }
       
@@ -1057,8 +1054,35 @@ export class WebSocketService extends EventEmitter {
     }
   }
   
-  // Removed handleEchoRequest method - the server handles echo requests/responses internally
-  // The frontend should not respond to echo requests
+  /**
+   * Handle echo request from server and send echo response for RTT measurement
+   */
+  private handleEchoRequest(message: EchoRequestMessage): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+    
+    // Send echo response back to server with the same telescope_id and sequence
+    // Use a unique ID that won't conflict with other clients
+    const response: EchoResponseMessage = {
+      id: this.generateMessageId(), // Use unique ID per response
+      type: MessageType.ECHO_RESPONSE,
+      telescope_id: message.telescope_id,
+      timestamp: Date.now() / 1000,
+      payload: {
+        request_timestamp: message.payload.timestamp,
+        response_timestamp: Date.now() / 1000,
+        sequence: message.payload.sequence
+      }
+    }
+    
+    try {
+      this.ws.send(JSON.stringify(response))
+      console.debug('Sent echo response for sequence:', message.payload.sequence)
+    } catch (error) {
+      console.error('Failed to send echo response:', error)
+    }
+  }
 
   /**
    * Handle reconnection logic
