@@ -1139,14 +1139,19 @@ export class WebSocketService extends EventEmitter {
   private startHeartbeat(): void {
     this.stopHeartbeat()
 
+    console.log('Starting heartbeat with interval:', this.config.heartbeatIntervalMs + 'ms')
     this.heartbeatInterval = setInterval(() => {
       if (this.isConnected()) {
-        this.sendMessage({
+        const heartbeatMessage = {
           id: this.generateMessageId(),
           type: MessageType.HEARTBEAT,
-          timestamp: Date.now(),
+          timestamp: Date.now() / 1000, // Convert to seconds for server compatibility
           payload: {}
-        }).catch(console.error)
+        }
+        // Debug logging removed - heartbeats are sent every 30s
+        this.sendMessage(heartbeatMessage).catch((error) => {
+          console.error('Failed to send heartbeat:', error)
+        })
       }
     }, this.config.heartbeatIntervalMs)
   }

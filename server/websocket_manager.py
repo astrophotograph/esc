@@ -346,7 +346,7 @@ class WebSocketManager:
                 await self._handle_unsubscribe(connection, message)
             elif isinstance(message, HeartbeatMessage):
                 # Don't echo heartbeat back - each side sends its own heartbeats
-                logger.trace(f"Received heartbeat from {connection_id}")
+                logger.debug(f"Received heartbeat from {connection_id}")
                 # Just update the last heartbeat time (already done above)
             elif isinstance(message, EchoResponseMessage):
                 await self._handle_echo_response(connection, message)
@@ -1625,12 +1625,12 @@ class WebSocketManager:
 
                 for connection_id, connection in self.connections.items():
                     # Check if connection is stale
-                    if (
-                            current_time - connection.last_heartbeat
-                            > self.heartbeat_interval * 2
-                    ):
+                    time_since_last = current_time - connection.last_heartbeat
+                    if time_since_last > self.heartbeat_interval * 2:
                         logger.warning(
-                            f"Connection {connection_id} appears dead (no heartbeat)"
+                            f"Connection {connection_id} appears dead "
+                            f"(no heartbeat for {time_since_last:.1f}s, "
+                            f"timeout={self.heartbeat_interval * 2}s)"
                         )
                         dead_connections.append(connection_id)
                         continue
