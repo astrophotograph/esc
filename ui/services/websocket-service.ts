@@ -940,9 +940,12 @@ export class WebSocketService extends EventEmitter {
         return
       }
       
-      // Handle echo request - immediately respond
+      // Handle echo request from server
+      // Note: In the current architecture, the server sends echo requests to itself
+      // and the frontend should NOT respond to them. The server handles its own echo loop.
       if (message.type === MessageType.ECHO_REQUEST) {
-        this.handleEchoRequest(message as EchoRequestMessage)
+        // Do NOT send echo response - the server handles this internally
+        console.debug('Received echo request from server (ignoring - server handles internally)')
         return
       }
       
@@ -1046,33 +1049,8 @@ export class WebSocketService extends EventEmitter {
     }
   }
   
-  /**
-   * Handle echo request and send echo response
-   */
-  private handleEchoRequest(message: EchoRequestMessage): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return
-    }
-    
-    // Send echo response back to server
-    const response: EchoResponseMessage = {
-      id: this.generateMessageId(),
-      type: MessageType.ECHO_RESPONSE,
-      telescope_id: message.telescope_id,
-      timestamp: Date.now() / 1000,
-      payload: {
-        request_timestamp: message.payload.timestamp,
-        response_timestamp: Date.now() / 1000,
-        sequence: message.payload.sequence
-      }
-    }
-    
-    try {
-      this.ws.send(JSON.stringify(response))
-    } catch (error) {
-      console.error('Failed to send echo response:', error)
-    }
-  }
+  // Removed handleEchoRequest method - the server handles echo requests/responses internally
+  // The frontend should not respond to echo requests
 
   /**
    * Handle reconnection logic
