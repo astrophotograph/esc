@@ -88,7 +88,7 @@ function TelescopeControlContent() {
       coordinates: { latitude: DEFAULT_OBSERVER_LOCATION.latitude, longitude: DEFAULT_OBSERVER_LOCATION.longitude },
       elevation: 0
     }
-    
+
     if (wsIsConnected) {
       // WebSocket is connected, preload immediately via WebSocket
       console.log('WebSocket connected, preloading catalog data via WebSocket')
@@ -107,7 +107,7 @@ function TelescopeControlContent() {
           location.elevation
         )
       }, 3000) // Wait 3 seconds for WebSocket to potentially connect
-      
+
       return () => clearTimeout(timer)
     }
   }, [currentObservingLocation, wsIsConnected])
@@ -188,7 +188,7 @@ function TelescopeControlContent() {
         {showNotificationHistory && <NotificationHistoryModal />}
         {showKeyboardHelp && <KeyboardHelpModal onClose={() => setShowKeyboardHelp(false)} />}
         {showLocationManager && (
-          <LocationManagement 
+          <LocationManagement
             showLocationManager={showLocationManager}
             setShowLocationManager={setShowLocationManager}
             locations={observingLocations}
@@ -238,14 +238,14 @@ function TelescopeControlContent() {
 
         {/* App Tour */}
         <AppTour />
-        
+
         {/* Version Update Notification */}
         <VersionUpdateNotification />
-        
+
         {/* WebSocket Status Notification */}
         <WebSocketStatusNotification />
       </div>
-      
+
       {/* Version Footer - hidden in full screen mode */}
       <VersionFooter />
     </div>
@@ -254,10 +254,10 @@ function TelescopeControlContent() {
 
 export default function TelescopeControl() {
   // Only show ServerInitStatus in development or when explicitly enabled
-  const showServerInit = process.env.NODE_ENV === 'development' || 
-                         typeof window !== 'undefined' && 
+  const showServerInit = process.env.NODE_ENV === 'development' ||
+                         typeof window !== 'undefined' &&
                          window.location.search.includes('show_init')
-  
+
   return (
     <VersionCheckProvider checkIntervalMinutes={1440}>
       <TelescopeProvider>

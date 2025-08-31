@@ -169,7 +169,7 @@ export function CameraView() {
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const draggableNodeRef = useRef<HTMLDivElement>(null);
   const previousWsConnectedRef = useRef<boolean | null>(null); // null means not yet initialized
-  
+
   // Cumulative rotation tracking
   const [cumulativeRotation, setCumulativeRotation] = useState<number>(0);
   const previousRotationRef = useRef<number | null>(null);
@@ -648,7 +648,7 @@ export function CameraView() {
   );
   const [imageTimingHistory, setImageTimingHistory] = useState<number[]>([]);
   const [rttHistory, setRttHistory] = useState<number[]>([]);
-  
+
   // State for collapsible sections in telescope status overlay
   const [collapsedSections, setCollapsedSections] = useState<{
     powerThermal: boolean;
@@ -833,10 +833,10 @@ export function CameraView() {
     const overlayWidth = 320; // Width of the overlay
     const overlayHeight = 400; // Approximate height
     const padding = 20; // Minimum distance from edge
-    
+
     const maxX = window.innerWidth - overlayWidth - padding;
     const maxY = window.innerHeight - overlayHeight - padding;
-    
+
     return {
       x: Math.min(Math.max(padding, pos.x), maxX),
       y: Math.min(Math.max(padding, pos.y), maxY)
@@ -859,7 +859,7 @@ export function CameraView() {
       }
     }
   }, [showStreamStatus])
-  
+
   // Handle window resize to keep overlay in bounds
   useEffect(() => {
     const handleResize = () => {
@@ -870,7 +870,7 @@ export function CameraView() {
         }
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [overlayPosition, showStreamStatus, setOverlayPosition])
@@ -979,7 +979,7 @@ export function CameraView() {
         // Simplified connection restoration without image change detection
         setConnectionLost(false);
       }
-      
+
       // Force video stream reload when WebSocket reconnects after a disconnection
       if (previousWsConnectedRef.current === false && wsIsConnected === true) {
         console.log('WebSocket reconnected - forcing video stream reload');
@@ -1003,7 +1003,7 @@ export function CameraView() {
         setConnectionLost(true);
       }
     }
-    
+
     // Track previous connection state
     previousWsConnectedRef.current = wsIsConnected;
   }, [wsIsConnected, connectionLost, streamActive, reconnectCounter, currentTelescope]);
@@ -1033,28 +1033,28 @@ export function CameraView() {
   // Track cumulative rotation from balance sensor
   useEffect(() => {
     if (!localStreamStatus?.status?.balance_sensor?.data) return;
-    
+
     const { x, y } = localStreamStatus.status.balance_sensor.data;
     if (x === undefined || y === undefined) return;
-    
+
     // Calculate current rotation angle in degrees
     const currentRotation = Math.atan2(y, x) * 180 / Math.PI;
-    
+
     // If we have a previous rotation value, calculate the delta
     if (previousRotationRef.current !== null) {
       let delta = currentRotation - previousRotationRef.current;
-      
+
       // Handle wrap-around at ±180 degrees
       if (delta > 180) {
         delta -= 360;
       } else if (delta < -180) {
         delta += 360;
       }
-      
+
       // Update cumulative rotation
       setCumulativeRotation(prev => prev + delta);
     }
-    
+
     // Store current rotation for next comparison
     previousRotationRef.current = currentRotation;
   }, [localStreamStatus?.status?.balance_sensor?.data]);
@@ -1099,7 +1099,7 @@ export function CameraView() {
         <CardHeader className="pb-2">
           <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'}`}>
             <CardTitle className={`flex items-center ${isMobile ? 'text-sm' : ''} gap-2 flex-wrap`}>
-              <Crosshair className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} flex-shrink-0`} />
+              {/*<Crosshair className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} flex-shrink-0`} />*/}
               {!targetName && <span className="flex-shrink-0">Live View</span>}
               {targetName && (
                 <div className="flex items-center gap-2">
@@ -1423,8 +1423,8 @@ export function CameraView() {
               onTouchCancel={handleTouchEnd}
             >
               {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) or when client mode is Idle, Initialise, or AutoFocus */}
-              {((connectionLost && connectionType === 'disconnected') || 
-                localStreamStatus?.status?.stage === 'Idle' || 
+              {((connectionLost && connectionType === 'disconnected') ||
+                localStreamStatus?.status?.stage === 'Idle' ||
                 localStreamStatus?.status?.stage === 'Initialise' ||
                 localStreamStatus?.status?.stage === 'AutoFocus' ||
                 (!localStreamStatus?.status?.stage && currentTelescope)) && (
@@ -1509,7 +1509,7 @@ export function CameraView() {
                       <img
                         key={`${mainCameraSource}-${streamKey}`}
                         src={
-                          mainCameraSource === 'allsky' 
+                          mainCameraSource === 'allsky'
                             ? (allskyUrls[currentTelescope?.id || ''] || `http://allsky/current/tmp/image.jpg?_ts=${Date.now()}`)
                             : mainCameraSource === 'guide'
                             ? `/api/${currentTelescope?.name}/guide-stream?_ts=${Date.now()}`
