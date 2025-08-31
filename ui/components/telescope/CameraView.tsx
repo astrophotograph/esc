@@ -67,6 +67,7 @@ import { ImageErrorBoundary } from "./ImageErrorBoundary"
 import { AutoGotoOverlay } from "./AutoGotoOverlay"
 import { DarkLibraryOverlay } from "./DarkLibraryOverlay"
 import { AutoFocusOverlay } from "./AutoFocusOverlay"
+import { SlidingCameraSourceSwitcher } from "./SlidingCameraSourceSwitcher"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -135,6 +136,8 @@ export function CameraView() {
     wsConnectionState,
     wsLastUpdate,
     wsHealthStatus,
+    mainCameraSource,
+    allskyUrls,
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
@@ -1097,7 +1100,7 @@ export function CameraView() {
           <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center justify-between'}`}>
             <CardTitle className={`flex items-center ${isMobile ? 'text-sm' : ''} gap-2 flex-wrap`}>
               <Crosshair className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} flex-shrink-0`} />
-              <span className="flex-shrink-0">Live View</span>
+              {!targetName && <span className="flex-shrink-0">Live View</span>}
               {targetName && (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className={`${isMobile ? 'text-sm px-2 py-0.5' : 'text-lg px-3 py-1'}`}>
@@ -1465,6 +1468,11 @@ export function CameraView() {
                 </div>
               )}
 
+              {/* Camera Source Switcher */}
+              {currentTelescope && (
+                <SlidingCameraSourceSwitcher />
+              )}
+
               {/* WebRTC Live View with MJPEG fallback - wrapped in error boundary */}
               {/* Hide when in Initialise mode for dark library generation or AutoFocus mode */}
               {clientMode !== "Initialise" && clientMode !== "AutoFocus" && (
@@ -1479,21 +1487,46 @@ export function CameraView() {
                     handleImageLoad()
                   }}
                 >
-                  <WebRTCLiveView
-                    key={streamKey} // Force remount when streamKey changes
-                    telescope={currentTelescope}
-                    className=""
-                    brightness={brightness}
-                    contrast={contrast}
-                    rotationAngle={rotationAngle}
-                    zoomLevel={zoomLevel}
-                    panPosition={panPosition}
-                    isPortrait={isPortrait}
-                    stage={localStreamStatus?.status?.stage}
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
-                    onConnectionStateChange={setConnectionType}
-                  />
+                  {mainCameraSource === 'telescope' ? (
+                    <WebRTCLiveView
+                      key={streamKey} // Force remount when streamKey changes
+                      telescope={currentTelescope}
+                      className=""
+                      brightness={brightness}
+                      contrast={contrast}
+                      rotationAngle={rotationAngle}
+                      zoomLevel={zoomLevel}
+                      panPosition={panPosition}
+                      isPortrait={isPortrait}
+                      stage={localStreamStatus?.status?.stage}
+                      onLoad={handleImageLoad}
+                      onError={handleImageError}
+                      onConnectionStateChange={setConnectionType}
+                    />
+                  ) : (
+                    // Render alternative camera sources (Allsky, Guide, Finder)
+                    <div className="relative w-full h-full bg-black">
+                      <img
+                        key={`${mainCameraSource}-${streamKey}`}
+                        src={
+                          mainCameraSource === 'allsky' 
+                            ? (allskyUrls[currentTelescope?.id || ''] || `http://allsky/current/tmp/image.jpg?_ts=${Date.now()}`)
+                            : mainCameraSource === 'guide'
+                            ? `/api/${currentTelescope?.name}/guide-stream?_ts=${Date.now()}`
+                            : `/api/${currentTelescope?.name}/finder-stream?_ts=${Date.now()}`
+                        }
+                        alt={`${mainCameraSource} camera view`}
+                        className="w-full h-full object-contain"
+                        style={{
+                          filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%)`,
+                          transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
+                          transformOrigin: 'center center',
+                        }}
+                        onLoad={handleImageLoad}
+                        onError={handleImageError}
+                      />
+                    </div>
+                  )}
                 </ImageErrorBoundary>
               )}
             </div>
@@ -1551,8 +1584,8 @@ export function CameraView() {
               offsetY={panPosition.y}
               isPortrait={isPortrait}
             />
-            {/* Zoom Controls */}
-            <div className={`absolute top-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center ${
+            {/* Zoom Controls - moved down to avoid overlapping with camera switcher */}
+            <div className={`absolute top-16 left-4 bg-black/70 backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 items-center ${
               isMobile ? 'p-1 gap-1' : ''
             }`} style={{ zIndex: 20 }}>
               <Button
