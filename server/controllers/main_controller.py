@@ -880,6 +880,15 @@ class Controller:
                         if not tel.client.is_connected:
                             tasks.append(tel.client.connect())
                         if not tel.imaging.is_connected:
+                            # Cancel any existing reader task to prevent duplicates after reconnect
+                            if hasattr(tel.imaging, 'reader_task') and tel.imaging.reader_task:
+                                logging.debug(f"Canceling existing reader task for {tel.name} imaging client")
+                                tel.imaging.reader_task.cancel()
+                                try:
+                                    await tel.imaging.reader_task
+                                except asyncio.CancelledError:
+                                    pass
+                                tel.imaging.reader_task = None
                             tasks.append(tel.imaging.connect())
 
                         if tasks:
@@ -1213,6 +1222,15 @@ class Controller:
                         if not tel.client.is_connected:
                             tasks.append(tel.client.connect())
                         if not tel.imaging.is_connected:
+                            # Cancel any existing reader task to prevent duplicates after reconnect
+                            if hasattr(tel.imaging, 'reader_task') and tel.imaging.reader_task:
+                                logging.debug(f"Canceling existing reader task for {tel.name} imaging client")
+                                tel.imaging.reader_task.cancel()
+                                try:
+                                    await tel.imaging.reader_task
+                                except asyncio.CancelledError:
+                                    pass
+                                tel.imaging.reader_task = None
                             tasks.append(tel.imaging.connect())
 
                         if tasks:
