@@ -2021,12 +2021,21 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       }
     }
     
+    // Handle WebSocket reconnection
+    const handleReconnected = () => {
+      console.log('WebSocket reconnected - requesting telescope list');
+      // The WebSocket service already requests telescope list on reconnection,
+      // but we can also ensure subscriptions are restored
+      wsService.subscribe([SubscriptionType.ALL]);
+    }
+    
     wsService.on(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
     wsService.on(MessageType.TELESCOPE_LIST, handleTelescopeList)
     wsService.on(MessageType.TELESCOPE_DISCOVERED, handleTelescopeDiscovered)
     wsService.on(MessageType.TELESCOPE_LOST, handleTelescopeLost)
     wsService.on(MessageType.STATUS_UPDATE, handleStatusUpdate)
     wsService.on(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
+    wsService.on('reconnected', handleReconnected)
 
     return () => {
       wsService.off(MessageType.CLIENT_MODE_CHANGED, handleClientModeChange)
@@ -2035,6 +2044,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       wsService.off(MessageType.TELESCOPE_LOST, handleTelescopeLost)
       wsService.off(MessageType.STATUS_UPDATE, handleStatusUpdate)
       wsService.off(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
+      wsService.off('reconnected', handleReconnected)
     }
   }, [currentTelescope?.id])
 

@@ -373,7 +373,7 @@ export class WebSocketService extends EventEmitter {
   private lastMessageTime: number = 0
   private lastHeartbeatReceived: number = 0
   private healthCheckIntervalMs: number = 10000 // Check health every 10 seconds
-  private messageTimeoutMs: number = 60000 // Force reconnect if no messages for 60 seconds
+  private messageTimeoutMs: number = 90000 // Force reconnect if no messages for 90 seconds
 
   constructor(config: WebSocketServiceConfig = {}) {
     super()
@@ -400,9 +400,9 @@ export class WebSocketService extends EventEmitter {
     
     this.config = {
       baseUrl: config.baseUrl || defaultWsUrl,
-      reconnectAttempts: config.reconnectAttempts || 5,
+      reconnectAttempts: config.reconnectAttempts || Infinity, // Keep trying indefinitely
       reconnectDelayMs: config.reconnectDelayMs || 1000,
-      maxReconnectDelayMs: config.maxReconnectDelayMs || 30000,
+      maxReconnectDelayMs: config.maxReconnectDelayMs || 10000, // Cap at 10 seconds instead of 30
       heartbeatIntervalMs: config.heartbeatIntervalMs || 30000,
       commandTimeoutMs: config.commandTimeoutMs || 10000
     }
@@ -1098,6 +1098,9 @@ export class WebSocketService extends EventEmitter {
           const subscriptionTypes = types.split(',') as SubscriptionType[]
           await this.subscribe(subscriptionTypes, telescopeId === 'all' ? undefined : telescopeId)
         }
+
+        // Request telescope list after reconnection
+        await this.requestTelescopeList()
 
         this.emit('reconnected')
 

@@ -126,7 +126,7 @@ export function useTelescopeWebSocket(
 
       wsServiceRef.current = getWebSocketService({
         baseUrl: getWebSocketBaseUrl(),
-        reconnectAttempts: 5,
+        reconnectAttempts: Infinity, // Keep trying indefinitely
         reconnectDelayMs: 1000,
         commandTimeoutMs: 120000  // Match backend timeout for goto operations (120 seconds)
       });

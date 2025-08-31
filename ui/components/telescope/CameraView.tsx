@@ -165,6 +165,7 @@ export function CameraView() {
   // const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null); // DISABLED - image change detection disabled
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const draggableNodeRef = useRef<HTMLDivElement>(null);
+  const previousWsConnectedRef = useRef<boolean>(false);
   
   // Cumulative rotation tracking
   const [cumulativeRotation, setCumulativeRotation] = useState<number>(0);
@@ -293,6 +294,7 @@ export function CameraView() {
     setLastSuccessfulLoad(Date.now());
     // setLastImageData(''); // DISABLED - image change detection disabled
     setLastSSEMessage(Date.now());
+    setStreamKey(prev => prev + 1); // Force WebRTCLiveView remount on telescope change
 
     // Clear any pending retry timeout
     if (retryTimeoutRef.current) {
@@ -632,6 +634,7 @@ export function CameraView() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [localStreamStatus, setLocalStreamStatus] = useState<any>(null);
   const [reconnectCounter, setReconnectCounter] = useState(0);
+  const [streamKey, setStreamKey] = useState(0); // Key to force WebRTCLiveView remount
   // Use persistent state for overlay position
   const [overlayPosition, setOverlayPosition] = usePersistentState<{ x: number; y: number } | undefined>(
     'telescope-status-overlay-position',
@@ -964,13 +967,31 @@ export function CameraView() {
         // Simplified connection restoration without image change detection
         setConnectionLost(false);
       }
+      
+      // Force video stream reload when WebSocket reconnects after a disconnection
+      if (previousWsConnectedRef.current === false) {
+        console.log('WebSocket reconnected - forcing video stream reload');
+        // Force WebRTCLiveView to remount by changing its key
+        setStreamKey(prev => prev + 1);
+        // Also update the video URL for consistency
+        const newUrl = generateVideoUrl(currentTelescope);
+        const urlWithTimestamp = `${newUrl}${newUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        setVideoUrl(urlWithTimestamp);
+        setImageError(false);
+        setImageLoading(true);
+        setRetryCount(0);
+        setStreamActive(false);
+      }
     } else {
       // Only mark connection as lost after multiple failures
       if (reconnectCounter > 2) {
         setConnectionLost(true);
       }
     }
-  }, [wsIsConnected, connectionLost, streamActive, reconnectCounter]);
+    
+    // Track previous connection state
+    previousWsConnectedRef.current = wsIsConnected;
+  }, [wsIsConnected, connectionLost, streamActive, reconnectCounter, currentTelescope]);
 
   // Update last message timestamp when WebSocket receives data
   useEffect(() => {
@@ -1447,6 +1468,7 @@ export function CameraView() {
                   }}
                 >
                   <WebRTCLiveView
+                    key={streamKey} // Force remount when streamKey changes
                     telescope={currentTelescope}
                     className=""
                     brightness={brightness}
