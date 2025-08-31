@@ -142,7 +142,7 @@ class ConnectionRecoveryService:
                 await callback(telescope_id)
                 
                 # If we get here, reconnection was successful
-                logger.success(f"Successfully recovered connection for telescope {telescope_id}")
+                logger.info(f"Successfully recovered connection for telescope {telescope_id}")
                 state.is_recovering = False
                 state.last_recovery_success = datetime.now()
                 state.connection_resets = 0  # Reset the counter

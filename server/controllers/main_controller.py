@@ -28,6 +28,8 @@ from websocket_router import router as websocket_router
 from remote_websocket_client import RemoteController
 from utils.memory_monitor import MemoryMonitor
 from utils.task_manager import task_manager
+from services.connection_health_monitor import get_health_monitor, start_health_monitoring, stop_health_monitoring
+from services.connection_recovery import get_recovery_service
 
 
 # Request/Response models
@@ -902,6 +904,27 @@ class Controller:
                             websocket_manager.register_telescope_client(
                                 telescope_id, tel.client
                             )
+                            
+                            # Register with health monitor
+                            health_monitor = get_health_monitor()
+                            health_monitor.register_connection(telescope_id, tel.client)
+                            
+                            # Register recovery callback
+                            recovery_service = get_recovery_service()
+                            async def reconnect_telescope(tid):
+                                """Reconnect callback for recovery service."""
+                                try:
+                                    logging.info(f"Attempting to reconnect telescope {tid}")
+                                    if not tel.client.is_connected:
+                                        await tel.client.connect()
+                                    if not tel.imaging.is_connected:
+                                        await tel.imaging.connect()
+                                    logging.info(f"Successfully reconnected telescope {tid}")
+                                except Exception as e:
+                                    logging.error(f"Failed to reconnect telescope {tid}: {e}")
+                                    raise
+                            
+                            recovery_service.register_reconnect_callback(telescope_id, reconnect_telescope)
 
                             # Set up event listener to forward status updates through WebSocket
                             async def forward_status_update(event):
@@ -1036,8 +1059,26 @@ class Controller:
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
+                                        
+                                        # Update health monitor activity on successful status update
+                                        health_monitor = get_health_monitor()
+                                        health_monitor.update_activity(telescope_id)
                                     except (ConnectionResetError, BrokenPipeError, OSError) as e:
-                                        # Handle connection reset gracefully (likely telescope reboot)
+                                        # Update health monitor activity tracking
+                                        health_monitor = get_health_monitor()
+                                        
+                                        # Let recovery service handle connection errors
+                                        recovery_service = get_recovery_service()
+                                        if await recovery_service.handle_connection_error(telescope_id, e):
+                                            # Recovery initiated, wait for it to complete
+                                            logging.info(
+                                                f"Recovery initiated for telescope {telescope_id}. "
+                                                f"Waiting for reconnection..."
+                                            )
+                                            await asyncio.sleep(10)
+                                            continue
+                                        
+                                        # Handle connection reset gracefully if recovery not initiated
                                         if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
                                             logging.info(
                                                 f"Telescope {telescope_id} connection lost (likely rebooting). "
@@ -1196,6 +1237,27 @@ class Controller:
                             websocket_manager.register_telescope_client(
                                 telescope_id, tel.client
                             )
+                            
+                            # Register with health monitor
+                            health_monitor = get_health_monitor()
+                            health_monitor.register_connection(telescope_id, tel.client)
+                            
+                            # Register recovery callback
+                            recovery_service = get_recovery_service()
+                            async def reconnect_telescope(tid):
+                                """Reconnect callback for recovery service."""
+                                try:
+                                    logging.info(f"Attempting to reconnect telescope {tid}")
+                                    if not tel.client.is_connected:
+                                        await tel.client.connect()
+                                    if not tel.imaging.is_connected:
+                                        await tel.imaging.connect()
+                                    logging.info(f"Successfully reconnected telescope {tid}")
+                                except Exception as e:
+                                    logging.error(f"Failed to reconnect telescope {tid}: {e}")
+                                    raise
+                            
+                            recovery_service.register_reconnect_callback(telescope_id, reconnect_telescope)
 
                             # Set up event listener to forward status updates through WebSocket
                             async def forward_status_update(event):
@@ -1329,8 +1391,26 @@ class Controller:
                                         await websocket_manager.broadcast_status_update(
                                             telescope_id, status_dict
                                         )
+                                        
+                                        # Update health monitor activity on successful status update
+                                        health_monitor = get_health_monitor()
+                                        health_monitor.update_activity(telescope_id)
                                     except (ConnectionResetError, BrokenPipeError, OSError) as e:
-                                        # Handle connection reset gracefully (likely telescope reboot)
+                                        # Update health monitor activity tracking
+                                        health_monitor = get_health_monitor()
+                                        
+                                        # Let recovery service handle connection errors
+                                        recovery_service = get_recovery_service()
+                                        if await recovery_service.handle_connection_error(telescope_id, e):
+                                            # Recovery initiated, wait for it to complete
+                                            logging.info(
+                                                f"Recovery initiated for telescope {telescope_id}. "
+                                                f"Waiting for reconnection..."
+                                            )
+                                            await asyncio.sleep(10)
+                                            continue
+                                        
+                                        # Handle connection reset gracefully if recovery not initiated
                                         if "[Errno 54]" in str(e) or "Connection reset by peer" in str(e):
                                             logging.info(
                                                 f"Telescope {telescope_id} connection lost (likely rebooting). "
@@ -1440,6 +1520,14 @@ class Controller:
                 async def disconnect_telescope_clients(tel=telescope):
                     try:
                         logging.info(f"Disconnecting telescope {tel.name}")
+                        
+                        # Unregister from health monitor and recovery service
+                        telescope_id = tel.serial_number or tel.host
+                        health_monitor = get_health_monitor()
+                        health_monitor.unregister_connection(telescope_id)
+                        
+                        recovery_service = get_recovery_service()
+                        recovery_service.unregister_telescope(telescope_id)
 
                         # Disconnect both clients in parallel
                         tasks = []
@@ -1707,6 +1795,11 @@ class Controller:
             # Start memory monitoring
             await self.memory_monitor.start()
             logging.info("Memory monitoring started")
+            
+            # Start connection health monitoring
+            await start_health_monitoring()
+            logging.info("Connection health monitoring started")
+            
             await websocket_manager.broadcast_server_init(
                 "memory",
                 "Memory monitoring initialized",
@@ -1768,6 +1861,10 @@ class Controller:
             nonlocal shutdown_initiated
             try:
                 logging.info("Starting graceful shutdown...")
+                
+                # Stop connection health monitoring
+                await stop_health_monitoring()
+                logging.info("Connection health monitoring stopped")
                 
                 # First, disconnect all telescopes to stop their background tasks
                 await self.disconnect_all_telescopes()
