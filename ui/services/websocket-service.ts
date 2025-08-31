@@ -372,8 +372,8 @@ export class WebSocketService extends EventEmitter {
   // Health monitoring
   private lastMessageTime: number = 0
   private lastHeartbeatReceived: number = 0
-  private healthCheckIntervalMs: number = 10000 // Check health every 10 seconds
-  private messageTimeoutMs: number = 90000 // Force reconnect if no messages for 90 seconds
+  private healthCheckIntervalMs: number = 5000 // Check health every 5 seconds
+  private messageTimeoutMs: number = 30000 // Force reconnect if no messages for 30 seconds
 
   constructor(config: WebSocketServiceConfig = {}) {
     super()
@@ -490,8 +490,10 @@ export class WebSocketService extends EventEmitter {
           })
           this.cleanup()
 
-          if (!event.wasClean && this.connectionState !== ConnectionState.DISCONNECTED) {
-            console.log('Triggering reconnect due to unclean close')
+          // Always attempt to reconnect unless explicitly disconnected
+          // This ensures we reconnect even on clean closes (like server restarts)
+          if (this.connectionState !== ConnectionState.DISCONNECTED) {
+            console.log('Triggering reconnect after close (wasClean:', event.wasClean, ')')
             this.handleReconnect()
           }
         }
@@ -943,6 +945,15 @@ export class WebSocketService extends EventEmitter {
         this.handleEchoRequest(message as EchoRequestMessage)
         return
       }
+      
+      // Handle echo response - update heartbeat time
+      if (message.type === MessageType.ECHO_RESPONSE) {
+        this.lastHeartbeatReceived = Date.now()
+        // Calculate RTT for debugging
+        const rtt = Date.now() - (message.payload.request_timestamp * 1000)
+        console.debug('Echo response received, RTT:', rtt + 'ms')
+        return
+      }
 
       // Emit message to listeners
       this.emit('message', message)
@@ -1196,9 +1207,14 @@ export class WebSocketService extends EventEmitter {
       return
     }
 
-    // Log health status periodically
-    if (this.healthCheckIntervalMs >= 30000) { // Only log if checking every 30+ seconds
-      console.debug(`WebSocket health check passed: Last message ${timeSinceLastMessage}ms ago, last heartbeat ${timeSinceLastHeartbeat}ms ago`)
+    // Log health status periodically for debugging
+    if (Math.random() < 0.1) { // Log 10% of the time to avoid spam
+      console.debug('WebSocket health check:', {
+        timeSinceLastMessage: Math.round(timeSinceLastMessage / 1000) + 's',
+        timeSinceLastHeartbeat: Math.round(timeSinceLastHeartbeat / 1000) + 's',
+        readyState: this.ws.readyState,
+        connectionState: this.connectionState
+      })
     }
   }
 

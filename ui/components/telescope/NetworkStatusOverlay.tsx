@@ -17,7 +17,9 @@ import {
   RotateCw,
   Clock,
   TrendingUp,
-  Info
+  Info,
+  HardDrive,
+  AlertTriangle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -76,6 +78,7 @@ export function NetworkStatusOverlay() {
   const [dropEventIndices, setDropEventIndices] = useState<number[]>([])
   const previousStackedFrameRef = useRef<number>(0)
   const previousDroppedFrameRef = useRef<number>(0)
+  const [dataTransferHistory, setDataTransferHistory] = useState<number[]>([])  // MB/s history
   
   // State for collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<{
@@ -193,6 +196,20 @@ export function NetworkStatusOverlay() {
           
           return newHistory
         })
+        
+        // Calculate data transfer rate if we have both size and time
+        if (contextStreamStatus.imaging_status?.last_image_size_bytes && 
+            contextStreamStatus.imaging_status.last_image_size_bytes > 0) {
+          // Convert bytes to MB and ms to seconds for MB/s
+          const sizeInMB = contextStreamStatus.imaging_status.last_image_size_bytes / (1024 * 1024)
+          const timeInSeconds = contextStreamStatus.imaging_status.last_image_elapsed_ms / 1000
+          const transferRate = sizeInMB / timeInSeconds
+          
+          setDataTransferHistory(prev => {
+            const newHistory = [...prev.slice(-19), transferRate]
+            return newHistory
+          })
+        }
       }
       
       // Update RTT history if available (only positive values)
@@ -643,6 +660,79 @@ export function NetworkStatusOverlay() {
                     {currentImageElapsed !== null ? `${Math.round(currentImageElapsed)}ms` : '—'}
                   </span>
                 </div>
+                
+                {/* Data Transfer Rate */}
+                {localStreamStatus?.imaging_status?.last_image_size_bytes && 
+                 localStreamStatus?.imaging_status?.last_image_elapsed_ms && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-purple-400" />
+                      <span className="text-muted-foreground">Transfer Rate</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-mono ${(() => {
+                        const sizeInMB = localStreamStatus.imaging_status.last_image_size_bytes / (1024 * 1024);
+                        const timeInSeconds = localStreamStatus.imaging_status.last_image_elapsed_ms / 1000;
+                        const transferRate = sizeInMB / timeInSeconds;
+                        // Flag as slow if less than 1 MB/s
+                        if (transferRate < 1.0) {
+                          return 'text-red-400';
+                        } else if (transferRate < 2.0) {
+                          return 'text-yellow-400';
+                        }
+                        return '';
+                      })()}`}>
+                        {(() => {
+                          const sizeInMB = localStreamStatus.imaging_status.last_image_size_bytes / (1024 * 1024);
+                          const timeInSeconds = localStreamStatus.imaging_status.last_image_elapsed_ms / 1000;
+                          const transferRate = sizeInMB / timeInSeconds;
+                          return `${transferRate.toFixed(2)} MB/s`;
+                        })()}
+                      </span>
+                      {(() => {
+                        const sizeInMB = localStreamStatus.imaging_status.last_image_size_bytes / (1024 * 1024);
+                        const timeInSeconds = localStreamStatus.imaging_status.last_image_elapsed_ms / 1000;
+                        const transferRate = sizeInMB / timeInSeconds;
+                        if (transferRate < 1.0) {
+                          return (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertTriangle className="w-3 h-3 text-red-400" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-sm">
+                                  Slow transfer rate detected. This may indicate network issues between your telescope and computer.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Image Size */}
+                {localStreamStatus?.imaging_status?.last_image_size_bytes && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="w-4 h-4 text-blue-400" />
+                      <span className="text-muted-foreground">Image Size</span>
+                    </div>
+                    <span className="font-mono">
+                      {(() => {
+                        const bytes = localStreamStatus.imaging_status.last_image_size_bytes;
+                        if (bytes >= 1024 * 1024) {
+                          return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+                        } else if (bytes >= 1024) {
+                          return `${(bytes / 1024).toFixed(2)} KB`;
+                        }
+                        return `${bytes} B`;
+                      })()}
+                    </span>
+                  </div>
+                )}
 
                 {/* Mini timing graph */}
                 {imageTimingHistory.length > 1 && (
@@ -713,6 +803,59 @@ export function NetworkStatusOverlay() {
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-0.5 bg-red-400"></div>
                         <span className="text-muted-foreground">Drop</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Data Transfer Rate Graph */}
+                {dataTransferHistory.length > 1 && (
+                  <div className="mt-2">
+                    <div className="text-xs text-muted-foreground mb-1">Transfer Rate History</div>
+                    <div className="h-12 bg-muted rounded p-1 relative">
+                      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        {/* Threshold lines */}
+                        <line
+                          x1="0"
+                          y1="66.67"  // 1 MB/s threshold (assuming max of 3 MB/s for scale)
+                          x2="100"
+                          y2="66.67"
+                          stroke="#ef4444"
+                          strokeWidth="0.5"
+                          strokeOpacity="0.3"
+                          strokeDasharray="2,2"
+                        />
+                        <line
+                          x1="0"
+                          y1="33.33"  // 2 MB/s threshold
+                          x2="100"
+                          y2="33.33"
+                          stroke="#facc15"
+                          strokeWidth="0.5"
+                          strokeOpacity="0.3"
+                          strokeDasharray="2,2"
+                        />
+                        
+                        {/* Transfer rate line */}
+                        <polyline
+                          fill="none"
+                          stroke="#a855f7"
+                          strokeWidth="2"
+                          points={dataTransferHistory.map((val, i) => {
+                            const x = (i / (dataTransferHistory.length - 1)) * 100
+                            const maxVal = Math.max(...dataTransferHistory, 3)  // Min scale of 3 MB/s
+                            const y = 100 - (val / maxVal) * 100
+                            return `${x},${y}`
+                          }).join(' ')}
+                        />
+                      </svg>
+                      
+                      {/* Scale labels */}
+                      <div className="absolute top-0 left-0 text-[9px] text-muted-foreground">
+                        {Math.max(...dataTransferHistory, 3).toFixed(1)} MB/s
+                      </div>
+                      <div className="absolute bottom-0 left-0 text-[9px] text-muted-foreground">
+                        0 MB/s
                       </div>
                     </div>
                   </div>

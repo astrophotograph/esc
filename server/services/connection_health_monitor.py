@@ -141,11 +141,33 @@ class ConnectionHealthMonitor:
                 
             # If the connection has a method to check if it's alive, use it
             if hasattr(conn_info.connection, 'is_alive'):
-                return await conn_info.connection.is_alive()
+                # Check if it's a property or callable
+                is_alive = conn_info.connection.is_alive
+                if callable(is_alive):
+                    # If it's a method, check if it's async
+                    import asyncio
+                    if asyncio.iscoroutinefunction(is_alive):
+                        return await is_alive()
+                    else:
+                        return is_alive()
+                else:
+                    # It's a property
+                    return is_alive
             elif hasattr(conn_info.connection, 'connected'):
                 return conn_info.connection.connected
             elif hasattr(conn_info.connection, 'is_connected'):
-                return await conn_info.connection.is_connected()
+                # Check if it's a property or callable
+                is_connected = conn_info.connection.is_connected
+                if callable(is_connected):
+                    # If it's a method, check if it's async
+                    import asyncio
+                    if asyncio.iscoroutinefunction(is_connected):
+                        return await is_connected()
+                    else:
+                        return is_connected()
+                else:
+                    # It's a property
+                    return is_connected
                 
             # Default: assume connection is healthy if object exists
             return True
