@@ -33,6 +33,7 @@ import { catalogAPI } from "./services/catalog-api"
 import { DEFAULT_OBSERVER_LOCATION } from "./utils/celestial-calculations"
 import { ServerInitStatus } from "./components/ServerInitStatus"
 import { useElectronMenuActions } from "./hooks/useElectronMenuActions"
+import { WebSocketStatusNotification } from "./components/WebSocketStatusNotification"
 
 function TelescopeControlContent() {
   const {
@@ -240,6 +241,9 @@ function TelescopeControlContent() {
         
         {/* Version Update Notification */}
         <VersionUpdateNotification />
+        
+        {/* WebSocket Status Notification */}
+        <WebSocketStatusNotification />
       </div>
       
       {/* Version Footer - hidden in full screen mode */}

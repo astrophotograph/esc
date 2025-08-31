@@ -47,6 +47,15 @@ export function WebRTCLiveView({
   const [mjpegError, setMjpegError] = useState(false);
   const [mjpegLoading, setMjpegLoading] = useState(false);
   const [useSimpleWebRTC, setUseSimpleWebRTC] = useState(false);
+  const [mountTime] = useState(Date.now()); // Track mount time for cache busting
+
+  // Debug component lifecycle
+  useEffect(() => {
+    console.log('WebRTCLiveView mounted at', new Date(mountTime).toISOString());
+    return () => {
+      console.log('WebRTCLiveView unmounting');
+    };
+  }, [mountTime]);
 
   // WebRTC hook configuration
   const {
@@ -88,10 +97,13 @@ export function WebRTCLiveView({
         console.log('Using real telescope stream endpoint for:', telescope.name);
       }
 
+      // Add timestamp to force reload on remount
+      const urlWithTimestamp = `${newUrl}${newUrl.includes('?') ? '&' : '?'}t=${mountTime}`;
+      
       // Only update URL if it's actually different to prevent duplicate requests
-      if (newUrl !== mjpegUrl) {
-        setMjpegUrl(newUrl);
-        console.log('Setting MJPEG fallback URL:', newUrl);
+      if (urlWithTimestamp !== mjpegUrl) {
+        setMjpegUrl(urlWithTimestamp);
+        console.log('Setting MJPEG fallback URL:', urlWithTimestamp);
       }
     } else if (stage === 'Idle') {
       // Clear URL when telescope is idle
@@ -101,7 +113,7 @@ export function WebRTCLiveView({
         onConnectionStateChange?.('disconnected');
       }
     }
-  }, [telescope?.id, telescope?.name, telescope?.serial_number, stage, mjpegUrl, onConnectionStateChange]); // Only re-run when telescope identity changes
+  }, [telescope?.id, telescope?.name, telescope?.serial_number, stage, mjpegUrl, onConnectionStateChange, mountTime]); // Only re-run when telescope identity or mount time changes
 
   // Handle WebRTC stream assignment to video element
   useEffect(() => {

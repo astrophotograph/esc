@@ -165,7 +165,7 @@ export function CameraView() {
   // const streamCheckIntervalRef = useRef<NodeJS.Timeout | null>(null); // DISABLED - image change detection disabled
   const sseCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const draggableNodeRef = useRef<HTMLDivElement>(null);
-  const previousWsConnectedRef = useRef<boolean>(false);
+  const previousWsConnectedRef = useRef<boolean | null>(null); // null means not yet initialized
   
   // Cumulative rotation tracking
   const [cumulativeRotation, setCumulativeRotation] = useState<number>(0);
@@ -294,7 +294,10 @@ export function CameraView() {
     setLastSuccessfulLoad(Date.now());
     // setLastImageData(''); // DISABLED - image change detection disabled
     setLastSSEMessage(Date.now());
-    setStreamKey(prev => prev + 1); // Force WebRTCLiveView remount on telescope change
+    // Force remount when telescope changes
+    if (currentTelescope) {
+      setStreamKey(prev => prev + 1); // Force WebRTCLiveView remount on telescope change
+    }
 
     // Clear any pending retry timeout
     if (retryTimeoutRef.current) {
@@ -959,6 +962,12 @@ export function CameraView() {
   useEffect(() => {
     setSseConnected(wsIsConnected);
 
+    // Initialize the previous state on first render
+    if (previousWsConnectedRef.current === null) {
+      previousWsConnectedRef.current = wsIsConnected;
+      return; // Don't trigger reload on initial mount
+    }
+
     if (wsIsConnected) {
       setReconnectCounter(0);
 
@@ -969,10 +978,13 @@ export function CameraView() {
       }
       
       // Force video stream reload when WebSocket reconnects after a disconnection
-      if (previousWsConnectedRef.current === false) {
+      if (previousWsConnectedRef.current === false && wsIsConnected === true) {
         console.log('WebSocket reconnected - forcing video stream reload');
         // Force WebRTCLiveView to remount by changing its key
-        setStreamKey(prev => prev + 1);
+        setStreamKey(prev => {
+          console.log('Incrementing stream key from', prev, 'to', prev + 1);
+          return prev + 1;
+        });
         // Also update the video URL for consistency
         const newUrl = generateVideoUrl(currentTelescope);
         const urlWithTimestamp = `${newUrl}${newUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
