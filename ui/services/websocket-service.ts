@@ -953,8 +953,16 @@ export class WebSocketService extends EventEmitter {
       if (message.type === MessageType.ECHO_RESPONSE) {
         this.lastHeartbeatReceived = Date.now()
         // Calculate RTT for debugging
-        const rtt = Date.now() - (message.payload.request_timestamp * 1000)
-        console.debug('Echo response received, RTT:', rtt + 'ms')
+        // The timestamps from server are in seconds, need to convert to milliseconds
+        const requestTime = message.payload.request_timestamp * 1000
+        const responseTime = message.payload.response_timestamp * 1000
+        const serverProcessingTime = responseTime - requestTime
+        const totalRtt = Date.now() - requestTime
+        console.debug('Echo response received:', {
+          serverProcessingTime: serverProcessingTime.toFixed(1) + 'ms',
+          totalRtt: totalRtt.toFixed(1) + 'ms',
+          sequence: message.payload.sequence
+        })
         return
       }
 
