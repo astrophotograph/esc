@@ -1368,8 +1368,9 @@ class WebSocketManager:
                 logger.info(f"  Ephemeris Note: Solar system objects require current ephemeris data")
                 logger.info(f"  Their positions change significantly over time")
 
-            await client.goto(target_name, ra, dec)
-            success, error = await client.wait_for_event_completion("AutoGoto", timeout=120.0)
+            mode: ScopeViewMode = "solar_sys" if is_solar_system else "star"
+            await client.goto(target_name, ra, dec, mode=mode)
+            success, error = await client.wait_for_event_completion("AutoGoto", timeout=180.0)
             if not success:
                 await client.stop_goto()
                 error_message = f"Error positioning telescope: {error}" if error else "Error positioning telescope"
@@ -1379,7 +1380,7 @@ class WebSocketManager:
                 return {"status": "error", "message": error_message}
 
             logger.debug(f"Start imaging: {start_imaging}")
-            if start_imaging or True:
+            if start_imaging:
                 await asyncio.sleep(5.0)
 
                 r = await client.send_and_recv(SetSetting(
