@@ -144,21 +144,6 @@ ipcMain.on('view-logs', (event, type) => {
   }
 });
 
-ipcMain.on('exit-app', (event) => {
-  log.info('IPC: exit-app received');
-  // Force quit the app
-  if (processManager) {
-    log.info('Stopping processes before exit...');
-    processManager.stopAll().then(() => {
-      app.quit();
-    }).catch(() => {
-      app.quit();
-    });
-  } else {
-    app.quit();
-  }
-});
-
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -178,7 +163,9 @@ let mainWindow;
 let loadingWindow;
 let logWindows = {};
 let aboutWindow = null;
+let shutdownWindow = null;
 let processManager;
+let isShuttingDown = false;
 
 // Enable live reload for Electron in development
 if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
@@ -924,20 +911,152 @@ app.on('window-all-closed', () => {
   }
 });
 
+// Create shutdown window
+function createShutdownWindow() {
+  if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+    shutdownWindow.focus();
+    return;
+  }
+
+  shutdownWindow = new BrowserWindow({
+    width: 450,
+    height: 400,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    movable: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  shutdownWindow.loadFile('shutdown.html');
+  
+  shutdownWindow.on('closed', () => {
+    shutdownWindow = null;
+  });
+
+  // Center the window
+  shutdownWindow.center();
+  
+  return shutdownWindow;
+}
+
+// Enhanced shutdown process with progress updates
+async function performShutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  // Create and show shutdown window
+  createShutdownWindow();
+  
+  // Hide main window
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.hide();
+  }
+
+  // Send initial progress
+  if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+    shutdownWindow.webContents.send('shutdown-progress', {
+      message: 'Disconnecting from telescopes...',
+      progress: 20,
+      step: { id: 'disconnect', status: 'active' }
+    });
+  }
+
+  // Small delay to ensure UI updates
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  try {
+    // Stop frontend
+    if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+      shutdownWindow.webContents.send('shutdown-progress', {
+        message: 'Stopping frontend server...',
+        progress: 40,
+        step: { id: 'disconnect', status: 'completed' }
+      });
+      shutdownWindow.webContents.send('shutdown-progress', {
+        step: { id: 'frontend', status: 'active' }
+      });
+    }
+    
+    if (processManager) {
+      await processManager.stopFrontend();
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Stop backend
+    if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+      shutdownWindow.webContents.send('shutdown-progress', {
+        message: 'Stopping backend server...',
+        progress: 60,
+        step: { id: 'frontend', status: 'completed' }
+      });
+      shutdownWindow.webContents.send('shutdown-progress', {
+        step: { id: 'backend', status: 'active' }
+      });
+    }
+    
+    if (processManager) {
+      await processManager.stopBackend();
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Cleanup
+    if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+      shutdownWindow.webContents.send('shutdown-progress', {
+        message: 'Cleaning up resources...',
+        progress: 80,
+        step: { id: 'backend', status: 'completed' }
+      });
+      shutdownWindow.webContents.send('shutdown-progress', {
+        step: { id: 'cleanup', status: 'active' }
+      });
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Final progress
+    if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+      shutdownWindow.webContents.send('shutdown-progress', {
+        message: 'Shutdown complete',
+        progress: 100,
+        step: { id: 'cleanup', status: 'completed' }
+      });
+    }
+    
+    // Small delay to show completion
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+  } catch (error) {
+    log.error('Error during shutdown:', error);
+  }
+
+  // Close all windows and quit
+  if (shutdownWindow && !shutdownWindow.isDestroyed()) {
+    shutdownWindow.close();
+  }
+  
+  app.exit(0);
+}
+
 app.on('before-quit', async (event) => {
   log.info('App is quitting...');
   
-  if (processManager && !processManager.isShuttingDown) {
+  if (!isShuttingDown) {
     event.preventDefault();
-    
-    try {
-      await processManager.stopAll();
-      app.quit();
-    } catch (error) {
-      log.error('Error during shutdown:', error);
-      app.quit();
-    }
+    performShutdown();
   }
+});
+
+// IPC handler for exit app - must be after performShutdown is defined
+ipcMain.on('exit-app', (event) => {
+  log.info('IPC: exit-app received');
+  // Use the enhanced shutdown process
+  performShutdown();
 });
 
 // Handle certificate errors

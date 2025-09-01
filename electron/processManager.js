@@ -326,36 +326,27 @@ class ProcessManager {
             pyinstallerBackend = path.join(bundlePath, 'esc-server');
           }
           
+          // Log what we're checking for
+          log.info(`Checking for backends in: ${bundlePath}`);
+          log.info(`Looking for uv binary at: ${uvBinary}`);
+          log.info(`Looking for unix script at: ${unixScript}`);
+          log.info(`Looking for PyInstaller at: ${pyinstallerBackend}`);
+          
           // Determine which backend to use
-          if (fs.existsSync(uvBinary) || (process.platform === 'win32' && fs.existsSync(path.join(bundlePath, 'bin', 'uv.exe')))) {
-            // Use standalone uv launcher (primary - includes Python management)
-            if (process.platform === 'win32' && fs.existsSync(windowsBatch)) {
-              backendPath = windowsBatch;
-              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-              log.info('Using standalone uv launcher for Windows (Python will be auto-installed if needed)');
-            } else if (process.platform !== 'win32' && fs.existsSync(unixScript)) {
-              // Ensure the script has execute permissions on Unix systems
-              try {
-                fs.chmodSync(unixScript, '755');
-                log.info(`Set execute permissions on ${unixScript}`);
-              } catch (chmodError) {
-                log.warn(`Could not set execute permissions on ${unixScript}:`, chmodError);
-              }
-              
-              // Also ensure uv binary has execute permissions
-              if (fs.existsSync(uvBinary)) {
-                try {
-                  fs.chmodSync(uvBinary, '755');
-                  log.info(`Set execute permissions on ${uvBinary}`);
-                } catch (chmodError) {
-                  log.warn(`Could not set execute permissions on ${uvBinary}:`, chmodError);
-                }
-              }
-              
-              backendPath = unixScript;
-              backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
-              log.info('Using standalone uv launcher for Unix (Python will be auto-installed if needed)');
+          if (fs.existsSync(unixScript)) {
+            // Use the shell script directly if it exists
+            log.info(`Found unix script at ${unixScript}`);
+            // Ensure the script has execute permissions on Unix systems
+            try {
+              fs.chmodSync(unixScript, '755');
+              log.info(`Set execute permissions on ${unixScript}`);
+            } catch (chmodError) {
+              log.warn(`Could not set execute permissions on ${unixScript}:`, chmodError);
             }
+            
+            backendPath = unixScript;
+            backendArgs = ['server', '--server-port', String(this.ports.backend), '--no-color', '--json-logs'];
+            log.info('Using shell script launcher');
           } else if (process.platform === 'win32' && fs.existsSync(embeddedPythonExe)) {
             // Fall back to embedded Python on Windows
             backendPath = embeddedPythonExe;
@@ -683,6 +674,16 @@ class ProcessManager {
         process.kill('SIGTERM');
       }
     });
+  }
+
+  async stopFrontend() {
+    log.info('Stopping frontend process...');
+    await this.stopProcess('frontend');
+  }
+
+  async stopBackend() {
+    log.info('Stopping backend process...');
+    await this.stopProcess('backend');
   }
 
   async stopAll() {

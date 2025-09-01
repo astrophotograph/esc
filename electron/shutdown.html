@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shutting Down</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .shutdown-container {
+            background: rgba(30, 30, 46, 0.95);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-message {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 25px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .progress-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .step-list {
+            text-align: left;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .step-item.active {
+            opacity: 1;
+        }
+
+        .step-item.completed {
+            opacity: 0.7;
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .checkmark {
+            color: #4ade80;
+            font-size: 16px;
+        }
+
+        .pending {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin: 0 auto;
+        }
+
+        .warning-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        .telescope-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            opacity: 0.8;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="shutdown-container">
+        <div class="telescope-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21.12 9.88l-2-6a1 1 0 00-1.9-.12L16.35 7H13l-.81-2.44a1 1 0 00-1.9 0L9.65 7H7a1 1 0 00-.9.55l-3 6a1 1 0 00.05 1A1 1 0 004 15h5.5l1.18 3.54a1 1 0 00.95.68h.74a1 1 0 00.95-.68L14.5 15H20a1 1 0 00.85-.45 1 1 0 00.05-1l-2.78-5.55zM11.08 17.32H11l-.5-1.5-.5 1.5zm2.42-4.32H10l.5-1.5.5-1.5.5 1.5.5 1.5z" fill="url(#telescope-gradient)"/>
+                <defs>
+                    <linearGradient id="telescope-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        
+        <h1>Shutting Down ESC</h1>
+        
+        <div class="status-message" id="status-message">
+            Preparing to shut down...
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar" style="width: 10%"></div>
+        </div>
+        
+        <div class="step-list" id="step-list">
+            <div class="step-item" id="step-disconnect">
+                <div class="step-icon">
+                    <div class="pending"></div>
+                </div>
+                <span>Disconnecting from telescopes</span>
+            </div>
+            <div class="step-item" id="step-frontend">
+                <div class="step-icon">
+                    <div class="pending"></div>
+                </div>
+                <span>Stopping frontend server</span>
+            </div>
+            <div class="step-item" id="step-backend">
+                <div class="step-icon">
+                    <div class="pending"></div>
+                </div>
+                <span>Stopping backend server</span>
+            </div>
+            <div class="step-item" id="step-cleanup">
+                <div class="step-icon">
+                    <div class="pending"></div>
+                </div>
+                <span>Cleaning up resources</span>
+            </div>
+        </div>
+        
+        <div class="warning-text">
+            Please wait while the application shuts down safely...
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        // Listen for shutdown progress updates
+        ipcRenderer.on('shutdown-progress', (event, data) => {
+            const { step, message, progress } = data;
+            
+            // Update status message
+            if (message) {
+                document.getElementById('status-message').textContent = message;
+            }
+            
+            // Update progress bar
+            if (progress !== undefined) {
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+            }
+            
+            // Update step indicators
+            if (step) {
+                updateStepStatus(step);
+            }
+        });
+        
+        function updateStepStatus(step) {
+            const stepElement = document.getElementById(`step-${step.id}`);
+            if (!stepElement) return;
+            
+            const iconElement = stepElement.querySelector('.step-icon');
+            
+            // Remove all existing states
+            stepElement.classList.remove('active', 'completed');
+            
+            if (step.status === 'active') {
+                stepElement.classList.add('active');
+                iconElement.innerHTML = '<div class="spinner"></div>';
+            } else if (step.status === 'completed') {
+                stepElement.classList.add('completed');
+                iconElement.innerHTML = '<span class="checkmark">✓</span>';
+            } else {
+                iconElement.innerHTML = '<div class="pending"></div>';
+            }
+        }
+        
+        // Handle window close
+        window.addEventListener('beforeunload', (e) => {
+            // Allow window to close when shutdown is complete
+            ipcRenderer.send('shutdown-window-closing');
+        });
+    </script>
+</body>
+</html>

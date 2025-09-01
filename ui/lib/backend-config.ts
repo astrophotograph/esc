@@ -5,15 +5,11 @@
 
 // Get the backend URL from environment or use default
 export function getBackendUrl(): string {
-  // Always use standard port 8000 for the backend
-  // Can be overridden by BACKEND_HOST environment variable
+  // IMPORTANT: Always use 127.0.0.1 instead of localhost to avoid IPv6 issues
+  // The backend always runs on port 8000 in the Electron app
   
-  if (typeof process !== 'undefined' && process.env.BACKEND_HOST) {
-    return `http://${process.env.BACKEND_HOST}`;
-  }
-  
-  // Always use port 8000 (FastAPI default)
-  // Use 127.0.0.1 explicitly to avoid IPv6 issues
+  // In production Electron app, always use IPv4 loopback
+  // This avoids issues where 'localhost' might resolve to ::1 (IPv6)
   return 'http://127.0.0.1:8000';
 }
 
