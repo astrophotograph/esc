@@ -260,6 +260,103 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             if not self.client.is_connected:
                 raise HTTPException(status_code=503, detail="Not connected to Seestar")
             
+            # Define solar system objects for special handling
+            SOLAR_SYSTEM_OBJECTS = {
+                'sun': 'Sun',
+                'moon': 'Moon', 
+                'mercury': 'Mercury',
+                'venus': 'Venus',
+                'mars': 'Mars',
+                'jupiter': 'Jupiter',
+                'saturn': 'Saturn',
+                'uranus': 'Uranus',
+                'neptune': 'Neptune',
+                'pluto': 'Pluto'  # Still included for amateur astronomers
+            }
+            
+            # Check if target is a solar system object
+            target_lower = goto_params.target_name.lower().strip()
+            is_solar_system = False
+            solar_object_name = None
+            
+            for key, name in SOLAR_SYSTEM_OBJECTS.items():
+                if key in target_lower or name.lower() in target_lower:
+                    is_solar_system = True
+                    solar_object_name = name
+                    break
+            
+            if is_solar_system:
+                # Special handling for solar system objects
+                logging.info(f"{'='*60}")
+                logging.info(f"SOLAR SYSTEM OBJECT DETECTED: {solar_object_name}")
+                logging.info(f"{'='*60}")
+                logging.info(f"  Original target name: {goto_params.target_name}")
+                logging.info(f"  Provided coordinates: RA={goto_params.ra:.6f}°, Dec={goto_params.dec:.6f}°")
+                logging.info(f"  Is J2000: {goto_params.is_j2000}")
+                logging.info(f"  Timestamp: {datetime.now().isoformat()}")
+                
+                # Object-specific considerations
+                if solar_object_name == 'Sun':
+                    logging.warning("⚠️  SUN OBSERVATION - EXTREME CAUTION REQUIRED!")
+                    logging.warning("  - Requires proper solar filter")
+                    logging.warning("  - Never observe without protection")
+                    logging.warning("  - Auto-exposure should be disabled")
+                    logging.warning("  - Special tracking rate needed: 15.04 arcsec/sec")
+                    
+                elif solar_object_name == 'Moon':
+                    logging.info("🌙 MOON OBSERVATION")
+                    logging.info("  - Fast proper motion: ~13.2°/day")
+                    logging.info("  - Requires frequent position updates")
+                    logging.info("  - Special tracking rate: 14.50 arcsec/sec")
+                    logging.info("  - Consider phase for exposure settings")
+                    
+                elif solar_object_name in ['Mercury', 'Venus']:
+                    logging.info(f"☿ INNER PLANET: {solar_object_name}")
+                    logging.info("  - Often close to Sun - observe with caution")
+                    logging.info("  - Rapid motion requires frequent updates")
+                    logging.info("  - Best observed during twilight")
+                    
+                elif solar_object_name == 'Mars':
+                    logging.info("♂ MARS OBSERVATION")
+                    logging.info("  - Motion varies significantly near opposition")
+                    logging.info("  - Can exhibit retrograde motion")
+                    
+                elif solar_object_name == 'Jupiter':
+                    logging.info("♃ JUPITER OBSERVATION")
+                    logging.info("  - Largest planet - good for tracking tests")
+                    logging.info("  - Moons visible - consider separate tracking")
+                    logging.info("  - Great Red Spot transit calculations available")
+                    
+                elif solar_object_name == 'Saturn':
+                    logging.info("♄ SATURN OBSERVATION")
+                    logging.info("  - Ring orientation affects visibility")
+                    logging.info("  - Multiple moons for alignment reference")
+                    
+                elif solar_object_name in ['Uranus', 'Neptune']:
+                    logging.info(f"⛢ OUTER PLANET: {solar_object_name}")
+                    logging.info("  - Slow motion - standard sidereal tracking usually sufficient")
+                    logging.info("  - Faint - requires longer exposures")
+                    
+                elif solar_object_name == 'Pluto':
+                    logging.info("♇ PLUTO OBSERVATION")
+                    logging.info("  - Extremely faint (mag ~14)")
+                    logging.info("  - Requires long exposures and dark skies")
+                    logging.info("  - Motion detection requires multiple night observations")
+                
+                logging.info(f"{'='*60}")
+                logging.info("  Note: These coordinates will need ephemeris calculation for current position")
+                
+                # TODO: Future implementation will:
+                # 1. Calculate current ephemeris position using astropy/skyfield
+                # 2. Apply proper motion and light-time corrections
+                # 3. Convert to telescope's local coordinates
+                # 4. Set appropriate tracking rates for each object
+                # 5. Implement safety checks for Sun observation
+                
+                # For now, print warning and continue with provided coordinates
+                logging.warning(f"Using static coordinates for {solar_object_name} - ephemeris calculation not yet implemented")
+                logging.info(f"{'='*60}")
+            
             # Check for invalid (0,0) coordinates early
             if goto_params.ra == 0.0 and goto_params.dec == 0.0:
                 logging.error(f"ERROR: Invalid goto request with coordinates (0,0) for target '{goto_params.target_name}'. "
