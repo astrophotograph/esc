@@ -13,6 +13,17 @@ import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {CommandAction, getWebSocketService} from "@/services/websocket-service"
 import {useIsMobile} from "@/hooks/use-mobile"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {useState} from "react"
 
 export function ControlPanel() {
   const {
@@ -31,6 +42,7 @@ export function ControlPanel() {
   } = useTelescopeContext()
 
   const isMobile = useIsMobile()
+  const [showRebootConfirm, setShowRebootConfirm] = useState(false)
 
   // Calculate dynamic indicators based on current state
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,7 +125,7 @@ export function ControlPanel() {
     return indicators
   }
 
-  const handleReboot = async () => {
+  const handleRebootClick = () => {
     if (!currentTelescope) {
       addStatusAlert({
         type: "error",
@@ -122,7 +134,14 @@ export function ControlPanel() {
       })
       return
     }
+    
+    // Show confirmation dialog
+    setShowRebootConfirm(true)
+  }
 
+  const handleRebootConfirm = async () => {
+    if (!currentTelescope) return
+    
     try {
       const wsService = getWebSocketService()
       await wsService.sendCommand(CommandAction.REBOOT, {}, currentTelescope.id)
@@ -130,7 +149,7 @@ export function ControlPanel() {
       addStatusAlert({
         type: "warning",
         title: "Reboot Command Sent",
-        message: "Telescope reboot command has been sent",
+        message: "Telescope reboot command has been sent. The telescope will restart shortly.",
       })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -139,7 +158,13 @@ export function ControlPanel() {
         title: "Reboot Failed",
         message: errorMessage,
       })
+    } finally {
+      setShowRebootConfirm(false)
     }
+  }
+
+  const handleRebootCancel = () => {
+    setShowRebootConfirm(false)
   }
 
   return (
@@ -271,7 +296,7 @@ export function ControlPanel() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleReboot}
+                      onClick={handleRebootClick}
                       className="w-full border-red-600 text-red-400 hover:bg-red-900 hover:text-red-300"
                     >
                       <RotateCcw className="w-4 h-4 mr-2"/>
@@ -311,6 +336,31 @@ export function ControlPanel() {
         {/*  <PipTestPanel />*/}
         {/*</TabsContent>*/}
       </Tabs>
+      
+      {/* Reboot Confirmation Dialog */}
+      <AlertDialog open={showRebootConfirm} onOpenChange={setShowRebootConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Telescope Reboot</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reboot the telescope "{currentTelescope?.name || currentTelescope?.host}"? 
+              This will disconnect the telescope and interrupt any ongoing operations. 
+              The telescope will take approximately 30-60 seconds to restart.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleRebootCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleRebootConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Reboot Telescope
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
