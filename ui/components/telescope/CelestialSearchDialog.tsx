@@ -640,9 +640,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 <Navigation className="w-4 h-4 mr-1" />
                 Goto
               </Button>
-              {/* Only show Goto & Image for non-Moon and non-Sun objects */}
-              {selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && 
-               selectedObject.id !== 'sun' && selectedObject.name?.toLowerCase() !== 'sun' && (
+              {/* Only show Goto & Image for non-solar system objects (planets, Sun, Moon) */}
+              {selectedObject.type !== 'planet' && 
+               selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && (
                 <Button
                   variant="default"
                   size="sm"
