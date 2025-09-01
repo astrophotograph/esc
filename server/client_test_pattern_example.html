@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telescope Connection Monitor - Test Pattern Example</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .connected {
+            color: #4CAF50;
+        }
+        
+        .disconnected {
+            color: #f44336;
+        }
+        
+        .telescope-view {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .normal-view {
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .normal-view img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        /* Test Pattern Styles */
+        .test-pattern {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            animation: flicker 0.1s infinite;
+        }
+        
+        .test-pattern.active {
+            display: block;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.98; }
+        }
+        
+        .test-pattern-header {
+            text-align: center;
+            background: repeating-linear-gradient(
+                90deg,
+                #ff0000,
+                #ff0000 10px,
+                #00ff00 10px,
+                #00ff00 20px,
+                #0000ff 20px,
+                #0000ff 30px
+            );
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .test-pattern-info {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff0000;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .test-pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            margin: 20px 0;
+        }
+        
+        .test-pattern-grid div {
+            aspect-ratio: 1;
+            background: #fff;
+        }
+        
+        .test-pattern-grid div:nth-child(odd) {
+            background: #000;
+        }
+        
+        .test-pattern-grid div:nth-child(3n) {
+            background: #ff0000;
+        }
+        
+        .test-pattern-grid div:nth-child(5n) {
+            background: #00ff00;
+        }
+        
+        .test-pattern-grid div:nth-child(7n) {
+            background: #0000ff;
+        }
+        
+        .color-bars {
+            display: flex;
+            height: 50px;
+            margin: 20px 0;
+        }
+        
+        .color-bars div {
+            flex: 1;
+        }
+        
+        .color-bars div:nth-child(1) { background: #ffffff; }
+        .color-bars div:nth-child(2) { background: #ffff00; }
+        .color-bars div:nth-child(3) { background: #00ffff; }
+        .color-bars div:nth-child(4) { background: #00ff00; }
+        .color-bars div:nth-child(5) { background: #ff00ff; }
+        .color-bars div:nth-child(6) { background: #ff0000; }
+        .color-bars div:nth-child(7) { background: #0000ff; }
+        .color-bars div:nth-child(8) { background: #000000; }
+        
+        .messages {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #4CAF50;
+            background: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .message.error {
+            border-left-color: #f44336;
+        }
+        
+        .message.warning {
+            border-left-color: #ff9800;
+        }
+        
+        .reconnect-info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔭 Telescope Connection Monitor</h1>
+        
+        <div class="status">
+            <strong>WebSocket Status:</strong> 
+            <span id="ws-status" class="disconnected">Disconnected</span>
+        </div>
+        
+        <div class="telescope-view" id="telescope-view">
+            <div class="normal-view" id="normal-view">
+                <h2>Telescope View</h2>
+                <p>Waiting for telescope connection...</p>
+                <div style="width: 100%; height: 300px; background: #333; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                    <span style="color: #666; font-size: 18px;">Live telescope feed will appear here</span>
+                </div>
+            </div>
+            
+            <div class="test-pattern" id="test-pattern">
+                <div class="test-pattern-header">
+                    📡 SIGNAL LOST 📡
+                </div>
+                
+                <div class="test-pattern-info">
+                    <h2>TELESCOPE DISCONNECTED</h2>
+                    <p id="disconnect-reason">Connection lost</p>
+                    <p id="disconnect-time">Time: --:--:--</p>
+                    <p id="telescope-id">Telescope: Unknown</p>
+                </div>
+                
+                <div class="color-bars">
+                    <div></div><div></div><div></div><div></div>
+                    <div></div><div></div><div></div><div></div>
+                </div>
+                
+                <div class="test-pattern-grid">
+                    <!-- Generate 64 grid squares -->
+                    <script>
+                        for(let i = 0; i < 64; i++) {
+                            document.write('<div></div>');
+                        }
+                    </script>
+                </div>
+                
+                <div class="reconnect-info">
+                    ⚠️ Attempting to reconnect...
+                </div>
+            </div>
+        </div>
+        
+        <div class="messages">
+            <h3>📝 Event Log</h3>
+            <div id="message-log"></div>
+        </div>
+    </div>
+
+    <script>
+        class TelescopeMonitor {
+            constructor() {
+                this.ws = null;
+                this.wsUrl = 'ws://localhost:8000/api/ws';
+                this.telescopeId = null;
+                this.isShowingTestPattern = false;
+                this.init();
+            }
+            
+            init() {
+                this.connect();
+            }
+            
+            connect() {
+                this.log('Connecting to WebSocket server...');
+                
+                try {
+                    this.ws = new WebSocket(this.wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        this.log('Connected to WebSocket server', 'success');
+                        document.getElementById('ws-status').textContent = 'Connected';
+                        document.getElementById('ws-status').className = 'connected';
+                        
+                        // Subscribe to all telescopes
+                        this.subscribe();
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        this.handleMessage(event.data);
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        this.log('WebSocket error', 'error');
+                        console.error('WebSocket error:', error);
+                    };
+                    
+                    this.ws.onclose = () => {
+                        this.log('WebSocket connection closed', 'warning');
+                        document.getElementById('ws-status').textContent = 'Disconnected';
+                        document.getElementById('ws-status').className = 'disconnected';
+                        
+                        // Retry connection after 3 seconds
+                        setTimeout(() => this.connect(), 3000);
+                    };
+                    
+                } catch (error) {
+                    this.log(`Failed to connect: ${error.message}`, 'error');
+                }
+            }
+            
+            subscribe() {
+                const message = {
+                    type: 'subscribe',
+                    payload: {
+                        all_telescopes: true,
+                        subscription_types: ['status', 'all']
+                    }
+                };
+                
+                this.ws.send(JSON.stringify(message));
+                this.log('Subscribed to all telescope updates');
+            }
+            
+            handleMessage(data) {
+                try {
+                    const message = JSON.parse(data);
+                    
+                    // Handle telescope_lost messages
+                    if (message.type === 'telescope_lost') {
+                        const telescopeId = message.telescope_id || 'unknown';
+                        const reason = message.payload?.reason || 'Connection lost';
+                        const showTestPattern = message.payload?.show_test_pattern !== false;
+                        
+                        this.log(`🔴 Telescope ${telescopeId} disconnected: ${reason}`, 'error');
+                        
+                        if (showTestPattern) {
+                            this.showTestPattern(telescopeId, reason);
+                        }
+                    }
+                    
+                    // Handle connection_lost events
+                    else if (message.type === 'event' && message.payload?.event_type === 'connection_lost') {
+                        const telescopeId = message.telescope_id || 'unknown';
+                        const reason = message.payload.reason || 'Connection lost';
+                        const duration = message.payload.disconnect_duration || 0;
+                        const showTestPattern = message.payload.show_test_pattern !== false;
+                        
+                        this.log(`⚠️ Connection lost for ${telescopeId}: ${reason} (${duration.toFixed(1)}s)`, 'warning');
+                        
+                        if (showTestPattern) {
+                            this.showTestPattern(telescopeId, `${reason} (disconnected for ${duration.toFixed(1)}s)`);
+                        }
+                    }
+                    
+                    // Handle telescope reconnection (when we get status updates)
+                    else if (message.type === 'status_update' && this.isShowingTestPattern) {
+                        this.hideTestPattern();
+                        this.log(`✅ Telescope ${message.telescope_id} reconnected`, 'success');
+                    }
+                    
+                    // Log other message types (except heartbeats)
+                    else if (message.type !== 'heartbeat' && message.type !== 'echo_request') {
+                        // Don't log every status update
+                        if (message.type !== 'status_update') {
+                            this.log(`Received: ${message.type}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            }
+            
+            showTestPattern(telescopeId, reason) {
+                this.isShowingTestPattern = true;
+                this.telescopeId = telescopeId;
+                
+                // Update test pattern info
+                document.getElementById('telescope-id').textContent = `Telescope: ${telescopeId}`;
+                document.getElementById('disconnect-reason').textContent = reason;
+                document.getElementById('disconnect-time').textContent = `Time: ${new Date().toLocaleTimeString()}`;
+                
+                // Show test pattern
+                document.getElementById('normal-view').style.display = 'none';
+                document.getElementById('test-pattern').classList.add('active');
+                
+                // Add visual effects
+                this.startTestPatternAnimation();
+                
+                this.log(`📺 Showing test pattern for telescope ${telescopeId}`);
+            }
+            
+            hideTestPattern() {
+                this.isShowingTestPattern = false;
+                
+                // Hide test pattern
+                document.getElementById('test-pattern').classList.remove('active');
+                document.getElementById('normal-view').style.display = 'block';
+                
+                this.stopTestPatternAnimation();
+                
+                this.log('📺 Test pattern hidden - connection restored');
+            }
+            
+            startTestPatternAnimation() {
+                // Animate the grid squares
+                const gridItems = document.querySelectorAll('.test-pattern-grid div');
+                this.animationInterval = setInterval(() => {
+                    gridItems.forEach((item, index) => {
+                        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000'];
+                        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                        setTimeout(() => {
+                            item.style.background = randomColor;
+                        }, index * 10);
+                    });
+                }, 2000);
+            }
+            
+            stopTestPatternAnimation() {
+                if (this.animationInterval) {
+                    clearInterval(this.animationInterval);
+                    this.animationInterval = null;
+                }
+            }
+            
+            log(message, type = 'info') {
+                const logElement = document.getElementById('message-log');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type === 'error' ? 'error' : type === 'warning' ? 'warning' : ''}`;
+                messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                logElement.insertBefore(messageDiv, logElement.firstChild);
+                
+                // Keep only last 50 messages
+                while (logElement.children.length > 50) {
+                    logElement.removeChild(logElement.lastChild);
+                }
+            }
+        }
+        
+        // Start the monitor when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new TelescopeMonitor();
+        });
+    </script>
+</body>
+</html>

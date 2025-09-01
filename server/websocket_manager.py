@@ -1233,20 +1233,29 @@ class WebSocketManager:
         try:
             # Ensure target_name is always a string (sometimes coordinates are passed as numbers)
             target_name = str(parameters.get("target_name", "unknown"))
-            coordinates = parameters.get("coordinates", {})
+            
+            # Check if coordinates are nested or at root level
+            if "coordinates" in parameters:
+                coordinates = parameters.get("coordinates", {})
+                ra_value = coordinates.get("ra", 0)
+                dec_value = coordinates.get("dec", 0)
+            else:
+                # Coordinates are at root level
+                ra_value = parameters.get("ra", 0)
+                dec_value = parameters.get("dec", 0)
 
             # Parse RA and Dec with multiple format support
             try:
-                ra = self._parse_ra_coordinate(coordinates.get("ra", 0)) / 15.0
+                ra = self._parse_ra_coordinate(ra_value) / 15.0
             except ValueError as e:
                 logger.error(f"Failed to parse RA coordinate: {e}")
-                return {"status": "error", "message": f"Invalid RA format: {coordinates.get('ra')}"}
+                return {"status": "error", "message": f"Invalid RA format: {ra_value}"}
 
             try:
-                dec = self._parse_dec_coordinate(coordinates.get("dec", 0))
+                dec = self._parse_dec_coordinate(dec_value)
             except ValueError as e:
                 logger.error(f"Failed to parse Dec coordinate: {e}")
-                return {"status": "error", "message": f"Invalid Dec format: {coordinates.get('dec')}"}
+                return {"status": "error", "message": f"Invalid Dec format: {dec_value}"}
             
             # Check for invalid (0,0) coordinates
             if ra == 0.0 and dec == 0.0:
@@ -1266,12 +1275,98 @@ class WebSocketManager:
             stack_gain = parameters.get("gain", 80)  # make this vary based on telescope
 
             logger.info(f"Goto command received for target: {target_name}")
-            logger.info(f"Original coordinates: RA={coordinates.get('ra')}, Dec={coordinates.get('dec')}")
+            logger.info(f"Original coordinates: RA={ra_value}, Dec={dec_value}")
             logger.info(f"Parsed coordinates: RA={ra:.6f}°, Dec={dec:.6f}°")
             logger.info(f"Target type: {target_type}, Magnitude: {magnitude}")
             logger.info(f"Start imaging: {start_imaging}")
             logger.info(f"Description: {description}")
             logger.info(f"Full message parameters: {parameters}")
+            
+            # Check for solar system objects
+            SOLAR_SYSTEM_OBJECTS = {
+                'sun': 'Sun',
+                'moon': 'Moon', 
+                'mercury': 'Mercury',
+                'venus': 'Venus',
+                'mars': 'Mars',
+                'jupiter': 'Jupiter',
+                'saturn': 'Saturn',
+                'uranus': 'Uranus',
+                'neptune': 'Neptune',
+                'pluto': 'Pluto'
+            }
+            
+            # Check if target is a solar system object
+            target_lower = target_name.lower()
+            is_solar_system = False
+            solar_object_name = None
+            
+            for key, name in SOLAR_SYSTEM_OBJECTS.items():
+                if key in target_lower or name.lower() in target_lower:
+                    is_solar_system = True
+                    solar_object_name = name
+                    break
+            
+            if is_solar_system:
+                logger.info(f"🌟 SOLAR SYSTEM OBJECT DETECTED: {solar_object_name}")
+                logger.info(f"  Object: {solar_object_name}")
+                logger.info(f"  Coordinates: RA={ra:.6f}° ({ra*15:.6f} hours), Dec={dec:.6f}°")
+                logger.info(f"  Target Name: {target_name}")
+                
+                # Object-specific warnings and information
+                if solar_object_name == 'Sun':
+                    logger.warning("⚠️  SUN OBSERVATION - EXTREME CAUTION REQUIRED!")
+                    logger.warning("  ➤ NEVER observe without proper solar filter")
+                    logger.warning("  ➤ Permanent eye damage or blindness can occur instantly")
+                    logger.warning("  ➤ Equipment damage possible without proper filters")
+                elif solar_object_name == 'Moon':
+                    logger.info("🌙 MOON - Fast moving object")
+                    logger.info("  ➤ Moves ~0.5° per hour (its own diameter)")
+                    logger.info("  ➤ May require tracking rate adjustment")
+                    logger.info("  ➤ Consider using lunar filter for full moon")
+                elif solar_object_name == 'Mercury':
+                    logger.info("☿ MERCURY - Inner planet")
+                    logger.info("  ➤ Best observed at dawn/dusk")
+                    logger.info("  ➤ Always close to Sun - use caution")
+                    logger.info("  ➤ Shows phases like Venus")
+                elif solar_object_name == 'Venus':
+                    logger.info("♀ VENUS - Brightest planet")
+                    logger.info("  ➤ Shows phases like the Moon")
+                    logger.info("  ➤ Very bright - consider filter")
+                    logger.info("  ➤ Best observed at dawn/dusk")
+                elif solar_object_name == 'Mars':
+                    logger.info("♂ MARS - The Red Planet")
+                    logger.info("  ➤ Best at opposition")
+                    logger.info("  ➤ Surface features visible in good conditions")
+                    logger.info("  ➤ Polar caps may be visible")
+                elif solar_object_name == 'Jupiter':
+                    logger.info("♃ JUPITER - Gas giant")
+                    logger.info("  ➤ Four Galilean moons visible")
+                    logger.info("  ➤ Cloud bands visible in telescope")
+                    logger.info("  ➤ Great Red Spot may be visible")
+                elif solar_object_name == 'Saturn':
+                    logger.info("♄ SATURN - Ringed planet")
+                    logger.info("  ➤ Rings visible in small telescope")
+                    logger.info("  ➤ Titan (largest moon) visible")
+                    logger.info("  ➤ Ring tilt varies yearly")
+                elif solar_object_name == 'Uranus':
+                    logger.info("⛢ URANUS - Ice giant")
+                    logger.info("  ➤ Appears blue-green")
+                    logger.info("  ➤ Challenging to observe")
+                    logger.info("  ➤ Moons require larger aperture")
+                elif solar_object_name == 'Neptune':
+                    logger.info("♆ NEPTUNE - Distant ice giant")
+                    logger.info("  ➤ Appears blue")
+                    logger.info("  ➤ Very faint - requires telescope")
+                    logger.info("  ➤ Triton (moon) visible in larger scopes")
+                elif solar_object_name == 'Pluto':
+                    logger.info("♇ PLUTO - Dwarf planet")
+                    logger.info("  ➤ Extremely faint (mag ~14)")
+                    logger.info("  ➤ Requires large telescope")
+                    logger.info("  ➤ Appears star-like")
+                
+                logger.info(f"  Ephemeris Note: Solar system objects require current ephemeris data")
+                logger.info(f"  Their positions change significantly over time")
 
             await client.goto(target_name, ra, dec)
             success, error = await client.wait_for_event_completion("AutoGoto", timeout=120.0)
