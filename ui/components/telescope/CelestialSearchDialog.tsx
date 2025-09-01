@@ -461,7 +461,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{obj.name}</span>
                         <Badge variant="secondary" className="text-xs">
-                          Mag {obj.magnitude}
+                          Mag {typeof obj.magnitude === 'number' ? obj.magnitude.toFixed(1) : obj.magnitude}
                         </Badge>
                         {obj._realTimeData && (
                           <Badge variant="outline" className="text-xs flex items-center gap-1">
@@ -594,7 +594,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                     <div className="flex items-center gap-1">
                       <Eye className="w-3 h-3 text-muted-foreground" />
                       <span className="text-muted-foreground">Magnitude:</span>
-                      <span>{selectedObject.magnitude.toFixed(1)}</span>
+                      <span>{typeof selectedObject.magnitude === 'number' ? selectedObject.magnitude.toFixed(1) : selectedObject.magnitude}</span>
                     </div>
                   )}
                   
@@ -641,7 +641,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 Goto
               </Button>
               {/* Only show Goto & Image for non-solar system objects (planets, Sun, Moon) */}
-              {selectedObject.type !== 'planet' && 
+              {selectedObject.type?.toLowerCase() !== 'planet' && 
                selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && (
                 <Button
                   variant="default"
