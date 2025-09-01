@@ -18,10 +18,10 @@ class ProcessManager {
     };
     this.logListeners = new Set();
     this.maxLogLines = 10000; // Keep last 10000 lines per process
-    // Use hardcoded ports for consistency
+    // Use standard ports
     this.ports = {
-      backend: 8100,
-      frontend: 3100
+      backend: 8000,
+      frontend: 3000
     };
   }
   
@@ -287,7 +287,7 @@ class ProcessManager {
   async startBackend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Use hardcoded port 8100 for the backend
+        // Use standard port 8000 for the backend
         log.info(`Backend will use port ${this.ports.backend}`);
         
         // No need to kill processes since we found an available port
@@ -465,7 +465,7 @@ class ProcessManager {
   async startFrontend() {
     return new Promise(async (resolve, reject) => {
       try {
-        // Use hardcoded port 3100 for the frontend
+        // Use standard port 3000 for the frontend
         log.info(`Frontend will use port ${this.ports.frontend}`);
         // In production, the frontend should be served as static files
         // This method is mainly for development where Next.js dev server might be needed
