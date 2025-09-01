@@ -350,6 +350,7 @@ class OptimizedController:
     async def _init_websocket(self):
         """Initialize WebSocket manager."""
         from websocket_manager import initialize_websocket_manager
+        from services.connection_health_monitor import get_health_monitor
         
         def get_telescope_by_id(telescope_id: str):
             """Get telescope by ID for WebSocket manager."""
@@ -369,7 +370,12 @@ class OptimizedController:
             
             return None
         
-        initialize_websocket_manager(get_telescope_by_id, self.controller)
+        websocket_manager = initialize_websocket_manager(get_telescope_by_id, self.controller)
+        
+        # Initialize health monitor with WebSocket manager
+        health_monitor = get_health_monitor(websocket_manager)
+        logger.info("Health monitor initialized with WebSocket manager for disconnect notifications")
+        
         self.controller.app.include_router(
             __import__('websocket_router').router,
             prefix="/api"

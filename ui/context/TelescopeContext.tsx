@@ -1985,9 +1985,41 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       wsService.requestTelescopeList()
     }
     
-    const handleTelescopeLost = () => {
+    const handleTelescopeLost = (message: any) => {
       // Request updated telescope list when a telescope is lost
       wsService.requestTelescopeList()
+      
+      // Check if we should show test pattern for the current telescope
+      if (message.telescope_id === currentTelescope?.id) {
+        const showTestPattern = message.payload?.show_test_pattern !== false
+        const reason = message.payload?.reason || 'Connection lost'
+        
+        if (showTestPattern) {
+          console.log(`Telescope ${message.telescope_id} disconnected: ${reason} - test pattern should be displayed`)
+          // Mark the telescope as disconnected in the list
+          setTelescopes(prev => prev.map(t => {
+            if (t.id === message.telescope_id) {
+              return {
+                ...t,
+                connected: false,
+                disconnectReason: reason,
+                disconnectTime: Date.now()
+              }
+            }
+            return t
+          }))
+          
+          // Update current telescope if it's the one that disconnected
+          if (currentTelescope?.id === message.telescope_id) {
+            setCurrentTelescope(prev => prev ? {
+              ...prev,
+              connected: false,
+              disconnectReason: reason,
+              disconnectTime: Date.now()
+            } : null)
+          }
+        }
+      }
     }
     
     // Handle status updates from telescopes

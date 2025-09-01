@@ -117,6 +117,7 @@ export interface TelescopeLostMessage extends WebSocketMessage {
   type: MessageType.TELESCOPE_LOST
   payload: {
     reason: string
+    show_test_pattern?: boolean
   }
 }
 

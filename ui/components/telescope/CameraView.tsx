@@ -392,6 +392,22 @@ export function CameraView() {
     }
   }, [wsLastUpdate, wsIsConnected, connectionLost]);
 
+  // Monitor telescope connection state from context
+  useEffect(() => {
+    // Check if current telescope is marked as disconnected
+    if (currentTelescope && currentTelescope.connected === false) {
+      console.log(`Telescope ${currentTelescope.id} marked as disconnected - showing test pattern`, {
+        connected: currentTelescope.connected,
+        disconnectReason: currentTelescope.disconnectReason,
+        connectionLost: connectionLost
+      });
+      setConnectionLost(true);
+    } else if (currentTelescope && currentTelescope.connected === true && connectionLost) {
+      console.log(`Telescope ${currentTelescope.id} reconnected - hiding test pattern`);
+      setConnectionLost(false);
+    }
+  }, [currentTelescope?.connected, currentTelescope?.id, connectionLost]);
+
   // Monitor WebSocket connection health
   useEffect(() => {
     if (!sseConnected) return;
@@ -1422,8 +1438,8 @@ export function CameraView() {
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
             >
-              {/* Show test pattern when connection is lost (only if WebRTC also reports disconnected) or when client mode is Idle, Initialise, or AutoFocus */}
-              {((connectionLost && connectionType === 'disconnected') ||
+              {/* Show test pattern when connection is lost OR when client mode is Idle, Initialise, or AutoFocus */}
+              {(connectionLost ||
                 localStreamStatus?.status?.stage === 'Idle' ||
                 localStreamStatus?.status?.stage === 'Initialise' ||
                 localStreamStatus?.status?.stage === 'AutoFocus' ||
@@ -1434,7 +1450,9 @@ export function CameraView() {
                     height={containerDimensions.height || 600}
                     className="w-full h-full"
                     statusText={
-                      localStreamStatus?.status?.stage === 'Idle'
+                      connectionLost
+                        ? currentTelescope?.disconnectReason || 'Connection lost - no response from telescope'
+                        : localStreamStatus?.status?.stage === 'Idle'
                         ? 'Telescope is not currently imaging or streaming'
                         : localStreamStatus?.status?.stage === 'Initialise'
                         ? 'Generating dark library frames...'
@@ -1474,8 +1492,8 @@ export function CameraView() {
               )}
 
               {/* WebRTC Live View with MJPEG fallback - wrapped in error boundary */}
-              {/* Hide when in Initialise mode for dark library generation or AutoFocus mode */}
-              {clientMode !== "Initialise" && clientMode !== "AutoFocus" && (
+              {/* Hide when in Initialise mode for dark library generation or AutoFocus mode, or when connection is lost */}
+              {!connectionLost && clientMode !== "Initialise" && clientMode !== "AutoFocus" && (
                 <ImageErrorBoundary
                   fallbackTitle="Camera Feed Error"
                   fallbackDescription="There was an issue connecting to the telescope camera. Please check your connection and try again."

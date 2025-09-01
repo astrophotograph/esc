@@ -18,19 +18,25 @@ class ConnectionHealthMonitor:
     when connections become stale or unresponsive.
     """
     
-    def __init__(self, check_interval: int = 30, max_idle_time: int = 300):
+    def __init__(self, check_interval: int = 30, max_idle_time: int = 300, 
+                 websocket_manager=None, disconnect_notification_delay: int = 3):
         """
         Initialize the connection health monitor.
         
         Args:
             check_interval: Seconds between health checks (default: 30)
             max_idle_time: Maximum seconds a connection can be idle before reconnection (default: 300)
+            websocket_manager: WebSocket manager for sending notifications (optional)
+            disconnect_notification_delay: Seconds to wait before sending disconnect notification (default: 3)
         """
         self.check_interval = check_interval
         self.max_idle_time = max_idle_time
         self.connections: Dict[str, ConnectionInfo] = {}
         self.monitoring_task: Optional[asyncio.Task] = None
         self._running = False
+        self.websocket_manager = websocket_manager
+        self.disconnect_notification_delay = disconnect_notification_delay
+        self.disconnected_telescopes: Dict[str, float] = {}  # Track when telescopes disconnected
         
     def register_connection(self, telescope_id: str, connection_obj: any):
         """Register a telescope connection for monitoring."""
@@ -178,7 +184,7 @@ class ConnectionHealthMonitor:
             
     async def _handle_stale_connection(self, telescope_id: str):
         """
-        Handle a stale connection by triggering reconnection.
+        Handle a stale connection by triggering reconnection and notifying the frontend.
         
         This should be customized to work with your actual connection manager.
         """
@@ -187,6 +193,16 @@ class ConnectionHealthMonitor:
         conn_info = self.connections.get(telescope_id)
         if not conn_info:
             return
+        
+        # Track when this telescope disconnected
+        current_time = time.time()
+        if telescope_id not in self.disconnected_telescopes:
+            self.disconnected_telescopes[telescope_id] = current_time
+            
+        # Check if we should send a notification
+        disconnect_duration = current_time - self.disconnected_telescopes[telescope_id]
+        if disconnect_duration >= self.disconnect_notification_delay:
+            await self._send_disconnect_notification(telescope_id, disconnect_duration)
             
         try:
             # Try to close the existing connection gracefully
@@ -210,6 +226,53 @@ class ConnectionHealthMonitor:
             
         except Exception as e:
             logger.error(f"Error handling stale connection {telescope_id}: {e}")
+    
+    async def _send_disconnect_notification(self, telescope_id: str, duration: float):
+        """Send a WebSocket notification that a telescope has disconnected."""
+        if not self.websocket_manager:
+            return
+            
+        try:
+            reason = f"Connection lost - no response for {duration:.1f} seconds"
+            logger.info(f"Sending disconnect notification for telescope {telescope_id}: {reason}")
+            
+            # Send telescope_lost message via WebSocket manager with test pattern flag
+            await self.websocket_manager.broadcast_telescope_lost(
+                telescope_id=telescope_id,
+                reason=reason,
+                show_test_pattern=True
+            )
+            
+            # Also send a more detailed event with test pattern flag
+            from websocket_protocol import MessageFactory, MessageType
+            
+            detailed_event = MessageFactory.create_message(
+                message_type=MessageType.EVENT,
+                telescope_id=telescope_id,
+                payload={
+                    "event_type": "connection_lost",
+                    "disconnect_duration": duration,
+                    "reason": reason,
+                    "timestamp": time.time(),
+                    "health_check_failures": self.connections[telescope_id].consecutive_failures if telescope_id in self.connections else 0,
+                    "show_test_pattern": True  # Tell client to show test pattern
+                }
+            )
+            
+            # Broadcast to subscribed connections
+            for connection in self.websocket_manager.connections.values():
+                from websocket_protocol import SubscriptionType
+                if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                    await connection.send_message(detailed_event)
+                    
+        except Exception as e:
+            logger.error(f"Error sending disconnect notification for {telescope_id}: {e}")
+    
+    def mark_telescope_reconnected(self, telescope_id: str):
+        """Mark a telescope as reconnected and clear disconnect tracking."""
+        if telescope_id in self.disconnected_telescopes:
+            del self.disconnected_telescopes[telescope_id]
+            logger.info(f"Telescope {telescope_id} marked as reconnected")
             
 
 class ConnectionInfo:
@@ -228,11 +291,14 @@ class ConnectionInfo:
 # Global instance
 _health_monitor: Optional[ConnectionHealthMonitor] = None
 
-def get_health_monitor() -> ConnectionHealthMonitor:
+def get_health_monitor(websocket_manager=None) -> ConnectionHealthMonitor:
     """Get or create the global health monitor instance."""
     global _health_monitor
     if _health_monitor is None:
-        _health_monitor = ConnectionHealthMonitor()
+        _health_monitor = ConnectionHealthMonitor(websocket_manager=websocket_manager)
+    elif websocket_manager and not _health_monitor.websocket_manager:
+        # Update the websocket manager if it wasn't set before
+        _health_monitor.websocket_manager = websocket_manager
     return _health_monitor
     
 async def start_health_monitoring():

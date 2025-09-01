@@ -18,6 +18,9 @@ export interface TelescopeInfo {
   isConnected?: boolean
   // Computed property derived from discovery_method
   isManual?: boolean
+  // Disconnection tracking
+  disconnectReason?: string
+  disconnectTime?: number
 }
 
 // Define celestial object types

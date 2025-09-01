@@ -400,10 +400,14 @@ class WebSocketManager:
             await connection.send_message(message)
 
     async def broadcast_telescope_lost(
-            self, telescope_id: str, reason: str = "Connection lost"
+            self, telescope_id: str, reason: str = "Connection lost", show_test_pattern: bool = True
     ):
         """Broadcast telescope loss to all connections."""
         message = MessageFactory.create_telescope_lost(telescope_id, reason)
+        
+        # Add show_test_pattern flag to the payload
+        if hasattr(message, 'payload') and isinstance(message.payload, dict):
+            message.payload['show_test_pattern'] = show_test_pattern
 
         for connection in self.connections.values():
             await connection.send_message(message)
