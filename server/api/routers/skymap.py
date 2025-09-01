@@ -9,26 +9,21 @@ import functools
 import threading
 from typing import Dict, Any, Optional
 from pathlib import Path
-from datetime import datetime
 from PIL import Image
+from cartopy.crs import LambertAzimuthalEqualArea
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from loguru import logger as logging
 from pydantic import BaseModel
 from services.async_image_processing import get_cpu_executor
+from starplot import MapPlot, Stereographic, Orthographic, LambertAzEqArea, Miller, Mollweide, Robinson, Mercator, _
+import matplotlib
+from starplot.styles import PlotStyle, extensions
+from datetime import datetime, timezone as dt_timezone
 
-# Import starplot for sky map generation
-try:
-    from starplot import MapPlot, Projection, _
-    from starplot.styles import PlotStyle, extensions
-
-    import matplotlib.pyplot as plt
-    import numpy as np
-    STARPLOT_AVAILABLE = True
-except ImportError:
-    STARPLOT_AVAILABLE = False
-    logging.warning("Starplot not available - sky map tiles will not work")
+import matplotlib.pyplot as plt
+import numpy as np
 
 router = APIRouter(prefix="/api/skymap", tags=["skymap"])
 
@@ -143,27 +138,18 @@ def _ensure_starplot_initialized():
     # Use a lock to prevent concurrent database initialization
     with _starplot_lock:
         try:
-            if not STARPLOT_AVAILABLE:
-                logging.warning(f"Starplot not available in thread {thread_id}")
-                return False
-            
             # Set matplotlib backend for thread safety
-            import matplotlib
             matplotlib.use('Agg')
             
             # Initialize starplot components in a controlled manner
-            from starplot import MapPlot, Projection
-            from starplot.styles import PlotStyle, extensions
-            
             # Create a minimal plot to trigger database initialization
             # This forces starplot to set up its internal database connections
             style = PlotStyle().extend(extensions.BLUE_GOLD, extensions.MAP)
             
             # Use a small but valid coordinate range to avoid NaN/Inf axis limits
             # Ensure we have a proper date/time for the plot
-            from datetime import datetime, timezone as dt_timezone
             temp_plot = MapPlot(
-                projection=Projection.STEREOGRAPHIC,
+                projection=Stereographic(),
                 ra_min=0, ra_max=10, dec_min=0, dec_max=10,  # Small valid range
                 lat=40.0, lon=-74.0,  # Valid observer location
                 dt=datetime.now(dt_timezone.utc),  # Current time
@@ -225,15 +211,15 @@ def _generate_full_sky_image_sync(z: int, projection: str, style: str, time: Opt
         
         # Set up projection
         proj_mapping = {
-            "stereographic": Projection.STEREOGRAPHIC,
-            "orthographic": Projection.ORTHOGRAPHIC,
-            "lambert": Projection.LAMBERT_AZ_EQ_AREA,
-            "miller": Projection.MILLER,
-            "mollweide": Projection.MOLLWEIDE,
-            "robinson": Projection.ROBINSON,
-            "mercator": Projection.MERCATOR
+            "stereographic": Stereographic(),
+            "orthographic": Orthographic(),
+            "lambert": LambertAzimuthalEqualArea(),
+            "miller": Miller(),
+            "mollweide": Mollweide(),
+            "robinson": Robinson(),
+            "mercator": Mercator()
         }
-        proj = proj_mapping.get(projection, Projection.STEREOGRAPHIC)
+        proj = proj_mapping.get(projection, Stereographic())
 
         plot_style = PlotStyle().extend(
             extensions.BLUE_GOLD,
@@ -383,9 +369,6 @@ async def generate_sky_tile_async(x: int, y: int, z: int, projection: str = "mer
     For zoom level 0: Generate individual tile
     For zoom level >= 1: Generate full high-res image and extract tile
     """
-    if not STARPLOT_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Starplot not available")
-    
     # Generate cache key and check if tile exists
     cache_key = generate_tile_cache_key(x, y, z, projection, style, time, latitude, longitude)
     cache_path = TILE_CACHE_DIR / f"{cache_key}.png"
@@ -494,15 +477,15 @@ def _generate_individual_tile_sync(bounds: Dict[str, float], projection: str, st
         
         # Set up projection
         proj_mapping = {
-            "stereographic": Projection.STEREOGRAPHIC,
-            "orthographic": Projection.ORTHOGRAPHIC,
-            "lambert": Projection.LAMBERT_AZ_EQ_AREA,
-            "miller": Projection.MILLER,
-            "mollweide": Projection.MOLLWEIDE,
-            "robinson": Projection.ROBINSON,
-            "mercator": Projection.MERCATOR
+            "stereographic": Stereographic(),
+            "orthographic": Orthographic(),
+            "lambert": LambertAzimuthalEqualArea(),
+            "miller": Miller(),
+            "mollweide": Mollweide(),
+            "robinson": Robinson(),
+            "mercator": Mercator()
         }
-        proj = proj_mapping.get(projection, Projection.STEREOGRAPHIC)
+        proj = proj_mapping.get(projection, Stereographic())
 
         plot_style = PlotStyle().extend(
             extensions.BLUE_GOLD,
