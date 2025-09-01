@@ -17,7 +17,7 @@ from remote_websocket_client import RemoteWebSocketManager, RemoteController
 from scopinator.seestar.client import SeestarClient
 from scopinator.seestar.commands.parameterized import (
     IscopeStartView,
-    IscopeStartViewParams, IscopeStartStack, StartStackParams, )
+    IscopeStartViewParams, IscopeStartStack, StartStackParams, ScopeViewMode, ScopeTargetType, )
 from scopinator.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
 from scopinator.seestar.commands.simple import PiReboot, GetViewState
@@ -1306,7 +1306,8 @@ class WebSocketManager:
                     is_solar_system = True
                     solar_object_name = name
                     break
-            
+
+            target_type: ScopeTargetType | None = None
             if is_solar_system:
                 logger.info(f"🌟 SOLAR SYSTEM OBJECT DETECTED: {solar_object_name}")
                 logger.info(f"  Object: {solar_object_name}")
@@ -1319,57 +1320,67 @@ class WebSocketManager:
                     logger.warning("  ➤ NEVER observe without proper solar filter")
                     logger.warning("  ➤ Permanent eye damage or blindness can occur instantly")
                     logger.warning("  ➤ Equipment damage possible without proper filters")
+                    target_type = "sun"
                 elif solar_object_name == 'Moon':
                     logger.info("🌙 MOON - Fast moving object")
                     logger.info("  ➤ Moves ~0.5° per hour (its own diameter)")
                     logger.info("  ➤ May require tracking rate adjustment")
                     logger.info("  ➤ Consider using lunar filter for full moon")
+                    target_type = "moon"
                 elif solar_object_name == 'Mercury':
                     logger.info("☿ MERCURY - Inner planet")
                     logger.info("  ➤ Best observed at dawn/dusk")
                     logger.info("  ➤ Always close to Sun - use caution")
                     logger.info("  ➤ Shows phases like Venus")
+                    target_type = "planet"
                 elif solar_object_name == 'Venus':
                     logger.info("♀ VENUS - Brightest planet")
                     logger.info("  ➤ Shows phases like the Moon")
                     logger.info("  ➤ Very bright - consider filter")
                     logger.info("  ➤ Best observed at dawn/dusk")
+                    target_type = "planet"
                 elif solar_object_name == 'Mars':
                     logger.info("♂ MARS - The Red Planet")
                     logger.info("  ➤ Best at opposition")
                     logger.info("  ➤ Surface features visible in good conditions")
                     logger.info("  ➤ Polar caps may be visible")
+                    target_type = "planet"
                 elif solar_object_name == 'Jupiter':
                     logger.info("♃ JUPITER - Gas giant")
                     logger.info("  ➤ Four Galilean moons visible")
                     logger.info("  ➤ Cloud bands visible in telescope")
                     logger.info("  ➤ Great Red Spot may be visible")
+                    target_type = "planet"
                 elif solar_object_name == 'Saturn':
                     logger.info("♄ SATURN - Ringed planet")
                     logger.info("  ➤ Rings visible in small telescope")
                     logger.info("  ➤ Titan (largest moon) visible")
                     logger.info("  ➤ Ring tilt varies yearly")
+                    target_type = "planet"
                 elif solar_object_name == 'Uranus':
                     logger.info("⛢ URANUS - Ice giant")
                     logger.info("  ➤ Appears blue-green")
                     logger.info("  ➤ Challenging to observe")
                     logger.info("  ➤ Moons require larger aperture")
+                    target_type = "planet"
                 elif solar_object_name == 'Neptune':
                     logger.info("♆ NEPTUNE - Distant ice giant")
                     logger.info("  ➤ Appears blue")
                     logger.info("  ➤ Very faint - requires telescope")
                     logger.info("  ➤ Triton (moon) visible in larger scopes")
+                    target_type = "planet"
                 elif solar_object_name == 'Pluto':
                     logger.info("♇ PLUTO - Dwarf planet")
                     logger.info("  ➤ Extremely faint (mag ~14)")
                     logger.info("  ➤ Requires large telescope")
                     logger.info("  ➤ Appears star-like")
-                
+                    target_type = "planet"
+
                 logger.info(f"  Ephemeris Note: Solar system objects require current ephemeris data")
                 logger.info(f"  Their positions change significantly over time")
 
             mode: ScopeViewMode = "solar_sys" if is_solar_system else "star"
-            await client.goto(target_name, ra, dec, mode=mode)
+            await client.goto(target_name, ra, dec, mode=mode, target_type=target_type)
             success, error = await client.wait_for_event_completion("AutoGoto", timeout=180.0)
             if not success:
                 await client.stop_goto()

@@ -44,7 +44,7 @@ dependencies = [
     "pyinstaller>=6.14.2",
     "matplotlib>=3.10.3",
     "pillow>=11.2.1",
-    "scopinator==2025.8.8",
+    "scopinator>2025.8.9",
 ]
 
 [tool.pytest.ini_options]

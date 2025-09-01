@@ -723,7 +723,7 @@ class Controller:
         """Automatically discover and add telescopes."""
         while True:
             try:
-                devices = await discover_seestars(timeout=3)
+                devices = await discover_seestars(timeout=3.0)
             except Exception as e:
                 logging.error(f"Error during telescope discovery: {e}", exc_info=True)
                 await asyncio.sleep(10)  # Wait before retrying
