@@ -77,8 +77,8 @@ function generateCalVerVersion(phase = null, patchNumber = null) {
 
 function determineVersionFromGit(gitInfo) {
   if (!gitInfo.hasGit) {
-    // No git, generate basic CalVer with alpha suffix
-    return generateCalVerVersion('alpha');
+    // No git, generate basic CalVer with beta suffix
+    return generateCalVerVersion('beta');
   }
 
   // Check if we're on a release tag
@@ -101,7 +101,7 @@ function determineVersionFromGit(gitInfo) {
       // If commits since tag, increment the development version
       if (gitInfo.commitsSinceTag > 0) {
         // Generate new CalVer for today with appropriate phase
-        const phase = currentPhase || 'alpha';
+        const phase = currentPhase || 'beta';
         const patch = gitInfo.commitsSinceTag;
         return generateCalVerVersion(phase, patch);
       }
@@ -109,7 +109,7 @@ function determineVersionFromGit(gitInfo) {
   }
 
   // Default development version
-  const phase = gitInfo.commitsSinceTag > 0 ? 'alpha' : 'alpha';
+  const phase = gitInfo.commitsSinceTag > 0 ? 'beta' : 'beta';
   const patch = gitInfo.commitsSinceTag || undefined;
   return generateCalVerVersion(phase, patch);
 }

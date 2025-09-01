@@ -167,18 +167,18 @@ def _get_current_version() -> str:
         if os.path.exists(build_info_path):
             with open(build_info_path, 'r') as f:
                 build_data = json.load(f)
-                return build_data.get("version", "25.07.26-pre-alpha")
+                return build_data.get("version", "25.07.26-beta")
         
         # Fallback to package.json
         package_json_path = os.path.join(os.path.dirname(__file__), "../../ui/package.json")
         if os.path.exists(package_json_path):
             with open(package_json_path, 'r') as f:
                 package_data = json.load(f)
-                return package_data.get("version", "25.07.26-pre-alpha")
+                return package_data.get("version", "25.07.26-beta")
     except Exception as e:
         logger.warning(f"Could not read version from build-info.json or package.json: {e}")
     
-    return "25.07.26-pre-alpha"
+    return "25.07.26-beta"
 
 
 def get_version_checker() -> VersionChecker:
