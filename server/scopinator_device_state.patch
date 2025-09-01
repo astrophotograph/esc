@@ -1,0 +1,99 @@
+--- a/scopinator/seestar/client.py
++++ b/scopinator/seestar/client.py
+@@ -84,6 +84,9 @@ class SeestarStatus(BaseModel):
+     dist_deg: float | None = None # Distance from the telescope to the target in degrees
+     percent: float | None = None
+     balance_sensor: BalanceSensorInfo | None = None
++    device_state: dict | None = None  # Full device state info including mount, station, etc.
++    pi_status: dict | None = None  # Pi status info including battery temp
++    last_device_state_update: float | None = None  # Timestamp of last device state update
+ 
+     def reset(self):
+         self.temp = None
+@@ -106,6 +109,9 @@ class SeestarStatus(BaseModel):
+         self.ra = None
+         self.dec = None
+         self.stage = None
++        self.device_state = None
++        self.pi_status = None
++        self.last_device_state_update = None
+ 
+ 
+ class ParsedEvent(BaseModel):
+@@ -147,6 +153,7 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
+     # Timeout configuration
+     connection_timeout: float = 10.0
+     read_timeout: float = 30.0
+     write_timeout: float = 10.0
++    device_state_refresh_interval: float = 30.0  # Refresh device state every 30 seconds
+ 
+     _reconnect_in_progress: bool = False
+     _reconnect_task: asyncio.Task | None = None
+@@ -177,6 +184,10 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
+         self.view_refresh_task = asyncio.create_task(self._refresh_view())
+         self.reader_task = asyncio.create_task(self._reader())
+         self.background_task = asyncio.create_task(self._heartbeat())
++        
++        # Start device state refresh task
++        self.device_state_refresh_task = asyncio.create_task(self._refresh_device_state())
++        
+         # Start pattern monitor if enabled
+         if self.pattern_file_path:
+             self.pattern_monitor_task = asyncio.create_task(self._monitor_pattern())
+@@ -193,6 +204,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
+             self.reader_task.cancel()
+             try:
+                 await self.reader_task
++            except asyncio.CancelledError:
++                pass
++        if self.device_state_refresh_task and not self.device_state_refresh_task.done():
++            self.device_state_refresh_task.cancel()
++            try:
++                await self.device_state_refresh_task
+             except asyncio.CancelledError:
+                 pass
+         if self.background_task and not self.background_task.done():
+@@ -329,6 +345,30 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
+                 logging.trace(f"Heartbeat failed for {self}: {e}")
+                 await asyncio.sleep(5)
+                 continue
++    
++    async def _refresh_device_state(self):
++        """Background task that periodically refreshes device state."""
++        await asyncio.sleep(10)  # Initial delay
++        while self.is_connected:
++            try:
++                if self.connection.is_connected() and not self._reconnect_in_progress:
++                    logging.trace(f"Refreshing device state for {self}")
++                    response = await self.send_and_recv(GetDeviceState())
++                    if response and response.result:
++                        # Store the full device state
++                        self.status.device_state = response.result
++                        self.status.last_device_state_update = time.time()
++                        
++                        # Also update pi_status if available
++                        if hasattr(response.result, 'pi_status'):
++                            self.status.pi_status = response.result.pi_status
++                        
++                        logging.trace(f"Device state updated for {self}")
++                await asyncio.sleep(self.device_state_refresh_interval)
++            except Exception as e:
++                logging.error(f"Failed to refresh device state for {self}: {e}")
++                await asyncio.sleep(self.device_state_refresh_interval)
++                continue
+ 
+     async def refresh_view_state(self):
+         """Refresh the view state."""
+@@ -642,6 +682,11 @@ class SeestarClient(BaseModel, arbitrary_types_allowed=True):
+                     self.status.charge_online = parser.event.charge_online
+                     self.status.battery_capacity = parser.event.battery_capacity
+                     self.status.gain = pydash.get(parser.event, "event_fields.gain")
++                    
++                    # Store as pi_status for additional fields
++                    self.status.pi_status = {
++                        'battery_temp': getattr(parser.event, 'battery_temp', None),
++                        'battery_temp_type': getattr(parser.event, 'battery_temp_type', None)
++                    }
+                 case "ScopeTrack":
+                     if parser.event.cur_ra_dec is not None:
+                         self.status.ra = parser.event.cur_ra_dec.ra

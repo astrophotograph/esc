@@ -40,7 +40,11 @@ import {
   Cpu,
   TrendingUp,
   X,
-  MoreVertical
+  MoreVertical,
+  Wifi,
+  WifiOff,
+  Mountain,
+  Globe
 } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -1151,15 +1155,27 @@ export function CameraView() {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>
-                      Battery Level: {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
-                      {localStreamStatus?.status?.charger_status === "Charging" && " (Charging)"}
-                      {localStreamStatus?.status?.charger_status === "Full" && " (Full)"}
+                    <div>
+                      <p className="font-semibold mb-1">Battery Status</p>
+                      <p>
+                        Level: {Math.round(localStreamStatus?.status?.battery_capacity) || 'N/A'}%
+                        {localStreamStatus?.status?.charger_status === "Charging" && " (Charging)"}
+                        {localStreamStatus?.status?.charger_status === "Full" && " (Full)"}
+                      </p>
+                      {wsStatus?.pi_status?.battery_temp !== undefined && (
+                        <p>
+                          Temperature: {wsStatus.pi_status.battery_temp}°C
+                          {wsStatus?.pi_status?.battery_temp_type && ` (${wsStatus.pi_status.battery_temp_type})`}
+                        </p>
+                      )}
                       <br />
                       {localStreamStatus?.status?.battery_capacity <= 10 && "Critical: Very low battery"}
                       {localStreamStatus?.status?.battery_capacity > 10 && localStreamStatus?.status?.battery_capacity <= 20 && "Warning: Low battery"}
                       {localStreamStatus?.status?.battery_capacity > 20 && "Battery level is healthy"}
-                    </p>
+                      {wsStatus?.pi_status?.battery_temp > 45 && (
+                        <><br />Warning: Battery temperature is high</>
+                      )}
+                    </div>
                   </TooltipContent>
                 </Tooltip>
 
@@ -1326,6 +1342,82 @@ export function CameraView() {
                         : "Filter is disabled - suitable for planetary or lunar observation"
                       }
                     </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Mount Mode Indicator */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      {wsStatus?.device_state?.mount?.equ_mode ? (
+                        <Globe className="w-4 h-4 text-cyan-400" />
+                      ) : (
+                        <Mountain className="w-4 h-4 text-blue-400" />
+                      )}
+                      <span className="text-foreground">
+                        {wsStatus?.device_state?.mount?.equ_mode ? 'EQ' : 'Alt-Az'}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      Mount Mode: {wsStatus?.device_state?.mount?.equ_mode ? 'Equatorial (EQ)' : 'Alt-Azimuth'}
+                      <br />
+                      {wsStatus?.device_state?.mount?.equ_mode
+                        ? "Equatorial mode - tracks celestial objects with single-axis rotation"
+                        : "Alt-Az mode - standard altitude-azimuth tracking"
+                      }
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* WiFi Signal Strength Indicator */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      {(() => {
+                        const sigLevel = wsStatus?.device_state?.station?.sig_lev;
+                        if (sigLevel === undefined || sigLevel === null) {
+                          return <WifiOff className="w-4 h-4 text-gray-400" />;
+                        }
+                        // Signal strength: -30 dBm = excellent, -50 = good, -70 = fair, -90 = poor
+                        const signalClass = sigLevel > -50 ? "text-green-400" :
+                                           sigLevel > -70 ? "text-yellow-400" :
+                                           "text-red-400";
+                        return <Wifi className={`w-4 h-4 ${signalClass}`} />;
+                      })()}
+                      <span className="text-foreground">
+                        {wsStatus?.device_state?.station?.sig_lev !== undefined
+                          ? `${wsStatus.device_state.station.sig_lev}dBm`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div>
+                      <p className="font-semibold mb-1">WiFi Signal Strength</p>
+                      {wsStatus?.device_state?.station ? (
+                        <>
+                          <p>Signal: {wsStatus.device_state.station.sig_lev || 'N/A'} dBm</p>
+                          {wsStatus.device_state.station.ip && (
+                            <p>IP Address: {wsStatus.device_state.station.ip}</p>
+                          )}
+                          {wsStatus.device_state.station.freq && (
+                            <p>Frequency: {wsStatus.device_state.station.freq} MHz</p>
+                          )}
+                          <br />
+                          {(() => {
+                            const sigLevel = wsStatus.device_state.station.sig_lev;
+                            if (sigLevel > -50) return "Excellent signal strength";
+                            if (sigLevel > -60) return "Good signal strength";
+                            if (sigLevel > -70) return "Fair signal strength";
+                            return "Poor signal strength - consider moving closer to router";
+                          })()}
+                        </>
+                      ) : (
+                        <p>WiFi information unavailable</p>
+                      )}
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               </div>

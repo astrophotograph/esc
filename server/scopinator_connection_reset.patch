@@ -1,0 +1,63 @@
+--- a/scopinator/seestar/imaging_client.py
++++ b/scopinator/seestar/imaging_client.py
+@@ -300,17 +300,32 @@ class SeestarImagingClient:
+             if self._client_mode != new_mode:
+                 old_mode = self._client_mode
+                 self._client_mode = new_mode
+-                logging.warning(f"Client mode changing from {old_mode} to {new_mode}")
+-                
+-                # Send mode change command
+-                try:
+-                    await self._send_mode_change(new_mode)
+-                    logging.info(f"Successfully changed to {new_mode} mode")
+-                except Exception as e:
+-                    logging.error(f"Failed to send mode change: {e}")
+-                    # Don't revert the mode, let the server be the source of truth
++                
++                # Only log and send mode change if we're connected
++                if self.is_connected:
++                    logging.warning(f"Client mode changing from {old_mode} to {new_mode}")
++                    
++                    # Send mode change command
++                    try:
++                        await self._send_mode_change(new_mode)
++                        logging.info(f"Successfully changed to {new_mode} mode")
++                    except (ConnectionResetError, BrokenPipeError, OSError) as e:
++                        # Connection was reset - mark as disconnected
++                        logging.error(f"Connection reset while changing mode: {e}")
++                        self.is_connected = False
++                        
++                        # Clean up the connection
++                        if hasattr(self, 'connection'):
++                            await self.connection.disconnect()
++                        
++                        # Don't revert the mode, let the server be the source of truth
++                    except Exception as e:
++                        logging.error(f"Failed to send mode change: {e}")
++                        # Don't revert the mode, let the server be the source of truth
++                else:
++                    # If not connected, just update the mode silently
++                    logging.debug(f"Mode change to {new_mode} while disconnected - updating local state only")
+         
+-        # Handle message based on detected mode
++        # Handle message based on detected mode (wrapped in try-except for connection errors)
+         try:
+             if new_mode == ClientMode.CONTINUOUS_EXPOSURE:
+                 await self._handle_continuous_exposure(message)
+@@ -320,6 +335,17 @@ class SeestarImagingClient:
+                 await self._handle_goto_mode(message)
+             else:
+                 logging.warning(f"Unknown client mode: {new_mode}")
++        except (ConnectionResetError, BrokenPipeError, OSError) as e:
++            # Connection was reset during message handling
++            logging.error(f"Connection reset during {new_mode} mode handling: {e}")
++            self.is_connected = False
++            
++            # Clean up the connection
++            if hasattr(self, 'connection'):
++                try:
++                    await self.connection.disconnect()
++                except Exception:
++                    pass  # Connection already closed
+         except Exception as e:
+             logging.error(f"Error handling {new_mode} mode: {e}", exc_info=True)

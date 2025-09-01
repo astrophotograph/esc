@@ -1,6 +1,6 @@
 {
   "name": "experimental-scope-creep",
-  "version": "25.09.01-beta.342",
+  "version": "25.09.01-beta.343",
   "private": true,
   "scripts": {
     "dev": "next dev",
