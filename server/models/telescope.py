@@ -694,7 +694,9 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             # )
             imgencode = cv2.imencode(".jpeg", image)[1]
             stringData = imgencode.tobytes()
-            frame = b"Content-Type: image/jpeg\r\n\r\n" + stringData + BOUNDARY
+            frame = (b"Content-Type: image/jpeg\r\n"
+                     b"Date: " + datetime.datetime.now(datetime.UTC).strftime('%a, %d %b %Y %H:%M:%S GMT').encode() + b"\r\n\r\n"
+                     + stringData + BOUNDARY)
 
             return frame
 

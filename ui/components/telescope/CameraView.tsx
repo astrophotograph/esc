@@ -905,7 +905,7 @@ export function CameraView() {
       // Mark as connected if we have a telescope and WebSocket is connected
       setSseConnected(wsIsConnected);
     }
-  }, [currentTelescope, wsIsConnected]);
+  }, [currentTelescope?.id, wsIsConnected]);
 
   // Handle WebSocket status updates
   useEffect(() => {
@@ -1026,7 +1026,7 @@ export function CameraView() {
 
     // Track previous connection state
     previousWsConnectedRef.current = wsIsConnected;
-  }, [wsIsConnected, connectionLost, streamActive, reconnectCounter, currentTelescope]);
+  }, [wsIsConnected, connectionLost, streamActive, reconnectCounter, currentTelescope?.id]);
 
   // Update last message timestamp when WebSocket receives data
   useEffect(() => {
