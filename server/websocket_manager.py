@@ -306,18 +306,25 @@ class WebSocketManager:
     async def disconnect(self, connection_id: str):
         """Handle WebSocket disconnection."""
         if connection_id not in self.connections:
+            logger.debug(f"Connection {connection_id} already removed")
             return
 
         connection = self.connections[connection_id]
         connection.is_alive = False
 
         try:
-            await connection.websocket.close()
+            # Try to close the WebSocket gracefully
+            if connection.websocket and not connection.websocket.closed:
+                await connection.websocket.close()
         except Exception as e:
             logger.debug(f"Error closing WebSocket {connection_id}: {e}")
 
-        del self.connections[connection_id]
-        logger.info(f"WebSocket connection closed: {connection_id}")
+        # Always remove from connections dict, even if close failed
+        try:
+            del self.connections[connection_id]
+            logger.info(f"WebSocket connection removed: {connection_id}")
+        except KeyError:
+            logger.warning(f"Connection {connection_id} was already removed from connections dict")
 
     async def handle_message(self, connection_id: str, message_data: str):
         """Handle incoming message from a WebSocket client."""
@@ -1734,7 +1741,14 @@ class WebSocketManager:
                 current_time = asyncio.get_event_loop().time()
                 dead_connections = []
 
-                for connection_id, connection in self.connections.items():
+                # Create a copy of the connections dict to avoid modification during iteration
+                connections_snapshot = dict(self.connections)
+                
+                for connection_id, connection in connections_snapshot.items():
+                    # Skip if connection was already removed
+                    if connection_id not in self.connections:
+                        continue
+                        
                     # Check if connection is stale
                     time_since_last = current_time - connection.last_heartbeat
                     if time_since_last > self.heartbeat_interval * 2:
@@ -1747,11 +1761,16 @@ class WebSocketManager:
                         continue
 
                     # Send heartbeat
-                    if not await connection.send_message(HeartbeatMessage()):
+                    try:
+                        if not await connection.send_message(HeartbeatMessage()):
+                            dead_connections.append(connection_id)
+                    except Exception as e:
+                        logger.debug(f"Failed to send heartbeat to {connection_id}: {e}")
                         dead_connections.append(connection_id)
 
                 # Clean up dead connections
                 for connection_id in dead_connections:
+                    logger.info(f"Removing dead connection: {connection_id}")
                     await self.disconnect(connection_id)
 
                 await asyncio.sleep(self.heartbeat_interval)
@@ -1759,7 +1778,7 @@ class WebSocketManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in heartbeat loop: {e}")
+                logger.error(f"Error in heartbeat loop: {e}", exc_info=True)
                 await asyncio.sleep(5)  # Wait before retrying
     
     async def _echo_loop(self):
