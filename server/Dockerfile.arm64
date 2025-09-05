@@ -1,10 +1,5 @@
-# Python FastAPI Server Dockerfile
-# Multi-architecture build support for ARM64 and AMD64
-FROM --platform=$TARGETPLATFORM python:3.12-slim
-
-# Build arguments for platform detection
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
+# Python FastAPI Server Dockerfile for ARM64 (Apple Silicon)
+FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -25,7 +20,10 @@ WORKDIR /app
 COPY pyproject.toml requirements.txt uv.lock ./
 
 # Install Python dependencies using uv as root
-RUN uv sync --frozen
+# Use CPU-only versions of PyTorch for ARM64 compatibility
+RUN uv sync --frozen || \
+    (pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu && \
+     uv sync --frozen)
 
 # Copy application code
 COPY . .

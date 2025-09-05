@@ -7,6 +7,9 @@ services:
       context: ./server
       dockerfile: Dockerfile
       # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
+      platforms:
+        - linux/amd64
+        - linux/arm64
     network_mode: host
     environment:
       - PYTHONPATH=/app
@@ -34,6 +37,9 @@ services:
       context: ./ui
       dockerfile: Dockerfile
       # Alternative: dockerfile: Dockerfile.multistage (if permission issues occur)
+      platforms:
+        - linux/amd64
+        - linux/arm64
     network_mode: host
     environment:
       - NODE_ENV=${NODE_ENV:-development}
