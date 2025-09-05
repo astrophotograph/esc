@@ -9,7 +9,11 @@ import {
   SciFiIndicator, 
   SciFiProgress, 
   SciFiStatusIndicator,
-  SciFiAlert 
+  SciFiAlert,
+  LCARSFrame,
+  LCARSSidebar,
+  LCARSButtonBar,
+  LCARSMeter
 } from '@/components/ui/scifi-elements'
 
 export const SciFiThemeExample: React.FC = () => {
@@ -90,8 +94,85 @@ export const SciFiThemeExample: React.FC = () => {
         </div>
       </div>
       
+      {/* LCARS Curved Elements Section */}
+      <h2 className="text-2xl font-bold text-secondary neon-text">LCARS Curved Elements</h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LCARS Sidebar */}
+        <div>
+          <h3 className="text-lg mb-3 text-accent">System Status</h3>
+          <LCARSSidebar
+            items={[
+              { label: 'Core Temp', value: '72°C', color: 'bg-primary' },
+              { label: 'CPU Load', value: '45%', color: 'bg-secondary' },
+              { label: 'Memory', value: '8.2GB', color: 'bg-accent' },
+              { label: 'Network', value: 'Online', color: 'bg-green-400' },
+              { label: 'Storage', value: '512GB', color: 'bg-yellow-400' }
+            ]}
+          />
+        </div>
+        
+        {/* LCARS Curved Panels */}
+        <div className="space-y-4">
+          <SciFiPanel title="Navigation" variant="lcars">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Bearing</span>
+                <span className="font-mono">247.3°</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Distance</span>
+                <span className="font-mono">1,247 km</span>
+              </div>
+              <div className="flex justify-between">
+                <span>ETA</span>
+                <span className="font-mono">00:47:23</span>
+              </div>
+            </div>
+          </SciFiPanel>
+          
+          <SciFiPanel title="Sensors" variant="curved">
+            <div className="grid grid-cols-2 gap-2">
+              <SciFiIndicator label="Pressure" value="1013" unit="hPa" />
+              <SciFiIndicator label="Humidity" value="67" unit="%" />
+            </div>
+          </SciFiPanel>
+        </div>
+        
+        {/* LCARS Meters */}
+        <div className="flex gap-4">
+          <LCARSMeter value={75} label="Power" color="primary" />
+          <LCARSMeter value={42} label="Shield" color="accent" />
+          <LCARSMeter value={90} label="Health" color="success" />
+        </div>
+      </div>
+      
+      {/* LCARS Frame Example */}
+      <LCARSFrame color="secondary">
+        <h3 className="text-xl font-bold mb-3">LCARS Frame Component</h3>
+        <p className="text-muted-foreground">
+          This demonstrates the distinctive LCARS elbow frame with curved corners,
+          commonly seen in Star Trek interfaces.
+        </p>
+      </LCARSFrame>
+      
+      {/* LCARS Button Bar */}
+      <div>
+        <h3 className="text-lg mb-3 text-accent">Command Interface</h3>
+        <LCARSButtonBar
+          buttons={[
+            { label: 'Engage', color: 'bg-primary' },
+            { label: 'Scan', color: 'bg-accent' },
+            { label: 'Shields', color: 'bg-secondary' },
+            { label: 'Alert', color: 'bg-yellow-400' },
+            { label: 'Emergency', color: 'bg-red-400' }
+          ]}
+        />
+      </div>
+      
       <div className="text-sm text-muted-foreground">
-        Switch to the SciFi theme using the theme toggle in the header to see the full LCARS-inspired styling.
+        Switch to the SciFi theme using the theme toggle in the header to see the full LCARS-inspired styling
+        with curved elements and authentic Star Trek interface design.
       </div>
     </div>
   )

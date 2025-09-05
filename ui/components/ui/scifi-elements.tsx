@@ -6,12 +6,49 @@ export const SciFiPanel: React.FC<{
   children: React.ReactNode
   className?: string
   status?: 'active' | 'warning' | 'error' | 'idle'
-}> = ({ title, children, className, status = 'idle' }) => {
+  variant?: 'default' | 'curved' | 'lcars'
+}> = ({ title, children, className, status = 'idle', variant = 'default' }) => {
   const statusColors = {
     active: 'border-l-green-400',
     warning: 'border-l-yellow-400', 
     error: 'border-l-red-400',
     idle: 'border-l-primary'
+  }
+
+  if (variant === 'lcars') {
+    return (
+      <div className={cn('relative', className)}>
+        <div className="lcars-panel bg-card/90 backdrop-blur-sm">
+          {title && (
+            <div className="lcars-header bg-primary px-6 py-2">
+              <h3 className="text-primary-foreground font-bold uppercase tracking-wider">
+                {title}
+              </h3>
+            </div>
+          )}
+          <div className="p-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (variant === 'curved') {
+    return (
+      <div className={cn('relative', className)}>
+        <div className="lcars-curved-panel bg-card/80 backdrop-blur-sm">
+          {title && (
+            <h3 className="text-primary font-bold uppercase tracking-wider mb-3 neon-text px-4 pt-4">
+              {title}
+            </h3>
+          )}
+          <div className="p-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -199,6 +236,134 @@ export const SciFiAlert: React.FC<{
   return (
     <div className={cn(variants[variant], 'p-4 rounded-r', className)}>
       {children}
+    </div>
+  )
+}
+
+// LCARS-style curved frame component
+export const LCARSFrame: React.FC<{
+  children: React.ReactNode
+  className?: string
+  color?: 'primary' | 'secondary' | 'accent' | 'warning' | 'success'
+}> = ({ children, className, color = 'primary' }) => {
+  const colorMap = {
+    primary: 'bg-primary',
+    secondary: 'bg-secondary',
+    accent: 'bg-accent',
+    warning: 'bg-yellow-400',
+    success: 'bg-green-400'
+  }
+
+  return (
+    <div className={cn('lcars-frame relative', className)}>
+      <div className={cn('lcars-elbow', colorMap[color])} />
+      <div className="lcars-content">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// LCARS-style sidebar component
+export const LCARSSidebar: React.FC<{
+  items: Array<{ label: string; value: string | number; color?: string }>
+  className?: string
+}> = ({ items, className }) => {
+  return (
+    <div className={cn('lcars-sidebar flex flex-col gap-2', className)}>
+      {items.map((item, index) => (
+        <div
+          key={index}
+          className={cn(
+            'lcars-sidebar-item',
+            'px-4 py-2',
+            item.color || 'bg-primary'
+          )}
+        >
+          <div className="text-xs uppercase tracking-wider opacity-80">
+            {item.label}
+          </div>
+          <div className="text-lg font-bold">
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// LCARS-style curved button bar
+export const LCARSButtonBar: React.FC<{
+  buttons: Array<{ label: string; onClick?: () => void; color?: string }>
+  className?: string
+}> = ({ buttons, className }) => {
+  return (
+    <div className={cn('lcars-button-bar flex gap-2', className)}>
+      {buttons.map((button, index) => (
+        <button
+          key={index}
+          onClick={button.onClick}
+          className={cn(
+            'lcars-bar-button',
+            'px-6 py-3',
+            'font-bold uppercase tracking-wider',
+            'transition-all duration-200',
+            button.color || 'bg-primary',
+            'hover:brightness-110'
+          )}
+        >
+          {button.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// LCARS-style curved meter
+export const LCARSMeter: React.FC<{
+  value: number
+  max?: number
+  label?: string
+  height?: number
+  color?: 'primary' | 'success' | 'warning' | 'error'
+  className?: string
+}> = ({ value, max = 100, label, height = 200, color = 'primary', className }) => {
+  const percentage = Math.min((value / max) * 100, 100)
+  
+  const colorStyles = {
+    primary: 'bg-primary',
+    success: 'bg-green-400',
+    warning: 'bg-yellow-400',
+    error: 'bg-red-400'
+  }
+
+  return (
+    <div className={cn('lcars-meter', className)}>
+      {label && (
+        <div className="text-xs uppercase tracking-wider mb-2 text-muted-foreground">
+          {label}
+        </div>
+      )}
+      <div 
+        className="relative bg-muted/30 overflow-hidden"
+        style={{ height: `${height}px` }}
+      >
+        <div className="lcars-meter-track" />
+        <div 
+          className={cn(
+            'lcars-meter-fill absolute bottom-0 left-0 right-0 transition-all duration-500',
+            colorStyles[color]
+          )}
+          style={{ height: `${percentage}%` }}
+        >
+          <div className="lcars-meter-glow" />
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-2xl font-bold font-mono">
+            {Math.round(value)}
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

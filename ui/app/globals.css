@@ -1907,3 +1907,238 @@ body {
   background: hsl(var(--muted));
   color: hsl(var(--foreground));
 }
+
+/* LCARS Curved Elements */
+.scifi .lcars-panel {
+  position: relative;
+  border-radius: 0;
+  overflow: hidden;
+  clip-path: polygon(
+    0 20px,
+    20px 0,
+    100% 0,
+    100% calc(100% - 20px),
+    calc(100% - 20px) 100%,
+    0 100%
+  );
+}
+
+.scifi .lcars-curved-panel {
+  position: relative;
+  border-radius: 40px 0 0 40px;
+  border-left: 8px solid hsl(var(--primary));
+}
+
+.scifi .lcars-header {
+  border-radius: 20px 0 0 0;
+  position: relative;
+}
+
+.scifi .lcars-header::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(90deg, hsl(var(--primary)), transparent);
+}
+
+/* LCARS Elbow Frame */
+.scifi .lcars-frame {
+  position: relative;
+  padding: 20px;
+}
+
+.scifi .lcars-elbow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px;
+  height: 60px;
+  border-radius: 0 0 60px 0;
+  z-index: 1;
+}
+
+.scifi .lcars-elbow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  background: inherit;
+}
+
+.scifi .lcars-elbow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 100%;
+  background: inherit;
+}
+
+.scifi .lcars-content {
+  margin-left: 30px;
+  margin-top: 30px;
+}
+
+/* LCARS Sidebar Items */
+.scifi .lcars-sidebar-item {
+  position: relative;
+  border-radius: 0 20px 20px 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 20px) 0,
+    100% 50%,
+    calc(100% - 20px) 100%,
+    0 100%
+  );
+}
+
+.scifi .lcars-sidebar-item:first-child {
+  border-radius: 0 40px 20px 0;
+}
+
+.scifi .lcars-sidebar-item:last-child {
+  border-radius: 0 20px 40px 0;
+}
+
+/* LCARS Button Bar */
+.scifi .lcars-button-bar {
+  display: flex;
+  gap: 4px;
+}
+
+.scifi .lcars-bar-button {
+  position: relative;
+  border: none;
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    calc(100% - 10px) 100%,
+    0 100%
+  );
+}
+
+.scifi .lcars-bar-button:first-child {
+  border-radius: 30px 0 0 30px;
+  clip-path: polygon(
+    30px 0,
+    100% 0,
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 50%
+  );
+}
+
+.scifi .lcars-bar-button:last-child {
+  border-radius: 0 30px 30px 0;
+  clip-path: polygon(
+    10px 0,
+    calc(100% - 30px) 0,
+    100% 50%,
+    calc(100% - 10px) 100%,
+    0 100%
+  );
+}
+
+/* LCARS Meter */
+.scifi .lcars-meter {
+  position: relative;
+}
+
+.scifi .lcars-meter-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+
+.scifi .lcars-meter-track::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -20px;
+  width: 20px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    hsl(var(--primary) / 0.2),
+    hsl(var(--primary) / 0.2) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+}
+
+.scifi .lcars-meter-fill {
+  border-radius: 20px 20px 0 0;
+}
+
+.scifi .lcars-meter-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+  animation: lcars-meter-pulse 2s ease-in-out infinite;
+}
+
+@keyframes lcars-meter-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* LCARS Curved Corners */
+.scifi .lcars-corner-tl {
+  position: relative;
+  border-radius: 40px 0 0 0;
+}
+
+.scifi .lcars-corner-tr {
+  position: relative;
+  border-radius: 0 40px 0 0;
+}
+
+.scifi .lcars-corner-bl {
+  position: relative;
+  border-radius: 0 0 0 40px;
+}
+
+.scifi .lcars-corner-br {
+  position: relative;
+  border-radius: 0 0 40px 0;
+}
+
+/* LCARS Sweep Effect */
+.scifi .lcars-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.scifi .lcars-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.3),
+    transparent
+  );
+  animation: lcars-sweep 3s linear infinite;
+}
+
+@keyframes lcars-sweep {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}

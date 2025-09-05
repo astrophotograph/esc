@@ -24,12 +24,16 @@ The SciFi theme is a retro-futuristic LCARS-inspired theme with vibrant orange, 
   - Status indicators with animations
 
 - **Components**: Custom SciFi-styled components available:
-  - `SciFiPanel` - LCARS-style panels with status indicators
+  - `SciFiPanel` - LCARS-style panels with status indicators (default, curved, lcars variants)
   - `SciFiButton` - Futuristic buttons with glow effects
   - `SciFiIndicator` - Data readouts with status colors
   - `SciFiProgress` - Progress bars with scan animations
   - `SciFiStatusIndicator` - Status lights with pulse effects
   - `SciFiAlert` - Alert panels with tech borders
+  - `LCARSFrame` - Distinctive elbow frame with curved corners
+  - `LCARSSidebar` - Curved sidebar items with LCARS styling
+  - `LCARSButtonBar` - Curved button bar with angular cuts
+  - `LCARSMeter` - Vertical meter with LCARS aesthetics
 
 ### Usage
 
