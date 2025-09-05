@@ -47,6 +47,7 @@ export enum MessageType {
 
 export enum CommandAction {
   GOTO = 'goto',
+  STOP_GOTO = 'stop_goto',
   MOVE = 'move',
   PARK = 'park',
   FOCUS = 'focus',

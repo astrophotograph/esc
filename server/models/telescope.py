@@ -973,7 +973,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             )
 
         @router.post("/plate-solve")
-        async def plate_solve(api_key: str = None):
+        async def plate_solve(request_body: dict = {}):
             """Start plate solving and return immediately with job ID."""
             # Check if imaging client is connected
             if not self.imaging or not self.imaging.is_connected:
@@ -988,7 +988,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     status_code=404, detail="No current image available"
                 )
 
-            # Check if we have an API key
+            # Get API key from request body or settings
+            api_key = request_body.get("api_key")
             if not api_key:
                 # Try to get from settings first, then environment variable
                 from services.settings_manager import get_settings_manager
@@ -1016,6 +1017,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                     # Import here to avoid circular dependencies
                     from services.astrometry_client import AstrometryClient
                     from services.settings_manager import get_settings_manager
+                    from services.async_image_processing import process_graxpert_async
+                    from scopinator.imaging.stretch import StretchParameter
+                    from scopinator.seestar.protocol_handlers import ScopeImage
+                    import numpy as np
 
                     # Get custom API URL if configured
                     settings_manager = get_settings_manager()
@@ -1028,6 +1033,32 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         astrometry_client = AstrometryClient(api_key)
 
                     try:
+                        # Stretch the image before plate solving to enhance star visibility
+                        logging.info("Applying stretch to image before plate solving")
+                        
+                        # Get the raw image data
+                        if current_image.image is not None:
+                            # Apply GraXpert stretch for better star detection
+                            # Use a moderate stretch that enhances stars without over-stretching
+                            stretched_image_data = await process_graxpert_async(
+                                current_image.image,
+                                stretch_parameter=StretchParameter["15% Bg, 3 sigma"],
+                                enhancement_settings=None  # No additional enhancements
+                            )
+                            
+                            # Create a new ScopeImage with the stretched data
+                            stretched_image = ScopeImage(
+                                width=current_image.width,
+                                height=current_image.height,
+                                image=stretched_image_data
+                            )
+                            
+                            logging.info("Image stretch applied successfully")
+                        else:
+                            # Fallback to original if no image data
+                            stretched_image = current_image
+                            logging.warning("No image data to stretch, using original")
+                        
                         # Get telescope's current position if available for better solving
                         solve_params = {}
                         if hasattr(self.client, "status") and self.client.status:
@@ -1039,10 +1070,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                                 solve_params["center_dec"] = self.client.status.dec
                                 solve_params["radius"] = 10.0  # 10 degree search radius
 
-                        # Perform plate solving
+                        # Perform plate solving with stretched image
                         logging.info(f"Starting background plate solve with params: {solve_params}")
                         result = await astrometry_client.solve_image(
-                            current_image, **solve_params
+                            stretched_image, **solve_params
                         )
 
                         if result.success:

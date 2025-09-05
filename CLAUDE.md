@@ -102,10 +102,45 @@ Key patterns:
    - Update TypeScript types in `ui/types/`
    - Ensure both frontend and backend remain in sync
 
+## WebSocket Command System
+
+The frontend and backend communicate via WebSocket for real-time telescope control. Available command actions:
+
+### Frontend → Backend Commands (via `websocket-service.ts`)
+- `goto`: Navigate telescope to specific coordinates
+- `stop_goto`: Cancel ongoing AutoGoto operation (sends IScopeStopView with stage="AutoGoto")
+- `move`: Move telescope in a direction
+- `park`: Park the telescope
+- `focus`: Set focus position
+- `focus_increment`: Adjust focus incrementally
+- `start_imaging`: Begin imaging/stacking
+- `stop_imaging`: Stop imaging/stacking (sends IScopeStopView with stage="Stack")
+- `set_gain`: Adjust camera gain
+- `set_exposure`: Set exposure time
+- `scenery`: Switch to scenery mode
+- `set_image_enhancement`: Configure image enhancement settings
+- `get_image_enhancement`: Retrieve current enhancement settings
+- `reboot`: Reboot telescope
+
+### Backend Command Handlers (`websocket_manager.py`)
+Each command action is handled by a specific method:
+- `_execute_goto_command`: Handles telescope navigation
+- `_execute_stop_goto_command`: Cancels AutoGoto using `client.stop_goto()`
+- `_execute_stop_imaging_command`: Stops stacking using `client.stop_stack()`
+- Other handlers follow the pattern `_execute_<action>_command`
+
+### Low-level Telescope Commands (scopinator library)
+The backend uses the `scopinator` library which provides typed commands:
+- `IscopeStopView`: Stop telescope operations with stage parameter ("AutoGoto", "Stack", "DarkLibrary")
+- `IscopeStartView`: Start telescope operations with mode and parameters
+- Other commands follow telescope's JSON-RPC protocol
+
 ## Key Files and Directories
 
 - `server/connection_manager.py`: Core telescope connection logic
+- `server/websocket_manager.py`: WebSocket message handling and command routing
 - `server/api/routers/telescope.py`: Main API endpoints
+- `ui/services/websocket-service.ts`: Frontend WebSocket client and command sending
 - `ui/app/page.tsx`: Main frontend page
 - `ui/components/telescope/`: Telescope control UI components
 - `docker-compose.yml`: Docker configuration

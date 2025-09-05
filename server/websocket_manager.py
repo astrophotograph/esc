@@ -815,6 +815,8 @@ class WebSocketManager:
                 return await self._execute_goto_command(client, parameters)
             elif action == "scenery":
                 return await self._execute_scenery_command(client, parameters)
+            elif action == "stop_goto":
+                return await self._execute_stop_goto_command(client, parameters)
             elif action == "stop_imaging":
                 return await self._execute_stop_imaging_command(client, parameters)
             elif action == "set_image_enhancement":
@@ -1472,6 +1474,35 @@ class WebSocketManager:
 
         except Exception as e:
             logger.error(f"Error executing scenery command: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_stop_goto_command(
+            self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute stop goto command to cancel AutoGoto operation."""
+        stage = parameters.get("stage", "AutoGoto")
+        
+        try:
+            logger.info(
+                f"Stop goto command received: stage={stage}, parameters={parameters}"
+            )
+            
+            # Use the SeestarClient's stop_goto method
+            response = await client.stop_goto()
+            
+            # Refresh view state after stopping goto
+            await client.refresh_view_state()
+            
+            return {
+                "status": "success",
+                "action": "stop_goto",
+                "stage": stage,
+                "message": "AutoGoto cancelled successfully",
+                "response": response.to_dict() if hasattr(response, "to_dict") else str(response),
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing stop goto command: {e}")
             return {"status": "error", "message": str(e)}
 
     async def _execute_stop_imaging_command(

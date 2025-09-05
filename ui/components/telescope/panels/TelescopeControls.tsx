@@ -501,17 +501,22 @@ export function TelescopeControls() {
               <Home className="w-4 h-4 mr-2"/>
               Park Telescope
             </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePlateSolveAndSync}
-              className="w-full"
-            >
-              <Target className="w-4 h-4 mr-2"/>
-              Plate Solve
-            </Button>
           </div>
+
+          {/* Plate Solve Button - Always visible in ContinuousExposure and Stack modes */}
+          {(clientMode === "ContinuousExposure" || clientMode === "Stack" || clientMode === "Streaming") && (
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePlateSolveAndSync}
+                className="w-full"
+              >
+                <Target className="w-4 h-4 mr-2"/>
+                Plate Solve
+              </Button>
+            </div>
+          )}
 
           <Separator
             className={`transition-all duration-300 ease-in-out ${

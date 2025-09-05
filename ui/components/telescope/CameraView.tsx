@@ -1650,6 +1650,7 @@ export function CameraView() {
               currentRa={localStreamStatus?.status?.ra}
               currentDec={localStreamStatus?.status?.dec}
               distDeg={localStreamStatus?.status?.dist_deg}
+              telescopeId={currentTelescope?.id}
             />
 
             {/* Dark Library Overlay - Show when in Initialise mode */}

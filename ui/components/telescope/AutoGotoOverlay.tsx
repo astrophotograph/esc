@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Compass, Navigation, Target } from "lucide-react"
+import { Compass, Navigation, Target, X } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { getWebSocketService, CommandAction } from "@/services/websocket-service"
 
 interface AutoGotoOverlayProps {
   targetName?: string
@@ -14,6 +16,7 @@ interface AutoGotoOverlayProps {
   currentDec?: number
   distDeg?: number  // Distance to target in degrees from status
   isVisible: boolean
+  telescopeId?: string
 }
 
 export function AutoGotoOverlay({
@@ -23,7 +26,8 @@ export function AutoGotoOverlay({
   currentRa,
   currentDec,
   distDeg,
-  isVisible
+  isVisible,
+  telescopeId
 }: AutoGotoOverlayProps) {
   const [animationFrame, setAnimationFrame] = useState(0)
   const [initialDistance, setInitialDistance] = useState<number | null>(null)
@@ -180,6 +184,30 @@ export function AutoGotoOverlay({
           {/* Status message */}
           <div className="text-center text-sm text-gray-400">
             Telescope is slewing to target position...
+          </div>
+
+          {/* Cancel button */}
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const wsService = getWebSocketService()
+                  await wsService.sendCommand(
+                    CommandAction.STOP_GOTO,
+                    { stage: "AutoGoto" },
+                    telescopeId
+                  )
+                } catch (error) {
+                  console.error("Failed to cancel AutoGoto:", error)
+                }
+              }}
+              className="bg-red-900/50 hover:bg-red-800/50 text-red-200 border-red-700"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
           </div>
         </div>
       </Card>
