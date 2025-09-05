@@ -38,7 +38,7 @@ export function AutoGotoOverlay({
     let calculatedDistance: number | undefined
     
     // Use the provided distDeg from status if available
-    if (distDeg !== undefined) {
+    if (distDeg !== undefined && distDeg !== null) {
       calculatedDistance = distDeg
     }
     // Otherwise calculate from coordinates if available
@@ -134,7 +134,7 @@ export function AutoGotoOverlay({
           </div>
 
           {/* Distance and progress */}
-          {(distDeg !== undefined || (targetRa !== undefined && currentRa !== undefined)) && (
+          {((distDeg !== undefined && distDeg !== null) || (targetRa !== undefined && currentRa !== undefined)) && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -142,7 +142,7 @@ export function AutoGotoOverlay({
                   <span className="text-gray-300">Distance to target:</span>
                 </div>
                 <span className="text-white font-mono text-lg">
-                  {distDeg !== undefined ? distDeg.toFixed(2) : "---"}°
+                  {distDeg !== undefined && distDeg !== null ? distDeg.toFixed(2) : "---"}°
                 </span>
               </div>
 

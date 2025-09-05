@@ -1276,7 +1276,13 @@ class WebSocketManager:
                     "message": "Invalid coordinates (0,0) - please check target selection"
                 }
             
-            start_imaging = parameters.get("start_imaging", False)
+            # Parse start_imaging - handle both boolean and string values
+            start_imaging_raw = parameters.get("start_imaging", False)
+            if isinstance(start_imaging_raw, str):
+                start_imaging = start_imaging_raw.lower() in ("true", "yes", "1")
+            else:
+                start_imaging = bool(start_imaging_raw)
+            
             target_type = parameters.get("target_type", "unknown")
             magnitude = parameters.get("magnitude", "unknown")
             description = parameters.get("description", "")
@@ -1287,7 +1293,7 @@ class WebSocketManager:
             logger.info(f"Original coordinates: RA={ra_value}, Dec={dec_value}")
             logger.info(f"Parsed coordinates: RA={ra:.6f}°, Dec={dec:.6f}°")
             logger.info(f"Target type: {target_type}, Magnitude: {magnitude}")
-            logger.info(f"Start imaging: {start_imaging}")
+            logger.info(f"Start imaging: {start_imaging} (raw value: {start_imaging_raw}, type: {type(start_imaging_raw).__name__})")
             logger.info(f"Description: {description}")
             logger.info(f"Full message parameters: {parameters}")
             
@@ -1399,26 +1405,34 @@ class WebSocketManager:
                 await client.refresh_view_state()
                 return {"status": "error", "message": error_message}
 
-            logger.debug(f"Start imaging: {start_imaging}")
+            logger.info(f"Start imaging check: {start_imaging} (type: {type(start_imaging).__name__})")
             if start_imaging:
+                logger.info(f"Starting imaging sequence for target: {target_name}")
+                logger.info(f"Waiting 5 seconds before starting imaging...")
                 await asyncio.sleep(5.0)
 
+                logger.info(f"Setting stack_lenhance to True...")
                 r = await client.send_and_recv(SetSetting(
                     params=SettingParameters(
                         stack_lenhance=True,
                     )))
-                logger.debug(f"Response from SetSetting: {r}")
+                logger.info(f"Response from SetSetting: {r}")
 
+                logger.info(f"Setting sequence group name to: {target_name}")
                 r = await client.send_and_recv(SetSequenceSetting(params=[
                     SequenceSettingParameters(group_name=target_name)]))
-                logger.debug(f"Response from SetSequenceSetting: {r}")
+                logger.info(f"Response from SetSequenceSetting: {r}")
 
+                logger.info(f"Starting stack operation...")
                 r = await client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=False)))
-                logger.debug(f"Response from IscopeStartStack: {r}")
+                logger.info(f"Response from IscopeStartStack: {r}")
 
                 # Change the gain _after_ starting starts.
+                logger.info(f"Setting gain to: {stack_gain}")
                 r = await client.send_and_recv(SetControlValue(params=("gain", stack_gain)))
-                logger.debug(f"Response from SetControlValue: {r}")
+                logger.info(f"Response from SetControlValue (gain): {r}")
+                
+                logger.info(f"Imaging sequence started successfully for {target_name}")
 
             logger.info("Telescope goto command completed successfully")
             # self.logger.info(result)
@@ -1440,7 +1454,7 @@ class WebSocketManager:
                 "status": "success",
                 "action": "goto",
                 "target_name": target_name,
-                "coordinates": coordinates,
+                "coordinates": {"ra": ra, "dec": dec},
                 "start_imaging": start_imaging,
                 "message": f"Goto command for '{target_name}' logged successfully{imaging_message}",
             }

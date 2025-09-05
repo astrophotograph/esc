@@ -485,9 +485,29 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     return wsService.sendCommand(CommandAction.FOCUS_INCREMENT, { increment }, currentTelescope.id)
   }
   
-  const wsSendGotoMessage = async (ra: number, dec: number, targetName?: string) => {
+  const wsSendGotoMessage = async (
+    ra: number, 
+    dec: number, 
+    targetName?: string, 
+    startImaging?: boolean, 
+    targetType?: string, 
+    magnitude?: number, 
+    description?: string,
+    gain?: number,
+    lightPollutionFilter?: boolean
+  ) => {
     if (!currentTelescope) throw new Error('No telescope selected')
-    return wsService.sendCommand(CommandAction.GOTO, { ra, dec, target_name: targetName }, currentTelescope.id)
+    return wsService.sendCommand(CommandAction.GOTO, { 
+      ra, 
+      dec, 
+      target_name: targetName,
+      start_imaging: startImaging,
+      target_type: targetType,
+      magnitude: magnitude,
+      description: description,
+      gain: gain,
+      light_pollution_filter: lightPollutionFilter
+    }, currentTelescope.id)
   }
   
   const wsEnableSceneryMode = async () => {
@@ -1459,8 +1479,18 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         throw new Error(`Invalid JNow coordinate conversion: RA=${jNowCoords.ra}, Dec=${jNowCoords.dec}`)
       }
       
-      // Send JNow coordinates with epoch marked as JNow
-      await wsSendGotoMessage(jNowCoords.ra, jNowCoords.dec, targetName)
+      // Send JNow coordinates with epoch marked as JNow, along with all other parameters
+      await wsSendGotoMessage(
+        jNowCoords.ra, 
+        jNowCoords.dec, 
+        targetName, 
+        startImaging, 
+        targetType, 
+        magnitude, 
+        description,
+        gain,
+        lightPollutionFilter
+      )
 
       addStatusAlert({
         type: "success",

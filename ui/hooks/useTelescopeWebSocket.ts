@@ -491,11 +491,9 @@ export function useTelescopeWebSocket(
     // Build the message with optional imaging parameters
     const gotoMessage: any = {
       target_name: targetName,
-      coordinates: {
-        ra: ra,
-        dec: dec,
-        epoch: coordinateEpoch // Add epoch information for backend
-      },
+      ra: ra,
+      dec: dec,
+      epoch: coordinateEpoch, // Add epoch information for backend
       start_imaging: startImaging,
       target_type: targetType,
       magnitude: magnitude,
