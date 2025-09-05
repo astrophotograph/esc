@@ -21,7 +21,7 @@ export default function RootLayout({
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
-      themes={['light', 'dark', 'night-vision', 'tufte', 'dark-tufte', 'green-screen', 'c64', 'fallout']}
+      themes={['light', 'dark', 'night-vision', 'tufte', 'dark-tufte', 'green-screen', 'c64', 'fallout', 'scifi']}
       disableTransitionOnChange
       storageKey="esc-theme"
       enableSystem={false}

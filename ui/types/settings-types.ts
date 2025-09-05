@@ -72,7 +72,7 @@ export interface TelescopeSettings {
 }
 
 export interface UISettings {
-  theme: "dark" | "light" | "auto"
+  theme: "dark" | "light" | "auto" | "midnight" | "scifi"
   compactMode: boolean
   showTooltips: boolean
   animationsEnabled: boolean

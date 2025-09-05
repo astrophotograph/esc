@@ -1631,3 +1631,279 @@ body {
     background-color: hsl(0 0% 5%) !important;
   }
 }
+
+/* SciFi Theme - Retro-futuristic LCARS-inspired theme */
+.scifi {
+  /* Primary Colors - Orange/amber LCARS style */
+  --background: 10 10 15;        /* #0A0A0F - Near black */
+  --foreground: 232 232 240;     /* #E8E8F0 - Light grey-white */
+
+  --primary: 255 138 0;          /* #FF8A00 - Vibrant orange */
+  --primary-foreground: 10 10 15;
+
+  --secondary: 184 138 255;      /* #B88AFF - Purple/lavender */
+  --secondary-foreground: 10 10 15;
+
+  --accent: 0 191 255;           /* #00BFFF - Cyan blue */
+  --accent-foreground: 10 10 15;
+
+  --destructive: 255 69 69;      /* #FF4545 - Red-orange */
+  --destructive-foreground: 232 232 240;
+
+  --muted: 37 37 64;             /* #252540 - Dark blue-grey */
+  --muted-foreground: 153 153 170; /* #9999AA - Muted purple-grey */
+
+  --card: 26 26 46;              /* #1A1A2E - Dark blue-grey */
+  --card-foreground: 232 232 240;
+
+  --popover: 26 26 46;
+  --popover-foreground: 232 232 240;
+
+  --border: 74 74 92;            /* #4A4A5C - Dim borders */
+  --input: 37 37 64;
+  --ring: 255 138 0;             /* Orange focus ring */
+
+  /* Chart Colors */
+  --chart-1: 255 138 0;          /* Orange */
+  --chart-2: 184 138 255;        /* Purple */
+  --chart-3: 0 191 255;          /* Cyan */
+  --chart-4: 255 215 0;          /* Gold */
+  --chart-5: 0 255 136;          /* Neon green */
+
+  /* Sidebar Colors */
+  --sidebar-background: 10 10 15;
+  --sidebar-foreground: 232 232 240;
+  --sidebar-primary: 255 138 0;
+  --sidebar-primary-foreground: 10 10 15;
+  --sidebar-accent: 37 37 64;
+  --sidebar-accent-foreground: 232 232 240;
+  --sidebar-border: 74 74 92;
+  --sidebar-ring: 255 138 0;
+}
+
+/* SciFi Theme Special Effects and Styling */
+.scifi {
+  /* Font styling */
+  font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+}
+
+.scifi h1,
+.scifi h2,
+.scifi h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.scifi .card {
+  background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 0 20px rgba(255, 138, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.scifi button:not(.ghost):hover {
+  box-shadow: 0 0 20px rgba(255, 138, 0, 0.4);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.scifi .status-indicator {
+  animation: scifi-pulse 2s infinite;
+}
+
+@keyframes scifi-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.scifi input:focus,
+.scifi textarea:focus,
+.scifi select:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 15px rgba(255, 138, 0, 0.3);
+  outline: none;
+}
+
+/* Tech border effects */
+.scifi .data-panel {
+  border-left: 4px solid hsl(var(--primary));
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.scifi .data-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+  animation: scan-line 3s linear infinite;
+}
+
+@keyframes scan-line {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+/* Neon text effect for important elements */
+.scifi .neon-text {
+  text-shadow:
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px rgba(255, 138, 0, 0.5);
+}
+
+/* Status colors with SciFi styling */
+.scifi .status-online {
+  color: hsl(136 100% 50%); /* #00FF88 - Neon green */
+  text-shadow: 0 0 10px currentColor;
+}
+
+.scifi .status-warning {
+  color: hsl(51 100% 50%); /* #FFD700 - Gold */
+  text-shadow: 0 0 10px currentColor;
+}
+
+.scifi .status-error {
+  color: hsl(9 100% 64%); /* #FF4545 - Red-orange */
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* Data readout styling */
+.scifi .data-readout {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress bars and meters */
+.scifi .progress-bar {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+}
+
+.scifi .progress-fill {
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary)));
+  position: relative;
+  overflow: hidden;
+}
+
+.scifi .progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: progress-scan 2s linear infinite;
+}
+
+@keyframes progress-scan {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Alert and notification styling */
+.scifi .alert {
+  border-left: 4px solid hsl(var(--primary));
+  background: rgba(26, 26, 46, 0.9);
+  backdrop-filter: blur(15px);
+}
+
+.scifi .alert-warning {
+  border-left-color: hsl(51 100% 50%);
+}
+
+.scifi .alert-error {
+  border-left-color: hsl(9 100% 64%);
+}
+
+/* Panel styling with tech aesthetics */
+.scifi .panel {
+  background: linear-gradient(135deg,
+    rgba(26, 26, 46, 0.9),
+    rgba(16, 16, 30, 0.9));
+  border: 1px solid hsl(var(--border));
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.scifi .panel::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: hsl(136 100% 50%);
+  border-radius: 50%;
+  animation: scifi-pulse 2s infinite;
+}
+
+/* Button enhancements */
+.scifi .btn-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(25 100% 45%));
+  border: 1px solid hsl(var(--primary));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Telescope status specific styling */
+.scifi .telescope-status {
+  border: 2px solid hsl(var(--accent));
+  background: rgba(0, 191, 255, 0.05);
+  backdrop-filter: blur(15px);
+}
+
+/* Form elements */
+.scifi input[type="range"] {
+  accent-color: hsl(var(--primary));
+}
+
+.scifi input[type="checkbox"],
+.scifi input[type="radio"] {
+  accent-color: hsl(var(--primary));
+}
+
+/* Scrollbar styling */
+.scifi ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scifi ::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.scifi ::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
+  border-radius: 4px;
+}
+
+.scifi ::-webkit-scrollbar-thumb:hover {
+  background: hsl(25 100% 45%);
+}
+
+/* Tab styling */
+.scifi .tab-active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  text-shadow: none;
+}
+
+.scifi .tab-inactive {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.scifi .tab-inactive:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
