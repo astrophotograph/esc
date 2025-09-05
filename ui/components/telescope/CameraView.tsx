@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useTelescopeContext } from "@/context/TelescopeContext"
 import { usePersistentState } from "@/hooks/use-persistent-state"
-import { StatsPanel } from "./panels/StatsPanel"
+import { NeonStatsPanel } from "./panels/NeonStatsPanel"
 import { LogPanel } from "./panels/LogPanel"
 import { ImagingPanel } from "./panels/ImagingPanel"
 import { AnnotationOverlay } from "./AnnotationOverlay"
@@ -1769,7 +1769,7 @@ export function CameraView() {
             {isImaging && <ImagingPanel />}
 
             {/* Statistics Panel - hidden when imaging */}
-            {_showStatsPanel && !isImaging && <StatsPanel />}
+            {_showStatsPanel && !isImaging && <NeonStatsPanel />}
 
             {/* Observation Log Panel - hidden when imaging */}
             {_showLogPanel && !isImaging && <LogPanel />}

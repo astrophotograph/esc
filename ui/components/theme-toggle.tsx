@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Monitor, Eye, BookOpen, Tv, Gamepad2, BookOpenCheck, Zap, Cpu } from "lucide-react"
+import { Moon, Sun, Monitor, Eye, BookOpen, Tv, Gamepad2, BookOpenCheck, Zap, Cpu, Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -59,10 +59,13 @@ export function ThemeToggle() {
     if (theme === "scifi") {
       return <Cpu className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} text-orange-500`} />
     }
+    if (theme === "neon") {
+      return <Sparkles className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} text-cyan-400`} />
+    }
     return (
       <>
-        <Sun className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 night-vision:scale-0 tufte:scale-0 dark-tufte:scale-0 green-screen:scale-0 c64:scale-0 fallout:scale-0 scifi:scale-0`} />
-        <Moon className={`absolute ${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 night-vision:scale-0 tufte:scale-0 dark-tufte:scale-0 green-screen:scale-0 c64:scale-0 fallout:scale-0 scifi:scale-0`} />
+        <Sun className={`${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 night-vision:scale-0 tufte:scale-0 dark-tufte:scale-0 green-screen:scale-0 c64:scale-0 fallout:scale-0 scifi:scale-0 neon:scale-0`} />
+        <Moon className={`absolute ${isMobile ? "h-3 w-3" : "h-[1.2rem] w-[1.2rem]"} rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 night-vision:scale-0 tufte:scale-0 dark-tufte:scale-0 green-screen:scale-0 c64:scale-0 fallout:scale-0 scifi:scale-0 neon:scale-0`} />
       </>
     )
   }
@@ -116,6 +119,10 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("scifi")}>
           <Cpu className="mr-2 h-4 w-4 text-orange-500" />
           SciFi
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("neon")}>
+          <Sparkles className="mr-2 h-4 w-4 text-cyan-400" />
+          Neon
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="mr-2 h-4 w-4" />
