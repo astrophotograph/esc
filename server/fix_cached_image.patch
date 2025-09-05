@@ -1,0 +1,36 @@
+--- a/scopinator/seestar/imaging_client.py
++++ b/scopinator/seestar/imaging_client.py
+@@ -373,10 +373,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+                                 
+                                 if changed:
+                                     last_image = image
+                                     self.image = image  # Update current image
++                                    # Cache the raw image for plate solving
++                                    with self.cached_raw_image_lock:
++                                        self.cached_raw_image = image
+                                     self.status.is_sending_image = True
+                                     yield image
+                                     self.status.is_sending_image = False
+-
+-                                    # Cache the raw image for plate solving
+-                                    with self.cached_raw_image_lock:
+-                                        self.cached_raw_image = image
+ 
+                             await asyncio.sleep(0)
+@@ -395,10 +395,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+                     if changed:
+                         logging.trace(f"Image changed, yielding image for {self}")
+                         last_image = self.image
+                         # self.image = image  # Update current image
++                        # Cache the raw image for plate solving
++                        with self.cached_raw_image_lock:
++                            self.cached_raw_image = self.image
+                         self.status.is_sending_image = True
+                         yield self.image
+                         self.status.is_sending_image = False
+-
+-                        # Cache the raw image for plate solving
+-                        with self.cached_raw_image_lock:
+-                            self.cached_raw_image = image
+ 
+                 await asyncio.sleep(0.1)

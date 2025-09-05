@@ -424,6 +424,7 @@ class WebRTCService:
         # Ensure streaming is started
         if not imaging_client.status.is_streaming:
             logger.info(f"Starting imaging stream for telescope {telescope_name}")
+            await telescope.client.scope_view()
             await imaging_client.start_streaming()
 
             # Wait a bit for streaming to actually start

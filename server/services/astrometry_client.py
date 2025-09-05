@@ -236,7 +236,7 @@ class AstrometryClient:
             return None
 
     async def wait_for_solve(
-        self, submission_id: int, timeout: float = 180.0
+        self, submission_id: int, timeout: float = 300.0
     ) -> PlateSolveResult:
         """Wait for plate solving to complete and return results."""
         start_time = asyncio.get_event_loop().time()

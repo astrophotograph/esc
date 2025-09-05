@@ -1,0 +1,57 @@
+--- a/scopinator/seestar/imaging_client.py
++++ b/scopinator/seestar/imaging_client.py
+@@ -1,6 +1,7 @@
+ import asyncio
+ import collections
+ import logging
++import threading
+ from typing import TypeVar, Literal, Optional
+ 
+ from loguru import logger as logging
+@@ -100,6 +101,8 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+     binary_protocol: BinaryProtocol = BinaryProtocol()
+     image: ScopeImage | None = None
+     client_mode: Literal["ContinuousExposure", "Stack", "Streaming"] | None = None
++    cached_raw_image: Optional[ScopeImage] = None
++    cached_raw_image_lock: threading.Lock = threading.Lock()
+     
+     enhancement_settings_changed_event: Optional[asyncio.Event] = None
+ 
+@@ -143,6 +146,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+         
+         # Initialize enhancement settings changed event
+         self.enhancement_settings_changed_event = asyncio.Event()
++        
++        # Initialize cached image lock
++        self.cached_raw_image_lock = threading.Lock()
++        
+         self.connection = SeestarConnection(
+             host=host,
+             port=port,
+@@ -362,6 +369,11 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+                         )
+                         # print(f"Received image {header=}")
+                         yield image
++                        
++                        # Cache the raw image for plate solving
++                        with self.cached_raw_image_lock:
++                            self.cached_raw_image = image
++                        
+                         # Mark that we're no longer waiting for an image
+                         self.status.is_receiving_image = False
+                         
+@@ -519,10 +531,10 @@ class SeestarImagingClient(BaseModel, arbitrary_types_allowed=True):
+         if self.enhancement_event:
+             logging.info("Enhancement settings changed event triggered")
+     
+-    # def get_cached_raw_image(self) -> Optional[ScopeImage]:
+-    #     """Get the cached raw image."""
+-    #     with self.cached_raw_image_lock:
+-    #         return self.cached_raw_image.copy() if self.cached_raw_image and hasattr(self.cached_raw_image, 'copy') else self.cached_raw_image
++    def get_cached_raw_image(self) -> Optional[ScopeImage]:
++        """Get the cached raw image."""
++        with self.cached_raw_image_lock:
++            return self.cached_raw_image
+ 
+     async def _connection_monitor(self):
+         """Background task that monitors connection health and manages reconnection."""
