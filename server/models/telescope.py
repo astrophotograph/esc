@@ -1033,11 +1033,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                         astrometry_client = AstrometryClient(api_key)
 
                     try:
-                        # Stretch the image before plate solving to enhance star visibility
-                        logging.info("Applying stretch to image before plate solving")
+                        # Temporarily disable image stretching due to CPU compatibility issues
+                        # TODO: Re-enable once we fix the illegal instruction error
+                        ENABLE_IMAGE_STRETCHING = False
                         
-                        # Get the raw image data
-                        if current_image.image is not None:
+                        if ENABLE_IMAGE_STRETCHING and current_image.image is not None:
+                            # Stretch the image before plate solving to enhance star visibility
+                            logging.info("Applying stretch to image before plate solving")
+                            
                             # Apply GraXpert stretch for better star detection
                             # Use a moderate stretch that enhances stars without over-stretching
                             stretched_image_data = await process_graxpert_async(
@@ -1055,9 +1058,12 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                             
                             logging.info("Image stretch applied successfully")
                         else:
-                            # Fallback to original if no image data
+                            # Use original image without stretching
                             stretched_image = current_image
-                            logging.warning("No image data to stretch, using original")
+                            if not ENABLE_IMAGE_STRETCHING:
+                                logging.info("Image stretching disabled, using original image")
+                            else:
+                                logging.warning("No image data to stretch, using original")
                         
                         # Get telescope's current position if available for better solving
                         solve_params = {}
