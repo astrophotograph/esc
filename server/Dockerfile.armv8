@@ -148,14 +148,17 @@ RUN CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
 FROM --platform=linux/arm64 python:3.12-slim
 
 # Install runtime dependencies only
+# These are the minimal runtime libraries needed for the compiled packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    libopencv-dev \
+    libgomp1 \
+    libgfortran5 \
     libopenblas0 \
-    libjpeg-turbo8 \
+    libjpeg62-turbo \
     libpng16-16 \
     libfreetype6 \
-    libhdf5-103 \
+    libwebp7 \
+    libtiff6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv in runtime image
