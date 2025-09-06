@@ -1,0 +1,53 @@
+# Dockerfile for Raspberry Pi 4 (ARM64)
+FROM --platform=linux/arm64 python:3.12-slim-bookworm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gfortran \
+    libatlas-base-dev \
+    libopenblas-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libhdf5-dev \
+    libffi-dev \
+    libssl-dev \
+    pkg-config \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for ARM optimization
+ENV OPENBLAS_NUM_THREADS=4 \
+    ATLAS_NUM_THREADS=4 \
+    MKL_NUM_THREADS=4 \
+    NUMEXPR_NUM_THREADS=4 \
+    OMP_NUM_THREADS=4 \
+    PYTHONUNBUFFERED=1
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+WORKDIR /app
+
+# Copy minimal requirements for Raspberry Pi
+COPY server/pyproject-rpi.toml ./pyproject.toml
+COPY server/README.md ./README.md
+
+# Install dependencies
+RUN uv venv && \
+    . .venv/bin/activate && \
+    pip install --no-cache-dir --no-binary :all: numpy && \
+    uv sync --no-cache
+
+# Copy application code
+COPY server/ ./
+
+# Expose ports
+EXPOSE 8000
+
+# Run the server
+CMD ["uv", "run", "python", "main.py", "server", "--host", "0.0.0.0"]
