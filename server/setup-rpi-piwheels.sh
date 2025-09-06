@@ -84,13 +84,13 @@ if [ -f "uv.lock" ]; then
     rm uv.lock
 fi
 
-# Create venv and sync with piwheels as extra index
+# Create venv and sync with PyPI first, piwheels as fallback
 echo
-echo "Installing all dependencies using piwheels for pre-compiled wheels..."
-echo "This will be much faster than compiling from source."
-echo "Using best-match strategy to get pre-compiled wheels where available."
+echo "Installing dependencies with PyPI priority, piwheels as fallback..."
+echo "This avoids Python version conflicts while still using pre-compiled wheels where helpful."
 uv venv
-uv sync --extra-index-url https://www.piwheels.org/simple --index-strategy unsafe-best-match
+# Use PyPI as primary, piwheels as extra - this way we get PyPI's Python 3.12 wheels first
+uv sync --index-url https://pypi.org/simple --extra-index-url https://www.piwheels.org/simple --index-strategy unsafe-first-match
 
 # Test the installation
 echo
