@@ -78,10 +78,14 @@ else
     exit 1
 fi
 
-# Remove any existing lock file to force fresh resolution with pinned versions
-if [ -f "uv.lock" ]; then
-    echo "Removing existing lock file for fresh dependency resolution..."
-    rm uv.lock
+# Use the RPi4-compatible lock file
+if [ -f "uv-rpi4.lock" ]; then
+    echo "Using RPi4-compatible lock file with ARMv7 wheels..."
+    cp uv-rpi4.lock uv.lock
+else
+    echo "Warning: uv-rpi4.lock not found, will generate new lock file"
+    echo "This may result in ARM64-only dependencies being installed!"
+    rm -f uv.lock
 fi
 
 # Create virtual environment
@@ -112,10 +116,11 @@ echo
 echo "Installing scikit-image from source for ARM64 (this will take a while)..."
 uv pip install --no-cache-dir --no-binary :all: scikit-image
 
-# Install dependencies
+# Install dependencies using the locked versions
 echo
-echo "Installing remaining dependencies (this may take a while on Raspberry Pi)..."
-uv sync --no-cache
+echo "Installing dependencies with locked ARMv7-compatible versions..."
+echo "This ensures no ARM64-only packages are installed."
+uv sync --frozen --no-cache
 
 # Test the installation
 echo
