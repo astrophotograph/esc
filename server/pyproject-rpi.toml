@@ -22,7 +22,7 @@ dependencies = [
     "requests>=2.32.3",
     "pyudev>=0.24.3",
     "evdev>=1.7.1",
-    "scopinator @ git+https://github.com/scopinator/scopinator.git@main", 
+    "scopinator @ git+https://github.com/astrophotograph/pyscopinator.git@main", 
     "aiofiles>=23.2.1",
     "watchdog>=4.0.1",
     "astroplan>=0.10",
