@@ -11,7 +11,6 @@ ARG BUILDPLATFORM
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libatlas-base-dev \
     libopenblas-dev \
     libjpeg-dev \
     zlib1g-dev \
@@ -149,16 +148,14 @@ RUN CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
 FROM --platform=linux/arm64 python:3.12-slim
 
 # Install runtime dependencies only
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libopencv-dev \
-    python3-opencv \
-    libatlas-base-dev \
-    libopenblas-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libfreetype6-dev \
-    libhdf5-dev \
+    libopenblas0 \
+    libjpeg-turbo8 \
+    libpng16-16 \
+    libfreetype6 \
+    libhdf5-103 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv in runtime image
