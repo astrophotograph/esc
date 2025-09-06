@@ -1,0 +1,191 @@
+# Python FastAPI Server Dockerfile for ARMv8.0 compatibility
+# Builds for lowest common denominator (Pi4) to ensure compatibility with Pi4 and Pi5
+# Compiles critical packages from source to avoid ARMv8.1+ instructions like ldaddal
+
+FROM --platform=linux/arm64 python:3.12-slim as builder
+
+# Build arguments for platform detection
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libatlas-base-dev \
+    libopenblas-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libhdf5-dev \
+    libffi-dev \
+    libssl-dev \
+    gfortran \
+    pkg-config \
+    cmake \
+    curl \
+    libopencv-dev \
+    python3-opencv \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set ARMv8.0 compilation flags to avoid ARMv8.1+ instructions
+ENV CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics"
+ENV CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics"
+ENV ARCHFLAGS="-arch aarch64"
+
+# Install uv package manager
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Create ARMv8.0-safe pyproject configuration
+RUN cat > pyproject-armv8.toml << 'EOF'
+[project]
+name = "smarttel"
+version = "0.1.0"
+description = "Telescope control server - ARMv8.0 Docker build"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    # Core packages - pinned to versions that work on ARMv8.0
+    "numpy==1.26.4",
+    "opencv-python==4.10.0.84",
+    
+    # Essential packages
+    "aiosqlite>=0.21.0",
+    "async-timeout>=5.0.1",
+    "beartype>=0.21.0",
+    "click<8.2",
+    "loguru>=0.7.3",
+    "pydash>=8.0.5",
+    "fastapi>=0.115.0",
+    "fastapi-restful[all]>=0.6.0",
+    "uvicorn[standard]>=0.29.0",
+    "pydantic>=2.5.0",
+    "httpx[brotli,http2,zstd]>=0.25.0",
+    "websockets>=12.0",
+    "sse-starlette>=2.0.0",
+    "python-multipart>=0.0.20",
+    "tzlocal>=5.0.0",
+    "typer>=0.10.0",
+    "textual>=0.80.0",
+    
+    # Image processing - pin to avoid ARMv8.1+ optimizations
+    "pillow>=10.0.0",
+    "scipy>=1.11.0,<1.14.0",
+    "scikit-image>=0.21.0",
+    "matplotlib>=3.7.0",
+    
+    # System and utilities
+    "psutil>=5.9.0,<6.0.0",
+    "pyserial>=3.5",
+    "pydantic-settings>=2.0.0",
+    "requests>=2.30.0",
+    "scopinator>=2025.9.6",
+    "aiofiles>=23.0.0",
+    "watchdog>=4.0.0",
+    
+    # Astronomy packages
+    "astroplan>=0.10",
+    "astropy>=6.0.0",
+    "pyerfa>=2.0.0",
+    "astroquery>=0.4.0",
+    "starplot>=0.9.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["smarttel", "cli"]
+EOF
+
+# Copy dependency files (use the ARMv8.0 config if it exists)
+COPY pyproject*.toml requirements.txt uv.lock* ./
+RUN if [ -f pyproject-armv8.toml ]; then \
+        cp pyproject-armv8.toml pyproject.toml; \
+    elif [ -f pyproject-armv8.toml ]; then \
+        cp pyproject-armv8.toml pyproject.toml; \
+    fi
+
+# Create virtual environment
+RUN uv venv
+
+# Compile critical packages from source with ARMv8.0 flags
+# This ensures no ARMv8.1+ instructions are included
+RUN echo "Compiling numpy for ARMv8.0..." && \
+    CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    uv pip install --no-binary numpy numpy==1.26.4
+
+RUN echo "Compiling scipy for ARMv8.0..." && \
+    CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    uv pip install --no-binary scipy "scipy>=1.11.0,<1.14.0"
+
+RUN echo "Compiling pillow for ARMv8.0..." && \
+    CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    uv pip install --no-binary pillow pillow
+
+RUN echo "Compiling scikit-image for ARMv8.0..." && \
+    CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    uv pip install --no-binary scikit-image scikit-image
+
+# Install remaining dependencies
+RUN uv sync --frozen || uv sync
+
+# Attempt to install aiortc with ARMv8.0 flags
+RUN CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
+    uv pip install aiortc || echo "Warning: aiortc installation failed"
+
+# Runtime stage - smaller final image
+FROM --platform=linux/arm64 python:3.12-slim
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    libopencv-dev \
+    python3-opencv \
+    libatlas-base-dev \
+    libopenblas-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv in runtime image
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Copy application code
+COPY . .
+
+# Ensure pyproject.toml matches what was built
+COPY --from=builder /app/pyproject.toml ./pyproject.toml
+
+# Set environment to use the venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Expose port
+EXPOSE 8000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start the server using the venv Python directly
+CMD ["python", "main.py", "server", "--server-port", "8000"]

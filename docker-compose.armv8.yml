@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.armv8
+      platforms:
+        - linux/arm64
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/processed:/app/processed
+      - ./server/data:/app/data
+      - ./server/sky_tiles:/app/sky_tiles
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - telescope-net
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.prod
+      platforms:
+        - linux/arm64
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://server:8000
+    depends_on:
+      - server
+    restart: unless-stopped
+    networks:
+      - telescope-net
+
+networks:
+  telescope-net:
+    driver: bridge

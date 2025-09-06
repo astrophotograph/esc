@@ -121,10 +121,35 @@ Compiling from source with ARMv8.0 flags means:
 - Still much faster than 32-bit OS
 - Full 64-bit addressing and registers
 
+## Docker Deployment
+
+### Building Docker Images
+
+The project includes `Dockerfile.armv8` which builds images compatible with both Pi4 and Pi5:
+
+```bash
+# Build locally using docker-compose
+docker-compose -f docker-compose.armv8.yml build
+
+# Or build directly
+docker build -f server/Dockerfile.armv8 -t esc-server:armv8 ./server
+```
+
+The Dockerfile:
+- Uses multi-stage build to reduce final image size
+- Compiles numpy, scipy, scikit-image, and pillow from source with ARMv8.0 flags
+- Sets `-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics` to avoid ARMv8.1+ instructions
+- Takes longer to build but ensures compatibility with Pi4
+
+### GitHub Actions
+
+The GitHub Actions workflow automatically uses `Dockerfile.armv8` for ARM64 builds, ensuring all published Docker images work on both Pi4 and Pi5.
+
 ## Summary
 
 For Raspberry Pi 4 running 64-bit OS:
 1. Try `setup-rpi4-fast.sh` first (5-10 minutes)
 2. If that fails, use `setup-rpi4-armv8.sh` (1-2 hours, guaranteed to work)
-3. The issue is ARMv8.1+ instructions in PyPI wheels
-4. Compiling from source with proper flags solves the problem
+3. For Docker deployments, use `Dockerfile.armv8` or `docker-compose.armv8.yml`
+4. The issue is ARMv8.1+ instructions in PyPI wheels
+5. Compiling from source with proper flags solves the problem

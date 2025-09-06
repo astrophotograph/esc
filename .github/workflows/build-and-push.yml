@@ -83,7 +83,7 @@ jobs:
             dockerfile: ./ui/Dockerfile.prod
             image: ui
           - context: ./server
-            dockerfile: ./server/Dockerfile.optimized
+            dockerfile: ./server/Dockerfile.armv8
             image: server
 
     steps:
