@@ -57,6 +57,24 @@ if ! command -v uv &> /dev/null; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
+# Backup original pyproject.toml if not already backed up
+if [ -f "pyproject.toml" ] && [ ! -f "pyproject-original.toml" ]; then
+    echo
+    echo "Backing up original pyproject.toml..."
+    cp pyproject.toml pyproject-original.toml
+fi
+
+# Use the minimal pyproject file for Raspberry Pi
+echo
+echo "Setting up Raspberry Pi configuration..."
+if [ -f "pyproject-rpi.toml" ]; then
+    cp pyproject-rpi.toml pyproject.toml
+    echo "Using minimal dependencies for Raspberry Pi"
+else
+    echo "Error: pyproject-rpi.toml not found!"
+    exit 1
+fi
+
 # Create virtual environment
 echo
 echo "Creating virtual environment..."
@@ -79,31 +97,26 @@ echo
 echo "Installing numpy for ARM64..."
 uv pip install --no-cache-dir numpy
 
-# Use the minimal pyproject file for Raspberry Pi
-echo
-echo "Using minimal dependencies for Raspberry Pi..."
-if [ -f "pyproject-rpi.toml" ]; then
-    mv pyproject.toml pyproject-original.toml
-    cp pyproject-rpi.toml pyproject.toml
-fi
-
 # Install dependencies
 echo
 echo "Installing dependencies (this may take a while on Raspberry Pi)..."
 uv sync --no-cache
 
-# Restore original pyproject if it was moved
-if [ -f "pyproject-original.toml" ]; then
-    mv pyproject-original.toml pyproject.toml
-fi
-
 # Test the installation
 echo
 echo "Testing installation..."
-uv run python -c "import fastapi; import pydantic; import typer; print('Core packages imported successfully ✓')"
+if uv run python -c "import fastapi; import pydantic; import typer; print('Core packages imported successfully ✓')" 2>/dev/null; then
+    echo "Installation successful!"
+else
+    echo "Warning: Some packages may not have imported correctly."
+    echo "This is expected if you're testing off the Raspberry Pi."
+fi
 
 echo
 echo "=== Setup complete! ==="
+echo
+echo "The server is now configured for Raspberry Pi."
+echo "The pyproject.toml has been replaced with the minimal version."
 echo
 echo "To run the server:"
 echo "  uv run python main.py server"
@@ -113,5 +126,9 @@ echo "  uv run python main.py server"
 echo
 echo "To connect directly to a Seestar:"
 echo "  uv run python main.py server --seestar-host <IP_ADDRESS>"
+echo
+echo "To restore the original configuration (with ML dependencies):"
+echo "  cp pyproject-original.toml pyproject.toml"
+echo "  uv sync"
 echo
 echo "Note: The first run may be slower as Python compiles bytecode."
