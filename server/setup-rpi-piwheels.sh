@@ -55,8 +55,11 @@ echo
 echo "Configuring uv to use piwheels.org for pre-built ARM wheels..."
 export UV_EXTRA_INDEX_URL="https://www.piwheels.org/simple"
 
-# Use the base pyproject file
-if [ -f "pyproject-base-rpi.toml" ]; then
+# Use the auto-resolving pyproject file for piwheels
+if [ -f "pyproject-rpi-auto.toml" ]; then
+    cp pyproject-rpi-auto.toml pyproject.toml
+    echo "Using auto-resolving RPi configuration for piwheels"
+elif [ -f "pyproject-base-rpi.toml" ]; then
     cp pyproject-base-rpi.toml pyproject.toml
     echo "Using base RPi configuration"
 elif [ -f "pyproject-rpi.toml" ]; then
