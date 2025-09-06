@@ -21,6 +21,30 @@ if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "armv7l" ]; then
     fi
 fi
 
+# Check if Python 3.13 is available
+if ! command -v python3.13 &> /dev/null; then
+    echo
+    echo "Python 3.13 not found. Installing..."
+    echo "Note: This gives best compatibility with piwheels pre-compiled wheels."
+    
+    # For Raspberry Pi OS based on Debian Bookworm or later
+    sudo apt-get update
+    sudo apt-get install -y software-properties-common
+    
+    # Try to add deadsnakes PPA for older systems
+    if [ -f /etc/debian_version ]; then
+        sudo add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null || true
+        sudo apt-get update
+    fi
+    
+    # Install Python 3.13
+    sudo apt-get install -y python3.13 python3.13-venv python3.13-dev || {
+        echo "Warning: Could not install Python 3.13"
+        echo "You may need to compile it from source or use Python 3.12"
+        echo "To use Python 3.12, edit pyproject-rpi-auto.toml and change requires-python"
+    }
+fi
+
 # Install system dependencies
 echo
 echo "Installing system dependencies..."
@@ -29,6 +53,8 @@ sudo apt-get install -y \
     python3-dev \
     python3-pip \
     python3-venv \
+    python3.13-dev \
+    python3.13-venv \
     build-essential \
     libatlas-base-dev \
     libopenblas-dev \
@@ -84,13 +110,13 @@ if [ -f "uv.lock" ]; then
     rm uv.lock
 fi
 
-# Create venv and sync with PyPI first, piwheels as fallback
+# Create venv and sync with piwheels priority for Python 3.13
 echo
-echo "Installing dependencies with PyPI priority, piwheels as fallback..."
-echo "This avoids Python version conflicts while still using pre-compiled wheels where helpful."
-uv venv
-# Use PyPI as primary, piwheels as extra - this way we get PyPI's Python 3.12 wheels first
-uv sync --index-url https://pypi.org/simple --extra-index-url https://www.piwheels.org/simple --index-strategy unsafe-first-match
+echo "Installing dependencies with piwheels priority for Python 3.13..."
+echo "Most packages on piwheels now have Python 3.13 wheels."
+uv venv --python python3.13
+# Use piwheels as primary for Python 3.13, PyPI as fallback
+uv sync --index-url https://www.piwheels.org/simple --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
 
 # Test the installation
 echo
