@@ -78,6 +78,12 @@ else
     exit 1
 fi
 
+# Use the RPi4-compatible lock file if available
+if [ -f "uv-rpi4.lock" ]; then
+    echo "Using RPi4-compatible lock file..."
+    cp uv-rpi4.lock uv.lock
+fi
+
 # Create virtual environment
 echo
 echo "Creating virtual environment..."
