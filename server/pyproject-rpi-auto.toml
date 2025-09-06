@@ -56,14 +56,10 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Dev dependencies removed for RPi - not needed for running the server
+# and some (like ruff) don't have compatible wheels on piwheels
 [tool.uv]
-dev-dependencies = [
-    "black>=23.0.0",
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "mypy>=1.5.0",
-    "ruff>=0.5.0",
-]
+dev-dependencies = []
 
 [tool.hatch.build.targets.wheel]
 packages = ["smarttel", "cli"]
