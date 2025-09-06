@@ -9,6 +9,7 @@ dependencies = [
     "argon2-cffi-bindings==21.2.0",  # Pin to version with armv7l support
     "charset-normalizer==3.4.2",  # Pin to version with armv7l support
     "aiosqlite>=0.21.0",
+    "aiortc>=1.9.0",
     "async-timeout>=5.0.1",
     "beartype>=0.21.0",
     "click<8.2",
