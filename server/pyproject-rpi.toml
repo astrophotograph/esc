@@ -8,15 +8,25 @@ dependencies = [
     "numpy<2.0.0",  # NumPy 1.x for RPi4 compatibility
     "argon2-cffi-bindings==21.2.0",  # Pin to version with armv7l support
     "charset-normalizer==3.4.2",  # Pin to version with armv7l support
+    "aiosqlite>=0.21.0",
+    "async-timeout>=5.0.1",
+    "beartype>=0.21.0",
+    "click<8.2",
+    "loguru>=0.7.3",
+    "pydash>=8.0.5",
     "typer[all]>=0.10.0",
     "fastapi>=0.100.0",
+    "fastapi-restful[all]>=0.6.0",
     "uvicorn[standard]>=0.29.0",
     "pydantic>=2.5.0",
     "pillow>=10.4.0",
-    "httpx>=0.25.0",
+    "httpx[brotli,http2,zstd]>=0.25.0",
+    "opencv-python>=4.11.0.86",
     "scipy>=1.11.0,<1.14.0",  # Compatible with numpy 1.x
     "scikit-image>=0.21.0,<0.23.0",  # Compatible with numpy 1.x
     "sse-starlette>=2.0.0",
+    "python-multipart>=0.0.20",
+    "tzlocal>=5.3.1",
     "textual>=0.83.0",
     "websockets>=12.0",
     "psutil>=6.0.0",
