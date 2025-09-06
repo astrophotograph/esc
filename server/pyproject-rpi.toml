@@ -1,6 +1,6 @@
 [project]
-name = "experimental-scope-creep"
-version = "25.09.05"
+name = "smarttel"
+version = "0.1.0"
 description = "Telescope control server for Seestar - Raspberry Pi version"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -60,3 +60,6 @@ dev-dependencies = [
     "mypy>=1.5.0",
     "ruff>=0.5.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["smarttel", "cli"]
