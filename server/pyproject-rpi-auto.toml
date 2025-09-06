@@ -5,9 +5,9 @@ description = "Telescope control server for Seestar - Raspberry Pi version"
 readme = "README.md"
 requires-python = ">=3.13"  # Piwheels focuses on Python 3.13
 dependencies = [
-    # Core constraints for RPi4 compatibility
-    "numpy<2.0",  # Required for ARMv7 compatibility
-    "opencv-python<4.11",  # Must be compatible with numpy<2.0
+    # Core constraints for RPi4 ARMv7 compatibility
+    "numpy==1.26.4",  # Pin to version known to work on ARMv7
+    "opencv-python==4.10.0.84",  # Pin to version compatible with numpy 1.x
     
     # Let piwheels/PyPI resolve the rest automatically
     "aiosqlite>=0.21.0",

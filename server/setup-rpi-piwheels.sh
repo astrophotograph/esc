@@ -10,10 +10,18 @@ echo "This version uses pre-compiled wheels from piwheels.org"
 echo "Much faster than compiling from source!"
 echo
 
-# Check if running on ARM
-if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "armv7l" ]; then
+# Check architecture
+ARCH=$(uname -m)
+echo "Detected architecture: $ARCH"
+
+if [ "$ARCH" = "armv7l" ]; then
+    echo "Running on Raspberry Pi 4 (ARMv7) - will use compatible packages"
+    # For ARMv7, we need to be careful about package selection
+    export UV_PRERELEASE="disallow"  # Avoid prerelease packages that might have issues
+elif [ "$ARCH" = "aarch64" ]; then
+    echo "Running on ARM64 (aarch64) - will use optimized packages"
+else
     echo "Warning: This script is optimized for ARM architecture."
-    echo "Current architecture: $(uname -m)"
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -83,11 +91,19 @@ fi
 
 # Create venv and sync - uv will handle Python 3.13 installation
 echo
-echo "Installing dependencies with piwheels priority..."
+echo "Installing dependencies..."
 echo "uv will automatically install Python 3.13 if needed."
 uv venv --python 3.13
-# Use piwheels as primary for Python 3.13, PyPI as fallback
-uv sync --index-url https://www.piwheels.org/simple --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
+
+if [ "$ARCH" = "armv7l" ]; then
+    echo "Using PyPI priority for ARMv7 to avoid architecture mismatches..."
+    # For ARMv7, prioritize PyPI to avoid potential ARM64 wheels from piwheels
+    uv sync --index-url https://pypi.org/simple --extra-index-url https://www.piwheels.org/simple --index-strategy unsafe-first-match
+else
+    echo "Using piwheels priority for ARM64..."
+    # For ARM64, piwheels should have good wheels
+    uv sync --index-url https://www.piwheels.org/simple --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
+fi
 
 # Test the installation
 echo
