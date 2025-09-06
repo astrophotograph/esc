@@ -27,6 +27,10 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     gcc \
     g++ \
+    autoconf \
+    automake \
+    libtool \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # Set ARMv8.0 compilation flags to avoid ARMv8.1+ instructions
@@ -114,36 +118,38 @@ RUN if [ -f pyproject-armv8.toml ]; then \
 # Create virtual environment
 RUN uv venv
 
+# Install build tools for numpy
+RUN pip install --no-cache-dir wheel setuptools Cython meson-python
+
 # Compile critical packages from source with ARMv8.0 flags
 # This ensures no ARMv8.1+ instructions are included
-# Force recompilation by using --no-deps --force-reinstall
 RUN echo "Compiling numpy for ARMv8.0..." && \
     CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     NPY_DISABLE_OPTIMIZATION=1 \
-    uv pip install --no-cache-dir --no-binary :all: --force-reinstall numpy==1.26.4
+    pip install --no-cache-dir --no-binary numpy --force-reinstall -v numpy==1.26.4
 
 RUN echo "Compiling scipy for ARMv8.0..." && \
     CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
-    uv pip install --no-cache-dir --no-binary :all: --force-reinstall "scipy>=1.11.0,<1.14.0"
+    pip install --no-cache-dir --no-binary scipy --force-reinstall "scipy>=1.11.0,<1.14.0"
 
 RUN echo "Compiling pillow for ARMv8.0..." && \
     CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
-    uv pip install --no-cache-dir --no-binary :all: --force-reinstall pillow
+    pip install --no-cache-dir --no-binary pillow --force-reinstall pillow
 
 RUN echo "Compiling scikit-image for ARMv8.0..." && \
     CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
-    uv pip install --no-cache-dir --no-binary :all: --force-reinstall scikit-image
+    pip install --no-cache-dir --no-binary scikit-image --force-reinstall scikit-image
 
 # Also compile opencv-python from source
 RUN echo "Compiling opencv-python for ARMv8.0..." && \
     CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     CMAKE_ARGS="-DCMAKE_C_FLAGS='-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics' -DCMAKE_CXX_FLAGS='-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics'" \
-    uv pip install --no-cache-dir --no-binary :all: --force-reinstall opencv-python==4.10.0.84
+    pip install --no-cache-dir --no-binary opencv-python --force-reinstall opencv-python==4.10.0.84
 
 # Install remaining dependencies
 RUN uv sync --frozen || uv sync
