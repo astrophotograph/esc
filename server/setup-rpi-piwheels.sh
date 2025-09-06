@@ -85,8 +85,9 @@ fi
 echo
 echo "Installing all dependencies using piwheels for pre-compiled wheels..."
 echo "This will be much faster than compiling from source."
+echo "Using best-match strategy to get pre-compiled wheels where available."
 uv venv
-uv sync --extra-index-url https://www.piwheels.org/simple
+uv sync --extra-index-url https://www.piwheels.org/simple --index-strategy unsafe-best-match
 
 # Test the installation
 echo
