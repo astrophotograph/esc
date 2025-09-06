@@ -3,7 +3,7 @@ name = "smarttel"
 version = "0.1.0"
 description = "Telescope control server for Seestar - Raspberry Pi version"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.12"
 dependencies = [
     "numpy<2.0.0",  # NumPy 1.x for RPi4 compatibility
     "argon2-cffi-bindings==21.2.0",  # Pin to version with armv7l support
