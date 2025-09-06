@@ -67,14 +67,17 @@ if [ -f "pyproject.toml" ] && [ ! -f "pyproject-original.toml" ]; then
     cp pyproject.toml pyproject-original.toml
 fi
 
-# Use the minimal pyproject file for Raspberry Pi
+# Use the base pyproject file for Raspberry Pi (from working commit)
 echo
 echo "Setting up Raspberry Pi configuration..."
-if [ -f "pyproject-rpi.toml" ]; then
+if [ -f "pyproject-base-rpi.toml" ]; then
+    cp pyproject-base-rpi.toml pyproject.toml
+    echo "Using base dependencies from last working version for Raspberry Pi"
+elif [ -f "pyproject-rpi.toml" ]; then
     cp pyproject-rpi.toml pyproject.toml
     echo "Using minimal dependencies for Raspberry Pi"
 else
-    echo "Error: pyproject-rpi.toml not found!"
+    echo "Error: No RPi configuration found!"
     exit 1
 fi
 
