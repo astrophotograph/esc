@@ -42,6 +42,7 @@ dependencies = [
     "astroplan>=0.10",
     "astropy>=6.1.2",
     "astroquery>=0.4.7",
+    "starplot>=0.9.0",
     "cachetools>=5.4.0",
     "click>=8.1.7",
     "google-api-python-client>=2.138.0",
