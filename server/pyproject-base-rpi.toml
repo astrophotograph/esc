@@ -97,7 +97,7 @@ exclude_lines = [
 
 [dependency-groups]
 dev = [
-    "nuitka>=2.7.12",
+    # Removed nuitka - not needed and causes resolution issues
     "py2app>=0.28.8",
     "pyinstaller>=6.15.0",
 ]
