@@ -149,6 +149,9 @@ RUN echo "Compiling scikit-image for ARMv8.0..." && \
 RUN echo "Installing opencv-python (pre-built for compatibility)..." && \
     pip install --no-cache-dir opencv-python==4.5.5.64
 
+# Create README.md if it doesn't exist (required by hatchling)
+RUN touch README.md
+
 # Install remaining dependencies
 RUN uv sync --frozen || uv sync
 
