@@ -67,9 +67,6 @@ fi
 
 uv venv
 
-# Activate virtual environment
-source .venv/bin/activate
-
 # Set environment variables for ARM compilation
 export OPENBLAS_NUM_THREADS=4
 export ATLAS_NUM_THREADS=4
@@ -77,10 +74,10 @@ export MKL_NUM_THREADS=4
 export NUMEXPR_NUM_THREADS=4
 export OMP_NUM_THREADS=4
 
-# Install numpy first with specific flags for ARM
+# Install numpy first with specific flags for ARM using uv
 echo
 echo "Installing numpy for ARM64..."
-pip install --no-cache-dir --no-binary :all: --force-reinstall numpy
+uv pip install --no-cache-dir numpy
 
 # Use the minimal pyproject file for Raspberry Pi
 echo
@@ -103,16 +100,18 @@ fi
 # Test the installation
 echo
 echo "Testing installation..."
-python -c "import fastapi; import pydantic; import typer; print('Core packages imported successfully ✓')"
+uv run python -c "import fastapi; import pydantic; import typer; print('Core packages imported successfully ✓')"
 
 echo
 echo "=== Setup complete! ==="
 echo
 echo "To run the server:"
-echo "  source .venv/bin/activate"
 echo "  uv run python main.py server"
 echo
-echo "Or run directly:"
+echo "To run with auto-discovery:"
 echo "  uv run python main.py server"
+echo
+echo "To connect directly to a Seestar:"
+echo "  uv run python main.py server --seestar-host <IP_ADDRESS>"
 echo
 echo "Note: The first run may be slower as Python compiles bytecode."
