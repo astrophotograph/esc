@@ -19,7 +19,9 @@ OLD_REPO_DIR="alp-experimental"
 NEW_REPO_DIR="esc"
 BRANCH="main"
 FORCE_DOWNLOAD=false
-VERSION="latest"
+
+# Check for VERSION environment variable first, then use default
+VERSION="${VERSION:-latest}"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -41,6 +43,10 @@ while [[ $# -gt 0 ]]; do
             echo "  --force-download    Force download of the repository even if it exists"
             echo "  --help             Show this help message"
             echo ""
+            echo "Environment Variables:"
+            echo "  VERSION             Set version without command-line argument"
+            echo "                      Useful for curl | bash usage"
+            echo ""
             echo "This script will:"
             echo "  - Check for Docker installation"
             echo "  - Rename alp-experimental directory to esc if needed"
@@ -48,10 +54,20 @@ while [[ $# -gt 0 ]]; do
             echo "  - Optionally download the source code with --force-download"
             echo ""
             echo "Examples:"
-            echo "  $0                           # Run latest version"
-            echo "  $0 --version v1.0.0          # Run specific version"
-            echo "  $0 --version beta            # Run beta version"
-            echo "  $0 --force-download          # Download source and run latest"
+            echo "  # Run latest version"
+            echo "  $0"
+            echo ""
+            echo "  # Run specific version with argument"
+            echo "  $0 --version v1.0.0"
+            echo ""
+            echo "  # Run specific version with environment variable"
+            echo "  VERSION=v1.0.0 $0"
+            echo ""
+            echo "  # Run with curl and specific version"
+            echo "  VERSION=beta curl -sSL <url> | bash"
+            echo ""
+            echo "  # Download source and run"
+            echo "  $0 --force-download"
             exit 0
             ;;
         *)

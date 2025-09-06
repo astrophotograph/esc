@@ -22,7 +22,20 @@ curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-r
 
 ### Running Specific Version
 
-You can specify a version tag to run a specific release:
+You can specify a version using an environment variable with curl:
+
+```bash
+# Run specific version v1.0.0
+VERSION=v1.0.0 curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+
+# Run beta version
+VERSION=beta curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+
+# Run nightly/development version
+VERSION=main curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+```
+
+Or download the script and use command-line arguments:
 
 ```bash
 # Download the script
