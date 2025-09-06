@@ -33,7 +33,7 @@ dependencies = [
     "pillow>=10.0.0",
     "scipy>=1.11.0",
     "scikit-image>=0.21.0",
-    "matplotlib>=3.7.0",
+    "matplotlib>=3.7.0,<3.10",  # 3.10+ on piwheels only has Python 3.13 wheels
     
     # System and utilities
     "psutil>=5.9.0,<6.0.0",  # fastapi-restful requires psutil<6
