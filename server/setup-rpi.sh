@@ -78,10 +78,10 @@ else
     exit 1
 fi
 
-# Use the RPi4-compatible lock file if available
-if [ -f "uv-rpi4.lock" ]; then
-    echo "Using RPi4-compatible lock file..."
-    cp uv-rpi4.lock uv.lock
+# Remove any existing lock file to force fresh resolution with pinned versions
+if [ -f "uv.lock" ]; then
+    echo "Removing existing lock file for fresh dependency resolution..."
+    rm uv.lock
 fi
 
 # Create virtual environment
