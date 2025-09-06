@@ -55,7 +55,7 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     # Core packages - pinned to versions that work on ARMv8.0
     "numpy==1.26.4",
-    "opencv-python==4.10.0.84",
+    "opencv-python==4.5.5.64",
     
     # Essential packages
     "aiosqlite>=0.21.0",
@@ -119,7 +119,7 @@ RUN if [ -f pyproject-armv8.toml ]; then \
 RUN uv venv
 
 # Install build tools for numpy
-RUN pip install --no-cache-dir wheel setuptools Cython meson-python
+RUN pip install --no-cache-dir wheel "setuptools<70" Cython meson-python
 
 # Compile critical packages from source with ARMv8.0 flags
 # This ensures no ARMv8.1+ instructions are included
@@ -144,12 +144,10 @@ RUN echo "Compiling scikit-image for ARMv8.0..." && \
     CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
     pip install --no-cache-dir --no-binary scikit-image --force-reinstall scikit-image
 
-# Also compile opencv-python from source
-RUN echo "Compiling opencv-python for ARMv8.0..." && \
-    CFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
-    CXXFLAGS="-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics" \
-    CMAKE_ARGS="-DCMAKE_C_FLAGS='-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics' -DCMAKE_CXX_FLAGS='-march=armv8-a -mtune=cortex-a72 -mno-outline-atomics'" \
-    pip install --no-cache-dir --no-binary opencv-python --force-reinstall opencv-python==4.10.0.84
+# Install opencv-python - use older version that's more likely to be ARMv8.0 compatible
+# opencv-python 4.5.x series was built before widespread ARMv8.1+ adoption
+RUN echo "Installing opencv-python (pre-built for compatibility)..." && \
+    pip install --no-cache-dir opencv-python==4.5.5.64
 
 # Install remaining dependencies
 RUN uv sync --frozen || uv sync
