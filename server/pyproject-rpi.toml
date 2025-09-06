@@ -27,7 +27,7 @@ dependencies = [
     
     # Image processing and scientific
     "pillow==11.3.0",
-    "opencv-python==4.11.0.86",
+    "opencv-python==4.10.0.84",  # Last version compatible with numpy<2.0
     "scipy==1.13.1",  # Compatible with numpy 1.26
     "scikit-image==0.22.0",  # Compatible with numpy 1.26
     "matplotlib==3.8.4",  # Compatible with numpy 1.26

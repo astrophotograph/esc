@@ -15,7 +15,7 @@ dependencies = [
     "httpx[brotli,http2,zstd]>=0.28.1",
     "loguru>=0.7.3",
     "numpy<2.0",
-    "opencv-python>=4.11.0.86",
+    "opencv-python==4.10.0.84",  # Last version compatible with numpy<2.0
     "pydantic>=2.11.4",
     "pydash>=8.0.5",
     "scikit-image>=0.25.2",
