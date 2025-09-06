@@ -97,9 +97,14 @@ echo
 echo "Installing numpy for ARM64..."
 uv pip install --no-cache-dir numpy
 
+# Install scikit-image from source for ARM64
+echo
+echo "Installing scikit-image from source for ARM64 (this will take a while)..."
+uv pip install --no-cache-dir --no-binary :all: scikit-image
+
 # Install dependencies
 echo
-echo "Installing dependencies (this may take a while on Raspberry Pi)..."
+echo "Installing remaining dependencies (this may take a while on Raspberry Pi)..."
 uv sync --no-cache
 
 # Test the installation

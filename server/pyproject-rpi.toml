@@ -12,6 +12,7 @@ dependencies = [
     "pillow>=10.4.0",
     "httpx>=0.25.0",
     "scipy>=1.13.0",
+    "scikit-image>=0.22.0",
     "sse-starlette>=2.0.0",
     "textual>=0.83.0",
     "websockets>=12.0",
