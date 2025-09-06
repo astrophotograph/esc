@@ -1,7 +1,6 @@
-# ALP Experimental
+# ESC (Experimental Scope Creep)
 
-Seestar ALP experimental repo. This is an experimental copy of what I hope to
-eventually get integrated into Seestar ALP.
+Advanced telescope control interface for Seestar telescopes. This project provides enhanced features and experimental capabilities beyond the standard Seestar app.
 
 There are two parts: the `server` written in Python and `ui` written in NextJS.
 Both pieces need to be run at the same time.
@@ -10,24 +9,46 @@ Both pieces need to be run at the same time.
 
 The easiest way to get started is to use our setup script which will:
 - Check that Docker is installed
-- Clone or update the repository
+- Pull pre-built Docker images from GitHub Container Registry
 - Start the application automatically
+
+### Running Latest Version
 
 Run this single command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/astrophotograph/alp-experimental/main/setup-and-run.sh | bash
+curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
 ```
 
-Or if you prefer to review the script first:
+### Running Specific Version
+
+You can specify a version tag to run a specific release:
 
 ```bash
-# Download and review the script
-curl -sSL https://raw.githubusercontent.com/astrophotograph/alp-experimental/main/setup-and-run.sh -o setup-and-run.sh
-cat setup-and-run.sh
+# Download the script
+curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh -o setup-and-run.sh
 
-# Run it
-bash setup-and-run.sh
+# Run specific version
+bash setup-and-run.sh --version v1.0.0
+
+# Or run beta version
+bash setup-and-run.sh --version beta
+
+# Or run latest (default)
+bash setup-and-run.sh --version latest
+```
+
+### Script Options
+
+```bash
+# View all options
+bash setup-and-run.sh --help
+
+# Force download source code
+bash setup-and-run.sh --force-download
+
+# Run specific version with source download
+bash setup-and-run.sh --version v1.0.0 --force-download
 ```
 
 After running, the application will be available at:
@@ -45,16 +66,36 @@ The application automatically persists manually added telescopes in a SQLite dat
 
 ## Manual Setup
 
-### Server
+### Raspberry Pi 4 Setup
+
+For Raspberry Pi 4 users, we provide a special setup script that handles ARM64 compatibility:
+
+```bash
+cd server
+./setup-rpi.sh  # Installs ARM64-compatible dependencies
+uv run python main.py server
+```
+
+**Requirements:**
+- Raspberry Pi 4 with 64-bit OS (required)
+- At least 4GB RAM recommended
+- 5GB free disk space
+
+The setup script will:
+- Install system dependencies for ARM64
+- Compile critical packages from source to avoid illegal instruction errors
+- Configure optimized settings for Raspberry Pi hardware
+
+### Standard Server Setup
 
 ```shell
 cd server
-uv run main.py server
+uv run python main.py server
 ```
 
 The above should autodetect any Seestars on the network.
 
-### UI
+### UI Setup
 
 ```shell
 cd ui

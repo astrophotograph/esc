@@ -19,10 +19,15 @@ OLD_REPO_DIR="alp-experimental"
 NEW_REPO_DIR="esc"
 BRANCH="main"
 FORCE_DOWNLOAD=false
+VERSION="latest"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --version)
+            VERSION="$2"
+            shift 2
+            ;;
         --force-download)
             FORCE_DOWNLOAD=true
             shift
@@ -31,6 +36,8 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
+            echo "  --version <tag>     Use a specific version tag (default: latest)"
+            echo "                      Examples: latest, v1.0.0, main, beta"
             echo "  --force-download    Force download of the repository even if it exists"
             echo "  --help             Show this help message"
             echo ""
@@ -39,6 +46,12 @@ while [[ $# -gt 0 ]]; do
             echo "  - Rename alp-experimental directory to esc if needed"
             echo "  - Run ESC using pre-built Docker images (no code download required)"
             echo "  - Optionally download the source code with --force-download"
+            echo ""
+            echo "Examples:"
+            echo "  $0                           # Run latest version"
+            echo "  $0 --version v1.0.0          # Run specific version"
+            echo "  $0 --version beta            # Run beta version"
+            echo "  $0 --force-download          # Download source and run latest"
             exit 0
             ;;
         *)
@@ -51,6 +64,7 @@ done
 
 echo -e "${GREEN}ESC (Experimental Scope Creep) - Setup and Run Script${NC}"
 echo "======================================================"
+echo -e "${BLUE}Version: $VERSION${NC}"
 
 # Function to check if a command exists
 command_exists() {
@@ -219,15 +233,14 @@ else
     fi
 fi
 
-# Create docker-compose.ghcr.yml if it doesn't exist
-if [ ! -f docker-compose.ghcr.yml ]; then
-    echo -e "\n${YELLOW}Creating docker-compose.ghcr.yml...${NC}"
-    cat > docker-compose.ghcr.yml << 'EOF'
+# Create or update docker-compose.ghcr.yml with the specified version
+echo -e "\n${YELLOW}Creating docker-compose.ghcr.yml with version: $VERSION${NC}"
+cat > docker-compose.ghcr.yml << EOF
 version: '3.8'
 
 services:
   ui:
-    image: ghcr.io/astrophotograph/esc-ui:latest
+    image: ghcr.io/astrophotograph/esc-ui:${VERSION}
     container_name: esc-ui
     environment:
       - NODE_ENV=production
@@ -238,7 +251,7 @@ services:
     network_mode: host
 
   server:
-    image: ghcr.io/astrophotograph/esc-server:latest
+    image: ghcr.io/astrophotograph/esc-server:${VERSION}
     container_name: esc-server
     environment:
       - PYTHONUNBUFFERED=1
@@ -262,8 +275,7 @@ volumes:
   telescope-data:
     driver: local
 EOF
-    echo -e "${GREEN}✓ Created docker-compose.ghcr.yml${NC}"
-fi
+echo -e "${GREEN}✓ Created docker-compose.ghcr.yml with version: $VERSION${NC}"
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
