@@ -3,16 +3,17 @@ name = "smarttel"
 version = "0.1.0"
 description = "Telescope control server for Seestar - Raspberry Pi version"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
+    "numpy<2.0.0",  # NumPy 1.x for RPi4 compatibility
     "typer[all]>=0.10.0",
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.29.0",
     "pydantic>=2.5.0",
     "pillow>=10.4.0",
     "httpx>=0.25.0",
-    "scipy>=1.13.0",
-    "scikit-image>=0.22.0",
+    "scipy>=1.11.0,<1.14.0",  # Compatible with numpy 1.x
+    "scikit-image>=0.21.0,<0.23.0",  # Compatible with numpy 1.x
     "sse-starlette>=2.0.0",
     "textual>=0.83.0",
     "websockets>=12.0",
@@ -36,7 +37,7 @@ dependencies = [
     "httplib2>=0.22.0",
     "iniconfig>=2.0.0",
     "ipython>=8.26.0",
-    "matplotlib>=3.9.2",
+    "matplotlib>=3.7.0,<3.9.0",  # Compatible with numpy 1.x
     "packaging>=24.1",
     "platformdirs>=4.2.2",
     "pluggy>=1.5.0",

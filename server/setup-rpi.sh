@@ -94,8 +94,9 @@ export OMP_NUM_THREADS=4
 
 # Install numpy first with specific flags for ARM using uv
 echo
-echo "Installing numpy for ARM64..."
-uv pip install --no-cache-dir numpy
+echo "Installing numpy for ARM..."
+# For RPi4, we need numpy 1.x which is more compatible
+uv pip install --no-cache-dir "numpy<2.0.0"
 
 # Install scikit-image from source for ARM64
 echo
