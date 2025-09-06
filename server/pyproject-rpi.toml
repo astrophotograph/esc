@@ -34,7 +34,7 @@ dependencies = [
     
     # System and utilities
     "psutil==5.9.8",
-    "click==8.1.9",
+    "click==8.1.7",  # Last version before 8.2
     "loguru>=0.7.3",
     "pydash>=8.0.5",
     "beartype>=0.21.0",
