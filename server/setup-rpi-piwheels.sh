@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup script for Raspberry Pi 4 using piwheels.org
+# Setup script for Raspberry Pi 4 using piwheels.org with uv
 # This uses pre-compiled wheels specifically for Raspberry Pi
 
 set -e
@@ -20,20 +20,6 @@ if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "armv7l" ]; then
         exit 1
     fi
 fi
-
-# Check Python version
-PYTHON_VERSION=$(python3 --version 2>&1 | grep -Po '(?<=Python )\d+\.\d+')
-REQUIRED_VERSION="3.12"
-
-if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
-    echo "Error: Python $REQUIRED_VERSION or higher is required (found $PYTHON_VERSION)"
-    echo "On Raspberry Pi, you may need to install Python 3.12:"
-    echo "  sudo apt update"
-    echo "  sudo apt install python3.12 python3.12-venv python3.12-dev"
-    exit 1
-fi
-
-echo "Python version: $PYTHON_VERSION ✓"
 
 # Install system dependencies
 echo
@@ -64,14 +50,10 @@ if ! command -v uv &> /dev/null; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-# Configure pip to use piwheels
+# Configure uv to use piwheels as an extra index
 echo
-echo "Configuring pip to use piwheels.org for pre-built ARM wheels..."
-mkdir -p ~/.config/pip
-cat > ~/.config/pip/pip.conf << 'EOF'
-[global]
-extra-index-url=https://www.piwheels.org/simple
-EOF
+echo "Configuring uv to use piwheels.org for pre-built ARM wheels..."
+export UV_EXTRA_INDEX_URL="https://www.piwheels.org/simple"
 
 # Use the base pyproject file
 if [ -f "pyproject-base-rpi.toml" ]; then
@@ -93,31 +75,23 @@ if [ -d ".venv" ]; then
     rm -rf .venv
 fi
 
-python3 -m venv .venv
-source .venv/bin/activate
+# Remove any existing lock file to force fresh resolution
+if [ -f "uv.lock" ]; then
+    echo "Removing existing lock file for fresh dependency resolution..."
+    rm uv.lock
+fi
 
-# Install pip and wheel first
-pip install --upgrade pip wheel
-
-# Install numpy first (critical for other packages)
+# Create venv and sync with piwheels as extra index
 echo
-echo "Installing numpy from piwheels..."
-pip install numpy==1.26.4 --extra-index-url https://www.piwheels.org/simple
-
-# Install scipy and scikit-image from piwheels
-echo
-echo "Installing scipy and scikit-image from piwheels (pre-compiled)..."
-pip install scipy==1.13.1 scikit-image==0.22.0 --extra-index-url https://www.piwheels.org/simple
-
-# Install other dependencies
-echo
-echo "Installing remaining dependencies..."
-pip install -e . --extra-index-url https://www.piwheels.org/simple
+echo "Installing all dependencies using piwheels for pre-compiled wheels..."
+echo "This will be much faster than compiling from source."
+uv venv
+uv sync --extra-index-url https://www.piwheels.org/simple
 
 # Test the installation
 echo
 echo "Testing installation..."
-if python -c "import numpy; import scipy; import skimage; print('Scientific packages imported successfully ✓')" 2>/dev/null; then
+if uv run python -c "import numpy; import scipy; import skimage; print('Scientific packages imported successfully ✓')" 2>/dev/null; then
     echo "Installation successful!"
 else
     echo "Warning: Some packages may not have imported correctly."
@@ -127,11 +101,10 @@ echo
 echo "=== Setup complete! ==="
 echo
 echo "The server is now configured for Raspberry Pi using piwheels."
-echo "Installation should have been much faster than compiling from source."
+echo "All packages were installed from pre-compiled wheels where available."
 echo
 echo "To run the server:"
-echo "  source .venv/bin/activate"
-echo "  python main.py server"
-echo
-echo "Or using uv:"
 echo "  uv run python main.py server"
+echo
+echo "Note: Using piwheels means you get pre-compiled wheels for ALL packages,"
+echo "not just scipy/scikit-image, making the entire installation much faster."
