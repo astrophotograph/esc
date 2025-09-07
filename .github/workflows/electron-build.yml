@@ -93,7 +93,7 @@ jobs:
 
   build-mac:
     name: Build Mac Electron App
-    runs-on: [self-hosted, macOS]
+    runs-on: self-hosted
     needs: [prepare, build-ui]
     if: needs.prepare.outputs.should_build_mac == 'true'
     steps:
