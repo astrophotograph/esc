@@ -201,10 +201,6 @@ jobs:
       - name: Sync Electron version
         run: node scripts/sync-electron-version.js
       
-      - name: Install Electron dependencies
-        working-directory: electron
-        run: pnpm install --frozen-lockfile
-      
       - name: Build Python backend with PyInstaller
         working-directory: server
         shell: pwsh
@@ -218,6 +214,17 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path electron/python-bundle
           Copy-Item server/dist/main.exe electron/python-bundle/
+      
+      - name: Install Electron dependencies
+        working-directory: electron
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "package.json")) {
+            Write-Error "package.json not found in electron directory"
+            Get-ChildItem
+            exit 1
+          }
+          pnpm install --frozen-lockfile
       
       - name: Build Windows app
         working-directory: electron

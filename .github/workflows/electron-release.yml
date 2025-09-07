@@ -121,13 +121,21 @@ jobs:
       - name: Sync Electron version
         run: node scripts/sync-electron-version.js
       
-      - name: Install and build Electron Mac app
+      - name: Install Electron dependencies
+        working-directory: electron
+        run: |
+          if [ ! -f "package.json" ]; then
+            echo "Error: package.json not found in electron directory"
+            ls -la
+            exit 1
+          fi
+          pnpm install --frozen-lockfile
+      
+      - name: Build Electron Mac app
         working-directory: electron
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build:mac
+        run: pnpm run build:mac
       
       - name: Package Mac apps
         run: |
@@ -196,11 +204,20 @@ jobs:
           New-Item -ItemType Directory -Force -Path electron/python-bundle
           Copy-Item server/dist/main.exe electron/python-bundle/
       
-      - name: Install and build Electron Windows app
+      - name: Install Electron dependencies
         working-directory: electron
+        shell: pwsh
         run: |
+          if (-not (Test-Path "package.json")) {
+            Write-Error "package.json not found in electron directory"
+            Get-ChildItem
+            exit 1
+          }
           pnpm install --frozen-lockfile
-          pnpm run build:win
+      
+      - name: Build Electron Windows app
+        working-directory: electron
+        run: pnpm run build:win
       
       - name: Upload Windows builds
         uses: actions/upload-artifact@v4
