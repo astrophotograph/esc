@@ -80,8 +80,7 @@
     "shortcutName": "ESC",
     "deleteAppDataOnUninstall": false,
     "runAfterFinish": true,
-    "artifactName": "ESC-Setup-${version}.${ext}",
-    "include": "build/installer.nsh"
+    "artifactName": "ESC-Setup-${version}.${ext}"
   },
   "linux": {
     "target": "AppImage",

@@ -146,8 +146,11 @@
 !addplugindir /x86-ansi "${NSISDIR}\Plugins\x86-ansi"
 !addplugindir /x86-unicode "${NSISDIR}\Plugins\x86-unicode"
 
-; Required definitions
-!define WM_CLOSE 0x0010
-!define WM_QUIT 0x0012
-!define SW_HIDE 0
-!define SW_SHOW 5
+; Required definitions (only if not already defined)
+!ifndef WM_CLOSE
+  !define WM_CLOSE 0x0010
+!endif
+!ifndef WM_QUIT
+  !define WM_QUIT 0x0012
+!endif
+; SW_HIDE and SW_SHOW are already defined in WinMessages.nsh

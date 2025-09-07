@@ -140,7 +140,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ui-build
-          path: ui/
+          path: ui-temp/
+      
+      - name: Extract UI build
+        run: |
+          mkdir -p ui/.next
+          if [ -d "ui-temp/.next/standalone" ]; then
+            mv ui-temp/.next/standalone ui/.next/
+          fi
+          if [ -d "ui-temp/.next/static" ]; then
+            mv ui-temp/.next/static ui/.next/
+          fi
+          # Handle case where artifacts are at root level
+          if [ -d "ui-temp/standalone" ]; then
+            mv ui-temp/standalone ui/.next/
+          fi
+          if [ -d "ui-temp/static" ]; then
+            mv ui-temp/static ui/.next/
+          fi
+          rm -rf ui-temp
       
       - name: Sync Electron version
         run: node scripts/sync-electron-version.js
@@ -199,7 +217,26 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ui-build
-          path: ui/
+          path: ui-temp/
+      
+      - name: Extract UI build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ui/.next
+          if (Test-Path "ui-temp/.next/standalone") {
+            Move-Item -Path "ui-temp/.next/standalone" -Destination "ui/.next/" -Force
+          }
+          if (Test-Path "ui-temp/.next/static") {
+            Move-Item -Path "ui-temp/.next/static" -Destination "ui/.next/" -Force
+          }
+          # Handle case where artifacts are at root level
+          if (Test-Path "ui-temp/standalone") {
+            Move-Item -Path "ui-temp/standalone" -Destination "ui/.next/" -Force
+          }
+          if (Test-Path "ui-temp/static") {
+            Move-Item -Path "ui-temp/static" -Destination "ui/.next/" -Force
+          }
+          Remove-Item -Path ui-temp -Recurse -Force
       
       - name: Sync Electron version
         run: node scripts/sync-electron-version.js
