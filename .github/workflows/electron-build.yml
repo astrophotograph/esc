@@ -91,35 +91,6 @@ jobs:
             ui/.next/static
           retention-days: 1
 
-  build-python:
-    name: Build Python Backend
-    runs-on: ubuntu-latest
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-      
-      - name: Build Python backend with PyInstaller
-        working-directory: server
-        run: |
-          uv pip install --system pyinstaller
-          uv run pyinstaller --onefile --name main main.py
-      
-      - name: Upload Python build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-build
-          path: server/dist/main
-          retention-days: 1
-
   build-mac:
     name: Build Mac Electron App
     runs-on: [self-hosted, macOS]
