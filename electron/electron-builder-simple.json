@@ -1,0 +1,72 @@
+{
+  "appId": "com.esc.app",
+  "productName": "ESC",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "preload-loading.js",
+    "processManager.js",
+    "pythonRunner.js",
+    "loading.html",
+    "logViewer.html",
+    "about.html",
+    "shutdown.html",
+    "package.json",
+    "node_modules/**/*",
+    "icons/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "../ui/.next/standalone",
+      "to": "ui",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "../ui/.next/static",
+      "to": "ui/.next/static",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "./python-bundle",
+      "to": "python-bundle",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "icons/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "ESC",
+    "uninstallDisplayName": "ESC Telescope Control",
+    "license": "../LICENSE",
+    "artifactName": "ESC-Setup-${version}.${ext}"
+  },
+  "mac": {
+    "category": "public.app-category.utilities",
+    "icon": "icons/icon.icns",
+    "target": [
+      {
+        "target": "dir",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist"
+  }
+}

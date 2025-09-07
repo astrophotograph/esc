@@ -9,6 +9,7 @@
     "build:nuitka": "electron-builder --config electron-builder-nuitka.json",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
+    "build:win:simple": "electron-builder --win --config electron-builder-simple.json",
     "build:linux": "electron-builder --linux",
     "build:local": "electron-builder --mac --dir --config electron-builder.json",
     "dist": "electron-builder --publish=never",

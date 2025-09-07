@@ -1,0 +1,331 @@
+:root {
+    --bg-primary: #1a1b26;
+    --bg-secondary: #24283b;
+    --bg-tertiary: #2a2e42;
+    --text-primary: #a9b1d6;
+    --text-secondary: #787c99;
+    --accent-blue: #7aa2f7;
+    --accent-green: #9ece6a;
+    --accent-yellow: #e0af68;
+    --accent-red: #f7768e;
+    --border: #414868;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+}
+
+h1 {
+    font-size: 28px;
+    color: var(--accent-blue);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+    background: var(--accent-green);
+}
+
+.status-dot.disconnected {
+    background: var(--accent-red);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 12px 24px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-button:hover {
+    color: var(--text-primary);
+}
+
+.tab-button.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Service Cards */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.service-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.service-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent-blue);
+}
+
+.service-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.service-status.running {
+    background: rgba(158, 206, 106, 0.2);
+    color: var(--accent-green);
+}
+
+.service-status.stopped {
+    background: rgba(247, 118, 142, 0.2);
+    color: var(--accent-red);
+}
+
+.service-status.restarting {
+    background: rgba(224, 175, 104, 0.2);
+    color: var(--accent-yellow);
+}
+
+.service-info {
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.label {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.value {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.service-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Log Viewer */
+.log-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.log-controls select,
+.log-controls input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.log-controls button {
+    padding: 8px 16px;
+    background: var(--accent-blue);
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.log-controls button:hover {
+    background: #5a82d7;
+}
+
+.log-viewer {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    height: 600px;
+    overflow: hidden;
+}
+
+.log-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.log-line {
+    margin-bottom: 4px;
+    padding: 2px 4px;
+}
+
+.log-line.error {
+    background: rgba(247, 118, 142, 0.1);
+    color: var(--accent-red);
+}
+
+.log-line.warning {
+    background: rgba(224, 175, 104, 0.1);
+    color: var(--accent-yellow);
+}
+
+.log-line.info {
+    color: var(--accent-blue);
+}
+
+/* Metrics */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.metric-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.metric-card h3 {
+    margin-bottom: 20px;
+    color: var(--accent-blue);
+    font-size: 18px;
+}
+
+.metric-card canvas {
+    width: 100%;
+    height: 200px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .log-controls {
+        flex-wrap: wrap;
+    }
+    
+    .service-actions {
+        flex-wrap: wrap;
+    }
+}

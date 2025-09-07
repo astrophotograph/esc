@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESC Docker Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔭 ESC Docker Monitor</h1>
+            <div class="status-indicator">
+                <span id="connection-status" class="status-dot"></span>
+                <span id="connection-text">Connecting...</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-button" onclick="showTab('logs')">Logs</button>
+            <button class="tab-button" onclick="showTab('metrics')">Metrics</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="services-grid" id="services-container">
+                <!-- Service cards will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="log-controls">
+                <select id="log-container-select">
+                    <option value="">Select container...</option>
+                </select>
+                <input type="number" id="log-lines" value="100" min="10" max="1000" placeholder="Lines">
+                <button onclick="fetchLogs()">Fetch Logs</button>
+                <button onclick="clearLogs()">Clear</button>
+                <label>
+                    <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+                </label>
+            </div>
+            <div class="log-viewer" id="log-viewer">
+                <div class="log-content" id="log-content">
+                    Select a container to view logs...
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Tab -->
+        <div id="metrics-tab" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>CPU Usage</h3>
+                    <canvas id="cpu-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <h3>Memory Usage</h3>
+                    <canvas id="memory-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <h3>Network I/O</h3>
+                    <canvas id="network-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <h3>Disk Usage</h3>
+                    <canvas id="disk-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Card Template -->
+    <template id="service-card-template">
+        <div class="service-card">
+            <div class="service-header">
+                <h3 class="service-name"></h3>
+                <span class="service-status"></span>
+            </div>
+            <div class="service-info">
+                <div class="info-row">
+                    <span class="label">Image:</span>
+                    <span class="value image-name"></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Status:</span>
+                    <span class="value status-text"></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">CPU:</span>
+                    <span class="value cpu-usage">0%</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Memory:</span>
+                    <span class="value memory-usage">0 MB</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Health:</span>
+                    <span class="value health-status">Unknown</span>
+                </div>
+            </div>
+            <div class="service-actions">
+                <button class="action-btn restart-btn" onclick="restartContainer(this)">
+                    🔄 Restart
+                </button>
+                <button class="action-btn stop-btn" onclick="stopContainer(this)">
+                    ⏹️ Stop
+                </button>
+                <button class="action-btn start-btn" onclick="startContainer(this)">
+                    ▶️ Start
+                </button>
+                <button class="action-btn logs-btn" onclick="viewLogs(this)">
+                    📋 Logs
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>

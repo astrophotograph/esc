@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # ESC Monitor Dashboard
+  monitor:
+    build:
+      context: ./monitor
+      dockerfile: Dockerfile
+    container_name: esc-monitor
+    ports:
+      - "3001:3001"  # Web interface
+      - "8081:8081"  # WebSocket
+    volumes:
+      # Mount Docker socket to access container info
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount log directories for direct access
+      - ./server/logs:/logs/server:ro
+      - ./ui/logs:/logs/ui:ro
+      # Store monitor's own logs
+      - ./monitor/logs:/var/log/esc
+    environment:
+      - MONITOR_PORT=3001
+      - NODE_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    restart: unless-stopped
+    labels:
+      - "esc.component=monitor"
+      - "esc.description=Docker monitoring dashboard"
+    networks:
+      - esc-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Update server service to use network instead of host mode
+  server:
+    extends:
+      file: docker-compose.yml
+      service: server
+    container_name: esc-server
+    network_mode: bridge
+    networks:
+      - esc-network
+    ports:
+      - "8000:8000"
+    labels:
+      - "esc.component=backend"
+      - "esc.description=FastAPI backend server"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "esc.component"
+
+  # Update UI service to use network instead of host mode
+  ui:
+    extends:
+      file: docker-compose.yml
+      service: ui
+    container_name: esc-ui
+    network_mode: bridge
+    networks:
+      - esc-network
+    ports:
+      - "3000:3000"
+    labels:
+      - "esc.component=frontend"
+      - "esc.description=Next.js UI"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "esc.component"
+
+  # Optional: Promtail for log aggregation
+  promtail:
+    image: grafana/promtail:latest
+    container_name: esc-promtail
+    volumes:
+      - ./monitor/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - ./server/logs:/logs/server:ro
+      - ./ui/logs:/logs/ui:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - esc-network
+    depends_on:
+      - loki
+    profiles:
+      - logging
+
+  # Optional: Loki for log storage
+  loki:
+    image: grafana/loki:latest
+    container_name: esc-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitor/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - esc-network
+    profiles:
+      - logging
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: esc-grafana
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitor/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitor/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=redis-datasource
+    networks:
+      - esc-network
+    depends_on:
+      - loki
+    profiles:
+      - logging
+
+networks:
+  esc-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local

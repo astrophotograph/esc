@@ -1052,6 +1052,33 @@ app.on('before-quit', async (event) => {
   }
 });
 
+// Windows-specific: Handle installer close requests
+if (process.platform === 'win32') {
+  // Handle WM_CLOSE and WM_QUIT messages from installer
+  app.on('session-end', () => {
+    log.info('Windows session ending, shutting down gracefully...');
+    if (!isShuttingDown) {
+      performShutdown();
+    }
+  });
+  
+  // Handle second instance for single instance lock
+  const gotTheLock = app.requestSingleInstanceLock();
+  
+  if (!gotTheLock) {
+    // Another instance is running, quit this one
+    app.quit();
+  } else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+      // Someone tried to run a second instance, focus our window instead
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+  }
+}
+
 // IPC handler for exit app - must be after performShutdown is defined
 ipcMain.on('exit-app', (event) => {
   log.info('IPC: exit-app received');
