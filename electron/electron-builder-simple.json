@@ -38,22 +38,14 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
+        "target": "portable",
         "arch": ["x64"]
       }
     ],
     "icon": "icons/icon.png"
   },
-  "nsis": {
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "ESC",
-    "uninstallDisplayName": "ESC Telescope Control",
-    "license": "../LICENSE",
-    "artifactName": "ESC-Setup-${version}.${ext}"
+  "portable": {
+    "artifactName": "ESC-Portable-${version}.${ext}"
   },
   "mac": {
     "category": "public.app-category.utilities",

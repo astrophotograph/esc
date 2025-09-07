@@ -237,11 +237,11 @@ jobs:
           }
           pnpm install --frozen-lockfile
       
-      - name: Build Windows app
+      - name: Build Windows app (Portable)
         working-directory: electron
         env:
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        run: pnpm run build:win:simple
+        run: pnpm exec electron-builder --win --config electron-builder-simple.json
       
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
