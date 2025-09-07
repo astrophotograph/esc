@@ -1138,9 +1138,9 @@ export function CameraView() {
                 </div>
               )}
             </CardTitle>
-            <div className={`flex items-center ${isMobile ? 'justify-between w-full' : 'gap-2 md:gap-4'}`}>
+            <div className={`flex items-center ${isMobile ? 'justify-between w-full' : 'gap-2 md:gap-4'} overflow-hidden`}>
               {/* System Status Indicators */}
-              <div className={`flex items-center gap-1 md:gap-3 text-xs md:text-sm ${isMobile ? 'flex-shrink min-w-0 overflow-x-auto max-w-[50%]' : ''}`}>
+              <div className={`flex items-center gap-1 md:gap-3 text-xs md:text-sm flex-shrink min-w-0 overflow-x-auto ${isMobile ? 'max-w-[50%]' : 'max-w-[60%]'}`}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={`flex items-center gap-1 cursor-default ${getBatteryThresholdBorderClass(localStreamStatus?.status?.battery_capacity || 100)}`}>
@@ -1422,7 +1422,7 @@ export function CameraView() {
                 </Tooltip>
               </div>
 
-              <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1 lg:gap-2'} ${isMobile ? 'flex-shrink-0' : ''}`}>
+              <div className={`flex items-center ${isMobile ? 'gap-0.5' : 'gap-1 lg:gap-2'} ${isMobile ? 'flex-shrink-0' : ''} overflow-x-auto max-w-full`}>
                 {/* Primary actions - always visible but compact on mobile/tablet */}
                 <Button
                   variant="outline"

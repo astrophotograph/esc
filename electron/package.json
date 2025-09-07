@@ -1,6 +1,6 @@
 {
   "name": "esc-electron",
-  "version": "1.0.0",
+  "version": "25.09.06-beta.402",
   "description": "ESC telescope control application",
   "main": "main.js",
   "scripts": {
