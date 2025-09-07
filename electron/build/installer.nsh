@@ -12,49 +12,8 @@
 !macroend
 
 !macro customInit
-  ; Check if app is running and close it gracefully
-  ${nsProcess::FindProcess} "ESC.exe" $R0
-  ${If} $R0 == 0
-    ; App is running, try to close it gracefully
-    DetailPrint "ESC is running. Attempting to close it..."
-    
-    ; First try: Send WM_CLOSE to all ESC windows
-    FindWindow $0 "" "ESC"
-    IntCmp $0 0 +2
-    SendMessage $0 ${WM_CLOSE} 0 0
-    
-    ; Wait a moment for graceful shutdown
-    Sleep 2000
-    
-    ; Check again if still running
-    ${nsProcess::FindProcess} "ESC.exe" $R0
-    ${If} $R0 == 0
-      ; Still running, try WM_QUIT
-      FindWindow $0 "" "ESC"
-      IntCmp $0 0 +2
-      SendMessage $0 ${WM_QUIT} 0 0
-      
-      Sleep 2000
-      
-      ; Final check
-      ${nsProcess::FindProcess} "ESC.exe" $R0
-      ${If} $R0 == 0
-        ; Last resort: Kill the process
-        DetailPrint "Force closing ESC..."
-        ${nsProcess::KillProcess} "ESC.exe" $R1
-        Sleep 1000
-      ${EndIf}
-    ${EndIf}
-  ${EndIf}
-  
-  ; Also check for any background processes
-  ${nsProcess::FindProcess} "main.exe" $R0
-  ${If} $R0 == 0
-    DetailPrint "Closing ESC backend process..."
-    ${nsProcess::KillProcess} "main.exe" $R1
-    Sleep 500
-  ${EndIf}
-  
+  ; During initial installation or upgrade, we don't need to check for running processes
+  ; The uninstaller will handle cleanup if needed
   ShowWindow $HWNDPARENT ${SW_SHOW}
 !macroend
 
@@ -76,33 +35,16 @@
 !macroend
 
 !macro customUnInit
-  ; Check if app is running before uninstall
-  ${nsProcess::FindProcess} "ESC.exe" $R0
-  ${If} $R0 == 0
-    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "ESC is currently running.$\n$\nPlease close it before continuing with the uninstallation." IDOK +2
+  ; Try to close ESC gracefully using window messages
+  FindWindow $0 "" "ESC"
+  ${If} $0 != 0
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "ESC appears to be running.$\n$\nPlease close it before continuing with the uninstallation." IDOK +2
     Abort
     
     ; Try to close it
     DetailPrint "Closing ESC..."
-    FindWindow $0 "" "ESC"
-    IntCmp $0 0 +2
     SendMessage $0 ${WM_CLOSE} 0 0
-    
     Sleep 2000
-    
-    ; Force kill if still running
-    ${nsProcess::FindProcess} "ESC.exe" $R0
-    ${If} $R0 == 0
-      ${nsProcess::KillProcess} "ESC.exe" $R1
-      Sleep 1000
-    ${EndIf}
-  ${EndIf}
-  
-  ; Also close backend
-  ${nsProcess::FindProcess} "main.exe" $R0
-  ${If} $R0 == 0
-    ${nsProcess::KillProcess} "main.exe" $R1
-    Sleep 500
   ${EndIf}
 !macroend
 
@@ -122,24 +64,6 @@
   nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="ESC"'
   nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="ESC Backend"'
 !macroend
-
-; Helper function to check if process is running
-!macro CheckRunning
-  ${nsProcess::FindProcess} "ESC.exe" $R0
-  ${If} $R0 == 0
-    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION \
-      "ESC is still running.$\n$\nPlease close it manually and click Retry to continue." \
-      IDRETRY CheckAgain IDCANCEL AbortInstall
-    CheckAgain:
-      Goto CheckRunning
-    AbortInstall:
-      Abort "Installation cancelled"
-  ${EndIf}
-!macroend
-
-; Include required plugins
-!addplugindir /x86-ansi "${NSISDIR}\Plugins\x86-ansi"
-!addplugindir /x86-unicode "${NSISDIR}\Plugins\x86-unicode"
 
 ; WM_CLOSE and WM_QUIT are already defined by electron-builder
 ; SW_HIDE and SW_SHOW are already defined in WinMessages.nsh
