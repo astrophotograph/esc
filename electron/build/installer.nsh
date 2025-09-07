@@ -146,11 +146,5 @@
 !addplugindir /x86-ansi "${NSISDIR}\Plugins\x86-ansi"
 !addplugindir /x86-unicode "${NSISDIR}\Plugins\x86-unicode"
 
-; Required definitions (only if not already defined)
-!ifndef WM_CLOSE
-  !define WM_CLOSE 0x0010
-!endif
-!ifndef WM_QUIT
-  !define WM_QUIT 0x0012
-!endif
+; WM_CLOSE and WM_QUIT are already defined by electron-builder
 ; SW_HIDE and SW_SHOW are already defined in WinMessages.nsh
