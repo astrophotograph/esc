@@ -79,8 +79,9 @@
     "createStartMenuShortcut": true,
     "shortcutName": "ESC",
     "deleteAppDataOnUninstall": false,
-    "runAfterFinish": true,
-    "artifactName": "ESC-Setup-${version}.${ext}"
+    "runAfterFinish": false,
+    "artifactName": "ESC-Setup-${version}.${ext}",
+    "include": null
   },
   "linux": {
     "target": "AppImage",

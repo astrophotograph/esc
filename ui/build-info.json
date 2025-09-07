@@ -1,12 +1,12 @@
 {
-  "version": "25.09.07-beta.412",
-  "buildDate": "2025-09-07T05:58:14.398Z",
-  "buildNumber": "399",
-  "buildTime": "2025-09-07T05:58:14.398Z",
+  "version": "25.09.07-beta.416",
+  "buildDate": "2025-09-07T18:24:37.728Z",
+  "buildNumber": "403",
+  "buildTime": "2025-09-07T18:24:37.729Z",
   "git": {
-    "hash": "248150f",
+    "hash": "77e83b5",
     "isDirty": true,
     "latestTag": "build-20250719-202829",
-    "commitsSinceTag": 412
+    "commitsSinceTag": 416
   }
 }
