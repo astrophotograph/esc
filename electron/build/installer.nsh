@@ -71,13 +71,8 @@
 !macroend
 
 !macro customInstallMode
-  ; Force per-user installation if running without admin rights
-  ${If} ${UAC_IsAdmin}
-    ; Admin mode - can install for all users
-  ${Else}
-    ; User mode - install for current user only
-    StrCpy $INSTMODE CurrentUser
-  ${EndIf}
+  ; Installation mode is handled by electron-builder
+  ; We don't need to override the default behavior
 !macroend
 
 !macro customUnInit
