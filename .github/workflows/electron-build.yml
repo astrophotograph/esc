@@ -218,13 +218,13 @@ jobs:
         run: |
           pip install uv
           uv pip install --system pyinstaller
-          uv run pyinstaller --onefile --name main main.py
+          uv run pyinstaller --onefile --name esc-server main.py
           
       - name: Copy Python executable to electron
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path electron/python-bundle
-          Copy-Item server/dist/main.exe electron/python-bundle/
+          Copy-Item server/dist/esc-server.exe electron/python-bundle/
       
       - name: Install Electron dependencies
         working-directory: electron
