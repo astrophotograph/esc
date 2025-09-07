@@ -96,7 +96,7 @@ dependencies = [
     "astropy>=6.0.0",
     "pyerfa>=2.0.0",
     "astroquery>=0.4.0",
-    "starplot>=0.9.0",
+    # "starplot>=0.9.0",  # DISABLED - causes crashes on Raspberry Pi 4
 ]
 
 [build-system]

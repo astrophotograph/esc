@@ -58,7 +58,7 @@ dependencies = [
     "astropy==7.1.0",
     "pyerfa==2.0.1.5",
     "astroquery>=0.4.7",
-    "starplot>=0.9.0",
+    # "starplot>=0.9.0",  # DISABLED - causes crashes on Raspberry Pi 4
     "cachetools>=5.4.0",
     "google-api-python-client>=2.138.0",
     "google-auth-httplib2>=0.2.0",

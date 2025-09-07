@@ -746,9 +746,10 @@ class OptimizedController:
         from api.routers.system import router as system_router
         self.controller.app.include_router(system_router)
         
-        # Add sky map router
-        from api.routers.skymap import router as skymap_router
-        self.controller.app.include_router(skymap_router)
+        # Add sky map router - DISABLED due to RPi compatibility issues
+        # from api.routers.skymap import router as skymap_router
+        # self.controller.app.include_router(skymap_router)
+        logging.info("Skymap router disabled due to RPi compatibility issues with starplot/cartopy")
         
         # Add catalog router
         from api.routers.catalog import router as catalog_router

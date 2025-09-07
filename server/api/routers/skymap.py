@@ -1,4 +1,4 @@
-"""API routes for sky map tile generation."""
+"""API routes for sky map tile generation (DISABLED - causes issues on Raspberry Pi)."""
 
 import os
 import math
@@ -10,19 +10,19 @@ import threading
 from typing import Dict, Any, Optional
 from pathlib import Path
 from PIL import Image
-from cartopy.crs import LambertAzimuthalEqualArea
+# from cartopy.crs import LambertAzimuthalEqualArea  # DISABLED - causes issues on RPi
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from loguru import logger as logging
 from pydantic import BaseModel
 from services.async_image_processing import get_cpu_executor
-from starplot import MapPlot, Stereographic, Orthographic, LambertAzEqArea, Miller, Mollweide, Robinson, Mercator, _
-import matplotlib
-from starplot.styles import PlotStyle, extensions
+# from starplot import MapPlot, Stereographic, Orthographic, LambertAzEqArea, Miller, Mollweide, Robinson, Mercator, _  # DISABLED
+# import matplotlib  # DISABLED
+# from starplot.styles import PlotStyle, extensions  # DISABLED
 from datetime import datetime, timezone as dt_timezone
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt  # DISABLED
 import numpy as np
 
 router = APIRouter(prefix="/api/skymap", tags=["skymap"])
@@ -35,6 +35,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from utils.app_dirs import get_writable_dir
 
 TILE_CACHE_DIR = get_writable_dir("sky_tiles", fallback=Path("sky_tiles"))
+
+# Flag to indicate starplot availability
+STARPLOT_AVAILABLE = False  # Disabled due to RPi compatibility issues
 
 # Constants for sky tiling
 TILE_WIDTH = 256 * 2   # pixels
@@ -127,45 +130,10 @@ tile_system = SkyTileSystem()
 def _ensure_starplot_initialized():
     """
     Ensure starplot is properly initialized for the current thread.
-    Uses thread-local storage and a global lock to prevent SQLite conflicts.
+    DISABLED: Starplot causes issues on Raspberry Pi 4.
     """
-    # Check if already initialized for this thread
-    if hasattr(_thread_local, 'starplot_initialized') and _thread_local.starplot_initialized:
-        return True
-    
-    thread_id = threading.current_thread().ident
-    
-    # Use a lock to prevent concurrent database initialization
-    with _starplot_lock:
-        try:
-            # Set matplotlib backend for thread safety
-            matplotlib.use('Agg')
-            
-            # Initialize starplot components in a controlled manner
-            # Create a minimal plot to trigger database initialization
-            # This forces starplot to set up its internal database connections
-            style = PlotStyle().extend(extensions.BLUE_GOLD, extensions.MAP)
-            
-            # Use a small but valid coordinate range to avoid NaN/Inf axis limits
-            # Ensure we have a proper date/time for the plot
-            temp_plot = MapPlot(
-                projection=Stereographic(),
-                ra_min=0, ra_max=10, dec_min=0, dec_max=10,  # Small valid range
-                lat=40.0, lon=-74.0,  # Valid observer location
-                dt=datetime.now(dt_timezone.utc),  # Current time
-                style=style,
-                figure_size=(2, 2)  # Small but reasonable size
-            )
-            
-            # Mark as initialized for this thread
-            _thread_local.starplot_initialized = True
-            logging.info(f"Successfully initialized starplot for thread {thread_id}")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Failed to initialize starplot for thread {thread_id}: {e}")
-            _thread_local.starplot_initialized = False
-            return False
+    # Starplot disabled - always return False
+    return False
 
 
 def generate_tile_cache_key(x: int, y: int, z: int, projection: str, style: str, 
@@ -177,7 +145,7 @@ def generate_tile_cache_key(x: int, y: int, z: int, projection: str, style: str,
     return hashlib.md5(params.encode()).hexdigest()
 
 
-def _generate_full_sky_image_sync(z: int, projection: str, style: str, time: Optional[str], 
+def _generate_full_sky_image_sync_disabled(z: int, projection: str, style: str, time: Optional[str], 
                                  latitude: float, longitude: float) -> np.ndarray:
     """
     Generate a full sky image at high resolution for tiling (runs in worker thread).
@@ -601,46 +569,14 @@ async def get_sky_tile(
     """
     Get a sky map tile for the specified coordinates and zoom level.
     
-    Tile coordinate system:
-    - z=0: Single tile covering entire sky (360° RA × 180° Dec)
-    - z=1: 2×2 grid (4 tiles)
-    - z=2: 4×4 grid (16 tiles)
-    - z=3: 8×8 grid (64 tiles)
-    - z=4: 16×16 grid (256 tiles)
+    DISABLED: Starplot library causes crashes on Raspberry Pi 4.
+    This endpoint is temporarily disabled.
     """
-    # Validate zoom level
-    if z < 0 or z > MAX_ZOOM_LEVEL:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Zoom level must be between 0 and {MAX_ZOOM_LEVEL}"
-        )
-    
-    # Validate tile coordinates for this zoom level
-    max_coord = (2 ** z) - 1
-    if x < 0 or x > max_coord or y < 0 or y > max_coord:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tile coordinates must be between 0 and {max_coord} for zoom level {z}"
-        )
-    
-    try:
-        # Generate the tile asynchronously using worker threads
-        tile_path = await generate_sky_tile_async(x, y, z, projection, style, time, latitude, longitude)
-        
-        # Return the tile image
-        return FileResponse(
-            tile_path,
-            media_type="image/png",
-            headers={
-                "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-                "X-Tile-Coords": f"{x},{y},{z}",
-                "X-Sky-Bounds": f"RA:{tile_system.get_sky_bounds(x,y,z)['ra_min']:.1f}-{tile_system.get_sky_bounds(x,y,z)['ra_max']:.1f},Dec:{tile_system.get_sky_bounds(x,y,z)['dec_min']:.1f}-{tile_system.get_sky_bounds(x,y,z)['dec_max']:.1f}"
-            }
-        )
-        
-    except Exception as e:
-        logging.error(f"Failed to serve sky tile {x}/{y}/{z}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503, 
+        detail="Sky map functionality is temporarily disabled due to compatibility issues with Raspberry Pi 4. "
+               "The starplot and cartopy libraries cause crashes on ARM-based systems."
+    )
 
 
 @router.get("/info")
