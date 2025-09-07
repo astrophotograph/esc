@@ -66,8 +66,8 @@
   CreateDirectory "$INSTDIR\logs"
   CreateDirectory "$INSTDIR\config"
   
-  ; Set permissions for log directory (allow all users to write)
-  AccessControl::GrantOnFile "$INSTDIR\logs" "(S-1-5-32-545)" "FullAccess"
+  ; Note: AccessControl plugin not available in electron-builder's NSIS
+  ; Permissions will be handled by the application at runtime
 !macroend
 
 !macro customInstallMode
