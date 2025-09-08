@@ -218,7 +218,7 @@ jobs:
         run: |
           pip install uv
           uv pip install --system pyinstaller
-          uv run pyinstaller --onefile --name esc-server main.py
+          uv run pyinstaller esc-server.spec
           
       - name: Copy Python executable to electron
         shell: pwsh
