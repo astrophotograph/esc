@@ -9,7 +9,7 @@ dependencies = [
     "aiortc>=1.9.0",
     "async-timeout>=5.0.1",
     "beartype>=0.21.0",
-    "click<8.2",
+    "click<8.3",
     "fastapi>=0.115.12",
     "fastapi-restful[all]>=0.6.0",
     "httpx[brotli,http2,zstd]>=0.28.1",
