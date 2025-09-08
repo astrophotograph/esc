@@ -1,13 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 block_cipher = None
+
+# Collect numpy binaries and data files
+numpy_binaries = collect_dynamic_libs('numpy')
+numpy_datas = collect_data_files('numpy')
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
+    binaries=numpy_binaries,
+    datas=numpy_datas,
     hiddenimports=[
         'tzlocal',
         'pydash',
@@ -22,9 +27,26 @@ a = Analysis(
         'uvicorn.protocols.websockets.auto',
         'uvicorn.lifespan',
         'uvicorn.lifespan.on',
+        'numpy',
+        'numpy.core',
+        'numpy.core.multiarray',
+        'numpy.core._multiarray_umath',
+        'numpy._distributor_init',
+        'numpy.core._dtype',
+        'numpy.core._internal',
+        'numpy.core._methods',
+        'numpy.core._dtype_ctypes',
+        'numpy.random',
+        'numpy.random._common',
+        'PIL',
+        'PIL._imaging',
     ],
     hookspath=[],
-    hooksconfig={},
+    hooksconfig={
+        "numpy": {
+            "hiddenimports": ["numpy.core._methods", "numpy.lib.format"],
+        },
+    },
     runtime_hooks=[],
     excludes=[
         'matplotlib',
