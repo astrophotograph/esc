@@ -1,4 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
+
+block_cipher = None
 
 a = Analysis(
     ['main.py'],
@@ -39,7 +42,7 @@ a = Analysis(
     optimize=2,  # Optimize bytecode
 )
 
-pyz = PYZ(a.pure, a.zipped_data)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -50,8 +53,8 @@ exe = EXE(
     name='esc-server',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,  # Strip symbols on Unix
-    upx=True,    # Compress with UPX if available
+    strip=False,  # Don't strip on Windows
+    upx=False,    # Disable UPX compression - causes issues on Windows
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
