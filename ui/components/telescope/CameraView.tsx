@@ -1639,7 +1639,7 @@ export function CameraView() {
                         alt={`${mainCameraSource} camera view`}
                         className="w-full h-full object-contain"
                         style={{
-                          filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%) ${invertColors ? 'invert(1)' : ''}`,
+                          filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%) ${invertColors ? 'invert(1) hue-rotate(180deg)' : ''}`,
                           transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
                           transformOrigin: 'center center',
                         }}
