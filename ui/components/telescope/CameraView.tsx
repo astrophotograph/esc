@@ -686,6 +686,7 @@ export function CameraView() {
 
   // Simplified zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [invertColors, setInvertColors] = useState(false);
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -1081,13 +1082,13 @@ export function CameraView() {
 
   // Zoom in function
   const zoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.25, 4));
+    setZoomLevel(prev => Math.min(prev + 0.5, 8));
   };
 
   // Zoom out function
   const zoomOut = () => {
     setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.25, 1);
+      const newZoom = Math.max(prev - 0.5, 1);
 
       // If zooming back to 1, reset pan position
       if (newZoom === 1) {
@@ -1583,6 +1584,14 @@ export function CameraView() {
                 <SlidingCameraSourceSwitcher />
               )}
 
+              {/* Invert Mode Indicator */}
+              {invertColors && (
+                <div className="absolute top-2 right-2 z-20 bg-orange-600/90 text-white px-3 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-sm border border-orange-500">
+                  <Filter className="w-4 h-4 rotate-180" />
+                  <span className="text-sm font-medium">Inverted</span>
+                </div>
+              )}
+
               {/* WebRTC Live View with MJPEG fallback - wrapped in error boundary */}
               {/* Hide when in Initialise mode for dark library generation or AutoFocus mode, or when connection is lost */}
               {!connectionLost && clientMode !== "Initialise" && clientMode !== "AutoFocus" && (
@@ -1608,6 +1617,7 @@ export function CameraView() {
                       zoomLevel={zoomLevel}
                       panPosition={panPosition}
                       isPortrait={isPortrait}
+                      invertColors={invertColors}
                       stage={localStreamStatus?.status?.stage}
                       onLoad={handleImageLoad}
                       onError={handleImageError}
@@ -1621,6 +1631,8 @@ export function CameraView() {
                         src={
                           mainCameraSource === 'allsky'
                             ? (allskyUrls[currentTelescope?.id || ''] || `http://allsky/current/tmp/image.jpg?_ts=${Date.now()}`)
+                            : mainCameraSource === 'secondary'
+                            ? `/api/telescopes/${currentTelescope?.id}/stream/1?_ts=${Date.now()}`
                             : mainCameraSource === 'guide'
                             ? `/api/${currentTelescope?.name}/guide-stream?_ts=${Date.now()}`
                             : `/api/${currentTelescope?.name}/finder-stream?_ts=${Date.now()}`
@@ -1628,7 +1640,7 @@ export function CameraView() {
                         alt={`${mainCameraSource} camera view`}
                         className="w-full h-full object-contain"
                         style={{
-                          filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%)`,
+                          filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%) ${invertColors ? 'invert(1)' : ''}`,
                           transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
                           transformOrigin: 'center center',
                         }}
@@ -1715,8 +1727,8 @@ export function CameraView() {
                 <Slider
                   value={[zoomLevel]}
                   min={1}
-                  max={4}
-                  step={0.25}
+                  max={8}
+                  step={0.5}
                   orientation="vertical"
                   onValueChange={(value) => {
                     setZoomLevel(value[0]);
@@ -1762,6 +1774,18 @@ export function CameraView() {
                 title="Image Enhancement"
               >
                 <Sparkles className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInvertColors(!invertColors)}
+                className={`p-0 mt-1 ${
+                  isMobile ? 'w-10 h-10 min-h-10' : 'w-8 h-8 mt-2'
+                } ${invertColors ? 'bg-orange-600 border-orange-500' : ''}`}
+                title="Invert Colors"
+              >
+                <Filter className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} ${invertColors ? 'rotate-180' : ''}`} />
               </Button>
             </div>
 

@@ -18,6 +18,7 @@ interface WebRTCLiveViewProps {
   zoomLevel: number;
   panPosition: { x: number; y: number };
   isPortrait: boolean;
+  invertColors?: boolean;
   stage?: string | null; // Add stage prop to control streaming behavior
   onLoad?: () => void;
   onError?: () => void;
@@ -34,6 +35,7 @@ export function WebRTCLiveView({
   zoomLevel,
   panPosition,
   isPortrait,
+  invertColors = false,
   stage,
   onLoad,
   onError,
@@ -194,7 +196,7 @@ export function WebRTCLiveView({
 
   // Common transform styles
   const transformStyle = {
-    filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%)`,
+    filter: `brightness(${brightness[0] + 100}%) contrast(${contrast[0]}%) ${invertColors ? 'invert(1)' : ''}`,
     transform: `rotate(${rotationAngle}deg) scale(${zoomLevel}) translate(${panPosition.x}px, ${panPosition.y}px)`,
     transformOrigin: 'center center',
     userSelect: 'none' as const,

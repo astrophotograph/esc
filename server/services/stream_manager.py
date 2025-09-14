@@ -1,9 +1,9 @@
 """
-Stream Manager for maintaining persistent telescope image streams.
+Stream Manager for tracking active telescope image streams.
 
-This module ensures that telescope imaging streams continue running
-even when browser clients disconnect, allowing for quick reconnections
-without restarting the telescope stream.
+This module tracks which telescope streams have active clients and
+provides a grace period before cleaning up stream metadata when clients
+disconnect. Each client still maintains its own connection to the telescope.
 """
 
 import asyncio
@@ -200,35 +200,33 @@ class StreamManager:
         return stream_info
 
     async def _telescope_stream_loop(self, stream_key: str, image_generator_factory):
-        """Main loop that keeps the telescope stream alive."""
-        logger.info(f"Telescope stream loop started for {stream_key}")
+        """Monitor loop that tracks when to clean up inactive streams."""
+        logger.info(f"Stream monitor started for {stream_key}")
 
         try:
-            # Simply iterate through frames to keep the telescope stream active
-            # We don't buffer frames anymore - clients will get them directly
-            async for frame in image_generator_factory():
-                if stream_key not in self.streams:
-                    logger.debug(f"Stream {stream_key} no longer exists, stopping loop")
-                    break
-
+            # This loop just monitors the stream status, it doesn't consume frames
+            # The actual frames are consumed by clients directly
+            while stream_key in self.streams:
                 stream_info = self.streams[stream_key]
 
-                # Just check if we should continue
-                # The stream stays alive as long as there are clients or within keepalive timeout
+                # Check if we should stop monitoring this stream
                 if not stream_info.is_active and stream_info.time_since_disconnect > self.STREAM_KEEPALIVE_TIMEOUT:
-                    logger.info(f"Stream {stream_key} exceeded keepalive timeout, stopping")
+                    logger.info(f"Stream {stream_key} exceeded keepalive timeout, removing from manager")
+                    async with self._lock:
+                        if stream_key in self.streams:
+                            del self.streams[stream_key]
                     break
 
-                # Small delay to prevent busy loop
-                await asyncio.sleep(0.001)
+                # Check periodically
+                await asyncio.sleep(1.0)
 
         except asyncio.CancelledError:
-            logger.info(f"Telescope stream loop cancelled for {stream_key}")
+            logger.info(f"Stream monitor cancelled for {stream_key}")
             raise
         except Exception as e:
-            logger.error(f"Error in telescope stream loop for {stream_key}: {e}")
+            logger.error(f"Error in stream monitor for {stream_key}: {e}")
         finally:
-            logger.info(f"Telescope stream loop ended for {stream_key}")
+            logger.info(f"Stream monitor ended for {stream_key}")
 
     def get_stream_info(self, telescope_id: str, camera_id: int) -> Optional[StreamInfo]:
         """Get information about a stream."""

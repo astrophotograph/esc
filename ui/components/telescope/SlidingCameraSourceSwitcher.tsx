@@ -1,11 +1,15 @@
 import React, { useState, useMemo, Fragment, useEffect } from 'react'
-import { Camera, Eye, Globe, Crosshair } from 'lucide-react'
+import { Camera, Eye, Globe, Crosshair, Video } from 'lucide-react'
 import { useTelescopeContext } from '@/context/TelescopeContext'
 import { cn } from '@/lib/utils'
 
 export function SlidingCameraSourceSwitcher() {
-  const { mainCameraSource, setMainCameraSource, currentTelescope } = useTelescopeContext()
+  const { mainCameraSource, setMainCameraSource, currentTelescope, clientMode } = useTelescopeContext()
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Check if secondary camera is available (S30 in streaming/solar_sys mode)
+  const isS30InStreamingMode = currentTelescope?.product_model?.toLowerCase()?.includes('s30') &&
+                               (clientMode === 'RTSP' || clientMode === 'Streaming' || clientMode === 'solar_sys')
 
   // Check if guide and finder URLs are available
   // For now, we'll assume they're not available and just show telescope and all-sky
@@ -18,16 +22,21 @@ export function SlidingCameraSourceSwitcher() {
       { value: 'telescope' as const, icon: Camera, label: 'Telescope' },
       { value: 'allsky' as const, icon: Globe, label: 'All-Sky' },
     ]
-    
+
+    // Add secondary camera option if available
+    if (isS30InStreamingMode) {
+      baseSources.push({ value: 'secondary' as const, icon: Video, label: 'Secondary' })
+    }
+
     if (hasGuideCamera) {
       baseSources.push({ value: 'guide' as const, icon: Eye, label: 'Guide' })
     }
     if (hasFinderScope) {
       baseSources.push({ value: 'finder' as const, icon: Crosshair, label: 'Finder' })
     }
-    
+
     return baseSources
-  }, [hasGuideCamera, hasFinderScope])
+  }, [isS30InStreamingMode, hasGuideCamera, hasFinderScope])
 
   // Reset to telescope if current source is not available
   useEffect(() => {
@@ -46,8 +55,8 @@ export function SlidingCameraSourceSwitcher() {
     ...sources.filter(s => s.value !== mainCameraSource)
   ]
 
-  // If only 2 sources (telescope and all-sky), render as a simple toggle button
-  if (sources.length === 2) {
+  // If only 2 or 3 sources, render as a simple toggle button
+  if (sources.length <= 3) {
     return (
       <div className="absolute top-2 left-2 z-20">
         <button
@@ -147,8 +156,12 @@ export function SlidingCameraSourceSwitcher() {
 
 // Alternative compact version with icon-only buttons
 export function CompactSlidingCameraSourceSwitcher() {
-  const { mainCameraSource, setMainCameraSource } = useTelescopeContext()
+  const { mainCameraSource, setMainCameraSource, currentTelescope, clientMode } = useTelescopeContext()
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Check if secondary camera is available (S30 in streaming/solar_sys mode)
+  const isS30InStreamingMode = currentTelescope?.product_model?.toLowerCase()?.includes('s30') &&
+                               (clientMode === 'RTSP' || clientMode === 'Streaming' || clientMode === 'solar_sys')
 
   // Check if guide and finder URLs are available
   const hasGuideCamera = false // TODO: Check if telescope has guide camera endpoint
@@ -159,16 +172,21 @@ export function CompactSlidingCameraSourceSwitcher() {
       { value: 'telescope' as const, icon: Camera, tooltip: 'Telescope' },
       { value: 'allsky' as const, icon: Globe, tooltip: 'All-Sky' },
     ]
-    
+
+    // Add secondary camera option if available
+    if (isS30InStreamingMode) {
+      baseSources.push({ value: 'secondary' as const, icon: Video, tooltip: 'Secondary' })
+    }
+
     if (hasGuideCamera) {
       baseSources.push({ value: 'guide' as const, icon: Eye, tooltip: 'Guide' })
     }
     if (hasFinderScope) {
       baseSources.push({ value: 'finder' as const, icon: Crosshair, tooltip: 'Finder' })
     }
-    
+
     return baseSources
-  }, [hasGuideCamera, hasFinderScope])
+  }, [isS30InStreamingMode, hasGuideCamera, hasFinderScope])
 
   const currentSource = sources.find(s => s.value === mainCameraSource) || sources[0]
 
