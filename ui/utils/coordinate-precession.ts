@@ -70,16 +70,31 @@ export function applyPrecession(coords: EquatorialCoordinates, date: Date = new 
   const cosTheta = Math.cos(theta)
   const sinTheta = Math.sin(theta)
   
-  // Apply precession matrix (rigorous method)
-  const A = cosRa0 * cosDec0 * cosZeta - sinRa0 * sinZeta
-  const B = sinRa0 * cosDec0 * cosZeta + cosRa0 * sinZeta
-  const C = sinDec0 * cosTheta + cosDec0 * sinTheta * cosZeta
-  
-  // New declination
-  const decNew = Math.asin(sinDec0 * cosTheta - cosDec0 * sinTheta * Math.cos(ra0 + zeta))
-  
-  // New right ascension
-  const raNew = Math.atan2(B, A) + z
+  // Apply precession using full rotation matrix
+  // Convert to rectangular coordinates
+  const x = cosDec0 * cosRa0
+  const y = cosDec0 * sinRa0
+  const z_coord = sinDec0
+
+  // Precession matrix elements
+  const xx = cosZeta * cosZ * cosTheta - sinZeta * sinZ
+  const xy = -sinZeta * cosZ * cosTheta - cosZeta * sinZ
+  const xz = -sinTheta * cosZ
+  const yx = cosZeta * sinZ * cosTheta + sinZeta * cosZ
+  const yy = -sinZeta * sinZ * cosTheta + cosZeta * cosZ
+  const yz = -sinTheta * sinZ
+  const zx = cosZeta * sinTheta
+  const zy = -sinZeta * sinTheta
+  const zz = cosTheta
+
+  // Apply rotation matrix
+  const xNew = xx * x + xy * y + xz * z_coord
+  const yNew = yx * x + yy * y + yz * z_coord
+  const zNew = zx * x + zy * y + zz * z_coord
+
+  // Convert back to spherical coordinates
+  const raNew = Math.atan2(yNew, xNew)
+  const decNew = Math.asin(zNew)
   
   return {
     ra: normalizeAngle(rad2deg(raNew)),
