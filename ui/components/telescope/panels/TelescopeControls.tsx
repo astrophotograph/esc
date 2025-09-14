@@ -10,6 +10,7 @@ import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Setti
 import {useTelescopeContext} from "@/context/TelescopeContext"
 import {formatRaDec} from "@/utils/telescope-utils"
 import {type PlateSolveResult, PlateSolveSyncDialog} from "../modals/PlateSolveSyncDialog"
+import {ImagingParametersDialog} from "../ImagingParametersDialog"
 import {getWebSocketService, MessageType, PlateSolveResultMessage, CommandAction} from "@/services/websocket-service"
 import {
   AlertDialog,
@@ -49,6 +50,9 @@ export function TelescopeControls() {
   
   // State for stop imaging confirmation dialog
   const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
+
+  // State for imaging parameters dialog
+  const [showImagingDialog, setShowImagingDialog] = useState(false)
 
   // Listen for plate solve results from WebSocket
   useEffect(() => {
@@ -306,6 +310,51 @@ export function TelescopeControls() {
     setShowStopImagingConfirm(false)
   }
 
+  const handleRecordClick = () => {
+    setShowImagingDialog(true)
+  }
+
+  const handleImagingConfirm = async (params: { gain: number; lightPollutionFilter: boolean }) => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before starting imaging",
+      })
+      return
+    }
+
+    try {
+      const wsService = getWebSocketService()
+      await wsService.sendCommand(
+        CommandAction.START_IMAGING,
+        {
+          gain: params.gain,
+          lightPollutionFilter: params.lightPollutionFilter,
+          target_name: selectedTarget?.name || "Unknown Target"
+        },
+        currentTelescope.id
+      )
+
+      addStatusAlert({
+        type: "success",
+        title: "Imaging Started",
+        message: `Starting imaging session with gain ${params.gain}`,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      addStatusAlert({
+        type: "error",
+        title: "Failed to Start Imaging",
+        message: errorMessage,
+      })
+    }
+  }
+
+  const handleImagingCancel = () => {
+    setShowImagingDialog(false)
+  }
+
   // Handle Moon zoom levels
   const handleMoonZoom = async (zoomLevel: '1x' | '2x' | '4x') => {
     if (!currentTelescope) {
@@ -533,6 +582,21 @@ export function TelescopeControls() {
             </Button>
           </div>
 
+          {/* Record Button - Only visible in ContinuousExposure mode */}
+          {clientMode === "ContinuousExposure" && (
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRecordClick}
+                className="w-full"
+              >
+                <Target className="w-4 h-4 mr-2"/>
+                Record
+              </Button>
+            </div>
+          )}
+
           {/* Plate Solve Button - Always visible in ContinuousExposure and Stack modes */}
           {(clientMode === "ContinuousExposure" || clientMode === "Stack" || clientMode === "Streaming") && (
             <div className="space-y-3">
@@ -681,6 +745,16 @@ export function TelescopeControls() {
         isLoading={false} // Never loading since results come from WebSocket
         onSync={handleSync}
         onCancel={handleDialogCancel}
+      />
+
+      {/* Imaging Parameters Dialog */}
+      <ImagingParametersDialog
+        open={showImagingDialog}
+        onOpenChange={setShowImagingDialog}
+        telescopeModel={currentTelescope?.model}
+        targetName={selectedTarget?.name || "Unknown Target"}
+        onConfirm={handleImagingConfirm}
+        onCancel={handleImagingCancel}
       />
 
       {/* Stop Imaging Confirmation Dialog */}

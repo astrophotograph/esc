@@ -815,6 +815,8 @@ class WebSocketManager:
                 return await self._execute_auto_focus_command(client, parameters)
             elif action == "goto":
                 return await self._execute_goto_command(client, parameters)
+            elif action == "start_imaging":
+                return await self._execute_start_imaging_command(client, parameters)
             elif action == "scenery":
                 return await self._execute_scenery_command(client, parameters)
             elif action == "stop_goto":
@@ -1429,43 +1431,29 @@ class WebSocketManager:
 
             mode: ScopeViewMode = "solar_sys" if is_solar_system else "star"
             await client.goto(target_name, ra, dec, mode=mode, target_type=target_type)
-            success, error = await client.wait_for_event_completion("AutoGoto", timeout=180.0)
-            if not success:
-                await client.stop_goto()
-                error_message = f"Error positioning telescope: {error}" if error else "Error positioning telescope"
-                logger.error(error_message)
-                # send off view state command
-                await client.refresh_view_state()
-                return {"status": "error", "message": error_message}
 
-            logger.info(f"Start imaging check: {start_imaging} (type: {type(start_imaging).__name__})")
+            # Don't wait for completion - return immediately so other commands can be processed
+            # The UI will track progress via status updates
+            logger.info(f"Goto command initiated for {target_name}")
+
+            # If start_imaging was requested, schedule it to run after goto completes
             if start_imaging:
-                logger.info(f"Starting imaging sequence for target: {target_name}")
-                logger.info(f"Waiting 5 seconds before starting imaging...")
-                await asyncio.sleep(5.0)
+                logger.info(f"Start imaging flag set - will start imaging after goto completes")
+                # Create a background task to wait for goto completion and then start imaging
+                async def _start_imaging_after_goto():
+                    try:
+                        success, error = await client.wait_for_event_completion("AutoGoto", timeout=180.0)
+                        if success:
+                            logger.info(f"Goto completed successfully, starting imaging for {target_name}")
+                            await self._start_imaging_for_target(client, target_name, stack_gain)
+                        else:
+                            logger.error(f"Goto failed, not starting imaging: {error}")
+                    except Exception as e:
+                        logger.error(f"Error in imaging after goto: {e}")
 
-                logger.info(f"Setting stack_lenhance to True...")
-                r = await client.send_and_recv(SetSetting(
-                    params=SettingParameters(
-                        stack_lenhance=True,
-                    )))
-                logger.info(f"Response from SetSetting: {r}")
-
-                logger.info(f"Setting sequence group name to: {target_name}")
-                r = await client.send_and_recv(SetSequenceSetting(params=[
-                    SequenceSettingParameters(group_name=target_name)]))
-                logger.info(f"Response from SetSequenceSetting: {r}")
-
-                logger.info(f"Starting stack operation...")
-                r = await client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=False)))
-                logger.info(f"Response from IscopeStartStack: {r}")
-
-                # Change the gain _after_ starting starts.
-                logger.info(f"Setting gain to: {stack_gain}")
-                r = await client.send_and_recv(SetControlValue(params=("gain", stack_gain)))
-                logger.info(f"Response from SetControlValue (gain): {r}")
-                
-                logger.info(f"Imaging sequence started successfully for {target_name}")
+                # Schedule the task but don't await it
+                import asyncio
+                asyncio.create_task(_start_imaging_after_goto())
 
             logger.info("Telescope goto command completed successfully")
             # self.logger.info(result)
@@ -1496,6 +1484,76 @@ class WebSocketManager:
             logger.error(f"Error executing goto command: {e}")
             return {"status": "error", "message": str(e)}
 
+    async def _start_imaging_for_target(
+            self, client: SeestarClient, target_name: str, gain: int = 80
+    ) -> Dict[str, Any]:
+        """Start imaging sequence for a target (extracted from goto command)."""
+        try:
+            logger.info(f"Starting imaging sequence for target: {target_name}")
+            logger.info(f"Waiting 5 seconds before starting imaging...")
+            await asyncio.sleep(5.0)
+
+            logger.info(f"Setting stack_lenhance to True...")
+            r = await client.send_and_recv(SetSetting(
+                params=SettingParameters(
+                    stack_lenhance=True,
+                )))
+            logger.info(f"Response from SetSetting: {r}")
+
+            logger.info(f"Setting sequence group name to: {target_name}")
+            r = await client.send_and_recv(SetSequenceSetting(params=[
+                SequenceSettingParameters(group_name=target_name)]))
+            logger.info(f"Response from SetSequenceSetting: {r}")
+
+            logger.info(f"Starting stack operation...")
+            r = await client.send_and_recv(IscopeStartStack(params=StartStackParams(restart=False)))
+            logger.info(f"Response from IscopeStartStack: {r}")
+
+            # Change the gain _after_ starting starts.
+            logger.info(f"Setting gain to: {gain}")
+            r = await client.send_and_recv(SetControlValue(params=("gain", gain)))
+            logger.info(f"Response from SetControlValue (gain): {r}")
+
+            logger.info(f"Imaging sequence started successfully for {target_name}")
+            return {
+                "status": "success",
+                "message": f"Imaging started for {target_name} with gain {gain}"
+            }
+        except Exception as e:
+            logger.error(f"Error starting imaging: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_start_imaging_command(
+            self, client: SeestarClient, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute start imaging command."""
+        try:
+            target_name = parameters.get("target_name", "Unknown Target")
+            gain = parameters.get("gain", 80)
+            light_pollution_filter = parameters.get("lightPollutionFilter", False)
+
+            logger.info(f"Start imaging command received for target: {target_name}")
+            logger.info(f"Gain: {gain}, LPF: {light_pollution_filter}")
+
+            # Use the extracted imaging function
+            result = await self._start_imaging_for_target(client, target_name, gain)
+
+            if result["status"] == "success":
+                return {
+                    "status": "success",
+                    "action": "start_imaging",
+                    "target_name": target_name,
+                    "gain": gain,
+                    "light_pollution_filter": light_pollution_filter,
+                    "message": result["message"]
+                }
+            else:
+                return result
+
+        except Exception as e:
+            logger.error(f"Error executing start_imaging command: {e}")
+            return {"status": "error", "message": str(e)}
+
     async def _execute_scenery_command(
             self, client: Any, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -1524,22 +1582,23 @@ class WebSocketManager:
             return {"status": "error", "message": str(e)}
 
     async def _execute_stop_goto_command(
-            self, client: Any, parameters: Dict[str, Any]
+            self, client: SeestarClient, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute stop goto command to cancel AutoGoto operation."""
         stage = parameters.get("stage", "AutoGoto")
-        
+
         try:
             logger.info(
                 f"Stop goto command received: stage={stage}, parameters={parameters}"
             )
-            
+
             # Use the SeestarClient's stop_goto method
             response = await client.stop_goto()
-            
+            logger.info(f"Stop goto response: {response}")
+
             # Refresh view state after stopping goto
             await client.refresh_view_state()
-            
+
             return {
                 "status": "success",
                 "action": "stop_goto",
@@ -1547,7 +1606,7 @@ class WebSocketManager:
                 "message": "AutoGoto cancelled successfully",
                 "response": response.to_dict() if hasattr(response, "to_dict") else str(response),
             }
-            
+
         except Exception as e:
             logger.error(f"Error executing stop goto command: {e}")
             return {"status": "error", "message": str(e)}

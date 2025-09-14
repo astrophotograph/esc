@@ -2116,7 +2116,7 @@ wheels = [
 
 [[package]]
 name = "scopinator"
-version = "2025.9.9"
+version = "2025.9.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beartype" },
@@ -2133,9 +2133,9 @@ dependencies = [
     { name = "pydash" },
     { name = "tzlocal" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a4/2c/c737fcbec7adc82e98f23530c1040882e127f24783fccf8eb7c83b8d2030/scopinator-2025.9.9.tar.gz", hash = "sha256:3cdca2c3e7033abd11c037c82278d105069fc446c671d1cdd1fe99a9cf03ba5c", size = 97749, upload-time = "2025-09-06T04:55:32.328Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/c6/299078e84ad7c0edce823bdfeaf4b5889f77ccd3ac575c8f9d40ff238b19/scopinator-2025.9.12.tar.gz", hash = "sha256:4ba552e680882148aaa666aa0b6c33e54eb1e3d3606c8214f8ef21579342e899", size = 97882, upload-time = "2025-09-14T01:43:55.613Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/6f/373380cae0d9017e52f55ce594c9f5f41de584ba458014a8ec6a8188bfc0/scopinator-2025.9.9-py3-none-any.whl", hash = "sha256:e5b9bf3b335dfc363b50982a1451fc56b13cc7516d885ee1a0ac02cb2a426d93", size = 164558, upload-time = "2025-09-06T04:55:30.994Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/03/8cc2f2b237c48fe8398d387bede7fd9793b2d4897b22aadc11badaa1bae1/scopinator-2025.9.12-py3-none-any.whl", hash = "sha256:71ab9bc28f6025b85bc4be1c1743716a7b62fbf7b2d66ac43c43ec4ecff377d1", size = 164691, upload-time = "2025-09-14T01:43:54.611Z" },
 ]
 
 [[package]]
@@ -2255,7 +2255,7 @@ requires-dist = [
     { name = "pywavelets", specifier = ">=1.8.0" },
     { name = "sc-pylibs", specifier = ">=0.0.0.1" },
     { name = "scikit-image", specifier = ">=0.25.2" },
-    { name = "scopinator", specifier = ">2025.9.8" },
+    { name = "scopinator", specifier = ">2025.9.11" },
     { name = "torch", specifier = ">=2.7.1" },
     { name = "torchvision", specifier = ">=0.22.1" },
     { name = "tzlocal", specifier = ">=5.3.1" },

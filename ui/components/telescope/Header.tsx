@@ -95,17 +95,17 @@ export function Header() {
           <ThemeToggle />
 
           {/* Scenery Mode Button */}
-          {/*<Button*/}
-          {/*  variant={sceneryMode ? "default" : "outline"}*/}
-          {/*  size={isMobile ? "sm" : "sm"}*/}
-          {/*  onClick={handleSceneryToggle}*/}
-          {/*  className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}*/}
-          {/*  title="Toggle Scenery Mode"*/}
-          {/*  data-tour="scenery-mode"*/}
-          {/*>*/}
-          {/*  <Mountain className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>*/}
-          {/*  {!isMobile && 'Scenery'}*/}
-          {/*</Button>*/}
+          <Button
+            variant={sceneryMode ? "default" : "outline"}
+            size={isMobile ? "sm" : "sm"}
+            onClick={handleSceneryToggle}
+            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}
+            title="Toggle Scenery Mode"
+            data-tour="scenery-mode"
+          >
+            <Mountain className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
+            {!isMobile && 'Scenery'}
+          </Button>
 
           {/* Image Processing Button - Hide on mobile */}
           {/*{!isMobile && (*/}

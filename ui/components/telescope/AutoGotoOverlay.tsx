@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Compass, Navigation, Target, X } from "lucide-react"
+import { Compass, Navigation, Target, X, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { getWebSocketService, CommandAction } from "@/services/websocket-service"
+import { useToast } from "@/hooks/use-toast"
 
 interface AutoGotoOverlayProps {
   targetName?: string
@@ -32,6 +33,8 @@ export function AutoGotoOverlay({
   const [animationFrame, setAnimationFrame] = useState(0)
   const [initialDistance, setInitialDistance] = useState<number | null>(null)
   const [progress, setProgress] = useState(0)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const { toast } = useToast()
 
   // Use distDeg from status if available, otherwise calculate it
   useEffect(() => {
@@ -73,11 +76,12 @@ export function AutoGotoOverlay({
     }
   }, [distDeg, targetRa, targetDec, currentRa, currentDec, initialDistance])
 
-  // Reset initial distance when overlay becomes visible
+  // Reset initial distance and cancelling state when overlay visibility changes
   useEffect(() => {
     if (isVisible) {
       setInitialDistance(null)  // Reset to capture new initial distance
       setProgress(0)
+      setIsCancelling(false)  // Reset cancelling state
     }
   }, [isVisible])
 
@@ -192,21 +196,63 @@ export function AutoGotoOverlay({
               variant="outline"
               size="sm"
               onClick={async () => {
+                if (!telescopeId) {
+                  toast({
+                    title: "Error",
+                    description: "Cannot cancel AutoGoto: No telescope connected",
+                    variant: "destructive"
+                  })
+                  return
+                }
+
+                setIsCancelling(true)
+
+                // Show immediate feedback
+                toast({
+                  title: "Cancelling AutoGoto",
+                  description: "Sending cancel command to telescope...",
+                })
+
                 try {
                   const wsService = getWebSocketService()
-                  await wsService.sendCommand(
+                  const response = await wsService.sendCommand(
                     CommandAction.STOP_GOTO,
-                    { stage: "AutoGoto" },
+                    {},
                     telescopeId
                   )
+
+                  // Show success notification
+                  toast({
+                    title: "AutoGoto Cancelled",
+                    description: "Telescope has stopped slewing to target",
+                    variant: "default"
+                  })
+
+                  setIsCancelling(false)
                 } catch (error) {
                   console.error("Failed to cancel AutoGoto:", error)
+                  toast({
+                    title: "Failed to Cancel",
+                    description: error instanceof Error ? error.message : "Failed to cancel AutoGoto operation",
+                    variant: "destructive"
+                  })
+                  setIsCancelling(false)
                 }
               }}
-              className="bg-red-900/50 hover:bg-red-800/50 text-red-200 border-red-700"
+              disabled={isCancelling}
+              className="bg-red-900/50 hover:bg-red-800/50 text-red-200 border-red-700 disabled:opacity-50"
             >
-              <X className="w-4 h-4 mr-2" />
-              Cancel
+              {isCancelling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                <>
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </>
+              )}
             </Button>
           </div>
         </div>

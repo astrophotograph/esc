@@ -1,0 +1,13 @@
+--- a/scopinator/seestar/protocol_handlers.py
++++ b/scopinator/seestar/protocol_handlers.py
+@@ -227,7 +227,9 @@ class BinaryProtocol(ProtocolHandler[npt.NDArray]):
+         if raw_image_len == w * h * 6:
+             # print("raw buffer size:", len(self.raw_img))
+             img = np.frombuffer(raw_image, dtype=np.uint16).reshape(h, w, 3)
+-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
++            # The telescope sends images in BGR format already, so no conversion needed
++            # Previous code was incorrectly converting from RGB to BGR causing color shift
++            # img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)  # REMOVED: Causes color shift
+             return img
+
+         elif raw_image_len == w * h * 2:
