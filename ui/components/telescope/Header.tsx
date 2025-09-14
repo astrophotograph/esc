@@ -27,16 +27,15 @@ export function Header() {
   const router = useRouter()
   const {theme: _theme, setTheme: _setTheme} = useTheme()
   const {showPiP, setShowPiP} = useTelescope()
-  const {handleSceneryMode, setShowDocumentation, setShowConfiguration} = useTelescopeContext()
+  const {handleSceneryMode, setShowDocumentation, setShowConfiguration, clientMode} = useTelescopeContext()
 
-  const [sceneryMode, setSceneryMode] = useState(false)
   const [showSystemAdmin, setShowSystemAdmin] = useState(false)
   const isMobile = useIsMobile()
 
-  const handleSceneryToggle = async () => {
-    const newSceneryMode = !sceneryMode
-    setSceneryMode(newSceneryMode)
+  // Check if telescope is in scenery mode based on clientMode
+  const isSceneryMode = clientMode === 'scenery' || clientMode === 'Scenery'
 
+  const handleSceneryToggle = async () => {
     // Send scenery mode command through context
     try {
       console.log('Sending scenery mode message:', {mode: "scenery"})
@@ -44,8 +43,6 @@ export function Header() {
       console.log('Scenery mode message sent successfully')
     } catch (error) {
       console.error('Failed to send scenery mode message:', error)
-      // Revert the state if sending failed
-      setSceneryMode(!newSceneryMode)
     }
   }
 
@@ -96,14 +93,14 @@ export function Header() {
 
           {/* Scenery Mode Button */}
           <Button
-            variant={sceneryMode ? "default" : "outline"}
+            variant={isSceneryMode ? "default" : "outline"}
             size={isMobile ? "sm" : "sm"}
             onClick={handleSceneryToggle}
-            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'}`}
+            className={`flex items-center ${isMobile ? 'gap-1 px-2' : 'gap-2'} ${isSceneryMode ? 'bg-green-600 hover:bg-green-700' : ''}`}
             title="Toggle Scenery Mode"
             data-tour="scenery-mode"
           >
-            <Mountain className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`}/>
+            <Mountain className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} ${isSceneryMode ? 'text-white' : ''}`}/>
             {!isMobile && 'Scenery'}
           </Button>
 
