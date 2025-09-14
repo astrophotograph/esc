@@ -36,6 +36,7 @@ from scopinator.seestar.commands.simple import (
 )
 from scopinator.seestar.imaging_client import SeestarImagingClient
 from scopinator.util.eventbus import EventBus
+from services.stream_manager import get_stream_manager
 
 
 class Telescope(BaseModel, arbitrary_types_allowed=True):
@@ -723,6 +724,66 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 }
             )
 
+        async def get_next_image_for_manager(camera_id: int = 0):
+            """Get images from telescope for the stream manager."""
+            # This generator runs once per telescope stream, not per client
+            # The stream manager will distribute frames to multiple clients
+
+            # Use the shared image processor instance
+            star_processors = [self.image_processor]
+
+            try:
+                # Safety check
+                if not self.imaging:
+                    logging.warning("Image stream requested but imaging not initialized")
+                    return
+
+                prev_image = None
+                async for image in self.imaging.get_next_image(camera_id):
+                    try:
+                        is_streaming = self.imaging.client_mode == "Streaming"
+
+                        if image is not None and image.image is not None:
+                            img = image.image
+                            if not is_streaming:
+                                # We don't want to run processors when in streaming mode!
+                                for processor in star_processors:
+                                    img = processor.process(img)
+                                # Apply comprehensive enhancements
+                                img = self.enhancement_processor.process(img)
+
+                            changed = not np.array_equal(img, prev_image)
+                            prev_image = img.copy()
+
+                            if changed:
+                                frame = build_frame_bytes(img, image.width, image.height)
+                                yield frame
+
+                                if not is_streaming:
+                                    # We send an extra frame if not streaming to deal with some browser's buffering issues!
+                                    yield frame
+                        else:
+                            # No image available, wait a bit
+                            delay = 0.001 if is_streaming else 0.1
+                            await asyncio.sleep(delay)
+
+                    except asyncio.CancelledError:
+                        # Stream manager is stopping this stream
+                        logging.info("Telescope image stream cancelled by manager")
+                        break
+                    except Exception as e:
+                        # Log error but continue streaming
+                        logging.error(f"Error processing telescope image frame: {e}")
+                        await asyncio.sleep(0.1)
+
+            except asyncio.CancelledError:
+                logging.info("Telescope stream terminated")
+                pass
+            except Exception as e:
+                logging.error(f"Error in telescope image stream: {e}")
+            finally:
+                logging.info("Telescope image stream ended")
+
         async def get_next_image(camera_id: int = 0):
             """Get the next image from the Seestar imaging server."""
             # The connection check and reconnect is handled by the endpoint
@@ -950,10 +1011,10 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             # Check both the is_connected flag and the underlying connection state
             if not self.imaging:
                 raise HTTPException(
-                    status_code=503, 
+                    status_code=503,
                     detail="Imaging service not initialized"
                 )
-            
+
             # Check the actual connection state, not just the flag
             if not self.imaging.is_connected or (
                 self.imaging.connection and not self.imaging.connection.is_connected()
@@ -966,12 +1027,52 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
                 except Exception as e:
                     logging.error(f"Failed to reconnect imaging client: {e}")
                     raise HTTPException(
-                        status_code=503, 
+                        status_code=503,
                         detail=f"Imaging service not connected to telescope at {self.host}:{self.imaging_port}"
                     )
-            
+
+            # Get stream manager and generate a unique client ID
+            stream_manager = get_stream_manager()
+            telescope_id = getattr(self, 'serial_number', None) or self.host
+            client_id = str(uuid.uuid4())
+
+            # Register this client
+            stream_info = await stream_manager.register_client(telescope_id, camera_id, client_id)
+
+            async def client_stream_generator():
+                """Generator that yields frames to this client."""
+                try:
+                    # Ensure the telescope stream is active (for keepalive)
+                    await stream_manager.get_or_create_stream(
+                        telescope_id, camera_id,
+                        lambda: get_next_image_for_manager(camera_id)
+                    )
+
+                    # Each client gets its own stream from the telescope
+                    # The get_next_image_for_manager function already handles all processing
+                    # and color conversion properly, so we just use it directly
+                    async for frame in get_next_image_for_manager(camera_id):
+                        try:
+                            # Frame is already properly encoded with correct colors
+                            yield frame
+                        except Exception as e:
+                            logging.error(f"Error streaming frame to client {client_id}: {e}")
+                            # Continue streaming even if one frame fails
+                            continue
+
+                except asyncio.CancelledError:
+                    logging.debug(f"Client {client_id} stream cancelled")
+                    raise
+                except Exception as e:
+                    logging.error(f"Error in client stream: {e}")
+                    raise
+                finally:
+                    # Unregister client when done
+                    await stream_manager.unregister_client(telescope_id, camera_id, client_id)
+                    logging.debug(f"Client {client_id} unregistered from stream")
+
             return StreamingResponse(
-                get_next_image(camera_id),
+                client_stream_generator(),
                 media_type="multipart/x-mixed-replace; boundary=frame",
                 headers={
                     "Cache-Control": "no-cache, no-store, must-revalidate",

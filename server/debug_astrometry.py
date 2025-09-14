@@ -4,29 +4,29 @@
 import asyncio
 import httpx
 import json
-import os
+from services.settings_manager import get_settings_manager
 
 
 async def test_astrometry_api():
     """Test the astrometry.net API directly."""
-    
+
     # Test without API key first to see basic connectivity
     headers = {
         "User-Agent": "ALP-Experimental-Telescope-Control/1.0",
         "Accept": "application/json",
     }
-    
+
     # Test both HTTP and HTTPS endpoints
     base_urls = [
         "http://nova.astrometry.net/api/",
         "https://nova.astrometry.net/api/"
     ]
-    
+
     async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
         for base_url in base_urls:
             print(f"\n{'='*60}")
             print(f"Testing endpoint: {base_url}")
-            
+
             try:
                 # First test without authentication to check basic connectivity
                 print(f"\n1. Testing basic connectivity...")
@@ -36,9 +36,10 @@ async def test_astrometry_api():
                 print(f"Headers: {dict(response.headers)}")
                 print(f"Content-Type: {response.headers.get('content-type', 'None')}")
                 print(f"Response (first 200 chars): {response.text[:200]}")
-                
-                # Now test login with a dummy API key if no real one is provided
-                api_key = os.getenv("ASTROMETRY_API_KEY") or "test-key-123"
+
+                # Get API key from settings, or use test key if not configured
+                settings_manager = get_settings_manager()
+                api_key = settings_manager.get_astrometry_api_key() or "test-key-123"
                 
                 print(f"\n2. Testing login endpoint...")
                 login_url = f"{base_url}login"

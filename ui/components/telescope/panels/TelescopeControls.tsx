@@ -47,7 +47,7 @@ export function TelescopeControls() {
   // State for plate solve sync dialog
   const [showPlateSolveDialog, setShowPlateSolveDialog] = useState(false)
   const [plateSolveResult, setPlateSolveResult] = useState<PlateSolveResult | null>(null)
-  
+
   // State for stop imaging confirmation dialog
   const [showStopImagingConfirm, setShowStopImagingConfirm] = useState(false)
 
@@ -369,11 +369,11 @@ export function TelescopeControls() {
     try {
       const wsService = getWebSocketService()
       const zoomValue = zoomLevel === '1x' ? 1 : zoomLevel === '2x' ? 2 : 4
-      
+
       // Send zoom command to telescope
       // TODO: Replace with actual command when backend is ready
       console.log(`Setting Moon zoom to ${zoomLevel} (value: ${zoomValue})`)
-      
+
       addStatusAlert({
         type: "success",
         title: "Zoom Adjusted",
@@ -566,10 +566,10 @@ export function TelescopeControls() {
               <div></div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Tracking</span>
-              <Switch checked={isTracking} onCheckedChange={setIsTracking}/>
-            </div>
+            {/*<div className="flex items-center justify-between">*/}
+            {/*  <span className="text-sm text-muted-foreground">Tracking</span>*/}
+            {/*  <Switch checked={isTracking} onCheckedChange={setIsTracking}/>*/}
+            {/*</div>*/}
 
             <Button
               variant="outline"
@@ -767,13 +767,13 @@ export function TelescopeControls() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={handleCancelStopImaging}
               className=""
             >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmStopImaging}
               className="bg-red-600 hover:bg-red-700 text-white border-0"
             >

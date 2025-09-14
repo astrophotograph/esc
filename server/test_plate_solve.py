@@ -28,7 +28,6 @@ async def test_plate_solve():
     
     if not api_key:
         print("Please configure Astrometry.net API key in Settings > API Keys")
-        print("Or set ASTROMETRY_API_KEY environment variable")
         return
     
     # Get custom API URL if configured

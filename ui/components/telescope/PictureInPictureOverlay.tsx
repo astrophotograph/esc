@@ -10,6 +10,7 @@ import { Settings, X, Minimize2, Maximize2, Camera, Eye, Expand, Minimize } from
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { PipOverlays } from "./PipOverlays"
 import { EnhancedImage } from "./EnhancedImage"
+import { getTelescopeScope } from "@/utils/streaming"
 
 export function PictureInPictureOverlay() {
   const {
@@ -79,17 +80,17 @@ export function PictureInPictureOverlay() {
     }
   }, [pipFullscreen, setPipFullscreen])
 
-  // Camera feed URLs (simulated)
+  // Camera feed URLs
   const getCameraFeed = () => {
     const telescopeId = currentTelescope?.id || ''
     const customUrl = allskyUrls[telescopeId] || ''
-    const telescopeScope = currentTelescope?.serial_number || currentTelescope?.host || ''
+    const telescopeScope = getTelescopeScope(currentTelescope)
 
     const feeds = {
       allsky: customUrl || `http://allsky/current/tmp/image.jpg?_ts=${timestamp}`,
       guide: "/placeholder.svg?height=240&width=320&text=Guide+Camera",
       finder: "/placeholder.svg?height=240&width=320&text=Finder+Scope",
-      secondary: `/api/${telescopeScope}/stream?type=secondary`,
+      secondary: `/api/telescopes/${telescopeScope}/stream/1`, // Use camera ID 1 for secondary stream
     }
     return feeds[pipCamera]
   }
@@ -353,23 +354,37 @@ export function PictureInPictureOverlay() {
           pipFullscreen ? "rounded-none" : "rounded-b-lg"
         }`}>
           {/* Camera Feed */}
-          <EnhancedImage
-            src={getCameraFeed() || "/placeholder.svg"}
-            alt={`${pipCamera} camera feed`}
-            className="w-full h-full object-cover"
-            style={{
-              width: currentSize.width,
-              height: currentSize.height,
-            }}
-            showTimestamp={true}
-            staleThreshold={2}
-            autoRefresh={true}
-            refreshInterval={10}
-            maxRetries={2}
-            showRetryButton={false}
-            showProgress={false}
-            fallbackSrc="/placeholder.svg?height=240&width=320&text=Camera+Offline"
-          />
+          {pipCamera === 'secondary' ? (
+            // Use img tag for streaming secondary camera to avoid refresh issues
+            <img
+              src={getCameraFeed() || "/placeholder.svg"}
+              alt={`${pipCamera} camera feed`}
+              className="w-full h-full object-cover"
+              style={{
+                width: currentSize.width,
+                height: currentSize.height,
+              }}
+            />
+          ) : (
+            // Use EnhancedImage for non-streaming cameras (allsky, etc)
+            <EnhancedImage
+              src={getCameraFeed() || "/placeholder.svg"}
+              alt={`${pipCamera} camera feed`}
+              className="w-full h-full object-cover"
+              style={{
+                width: currentSize.width,
+                height: currentSize.height,
+              }}
+              showTimestamp={true}
+              staleThreshold={2}
+              autoRefresh={pipCamera === 'allsky'} // Only auto-refresh for allsky
+              refreshInterval={30} // Increase interval to 30 seconds
+              maxRetries={2}
+              showRetryButton={false}
+              showProgress={false}
+              fallbackSrc="/placeholder.svg?height=240&width=320&text=Camera+Offline"
+            />
+          )}
 
           {/* Overlays */}
           <PipOverlays width={currentSize.width} height={currentSize.height} camera={pipCamera} />

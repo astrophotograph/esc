@@ -58,24 +58,18 @@ class SettingsManager:
     def get_astrometry_api_key(self) -> Optional[str]:
         """Get the Astrometry.net API key from settings."""
         settings = self.load_settings()
-        
+
         # Navigate through the settings structure
         api_keys = settings.get("apiKeys", {})
         astrometry = api_keys.get("astrometry", {})
-        
+
         # Only return the key if the service is enabled
         if astrometry.get("enabled", False):
             api_key = astrometry.get("apiKey", "")
             if api_key and not api_key.startswith("•"):  # Don't return masked keys
                 logger.debug("Found Astrometry.net API key in settings")
                 return api_key
-        
-        # Fall back to environment variable
-        env_key = os.getenv("ASTROMETRY_API_KEY")
-        if env_key:
-            logger.debug("Using Astrometry.net API key from environment variable")
-            return env_key
-            
+
         return None
     
     def get_astrometry_api_url(self) -> Optional[str]:

@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useTelescopeContext } from "@/context/TelescopeContext"
 import { usePersistentState } from "@/hooks/use-persistent-state"
-import { 
-  Cpu, 
-  X, 
-  ChevronDown, 
+import {
+  Cpu,
+  X,
+  ChevronDown,
   ChevronUp,
   Activity,
   Battery,
@@ -19,7 +19,9 @@ import {
   TrendingUp,
   Info,
   HardDrive,
-  AlertTriangle
+  AlertTriangle,
+  Minimize2,
+  Maximize2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -79,7 +81,11 @@ export function NetworkStatusOverlay() {
   const previousStackedFrameRef = useRef<number>(0)
   const previousDroppedFrameRef = useRef<number>(0)
   const [dataTransferHistory, setDataTransferHistory] = useState<number[]>([])  // MB/s history
-  
+  const [isMinimized, setIsMinimized] = usePersistentState<boolean>(
+    'telescope-status-overlay-minimized',
+    false
+  )
+
   // State for collapsible sections
   const [collapsedSections, setCollapsedSections] = useState<{
     powerThermal: boolean
@@ -333,14 +339,14 @@ export function NetworkStatusOverlay() {
 
   return (
     <TooltipProvider>
-      <div 
-        ref={overlayRef} 
-        className="fixed bg-card/95 backdrop-blur-sm rounded-lg text-sm w-80 shadow-xl border-2 border-border max-h-[90vh] overflow-y-auto" 
-        style={{ 
+      <div
+        ref={overlayRef}
+        className={`fixed bg-card/95 backdrop-blur-sm rounded-lg text-sm shadow-xl border-2 border-border ${isMinimized ? 'w-auto' : 'w-80 max-h-[90vh] overflow-y-auto'}`}
+        style={{
           left: overlayPosition.x,
           top: overlayPosition.y,
-          zIndex: 9999, 
-          minHeight: '200px',
+          zIndex: 9999,
+          minHeight: isMinimized ? 'auto' : '200px',
           cursor: isDragging ? "grabbing" : "default"
         }}
       >
@@ -353,17 +359,33 @@ export function NetworkStatusOverlay() {
             <Cpu className="w-4 h-4" />
             Telescope Status
           </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowStreamStatus(false)}
-            className="h-6 w-6 p-0 hover:bg-accent"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="h-6 w-6 p-0 hover:bg-accent"
+              title={isMinimized ? "Expand" : "Minimize"}
+            >
+              {isMinimized ? (
+                <Maximize2 className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Minimize2 className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowStreamStatus(false)}
+              className="h-6 w-6 p-0 hover:bg-accent"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
-        {/* Content sections */}
+        {/* Content sections - only show if not minimized */}
+        {!isMinimized && (
         <div className="p-4 space-y-4">
           {/* Power & Thermal Section */}
           <div className="space-y-2">
@@ -941,6 +963,7 @@ export function NetworkStatusOverlay() {
             )}
           </div>
         </div>
+        )}
       </div>
     </TooltipProvider>
   )
