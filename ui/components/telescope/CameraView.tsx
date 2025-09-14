@@ -72,6 +72,7 @@ import { AutoGotoOverlay } from "./AutoGotoOverlay"
 import { DarkLibraryOverlay } from "./DarkLibraryOverlay"
 import { AutoFocusOverlay } from "./AutoFocusOverlay"
 import { SlidingCameraSourceSwitcher } from "./SlidingCameraSourceSwitcher"
+import { TelescopeControlsOverlay } from "./TelescopeControlsOverlay"
 
 export function CameraView() {
   // Helper function to get threshold border classes
@@ -1814,6 +1815,11 @@ export function CameraView() {
               rotation={rotationAngle}
               offsetX={panPosition.x}
               offsetY={panPosition.y}
+            />
+
+            {/* Telescope Controls Overlay - show in fullscreen */}
+            <TelescopeControlsOverlay
+              isVisible={liveViewFullscreen}
             />
           </div>
         </CardContent>
