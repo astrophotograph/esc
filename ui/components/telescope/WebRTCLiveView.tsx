@@ -19,6 +19,7 @@ interface WebRTCLiveViewProps {
   panPosition: { x: number; y: number };
   isPortrait: boolean;
   invertColors?: boolean;
+  cameraId?: number; // 0 for main camera, 1 for secondary camera
   stage?: string | null; // Add stage prop to control streaming behavior
   onLoad?: () => void;
   onError?: () => void;
@@ -36,6 +37,7 @@ export function WebRTCLiveView({
   panPosition,
   isPortrait,
   invertColors = false,
+  cameraId = 0,
   stage,
   onLoad,
   onError,
@@ -94,9 +96,9 @@ export function WebRTCLiveView({
         newUrl = '/api/webrtc/test/video-stream';
         console.log('Using WebRTC test endpoint for test telescope:', telescope.name);
       } else {
-        // Use real telescope stream endpoint for actual telescopes
-        newUrl = `/api/${telescope.name}/stream`;
-        console.log('Using real telescope stream endpoint for:', telescope.name);
+        // Use real telescope stream endpoint with camera ID
+        newUrl = `/api/telescopes/${telescope.id}/stream/${cameraId}`;
+        console.log(`Using telescope stream endpoint for ${telescope.name}, camera ${cameraId}`);
       }
 
       // Add timestamp to force reload on remount

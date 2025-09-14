@@ -1606,9 +1606,9 @@ export function CameraView() {
                     handleImageLoad()
                   }}
                 >
-                  {mainCameraSource === 'telescope' ? (
+                  {(mainCameraSource === 'telescope' || mainCameraSource === 'secondary') ? (
                     <WebRTCLiveView
-                      key={streamKey} // Force remount when streamKey changes
+                      key={`${mainCameraSource}-${streamKey}`} // Include camera source in key
                       telescope={currentTelescope}
                       className=""
                       brightness={brightness}
@@ -1622,6 +1622,7 @@ export function CameraView() {
                       onLoad={handleImageLoad}
                       onError={handleImageError}
                       onConnectionStateChange={setConnectionType}
+                      cameraId={mainCameraSource === 'secondary' ? 1 : 0} // Pass camera ID
                     />
                   ) : (
                     // Render alternative camera sources (Allsky, Guide, Finder)
@@ -1631,8 +1632,6 @@ export function CameraView() {
                         src={
                           mainCameraSource === 'allsky'
                             ? (allskyUrls[currentTelescope?.id || ''] || `http://allsky/current/tmp/image.jpg?_ts=${Date.now()}`)
-                            : mainCameraSource === 'secondary'
-                            ? `/api/telescopes/${currentTelescope?.id}/stream/1?_ts=${Date.now()}`
                             : mainCameraSource === 'guide'
                             ? `/api/${currentTelescope?.name}/guide-stream?_ts=${Date.now()}`
                             : `/api/${currentTelescope?.name}/finder-stream?_ts=${Date.now()}`
