@@ -252,8 +252,8 @@ interface TelescopeContextType {
   setPipSize: (size: "small" | "medium" | "large" | "extra-large") => void
   pipCamera: "allsky" | "guide" | "finder" | "secondary"
   setPipCamera: (camera: "allsky" | "guide" | "finder" | "secondary") => void
-  mainCameraSource: "telescope" | "allsky" | "guide" | "finder"
-  setMainCameraSource: (source: "telescope" | "allsky" | "guide" | "finder") => void
+  mainCameraSource: "telescope" | "allsky" | "secondary" | "guide" | "finder"
+  setMainCameraSource: (source: "telescope" | "allsky" | "secondary" | "guide" | "finder") => void
   pipMinimized: boolean
   setPipMinimized: (minimized: boolean) => void
   pipFullscreen: boolean
@@ -697,7 +697,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
   const [pipPosition, setPipPosition] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-position", { x: 20, y: 20 })
   const [pipSize, setPipSize] = usePersistentState<"small" | "medium" | "large" | "extra-large">(STORAGE_KEYS.UI_STATE + "-pip-size", "medium")
   const [pipCamera, setPipCamera] = usePersistentState<"allsky" | "guide" | "finder" | "secondary">(STORAGE_KEYS.UI_STATE + "-pip-camera", "allsky")
-  const [mainCameraSource, setMainCameraSource] = usePersistentState<"telescope" | "allsky" | "guide" | "finder">(STORAGE_KEYS.UI_STATE + "-main-camera-source", "telescope")
+  const [mainCameraSource, setMainCameraSource] = usePersistentState<"telescope" | "allsky" | "secondary" | "guide" | "finder">(STORAGE_KEYS.UI_STATE + "-main-camera-source", "telescope")
   const [pipMinimized, setPipMinimized] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-minimized", false)
   const [pipFullscreen, setPipFullscreen] = usePersistentState(STORAGE_KEYS.UI_STATE + "-pip-fullscreen", false)
   const [liveViewFullscreen, setLiveViewFullscreen] = useState(false)

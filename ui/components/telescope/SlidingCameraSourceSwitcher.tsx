@@ -61,11 +61,10 @@ export function SlidingCameraSourceSwitcher() {
       <div className="absolute top-2 left-2 z-20">
         <button
           onClick={() => {
-            // Toggle between the two sources
-            const nextSource = sources.find(s => s.value !== mainCameraSource)
-            if (nextSource) {
-              setMainCameraSource(nextSource.value)
-            }
+            // Cycle through sources
+            const currentIndex = sources.findIndex(s => s.value === mainCameraSource)
+            const nextIndex = (currentIndex + 1) % sources.length
+            setMainCameraSource(sources[nextIndex].value)
           }}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-full",
@@ -78,19 +77,44 @@ export function SlidingCameraSourceSwitcher() {
             <currentSource.icon className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium">{currentSource.label}</span>
           </div>
-          
-          <div className="w-px h-4 bg-border" />
-          
-          <div className="flex items-center gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-            {sources
-              .filter(s => s.value !== mainCameraSource)
-              .map(source => (
-                <React.Fragment key={source.value}>
-                  <source.icon className="h-4 w-4" />
-                  <span className="text-xs">{source.label}</span>
-                </React.Fragment>
-              ))}
-          </div>
+
+          {sources.length === 2 && (
+            <>
+              <div className="w-px h-4 bg-border" />
+
+              <div className="flex items-center gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                {sources
+                  .filter(s => s.value !== mainCameraSource)
+                  .map(source => (
+                    <React.Fragment key={source.value}>
+                      <source.icon className="h-4 w-4" />
+                      <span className="text-xs">{source.label}</span>
+                    </React.Fragment>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {sources.length === 3 && (
+            <>
+              <div className="w-px h-4 bg-border" />
+
+              <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                {/* Show next source in cycle */}
+                {(() => {
+                  const currentIndex = sources.findIndex(s => s.value === mainCameraSource)
+                  const nextIndex = (currentIndex + 1) % sources.length
+                  const nextSource = sources[nextIndex]
+                  return (
+                    <>
+                      <nextSource.icon className="h-4 w-4" />
+                      <span className="text-xs">{nextSource.label}</span>
+                    </>
+                  )
+                })()}
+              </div>
+            </>
+          )}
         </button>
       </div>
     )
