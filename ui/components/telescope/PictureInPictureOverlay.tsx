@@ -94,11 +94,11 @@ export function PictureInPictureOverlay() {
     return feeds[pipCamera]
   }
 
-  // Check if telescope is Seestar S30 in streaming mode
+  // Check if telescope is Seestar S30 in streaming mode or solar system mode
   const isS30InStreamingMode = () => {
-    // Check for both "RTSP" and "Streaming" as different versions might use different values
+    // Check for both "RTSP" and "Streaming" (scenery mode) as well as "solar_sys" (solar system mode)
     return currentTelescope?.product_model?.toLowerCase()?.includes('s30') &&
-           (clientMode === 'RTSP' || clientMode === 'Streaming')
+           (clientMode === 'RTSP' || clientMode === 'Streaming' || clientMode === 'solar_sys')
   }
 
   // Handle dragging

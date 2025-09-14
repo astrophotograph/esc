@@ -20,7 +20,7 @@ from scopinator.seestar.commands.parameterized import (
     IscopeStartViewParams, IscopeStartStack, StartStackParams, ScopeViewMode, ScopeTargetType, )
 from scopinator.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
-from scopinator.seestar.commands.simple import PiReboot, GetViewState, StartAutoFocus
+from scopinator.seestar.commands.simple import PiReboot, GetViewState, StartAutoFocus, StartScanPlanet
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -1435,6 +1435,11 @@ class WebSocketManager:
             # Don't wait for completion - return immediately so other commands can be processed
             # The UI will track progress via status updates
             logger.info(f"Goto command initiated for {target_name}")
+
+            if mode == "solar_sys":
+                # A solar system object, so send "start_scan_planet" command to find the object.
+                # Frontend should watch for ScanSun events.
+                await client.send_and_recv(StartScanPlanet())
 
             # If start_imaging was requested, schedule it to run after goto completes
             if start_imaging:
