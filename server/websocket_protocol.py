@@ -26,6 +26,7 @@ class MessageType(str, Enum):
     ALERT = "alert"
     PLATE_SOLVE_RESULT = "plate_solve_result"
     CLIENT_MODE_CHANGED = "client_mode_changed"
+    SCAN_SUN_EVENT = "scan_sun_event"  # Solar system object scanning events
     SERVER_INIT = "server_init"  # Server initialization status
 
     # Control commands
@@ -262,6 +263,26 @@ class ClientModeChangedMessage(WebSocketMessage):
             },
             **data,
         )
+
+
+class ScanSunEventMessage(WebSocketMessage):
+    """ScanSun event message for solar system object detection."""
+
+    type: MessageType = MessageType.SCAN_SUN_EVENT
+
+    def __init__(
+        self,
+        telescope_id: str,
+        state: str,
+        error: Optional[str] = None,
+        **data
+    ):
+        payload = {
+            "state": state,
+        }
+        if error:
+            payload["error"] = error
+        super().__init__(telescope_id=telescope_id, payload=payload, **data)
 
 
 class PlateSolveResultMessage(WebSocketMessage):
@@ -839,6 +860,19 @@ class MessageFactory:
             state=state,
             error=error,
             code=code,
+        )
+
+    @staticmethod
+    def create_scan_sun_event(
+        telescope_id: str,
+        state: str,
+        error: Optional[str] = None,
+    ) -> ScanSunEventMessage:
+        """Create a ScanSun event message."""
+        return ScanSunEventMessage(
+            telescope_id=telescope_id,
+            state=state,
+            error=error,
         )
 
     @staticmethod

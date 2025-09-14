@@ -29,7 +29,7 @@ import type {
 } from "../types/telescope-types"
 import type { ObservingLocation } from "../location-management"
 import { sampleCelestialObjects, sampleCelestialEvents, sampleWeatherForecast } from "../data/sample-data"
-import { getWebSocketService, MessageType, CommandAction, SubscriptionType } from "../services/websocket-service"
+import { getWebSocketService, MessageType, CommandAction, SubscriptionType, type ScanSunEventMessage } from "../services/websocket-service"
 import { j2000ToJNow } from "../utils/coordinate-precession"
 
 export interface Annotation {
@@ -2085,6 +2085,21 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
         setCurrentAnnotations(message.payload.annotations)
       }
     }
+
+    // Handle ScanSun events for solar system object detection
+    const handleScanSunEvent = (message: ScanSunEventMessage) => {
+      if (message.telescope_id === currentTelescope?.id) {
+        const { state, error } = message.payload
+
+        // Show toast notification if the scan failed
+        if (state === 'fail' || state === 'failed') {
+          toast.error('Solar System Object Detection Failed', {
+            description: error || 'Unable to find the solar system object. Please try again.',
+            duration: 5000,
+          })
+        }
+      }
+    }
     
     // Handle WebSocket reconnection
     const handleReconnected = () => {
@@ -2100,6 +2115,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
     wsService.on(MessageType.TELESCOPE_LOST, handleTelescopeLost)
     wsService.on(MessageType.STATUS_UPDATE, handleStatusUpdate)
     wsService.on(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
+    wsService.on(MessageType.SCAN_SUN_EVENT, handleScanSunEvent)
     wsService.on('reconnected', handleReconnected)
 
     return () => {
@@ -2109,6 +2125,7 @@ export function TelescopeProvider({ children }: { children: ReactNode }) {
       wsService.off(MessageType.TELESCOPE_LOST, handleTelescopeLost)
       wsService.off(MessageType.STATUS_UPDATE, handleStatusUpdate)
       wsService.off(MessageType.ANNOTATION_EVENT, handleAnnotationEvent)
+      wsService.off(MessageType.SCAN_SUN_EVENT, handleScanSunEvent)
       wsService.off('reconnected', handleReconnected)
     }
   }, [currentTelescope?.id])

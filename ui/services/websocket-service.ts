@@ -26,6 +26,7 @@ export enum MessageType {
   ALERT = 'alert',
   PLATE_SOLVE_RESULT = 'plate_solve_result',
   CLIENT_MODE_CHANGED = 'client_mode_changed',
+  SCAN_SUN_EVENT = 'scan_sun_event',
   ECHO_REQUEST = 'echo_request',
   ECHO_RESPONSE = 'echo_response',
   SERVER_INIT = 'server_init',
@@ -162,6 +163,14 @@ export interface ClientModeChangedMessage extends WebSocketMessage {
   payload: {
     old_mode?: string
     new_mode?: string
+  }
+}
+
+export interface ScanSunEventMessage extends WebSocketMessage {
+  type: MessageType.SCAN_SUN_EVENT
+  payload: {
+    state: string
+    error?: string
   }
 }
 
@@ -309,6 +318,7 @@ export type WebSocketMessageUnion =
   | AlertMessage
   | PlateSolveResultMessage
   | ClientModeChangedMessage
+  | ScanSunEventMessage
   | EchoRequestMessage
   | EchoResponseMessage
   | CatalogSearchMessage

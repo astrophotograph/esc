@@ -459,6 +459,24 @@ class WebSocketManager:
             if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
                 await connection.send_message(message)
 
+    async def broadcast_scan_sun_event(
+            self,
+            telescope_id: str,
+            state: str,
+            error: Optional[str] = None,
+    ):
+        """Broadcast ScanSun events to all subscribed clients."""
+        message = MessageFactory.create_scan_sun_event(
+            telescope_id=telescope_id,
+            state=state,
+            error=error,
+        )
+
+        # Send to all subscribed connections
+        for connection in self.connections.values():
+            if connection.is_subscribed_to(telescope_id, SubscriptionType.STATUS):
+                await connection.send_message(message)
+
     async def broadcast_plate_solve_result(
             self,
             telescope_id: str,

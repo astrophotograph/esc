@@ -26,13 +26,13 @@ import {
 import { ImagingParametersDialog } from "./ImagingParametersDialog"
 import { useTelescopeContext } from "../../context/TelescopeContext"
 import { getObjectTypeIcon } from "../../utils/telescope-utils"
-import { 
-  filterVisibleObjects, 
+import {
+  filterVisibleObjects,
   getDynamicCelestialObjects,
   DEFAULT_OBSERVER_LOCATION,
   parseRA,
   parseDec,
-  type CelestialObjectWithHorizon 
+  type CelestialObjectWithHorizon
 } from "../../utils/celestial-calculations"
 import { j2000ToJNow } from "../../utils/coordinate-precession"
 import { formatCoordinates } from "../../utils/astronomical-calculations"
@@ -56,6 +56,39 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   const [showImagingParametersDialog, setShowImagingParametersDialog] = useState(false)
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false)
   const [showSolarWarningDialog, setShowSolarWarningDialog] = useState(false)
+  const [pendingSolarObject, setPendingSolarObject] = useState<CelestialObjectWithHorizon | null>(null)
+
+  // Force cleanup of dialog overlays to prevent UI blocking
+  useEffect(() => {
+    const cleanupOverlays = () => {
+      // Force remove any lingering backdrop/overlay elements
+      const overlays = document.querySelectorAll('[data-radix-dialog-overlay], [data-radix-presence]')
+      overlays.forEach(overlay => {
+        // Only remove if it's not associated with an open dialog
+        const dialogContent = document.querySelector('[role="alertdialog"]:not([aria-hidden="true"]), [role="dialog"]:not([aria-hidden="true"])')
+        if (!dialogContent && overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay)
+        }
+      })
+
+      // Also ensure body styles are reset
+      document.body.style.pointerEvents = ''
+      document.body.style.overflow = ''
+    }
+
+    if (!showSolarWarningDialog && !open) {
+      // Add a small delay to ensure React has finished updating
+      const timer = setTimeout(cleanupOverlays, 100)
+      return () => clearTimeout(timer)
+    }
+
+    // Also cleanup on component unmount
+    return () => {
+      if (!showSolarWarningDialog) {
+        cleanupOverlays()
+      }
+    }
+  }, [showSolarWarningDialog, open])
 
   // Debounce search query
   useEffect(() => {
@@ -76,7 +109,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       }
 
       let response: any
-      
+
       // Use quick search for initial load (no search query)
       if (!debouncedSearchQuery && !hasLoadedInitialData) {
         response = await catalogAPI.quickSearch(
@@ -100,7 +133,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       }
 
       // Convert catalog objects to frontend format
-      const convertedObjects = response.objects.map((obj: any, index: number) => 
+      const convertedObjects = response.objects.map((obj: any, index: number) =>
         CatalogAPI.convertToFrontendObject(obj, index)
       ) as CelestialObjectWithHorizon[]
 
@@ -141,14 +174,14 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       'Moon': 'Planets',
       'planet': 'Planets',
       'moon': 'Planets',
-      
+
       // Stars
       'Star': 'Stars',
       '*': 'Stars',
       '**': 'Stars',
       'V*': 'Stars',
       'double-star': 'Stars',
-      
+
       // Nebulae
       'PN': 'Nebulae',
       'EN': 'Nebulae',
@@ -161,14 +194,14 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       'RfN': 'Nebulae',
       'DrkN': 'Nebulae',
       'nebula': 'Nebulae',
-      
+
       // Galaxies
       'G': 'Galaxies',
       'GPair': 'Galaxies',
       'GTrpl': 'Galaxies',
       'GGroup': 'Galaxies',
       'galaxy': 'Galaxies',
-      
+
       // Clusters
       'OC': 'Clusters',
       'OCl': 'Clusters',
@@ -214,7 +247,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       'Galaxies': 'Galaxies',
       'Clusters': 'Star Clusters',
       'Other': 'Other Objects',
-      
+
       // Legacy mappings for compatibility
       'planet': 'Planets & Solar System',
       'moon': 'Planets & Solar System',
@@ -252,7 +285,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       'Co': 'Other Objects',
       'Nova': 'Other Objects'
     }
-    
+
     return groupMapping[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
 
@@ -263,89 +296,95 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
 
   const handleGoto = async (startImaging: boolean = false) => {
     if (!selectedObject) return
-    
+
     // Check if this is the Sun - show warning dialog
     if (selectedObject.id === 'sun' || selectedObject.name?.toLowerCase() === 'sun') {
+      // Store the solar object for later use
+      setPendingSolarObject(selectedObject)
+      setPendingGotoAction({ startImaging })
+      // Don't close the main dialog - let the solar warning appear on top
       setShowSolarWarningDialog(true)
       return
     }
-    
+
     // Check if currently imaging (stage is "Stack")
     const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
-    
+
     if (isCurrentlyImaging) {
       // Store the pending action and show confirmation dialog
       setPendingGotoAction({ startImaging })
       setShowStopImagingConfirm(true)
       return
     }
-    
+
     // Proceed with goto if not imaging
     await executeGoto(startImaging)
   }
 
   const executeGoto = async (startImaging: boolean = false, gain?: number, lightPollutionFilter?: boolean) => {
-    if (!selectedObject) return
-    
+    // Use pendingSolarObject if we're coming from the solar warning dialog, otherwise use selectedObject
+    const targetObject = pendingSolarObject || selectedObject
+    if (!targetObject) return
+
     setIsPerformingAction(true)
     try {
       // Convert to CelestialObject type for context first
       const celestialObject = {
-        id: selectedObject.id,
-        name: selectedObject.name,
-        type: selectedObject.type as "galaxy" | "nebula" | "cluster" | "planet" | "moon" | "double-star",
-        magnitude: selectedObject.magnitude,
-        ra: selectedObject.ra,
-        dec: selectedObject.dec,
-        bestSeenIn: selectedObject.bestSeenIn,
-        description: selectedObject.description,
-        optimalMoonPhase: selectedObject.optimalMoonPhase as "new" | "crescent" | "quarter" | "gibbous" | "full" | "any",
-        isCurrentlyVisible: selectedObject.isCurrentlyVisible
+        id: targetObject.id,
+        name: targetObject.name,
+        type: targetObject.type as "galaxy" | "nebula" | "cluster" | "planet" | "moon" | "double-star",
+        magnitude: targetObject.magnitude,
+        ra: targetObject.ra,
+        dec: targetObject.dec,
+        bestSeenIn: targetObject.bestSeenIn,
+        description: targetObject.description,
+        optimalMoonPhase: targetObject.optimalMoonPhase as "new" | "crescent" | "quarter" | "gibbous" | "full" | "any",
+        isCurrentlyVisible: targetObject.isCurrentlyVisible
       }
-      
+
       // Select the target in the context
       handleTargetSelect(celestialObject)
-      
-      console.log(`Sending goto message for ${selectedObject.name} with imaging=${startImaging}`)
+
+      console.log(`Sending goto message for ${targetObject.name} with imaging=${startImaging}`)
       console.log('Message details:', {
-        target_name: selectedObject.name,
-        coordinates: { ra: selectedObject.ra, dec: selectedObject.dec },
+        target_name: targetObject.name,
+        coordinates: { ra: targetObject.ra, dec: targetObject.dec },
         start_imaging: startImaging,
-        target_type: selectedObject.type,
-        magnitude: selectedObject.magnitude,
-        description: selectedObject.description,
+        target_type: targetObject.type,
+        magnitude: targetObject.magnitude,
+        description: targetObject.description,
         gain: gain,
         light_pollution_filter: lightPollutionFilter
       })
-      
+
       // Close dialog immediately for better UX
       onOpenChange(false)
-      
+
       // Parse RA and Dec from string format to degrees
-      const raDegrees = parseRA(selectedObject.ra)
-      const decDegrees = parseDec(selectedObject.dec)
-      
+      const raDegrees = parseRA(targetObject.ra)
+      const decDegrees = parseDec(targetObject.dec)
+
       // Execute the command in the background - context function will handle success/error notifications
       handleGotoTarget(
-        selectedObject.name,
+        targetObject.name,
         raDegrees,
         decDegrees,
         startImaging,
-        selectedObject.type,
-        selectedObject.magnitude,
-        selectedObject.description,
+        targetObject.type,
+        targetObject.magnitude,
+        targetObject.description,
         gain,
         lightPollutionFilter
       )
     } catch (error) {
       console.error('Failed to initiate goto command:', error)
-      
+
       // Show error toast for immediate validation errors
       toast.error("Failed to initiate goto command", {
-        description: `Could not start navigation to ${selectedObject.name}. Please try again.`,
+        description: `Could not start navigation to ${targetObject.name}. Please try again.`,
         duration: 6000,
       })
-      
+
       // Close the dialog
       onOpenChange(false)
     } finally {
@@ -357,28 +396,28 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
     // Show the imaging parameters dialog instead of directly starting
     setShowImagingParametersDialog(true)
   }
-  
+
   const handleImagingParametersConfirm = async (params: { gain: number; lightPollutionFilter: boolean }) => {
     setShowImagingParametersDialog(false)
-    
+
     // Check if currently imaging
     const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
-    
+
     if (isCurrentlyImaging) {
       // Store the pending action with parameters and show confirmation dialog
-      setPendingGotoAction({ 
-        startImaging: true, 
-        gain: params.gain, 
-        lightPollutionFilter: params.lightPollutionFilter 
+      setPendingGotoAction({
+        startImaging: true,
+        gain: params.gain,
+        lightPollutionFilter: params.lightPollutionFilter
       })
       setShowStopImagingConfirm(true)
       return
     }
-    
+
     // Proceed with goto and imaging with parameters
     await executeGoto(true, params.gain, params.lightPollutionFilter)
   }
-  
+
   const handleImagingParametersCancel = () => {
     setShowImagingParametersDialog(false)
   }
@@ -389,15 +428,15 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
 
   const handleConfirmStopImaging = async () => {
     setShowStopImagingConfirm(false)
-    
+
     if (pendingGotoAction) {
       // Stop the current imaging session first
       await handleStopImaging()
-      
+
       // Then proceed with the goto with parameters if provided
       await executeGoto(
-        pendingGotoAction.startImaging, 
-        pendingGotoAction.gain, 
+        pendingGotoAction.startImaging,
+        pendingGotoAction.gain,
         pendingGotoAction.lightPollutionFilter
       )
       setPendingGotoAction(null)
@@ -412,8 +451,8 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
   return (
     <>
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput 
-        placeholder="Search celestial objects above horizon..." 
+      <CommandInput
+        placeholder="Search celestial objects above horizon..."
         className="text-base"
         value={searchQuery}
         onValueChange={setSearchQuery}
@@ -437,11 +476,11 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
             )}
           </div>
         </CommandEmpty>
-        
+
         {orderedGroups.map((group) => {
           const objects = groupedObjects[group]
           if (!objects || objects.length === 0) return null
-          
+
           return (
             <CommandGroup key={group} heading={getGroupTitle(group)}>
               {objects.map((obj) => (
@@ -485,21 +524,21 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-sm">
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="w-3 h-3" />
                       <span>{obj.altitude.toFixed(1)}°</span>
                     </div>
                     {obj.altitude > 0 ? (
-                      <Badge 
+                      <Badge
                         variant={obj.altitude > 45 ? "default" : obj.altitude > 20 ? "secondary" : "outline"}
                         className="text-xs"
                       >
                         {obj.altitude > 45 ? "High" : obj.altitude > 20 ? "Med" : "Low"}
                       </Badge>
                     ) : (
-                      <Badge 
+                      <Badge
                         variant="destructive"
                         className="text-xs"
                       >
@@ -513,7 +552,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
           )
         })}
       </CommandList>
-      
+
       {/* Action Buttons - shown when an object is selected */}
       {selectedObject && (
         <div className="border-t p-4 bg-muted/50">
@@ -533,7 +572,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 <div className="text-sm text-muted-foreground mb-2">
                   {selectedObject.description}
                 </div>
-                
+
                 {/* Object Details Grid */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                   {/* J2000 Coordinates */}
@@ -550,7 +589,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                     <span className="text-muted-foreground">Dec:</span>
                     <span className="font-mono">{selectedObject.dec}</span>
                   </div>
-                  
+
                   {/* JNow Coordinates */}
                   {(() => {
                     const jNowCoords = j2000ToJNow({
@@ -561,7 +600,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                     const currentYear = new Date().getFullYear()
                     const currentMonth = new Date().getMonth() + 1
                     const epochLabel = `J${currentYear}.${Math.floor((currentMonth - 1) / 12 * 10)}`
-                    
+
                     return (
                       <>
                         <div className="col-span-2 flex items-center gap-1 mt-1">
@@ -580,7 +619,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       </>
                     )
                   })()}
-                  
+
                   {/* Altitude and Magnitude */}
                   <div className="col-span-2 border-t border-border/50 mt-1 pt-1"></div>
                   <div className="flex items-center gap-1">
@@ -597,7 +636,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       <span>{typeof selectedObject.magnitude === 'number' ? selectedObject.magnitude.toFixed(1) : selectedObject.magnitude}</span>
                     </div>
                   )}
-                  
+
                   {/* Additional info for specific types */}
                   {selectedObject.bestSeenIn && (
                     <div className="col-span-2 flex items-center gap-1 mt-1">
@@ -606,7 +645,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                       <span>{selectedObject.bestSeenIn}</span>
                     </div>
                   )}
-                  
+
                   {/* Moon phase info */}
                   {selectedObject.id === 'moon' && selectedObject._moonPhase !== undefined && (
                     <div className="col-span-2 flex items-center gap-1 mt-1">
@@ -617,7 +656,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 </div>
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex items-center gap-2 pt-2">
               <Button
@@ -641,8 +680,9 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
                 Goto
               </Button>
               {/* Only show Goto & Image for non-solar system objects (planets, Sun, Moon) */}
-              {selectedObject.type?.toLowerCase() !== 'planet' && 
-               selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' && (
+              {selectedObject.type?.toLowerCase() !== 'planet' &&
+               selectedObject.id !== 'moon' && selectedObject.name?.toLowerCase() !== 'moon' &&
+                selectedObject.id !== 'sun' && selectedObject.name?.toLowerCase() !== 'sun' && (
                 <Button
                   variant="default"
                   size="sm"
@@ -659,7 +699,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
           </div>
         </div>
       )}
-      
+
       <div className="border-t p-3 text-xs text-muted-foreground">
         <div className="flex items-center justify-between">
           <span>
@@ -696,7 +736,7 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-    
+
     {/* Imaging Parameters Dialog */}
     <ImagingParametersDialog
       open={showImagingParametersDialog}
@@ -706,10 +746,21 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
       onConfirm={handleImagingParametersConfirm}
       onCancel={handleImagingParametersCancel}
     />
-    
+
     {/* Solar Warning Dialog */}
-    <AlertDialog open={showSolarWarningDialog} onOpenChange={setShowSolarWarningDialog}>
-      <AlertDialogContent className="max-w-md">
+    <AlertDialog
+      open={showSolarWarningDialog}
+      modal={true}
+    >
+      <AlertDialogContent
+        className="max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={() => {
+          setShowSolarWarningDialog(false)
+          setPendingSolarObject(null)
+          setPendingGotoAction(null)
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle className="text-red-600 flex items-center gap-2">
             ⚠️ SOLAR OBSERVATION WARNING
@@ -736,20 +787,35 @@ export function CelestialSearchDialog({ open, onOpenChange }: CelestialSearchDia
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setShowSolarWarningDialog(false)}>
+          <AlertDialogCancel onClick={() => {
+            setShowSolarWarningDialog(false)
+            // Clear pending states when canceling
+            setPendingSolarObject(null)
+            setPendingGotoAction(null)
+            // No need to close main dialog - user may want to select another target
+          }}>
             Cancel
           </AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogAction
             onClick={async () => {
               setShowSolarWarningDialog(false)
-              // Check if currently imaging
-              const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
-              if (isCurrentlyImaging) {
-                setPendingGotoAction({ startImaging: false })
-                setShowStopImagingConfirm(true)
-              } else {
-                await executeGoto(false)
-              }
+              // Close the main dialog now since user confirmed
+              onOpenChange(false)
+
+              // Small delay to ensure dialogs close properly
+              setTimeout(async () => {
+                // Check if currently imaging
+                const isCurrentlyImaging = streamStatus?.status?.stage === 'Stack'
+                if (isCurrentlyImaging) {
+                  setShowStopImagingConfirm(true)
+                } else {
+                  // Use the stored pending action parameters
+                  await executeGoto(pendingGotoAction?.startImaging || false, pendingGotoAction?.gain, pendingGotoAction?.lightPollutionFilter)
+                  // Clear the pending solar object after use
+                  setPendingSolarObject(null)
+                  setPendingGotoAction(null)
+                }
+              }, 50)
             }}
             className="bg-red-600 hover:bg-red-700"
           >
