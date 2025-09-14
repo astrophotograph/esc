@@ -32,6 +32,7 @@ export function PictureInPictureOverlay() {
     setShowPipStatus,
     pipFullscreen,
     setPipFullscreen,
+    clientMode,
   } = useTelescopeContext()
 
   const [isDragging, setIsDragging] = useState(false)
@@ -82,12 +83,22 @@ export function PictureInPictureOverlay() {
   const getCameraFeed = () => {
     const telescopeId = currentTelescope?.id || ''
     const customUrl = allskyUrls[telescopeId] || ''
+    const telescopeScope = currentTelescope?.serial_number || currentTelescope?.host || ''
+
     const feeds = {
       allsky: customUrl || `http://allsky/current/tmp/image.jpg?_ts=${timestamp}`,
       guide: "/placeholder.svg?height=240&width=320&text=Guide+Camera",
       finder: "/placeholder.svg?height=240&width=320&text=Finder+Scope",
+      secondary: `/api/${telescopeScope}/stream?type=secondary`,
     }
     return feeds[pipCamera]
+  }
+
+  // Check if telescope is Seestar S30 in streaming mode
+  const isS30InStreamingMode = () => {
+    // Check for both "RTSP" and "Streaming" as different versions might use different values
+    return currentTelescope?.product_model?.toLowerCase()?.includes('s30') &&
+           (clientMode === 'RTSP' || clientMode === 'Streaming')
   }
 
   // Handle dragging
@@ -200,12 +211,12 @@ export function PictureInPictureOverlay() {
           <Camera className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           {(pipSize === "large" || pipSize === "extra-large") && (
             <span className="text-sm text-muted-foreground font-medium truncate">
-              {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)} Camera
+              {pipCamera === 'secondary' ? 'Secondary' : pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)} Camera
             </span>
           )}
           {pipSize === "medium" && (
             <span className="text-xs text-muted-foreground font-medium truncate">
-              {pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)}
+              {pipCamera === 'secondary' ? 'Secondary' : pipCamera.charAt(0).toUpperCase() + pipCamera.slice(1)}
             </span>
           )}
           {!pipMinimized && (pipSize === "large" || pipSize === "extra-large") && (
@@ -231,7 +242,7 @@ export function PictureInPictureOverlay() {
             <>
               {/* Camera Selector - show for medium and larger */}
               {(pipSize === "medium" || pipSize === "large" || pipSize === "extra-large") && (
-                <Select value={pipCamera} onValueChange={(value: "allsky" | "guide" | "finder") => setPipCamera(value)}>
+                <Select value={pipCamera} onValueChange={(value: "allsky" | "guide" | "finder" | "secondary") => setPipCamera(value)}>
                   <SelectTrigger className={`h-6 text-xs ${
                     pipSize === "medium" ? "w-14" : "w-20"
                   }`}>
@@ -241,6 +252,9 @@ export function PictureInPictureOverlay() {
                     <SelectItem value="allsky">All-Sky</SelectItem>
                     <SelectItem value="guide">Guide</SelectItem>
                     <SelectItem value="finder">Finder</SelectItem>
+                    {isS30InStreamingMode() && (
+                      <SelectItem value="secondary">Secondary</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               )}

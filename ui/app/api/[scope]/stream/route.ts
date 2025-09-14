@@ -52,7 +52,7 @@ export async function GET(req: NextRequest,
 
     // Create abort controller for cleanup
     const abortController = new AbortController()
-    
+
     // Add timeout to prevent hanging requests
     const timeoutId = setTimeout(() => abortController.abort(), 30000) // 30 second timeout
 
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest,
     const { readable, writable } = new TransformStream()
     const writer = writable.getWriter()
     const reader = response.body.getReader()
-    
+
     // Pipe the response with cleanup handling
     const pump = async () => {
       try {
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest,
         }
       }
     }
-    
+
     pump().catch(console.error)
 
     // Clean up on client disconnect
@@ -168,6 +168,10 @@ function buildStreamUrl(scope: string, streamType: string): string | null {
     case 'live':
       // Main video stream
       return `${backendBaseUrl}/api/telescopes/${scope}/stream/0`
+
+    case 'secondary':
+      // Secondary camera stream (for Seestar S30)
+      return `${backendBaseUrl}/api/telescopes/${scope}/stream/1`
 
     // case 'preview':
     // case 'thumb':

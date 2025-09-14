@@ -151,7 +151,7 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
         except ImportError:
             websocket_manager = None
             telescope_id = None
-        
+
         self.client = SeestarClient(
             self.host, 
             self.port, 
@@ -159,6 +159,8 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             websocket_manager=websocket_manager,
             telescope_id=telescope_id
         )
+        # Forces OpenCV to use UDP transport for RTSP streams
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
         self.imaging = SeestarImagingClient(
             self.host, self.imaging_port, self.event_bus
         )
@@ -692,6 +694,14 @@ class Telescope(BaseModel, arbitrary_types_allowed=True):
             #     4,
             #     cv2.LINE_8,
             # )
+
+            # Check if we're in streaming mode and need to convert RGB to BGR
+            # RTSP streaming delivers BGR, but RtspClient converts to RGB
+            # cv2.imencode expects BGR format for JPEG encoding
+            if self.imaging.client_mode == "Streaming":
+                # Convert RGB back to BGR for proper JPEG encoding
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
             imgencode = cv2.imencode(".jpeg", image)[1]
             stringData = imgencode.tobytes()
             frame = (b"Content-Type: image/jpeg\r\n"
