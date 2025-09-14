@@ -18,16 +18,20 @@ export function SlidingCameraSourceSwitcher() {
   const hasFinderScope = false // TODO: Check if telescope has finder scope endpoint
 
   const sources = useMemo(() => {
-    const baseSources = [
-      { value: 'telescope' as const, icon: Camera, label: 'Telescope' },
-      { value: 'allsky' as const, icon: Globe, label: 'All-Sky' },
-    ]
+    const baseSources = []
 
-    // Add secondary camera option if available
+    // Always add telescope first
+    baseSources.push({ value: 'telescope' as const, icon: Camera, label: 'Telescope' })
+
+    // Always add all-sky second
+    baseSources.push({ value: 'allsky' as const, icon: Globe, label: 'All-Sky' })
+
+    // Add secondary camera third if available
     if (isS30InStreamingMode) {
       baseSources.push({ value: 'secondary' as const, icon: Video, label: 'Secondary' })
     }
 
+    // Add other cameras if available (for future use)
     if (hasGuideCamera) {
       baseSources.push({ value: 'guide' as const, icon: Eye, label: 'Guide' })
     }
@@ -55,67 +59,33 @@ export function SlidingCameraSourceSwitcher() {
     ...sources.filter(s => s.value !== mainCameraSource)
   ]
 
-  // If only 2 or 3 sources, render as a simple toggle button
+  // If only 2 or 3 sources, render as a segmented button group
   if (sources.length <= 3) {
     return (
       <div className="absolute top-2 left-2 z-20">
-        <button
-          onClick={() => {
-            // Cycle through sources
-            const currentIndex = sources.findIndex(s => s.value === mainCameraSource)
-            const nextIndex = (currentIndex + 1) % sources.length
-            setMainCameraSource(sources[nextIndex].value)
-          }}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full",
-            "bg-background/90 backdrop-blur-sm border border-border/50",
-            "hover:bg-background/95 transition-all duration-200",
-            "group"
-          )}
-        >
-          <div className="flex items-center gap-1.5">
-            <currentSource.icon className="h-4 w-4 text-primary" />
-            <span className="text-xs font-medium">{currentSource.label}</span>
-          </div>
-
-          {sources.length === 2 && (
-            <>
-              <div className="w-px h-4 bg-border" />
-
-              <div className="flex items-center gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-                {sources
-                  .filter(s => s.value !== mainCameraSource)
-                  .map(source => (
-                    <React.Fragment key={source.value}>
-                      <source.icon className="h-4 w-4" />
-                      <span className="text-xs">{source.label}</span>
-                    </React.Fragment>
-                  ))}
-              </div>
-            </>
-          )}
-
-          {sources.length === 3 && (
-            <>
-              <div className="w-px h-4 bg-border" />
-
-              <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-                {/* Show next source in cycle */}
-                {(() => {
-                  const currentIndex = sources.findIndex(s => s.value === mainCameraSource)
-                  const nextIndex = (currentIndex + 1) % sources.length
-                  const nextSource = sources[nextIndex]
-                  return (
-                    <>
-                      <nextSource.icon className="h-4 w-4" />
-                      <span className="text-xs">{nextSource.label}</span>
-                    </>
-                  )
-                })()}
-              </div>
-            </>
-          )}
-        </button>
+        <div className={cn(
+          "flex items-center rounded-full",
+          "bg-background/90 backdrop-blur-sm border border-border/50",
+          "p-1"
+        )}>
+          {sources.map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setMainCameraSource(value)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+                "transition-all duration-200",
+                "text-xs font-medium",
+                mainCameraSource === value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     )
   }
@@ -192,16 +162,20 @@ export function CompactSlidingCameraSourceSwitcher() {
   const hasFinderScope = false // TODO: Check if telescope has finder scope endpoint
 
   const sources = useMemo(() => {
-    const baseSources = [
-      { value: 'telescope' as const, icon: Camera, tooltip: 'Telescope' },
-      { value: 'allsky' as const, icon: Globe, tooltip: 'All-Sky' },
-    ]
+    const baseSources = []
 
-    // Add secondary camera option if available
+    // Always add telescope first
+    baseSources.push({ value: 'telescope' as const, icon: Camera, tooltip: 'Telescope' })
+
+    // Always add all-sky second
+    baseSources.push({ value: 'allsky' as const, icon: Globe, tooltip: 'All-Sky' })
+
+    // Add secondary camera third if available
     if (isS30InStreamingMode) {
       baseSources.push({ value: 'secondary' as const, icon: Video, tooltip: 'Secondary' })
     }
 
+    // Add other cameras if available (for future use)
     if (hasGuideCamera) {
       baseSources.push({ value: 'guide' as const, icon: Eye, tooltip: 'Guide' })
     }
