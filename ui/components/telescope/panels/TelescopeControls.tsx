@@ -10,7 +10,7 @@ import {ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Focus, Home, RotateCcw, Setti
 import {useTelescopeContext} from "@/context/TelescopeContext"
 import {formatRaDec} from "@/utils/telescope-utils"
 import {type PlateSolveResult, PlateSolveSyncDialog} from "../modals/PlateSolveSyncDialog"
-import {getWebSocketService, MessageType, PlateSolveResultMessage} from "@/services/websocket-service"
+import {getWebSocketService, MessageType, PlateSolveResultMessage, CommandAction} from "@/services/websocket-service"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,6 +156,36 @@ export function TelescopeControls() {
       title: isImaging ? "Imaging Stopped" : "Imaging Started",
       message: isImaging ? "Telescope imaging session ended" : "Telescope imaging session started",
     })
+  }
+
+  const handleAutoFocus = async () => {
+    if (!currentTelescope) {
+      addStatusAlert({
+        type: "error",
+        title: "No Telescope Selected",
+        message: "Please select a telescope before using auto focus",
+      })
+      return
+    }
+
+    try {
+      // Send auto focus command via WebSocket
+      const wsService = getWebSocketService()
+      await wsService.sendCommand(CommandAction.AUTO_FOCUS, {}, currentTelescope.id)
+
+      addStatusAlert({
+        type: "info",
+        title: "Auto Focus Started",
+        message: "Auto focus process has been initiated. This may take a few moments.",
+      })
+    } catch (error) {
+      console.error('Error starting auto focus:', error)
+      addStatusAlert({
+        type: "error",
+        title: "Auto Focus Failed",
+        message: `Failed to start auto focus: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      })
+    }
   }
 
   const handleFocusSliderChange = async (value: number[]) => {
@@ -562,6 +592,16 @@ export function TelescopeControls() {
                 Focus Out
               </Button>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAutoFocus}
+              className="w-full"
+              disabled={!currentTelescope?.connected}
+            >
+              <Focus className="w-4 h-4 mr-2" />
+              Auto Focus
+            </Button>
           </div>
 
           {/*<Separator />*/}

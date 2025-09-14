@@ -52,6 +52,7 @@ export enum CommandAction {
   PARK = 'park',
   FOCUS = 'focus',
   FOCUS_INCREMENT = 'focus_increment',
+  AUTO_FOCUS = 'auto_focus',
   START_IMAGING = 'start_imaging',
   STOP_IMAGING = 'stop_imaging',
   SET_GAIN = 'set_gain',

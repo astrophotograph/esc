@@ -20,7 +20,7 @@ from scopinator.seestar.commands.parameterized import (
     IscopeStartViewParams, IscopeStartStack, StartStackParams, ScopeViewMode, ScopeTargetType, )
 from scopinator.seestar.commands.settings import SetSetting, SettingParameters, SetSequenceSetting, \
     SequenceSettingParameters, SetControlValue
-from scopinator.seestar.commands.simple import PiReboot, GetViewState
+from scopinator.seestar.commands.simple import PiReboot, GetViewState, StartAutoFocus
 from websocket_protocol import (
     WebSocketMessage,
     MessageFactory,
@@ -811,6 +811,8 @@ class WebSocketManager:
                 return await self._execute_park_command(client, parameters)
             elif action == "focus_increment":
                 return await self._execute_focus_command(client, parameters)
+            elif action == "auto_focus":
+                return await self._execute_auto_focus_command(client, parameters)
             elif action == "goto":
                 return await self._execute_goto_command(client, parameters)
             elif action == "scenery":
@@ -1062,6 +1064,37 @@ class WebSocketManager:
 
         except Exception as e:
             logger.error(f"Error executing focus command: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _execute_auto_focus_command(
+            self, client: Any, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute auto focus command."""
+        try:
+            logger.info("Starting auto focus process")
+
+            # Send StartAutoFocus command to the telescope
+            command = StartAutoFocus()
+            response = await client.send_and_recv(command)
+
+            if response:
+                logger.info(f"Auto focus started successfully: {response}")
+                return {
+                    "status": "success",
+                    "action": "auto_focus",
+                    "message": "Auto focus process started",
+                    "response": response.model_dump() if hasattr(response, "model_dump") else str(response),
+                }
+            else:
+                return {
+                    "status": "success",
+                    "action": "auto_focus",
+                    "message": "Auto focus command sent",
+                    "response": "No response",
+                }
+
+        except Exception as e:
+            logger.error(f"Error executing auto focus command: {e}")
             return {"status": "error", "message": str(e)}
 
     def _parse_ra_coordinate(self, ra_value: Any) -> float:
