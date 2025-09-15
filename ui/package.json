@@ -98,7 +98,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.6",
-    "zod": "^3.25.67"
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
