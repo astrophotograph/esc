@@ -2133,6 +2133,7 @@ dependencies = [
     { name = "pydash" },
     { name = "tzlocal" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/33/fc/114be3cb8a3548bf296664317f863c6f9b6a920f2d72b6ffcd86489a1051/scopinator-2025.9.14.tar.gz", hash = "sha256:15c23795f191efd755d55576d239f4c2c4b842388eb52f74280ebf0b9315f82e", size = 98009, upload-time = "2025-09-14T16:53:18.649Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/49/d44f10f9f47cbf7dd3b5b18745a32f330081edf4f9897231c8f4d7eafc39/scopinator-2025.9.14-py3-none-any.whl", hash = "sha256:133fcc82e232b5af5fc8781d2166d7e9793aec5f51693a1722338fa5c71dc082", size = 164817, upload-time = "2025-09-14T16:53:16.996Z" },
 ]
@@ -2227,7 +2228,7 @@ requires-dist = [
     { name = "astropy", specifier = ">=7.1.0" },
     { name = "async-timeout", specifier = ">=5.0.1" },
     { name = "beartype", specifier = ">=0.21.0" },
-    { name = "click", specifier = "<8.2" },
+    { name = "click", specifier = "<8.4" },
     { name = "customtkinter", specifier = ">=5.2.2" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastapi-restful", extras = ["all"], specifier = ">=0.6.0" },
