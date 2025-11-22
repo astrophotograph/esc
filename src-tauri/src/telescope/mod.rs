@@ -1,6 +1,10 @@
 // Telescope control module
 // Handles telescope connection, mount control, and status monitoring
 
+pub mod commands;
+
+pub use commands::*;
+
 pub struct TelescopeController {
     // Telescope state will be managed here
 }

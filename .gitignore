@@ -1,3 +1,6 @@
+legacy/ui/test-results
+legacy/ui/playwright-report
+
 # Dependencies
 node_modules/
 .pnp

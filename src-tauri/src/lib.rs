@@ -1,9 +1,13 @@
 // Library exports for testing and PyO3 integration
 
 pub mod commands;
-pub mod telescope;
+pub mod database;
+pub mod events;
 pub mod imaging;
 pub mod python;
+pub mod state;
+pub mod streaming;
+pub mod telescope;
 
 #[cfg(test)]
 mod tests {

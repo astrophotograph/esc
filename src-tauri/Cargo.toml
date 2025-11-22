@@ -24,4 +24,33 @@ tauri-plugin-shell = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
-pyo3 = { version = "0.22", features = ["auto-initialize"] }
+pyo3 = { version = "0.23", features = ["auto-initialize"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# HTTP/Video streaming
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "cors"] }
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# State management
+parking_lot = "0.12"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID generation
+uuid = { version = "1.0", features = ["v4", "serde"] }

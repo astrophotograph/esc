@@ -1,0 +1,69 @@
+use parking_lot::RwLock;
+use pyo3::PyObject;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+/// Application state shared across the Tauri app
+#[derive(Default)]
+pub struct AppState {
+    /// Connected telescopes indexed by their ID
+    pub telescopes: Arc<RwLock<HashMap<String, TelescopeConnection>>>,
+    /// Active imaging sessions
+    pub imaging_sessions: Arc<RwLock<HashMap<String, ImagingSession>>>,
+}
+
+/// Represents a connection to a telescope
+#[derive(Clone)]
+pub struct TelescopeConnection {
+    pub id: String,
+    pub host: String,
+    pub port: u16,
+    pub name: String,
+    pub status: ConnectionStatus,
+    pub bridge: Arc<PyObject>, // Python bridge object
+}
+
+impl std::fmt::Debug for TelescopeConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TelescopeConnection")
+            .field("id", &self.id)
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("name", &self.name)
+            .field("status", &self.status)
+            .field("bridge", &"<PyObject>")
+            .finish()
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectionStatus {
+    Disconnected,
+    Connecting,
+    Connected,
+    Error(String),
+}
+
+/// Represents an active imaging session
+#[derive(Debug, Clone)]
+pub struct ImagingSession {
+    pub telescope_id: String,
+    pub started_at: chrono::DateTime<chrono::Utc>,
+    pub frame_count: u32,
+}
+
+impl AppState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Clone for AppState {
+    fn clone(&self) -> Self {
+        Self {
+            telescopes: Arc::clone(&self.telescopes),
+            imaging_sessions: Arc::clone(&self.imaging_sessions),
+        }
+    }
+}

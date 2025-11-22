@@ -1,34 +1,17 @@
-import { useState } from 'react'
-import { invoke } from './services/api'
-import './styles/App.css'
+import { TelescopeControl } from './components/TelescopeControl'
 
 function App() {
-  const [greeting, setGreeting] = useState('')
-  const [name, setName] = useState('')
-
-  async function greet() {
-    const message = await invoke<string>('greet', { name })
-    setGreeting(message)
-  }
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>EESC - Telescope Control</h1>
-        <p>Observation Planning | Image Management | Telescope Control</p>
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card px-6 py-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-foreground">EESC</h1>
+          <p className="text-sm text-muted-foreground">Enhanced Equipment & Seestar Control</p>
+        </div>
       </header>
 
-      <main className="app-main">
-        <div className="demo-section">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
-          />
-          <button onClick={greet}>Greet</button>
-          {greeting && <p className="greeting">{greeting}</p>}
-        </div>
+      <main className="max-w-7xl mx-auto p-6 h-[calc(100vh-100px)]">
+        <TelescopeControl />
       </main>
     </div>
   )

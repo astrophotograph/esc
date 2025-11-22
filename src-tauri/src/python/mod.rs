@@ -1,7 +1,11 @@
 // Python integration module via PyO3
 // Handles astronomical calculations, hardware control, and user scripting
 
+pub mod bridge;
+
 use pyo3::prelude::*;
+
+pub use bridge::{init_python, TelescopeBridge};
 
 pub struct PythonBridge {
     // Python interpreter state
