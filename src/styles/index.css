@@ -1,0 +1,96 @@
+:root {
+  /* Dark blue color palette */
+  --color-space-dark: #0a0e1a;
+  --color-space-base: #0f172a;
+  --color-space-light: #1e293b;
+  --color-space-lighter: #334155;
+
+  --color-nebula-blue: #3b82f6;
+  --color-nebula-light: #60a5fa;
+  --color-nebula-dark: #2563eb;
+
+  --color-star-white: #f8fafc;
+  --color-star-gray: #cbd5e1;
+  --color-star-dim: #94a3b8;
+
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-success: #10b981;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: var(--color-star-white);
+  background-color: var(--color-space-dark);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-space-dark);
+  color: var(--color-star-white);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-nebula-blue);
+  color: var(--color-star-white);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: var(--color-nebula-light);
+}
+
+button:active {
+  background-color: var(--color-nebula-dark);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-space-light);
+  color: var(--color-star-white);
+  border: 1px solid var(--color-space-lighter);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--color-nebula-blue);
+}

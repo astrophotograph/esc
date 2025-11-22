@@ -1,0 +1,10 @@
+[
+  {
+    "session_id": "c36ae5b5-04be-45f2-b5af-af3eeba913cb",
+    "transcript_path": "/Users/erewhon/.claude/projects/-Users-erewhon-Projects-erewhon-eesc/c36ae5b5-04be-45f2-b5af-af3eeba913cb.jsonl",
+    "cwd": "/Users/erewhon/Projects/erewhon/eesc/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  }
+]

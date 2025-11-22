@@ -1,0 +1,48 @@
+{
+  "name": "eesc",
+  "version": "0.1.0",
+  "description": "Telescope control application with observation planning and image management",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "PYO3_PYTHON=/Users/erewhon/Projects/erewhon/eesc/.venv/bin/python tauri dev",
+    "tauri:build": "PYO3_PYTHON=/Users/erewhon/Projects/erewhon/eesc/.venv/bin/python tauri build",
+    "web:dev": "vite --mode web",
+    "web:build": "tsc && vite build --mode web",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:python": "uv run pytest",
+    "test:rust": "cd src-tauri && cargo test",
+    "test:all": "pnpm test:python && pnpm test:rust && pnpm test",
+    "lint": "prettier --check . && tsc --noEmit",
+    "lint:python": "uv run ruff check src-tauri/python",
+    "format": "prettier --write .",
+    "format:python": "uv run ruff format src-tauri/python"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@vitest/ui": "^2.1.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "jsdom": "^25.0.0",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.5",
+    "prettier": "^3.3.3",
+    "vitest": "^2.1.0"
+  }
+}
