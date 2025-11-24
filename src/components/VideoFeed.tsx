@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { Settings } from 'lucide-react'
 import { useTelescopeStore } from '@/stores/telescopeStore'
+import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
+import { VideoOverlayControls } from './VideoOverlayControls'
+import { Button } from './ui/button'
 
 interface VideoFeedProps {
   telescopeId?: string
@@ -9,7 +13,27 @@ interface VideoFeedProps {
 export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showControls, setShowControls] = useState(false)
+  const [overlaySettings, setOverlaySettings] = useState<OverlaySettings>(defaultOverlaySettings)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
+
+  // Update dimensions on resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        })
+      }
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
 
   const activeTelescopeId = telescopeId || currentTelescopeId
 
@@ -55,7 +79,7 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
   const streamUrl = `http://localhost:8080/stream/${activeTelescopeId}`
 
   return (
-    <div className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>
       {/* Video stream */}
       <img
         src={streamUrl}
@@ -71,12 +95,37 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
         }}
       />
 
+      {/* Video Overlays */}
+      {dimensions.width > 0 && dimensions.height > 0 && (
+        <VideoOverlays width={dimensions.width} height={dimensions.height} settings={overlaySettings} />
+      )}
+
+      {/* Overlay Controls Dialog */}
+      <VideoOverlayControls
+        open={showControls}
+        onOpenChange={setShowControls}
+        settings={overlaySettings}
+        onSettingsChange={setOverlaySettings}
+      />
+
       {/* Status indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 px-3 py-2 rounded-lg">
         <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
         <span className="text-white text-sm font-medium">
           {isStreaming ? 'LIVE' : 'CONNECTING...'}
         </span>
+      </div>
+
+      {/* Overlay Controls Button */}
+      <div className="absolute top-4 left-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowControls(true)}
+          className="bg-black/50 hover:bg-black/70 text-white"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Telescope ID badge */}

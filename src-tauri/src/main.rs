@@ -45,6 +45,8 @@ fn main() {
             telescope::park_telescope,
             telescope::get_telescopes,
             telescope::remove_telescope,
+            telescope::discover_telescopes,
+            telescope::get_telescope_status,
         ])
         .setup(|app| {
             // Initialize database

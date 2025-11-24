@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { invoke } from '../services/api'
+import { PictureInPicture2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
@@ -7,6 +8,8 @@ import { Label } from './ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { VideoFeed } from './VideoFeed'
+import { StatusBar } from './StatusBar'
+import { PictureInPicture } from './PictureInPicture'
 
 export function TelescopeControl() {
   const [host, setHost] = useState('192.168.1.100')
@@ -15,15 +18,44 @@ export function TelescopeControl() {
   const [ra, setRa] = useState(5.583333)
   const [dec, setDec] = useState(-5.391111)
   const [loading, setLoading] = useState(false)
+  const [discovering, setDiscovering] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const [showPip, setShowPip] = useState(false)
 
   const telescopes = useTelescopeStore(state => state.telescopes)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
   const setCurrentTelescope = useTelescopeStore(state => state.setCurrentTelescope)
+  const setTelescopes = useTelescopeStore(state => state.setTelescopes)
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 50))
+  }
+
+  const handleDiscoverTelescopes = async () => {
+    setDiscovering(true)
+    try {
+      const result = await invoke<any[]>('discover_telescopes', {})
+      addLog(`✓ Discovered ${result.length} telescope(s)`)
+
+      // Update telescope list
+      const discovered = result.map(t => ({
+        id: t.serial_number || `${t.host}:${t.port}`,
+        name: `Seestar ${t.serial_number}`,
+        host: t.host,
+        port: t.port,
+        status: 'disconnected' as const
+      }))
+      setTelescopes(discovered)
+
+      if (discovered.length > 0) {
+        setCurrentTelescope(discovered[0].id)
+      }
+    } catch (error) {
+      addLog(`✗ Discovery failed: ${error}`)
+    } finally {
+      setDiscovering(false)
+    }
   }
 
   const handleAddTelescope = async () => {
@@ -107,6 +139,9 @@ export function TelescopeControl() {
 
   return (
     <div className="flex flex-col h-full gap-4">
+      {/* Real-time Status Bar */}
+      <StatusBar telescopeId={currentTelescopeId || undefined} />
+
       {/* Status Bar */}
       <Card>
         <CardHeader className="pb-3">
@@ -144,10 +179,28 @@ export function TelescopeControl() {
 
         {/* Connection Tab */}
         <TabsContent value="connection" className="space-y-4">
+          {/* Auto-Discovery */}
           <Card>
             <CardHeader>
-              <CardTitle>Add Telescope</CardTitle>
-              <CardDescription>Connect to a Seestar telescope on your network</CardDescription>
+              <CardTitle>Auto-Discovery</CardTitle>
+              <CardDescription>Automatically find Seestar telescopes on your network</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handleDiscoverTelescopes}
+                disabled={discovering}
+                className="w-full"
+              >
+                {discovering ? 'Discovering...' : 'Discover Telescopes'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Manual Add */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual Connection</CardTitle>
+              <CardDescription>Add a telescope by IP address</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -361,6 +414,19 @@ export function TelescopeControl() {
                   Stop Imaging
                 </Button>
               </div>
+
+              {/* PIP Toggle */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPip(!showPip)}
+                  disabled={!currentTelescopeId}
+                  className="w-full"
+                >
+                  <PictureInPicture2 className="mr-2 h-4 w-4" />
+                  {showPip ? 'Hide' : 'Show'} Picture-in-Picture
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -393,6 +459,13 @@ export function TelescopeControl() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Picture-in-Picture Window */}
+      <PictureInPicture
+        show={showPip}
+        onClose={() => setShowPip(false)}
+        telescopeId={currentTelescopeId || undefined}
+      />
     </div>
   )
 }

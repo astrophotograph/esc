@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/globals.css'
 import { initializeTauriEvents } from './services/tauriEvents'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 // Initialize Tauri event listeners
 initializeTauriEvents().then((unlisteners) => {
@@ -16,6 +17,8 @@ initializeTauriEvents().then((unlisteners) => {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>,
 )

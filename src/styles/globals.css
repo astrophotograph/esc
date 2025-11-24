@@ -26,7 +26,7 @@
     --radius: 0.5rem;
   }
 
-  .dark {
+  .theme-dark, .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -47,6 +47,234 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
   }
+
+  /* Night Vision Theme */
+  .theme-night-vision {
+    --background: 0 100% 3%;
+    --foreground: 0 100% 50%;
+    --card: 0 100% 5%;
+    --card-foreground: 0 100% 50%;
+    --popover: 0 100% 5%;
+    --popover-foreground: 0 100% 50%;
+    --primary: 0 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 100% 30%;
+    --secondary-foreground: 0 100% 70%;
+    --muted: 0 100% 10%;
+    --muted-foreground: 0 100% 40%;
+    --accent: 0 100% 40%;
+    --accent-foreground: 0 100% 90%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 100% 15%;
+    --input: 0 100% 15%;
+    --ring: 0 100% 50%;
+  }
+
+  /* Tufte Theme */
+  .theme-tufte {
+    --background: 45 43% 99%;
+    --foreground: 0 0% 10%;
+    --card: 45 43% 97%;
+    --card-foreground: 0 0% 10%;
+    --popover: 45 43% 97%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 210 100% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 45 30% 92%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 210 100% 35%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 45 30% 85%;
+    --input: 45 30% 85%;
+    --ring: 210 100% 25%;
+  }
+
+  /* Dark Tufte Theme */
+  .theme-dark-tufte {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 93%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 210 50% 60%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 67%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 67%;
+    --accent: 210 50% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 50% 60%;
+    --destructive-foreground: 0 0% 10%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 210 50% 70%;
+  }
+
+  /* Green Screen Theme */
+  .theme-green-screen {
+    --background: 120 100% 0%;
+    --foreground: 120 100% 50%;
+    --card: 120 100% 3%;
+    --card-foreground: 120 100% 50%;
+    --popover: 120 100% 3%;
+    --popover-foreground: 120 100% 50%;
+    --primary: 120 100% 50%;
+    --primary-foreground: 120 100% 0%;
+    --secondary: 120 100% 40%;
+    --secondary-foreground: 120 100% 90%;
+    --muted: 120 100% 6%;
+    --muted-foreground: 120 100% 40%;
+    --accent: 130 100% 60%;
+    --accent-foreground: 120 100% 0%;
+    --destructive: 60 100% 50%;
+    --destructive-foreground: 120 100% 0%;
+    --border: 120 100% 15%;
+    --input: 120 100% 15%;
+    --ring: 120 100% 50%;
+  }
+
+  /* C64 Theme */
+  .theme-c64 {
+    --background: 250 45% 35%;
+    --foreground: 250 35% 73%;
+    --card: 250 40% 45%;
+    --card-foreground: 250 35% 73%;
+    --popover: 250 40% 45%;
+    --popover-foreground: 250 35% 73%;
+    --primary: 250 35% 73%;
+    --primary-foreground: 250 45% 35%;
+    --secondary: 250 20% 70%;
+    --secondary-foreground: 250 45% 35%;
+    --muted: 250 30% 50%;
+    --muted-foreground: 250 20% 75%;
+    --accent: 250 40% 45%;
+    --accent-foreground: 250 35% 73%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 250 30% 40%;
+    --input: 250 30% 40%;
+    --ring: 250 35% 73%;
+  }
+
+  /* Fallout Theme */
+  .theme-fallout {
+    --background: 120 40% 3%;
+    --foreground: 145 100% 50%;
+    --card: 120 30% 6%;
+    --card-foreground: 145 100% 50%;
+    --popover: 120 30% 6%;
+    --popover-foreground: 145 100% 50%;
+    --primary: 145 100% 50%;
+    --primary-foreground: 120 30% 5%;
+    --secondary: 145 100% 40%;
+    --secondary-foreground: 145 100% 90%;
+    --muted: 120 30% 10%;
+    --muted-foreground: 145 100% 40%;
+    --accent: 150 100% 60%;
+    --accent-foreground: 120 30% 5%;
+    --destructive: 25 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 145 100% 15%;
+    --input: 145 100% 15%;
+    --ring: 145 100% 50%;
+  }
+
+  /* SciFi Theme */
+  .theme-scifi {
+    --background: 240 50% 4%;
+    --foreground: 240 10% 91%;
+    --card: 240 40% 10%;
+    --card-foreground: 240 10% 91%;
+    --popover: 240 40% 10%;
+    --popover-foreground: 240 10% 91%;
+    --primary: 30 100% 51%;
+    --primary-foreground: 240 50% 4%;
+    --secondary: 270 45% 73%;
+    --secondary-foreground: 240 50% 4%;
+    --muted: 240 30% 18%;
+    --muted-foreground: 240 10% 70%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 240 50% 4%;
+    --destructive: 0 100% 63%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 20% 30%;
+    --input: 240 20% 30%;
+    --ring: 30 100% 51%;
+  }
+
+  /* Neon Theme */
+  .theme-neon {
+    --background: 190 100% 5%;
+    --foreground: 165 100% 75%;
+    --card: 190 100% 8%;
+    --card-foreground: 165 100% 75%;
+    --popover: 190 100% 8%;
+    --popover-foreground: 165 100% 75%;
+    --primary: 173 100% 50%;
+    --primary-foreground: 190 100% 5%;
+    --secondary: 185 100% 50%;
+    --secondary-foreground: 190 100% 5%;
+    --muted: 190 70% 12%;
+    --muted-foreground: 165 100% 60%;
+    --accent: 177 100% 50%;
+    --accent-foreground: 190 100% 5%;
+    --destructive: 160 100% 60%;
+    --destructive-foreground: 190 100% 5%;
+    --border: 185 100% 25%;
+    --input: 185 100% 25%;
+    --ring: 173 100% 50%;
+  }
+}
+
+/* Theme Animations */
+@keyframes neon-glow {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 5px currentColor); }
+  50% { filter: brightness(1.3) drop-shadow(0 0 15px currentColor); }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Apply neon glow to neon theme elements */
+.theme-neon button:hover,
+.theme-neon .card:hover {
+  animation: neon-glow 2s ease-in-out infinite;
+}
+
+/* Apply text glow to green-screen and fallout themes */
+.theme-green-screen,
+.theme-fallout {
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+}
+
+/* Scanline effect for retro themes */
+.theme-green-screen::before,
+.theme-fallout::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(transparent, currentColor, transparent);
+  opacity: 0.1;
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 @layer base {
