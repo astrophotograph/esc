@@ -21,7 +21,7 @@ interface StatusBarProps {
 
 export function StatusBar({ telescopeId }: StatusBarProps) {
   const [status, setStatus] = useState<TelescopeStatus | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [_loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!telescopeId) {

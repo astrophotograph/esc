@@ -1,5 +1,6 @@
 legacy/ui/test-results
 legacy/ui/playwright-report
+.pnpm-store/
 
 # Dependencies
 node_modules/

@@ -69,7 +69,8 @@ async fn stream_handler(
             let mut response = Vec::new();
             response.extend_from_slice(b"--frame\r\n");
             response.extend_from_slice(b"Content-Type: image/jpeg\r\n");
-            response.extend_from_slice(format!("Content-Length: {}\r\n", frame_bytes.len()).as_bytes());
+            response
+                .extend_from_slice(format!("Content-Length: {}\r\n", frame_bytes.len()).as_bytes());
             response.extend_from_slice(b"\r\n");
             response.extend_from_slice(&frame_bytes);
             response.extend_from_slice(b"\r\n");
@@ -88,7 +89,10 @@ async fn stream_handler(
 
     Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "multipart/x-mixed-replace; boundary=frame")
+        .header(
+            header::CONTENT_TYPE,
+            "multipart/x-mixed-replace; boundary=frame",
+        )
         .header(header::CACHE_CONTROL, "no-cache, no-store, must-revalidate")
         .header(header::PRAGMA, "no-cache")
         .header(header::EXPIRES, "0")
@@ -105,7 +109,10 @@ async fn get_frame_from_bridge(
     use pyo3::prelude::*;
     use pyo3::types::PyBytes;
 
-    tracing::info!("get_frame_from_bridge called for telescope: {}", telescope_id);
+    tracing::info!(
+        "get_frame_from_bridge called for telescope: {}",
+        telescope_id
+    );
 
     // Get the telescope's bridge
     let bridge = {
@@ -116,7 +123,8 @@ async fn get_frame_from_bridge(
                 tracing::warn!("Telescope {} not found in state", telescope_id);
                 "Telescope not found".to_string()
             })?
-            .bridge.clone()
+            .bridge
+            .clone()
     };
 
     // Call get_next_frame on the bridge in a blocking task
@@ -155,7 +163,10 @@ async fn get_frame_from_bridge(
 }
 
 /// Start the streaming server on a separate port
-pub async fn start_streaming_server(state: Arc<AppState>, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_streaming_server(
+    state: Arc<AppState>,
+    port: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_router().with_state(state);
 
     let addr = format!("0.0.0.0:{}", port);

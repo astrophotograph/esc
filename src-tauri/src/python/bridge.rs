@@ -6,7 +6,10 @@ use serde_json::Value;
 pub fn init_python() -> PyResult<()> {
     // Set PYTHONHOME to the Python 3.12 installation
     // This helps PyO3 find the standard library
-    std::env::set_var("PYTHONHOME", "/opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12");
+    std::env::set_var(
+        "PYTHONHOME",
+        "/opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12",
+    );
 
     // Get the current directory (project root)
     let current_dir = std::env::current_dir()?;
@@ -30,7 +33,8 @@ pub fn init_python() -> PyResult<()> {
         path.insert(0, python_path_str)?;
 
         // Add venv site-packages to sys.path
-        let venv_site_packages = current_dir.parent()
+        let venv_site_packages = current_dir
+            .parent()
             .unwrap()
             .join(".venv/lib/python3.12/site-packages");
         tracing::info!("Checking for venv at: {:?}", venv_site_packages);
@@ -38,7 +42,10 @@ pub fn init_python() -> PyResult<()> {
         if venv_site_packages.exists() {
             let venv_path_str = venv_site_packages.to_str().unwrap();
             path.insert(1, venv_path_str)?;
-            tracing::info!("Added venv site-packages to sys.path: {:?}", venv_site_packages);
+            tracing::info!(
+                "Added venv site-packages to sys.path: {:?}",
+                venv_site_packages
+            );
         } else {
             tracing::warn!("Venv site-packages not found at: {:?}", venv_site_packages);
         }
@@ -46,7 +53,8 @@ pub fn init_python() -> PyResult<()> {
         // Log sys.path for debugging
         tracing::info!("Python sys.path after init:");
         for (i, item) in path.iter().enumerate() {
-            if i < 5 {  // Only log first 5 entries
+            if i < 5 {
+                // Only log first 5 entries
                 tracing::info!("  [{}]: {:?}", i, item);
             }
         }
@@ -85,10 +93,12 @@ impl TelescopeBridge {
                 .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
 
             // Create bridge instance
-            let create_fn = bridge_module.getattr("create_bridge")
+            let create_fn = bridge_module
+                .getattr("create_bridge")
                 .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
 
-            let bridge_obj = create_fn.call1((self.host.as_str(), self.port))
+            let bridge_obj = create_fn
+                .call1((self.host.as_str(), self.port))
                 .map_err(|e| format!("Failed to create bridge: {}", e))?;
 
             // Convert to PyObject for storage
@@ -104,14 +114,17 @@ impl TelescopeBridge {
                 .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
 
             // Create bridge instance
-            let create_fn = bridge_module.getattr("create_bridge")
+            let create_fn = bridge_module
+                .getattr("create_bridge")
                 .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
 
-            let bridge_obj = create_fn.call1((self.host.as_str(), self.port))
+            let bridge_obj = create_fn
+                .call1((self.host.as_str(), self.port))
                 .map_err(|e| format!("Failed to create bridge: {}", e))?;
 
             // Get the run method
-            let run_method = bridge_module.getattr("run_bridge_method")
+            let run_method = bridge_module
+                .getattr("run_bridge_method")
                 .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
 
             // Call the method
@@ -135,8 +148,7 @@ impl TelescopeBridge {
                 .map_err(|e| format!("Failed to extract JSON string: {}", e))?;
 
             // Parse JSON string
-            serde_json::from_str(&json_str)
-                .map_err(|e| format!("Failed to parse JSON: {}", e))
+            serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse JSON: {}", e))
         })
     }
 
@@ -154,11 +166,14 @@ impl TelescopeBridge {
     pub fn goto_target(&self, target_name: &str, ra: f64, dec: f64) -> Result<Value, String> {
         Python::with_gil(|py| {
             let params = PyDict::new(py);
-            params.set_item("target_name", target_name)
+            params
+                .set_item("target_name", target_name)
                 .map_err(|e| format!("Failed to set target_name: {}", e))?;
-            params.set_item("ra", ra)
+            params
+                .set_item("ra", ra)
                 .map_err(|e| format!("Failed to set ra: {}", e))?;
-            params.set_item("dec", dec)
+            params
+                .set_item("dec", dec)
                 .map_err(|e| format!("Failed to set dec: {}", e))?;
 
             self.call_python("goto_target", Some(params.clone()))
@@ -171,15 +186,23 @@ impl TelescopeBridge {
     }
 
     /// Start imaging
-    pub fn start_imaging(&self, exposure_ms: i32, gain: i32, target_name: Option<&str>) -> Result<Value, String> {
+    pub fn start_imaging(
+        &self,
+        exposure_ms: i32,
+        gain: i32,
+        target_name: Option<&str>,
+    ) -> Result<Value, String> {
         Python::with_gil(|py| {
             let params = PyDict::new(py);
-            params.set_item("exposure_ms", exposure_ms)
+            params
+                .set_item("exposure_ms", exposure_ms)
                 .map_err(|e| format!("Failed to set exposure_ms: {}", e))?;
-            params.set_item("gain", gain)
+            params
+                .set_item("gain", gain)
                 .map_err(|e| format!("Failed to set gain: {}", e))?;
             if let Some(name) = target_name {
-                params.set_item("target_name", name)
+                params
+                    .set_item("target_name", name)
                     .map_err(|e| format!("Failed to set target_name: {}", e))?;
             }
 
@@ -195,6 +218,55 @@ impl TelescopeBridge {
     /// Get telescope status
     pub fn get_status(&self) -> Result<Value, String> {
         self.call_python("get_status", None)
+    }
+
+    /// Generic method to call any Python bridge method with JSON params
+    pub fn call_method(&self, method: &str, params: Value) -> Result<Value, String> {
+        Python::with_gil(|py| {
+            // Convert serde_json::Value to Python dict
+            let json_module = PyModule::import(py, "json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+
+            let params_str = serde_json::to_string(&params)
+                .map_err(|e| format!("Failed to serialize params: {}", e))?;
+
+            let py_params = json_module
+                .call_method1("loads", (params_str,))
+                .map_err(|e| format!("Failed to convert params to Python: {}", e))?;
+
+            // Import the bridge module
+            let bridge_module = PyModule::import(py, "telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
+
+            // Create bridge instance
+            let create_fn = bridge_module
+                .getattr("create_bridge")
+                .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
+
+            let bridge_obj = create_fn
+                .call1((self.host.as_str(), self.port))
+                .map_err(|e| format!("Failed to create bridge: {}", e))?;
+
+            // Get the run method
+            let run_method = bridge_module
+                .getattr("run_bridge_method")
+                .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
+
+            // Call the method
+            let result = run_method
+                .call1((bridge_obj, method, py_params))
+                .map_err(|e| format!("Failed to call {}: {}", method, e))?;
+
+            // Convert result to JSON string
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize result: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract JSON string: {}", e))?;
+
+            // Parse JSON string
+            serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse JSON: {}", e))
+        })
     }
 }
 

@@ -11,6 +11,12 @@ from pydantic import BaseModel
 from scopinator.seestar.client import SeestarClient, EventBus
 from scopinator.seestar.imaging_client import SeestarImagingClient
 from scopinator.seestar.commands import simple, goto, imaging
+from scopinator.seestar.commands.parameterized import (
+    ScopeSpeedMove,
+    ScopeSpeedMoveParameters,
+    MoveFocuser,
+    MoveFocuserParameters,
+)
 from scopinator.seestar.events import DeviceStateEvent, ActionResultEvent
 
 
@@ -38,6 +44,21 @@ class ImagingParameters(BaseModel):
     exposure_ms: int = 10000
     gain: int = 80
     target_name: Optional[str] = None
+
+
+class MoveParameters(BaseModel):
+    """Parameters for telescope movement."""
+
+    direction: str  # "n", "s", "e", "w", "ne", "nw", "se", "sw"
+    speed: float = 1.0  # Speed multiplier (0.0-1.0)
+    duration_sec: float = 5.0  # Duration of movement
+
+
+class FocusParameters(BaseModel):
+    """Parameters for focus control."""
+
+    position: Optional[int] = None  # Absolute position
+    increment: Optional[int] = None  # Relative increment
 
 
 class SeestarBridge:
@@ -298,6 +319,287 @@ class SeestarBridge:
         except Exception as e:
             print(f"Error getting frame: {e}")
             return None
+
+    async def move(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Move the telescope in a direction.
+
+        Args:
+            params: Movement parameters (direction, speed, duration_sec)
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            direction = params.get("direction", "n").lower()
+            speed = params.get("speed", 1.0)
+            duration = params.get("duration_sec", 5.0)
+
+            # Map direction strings to axis values
+            # axis_x: positive = east, negative = west
+            # axis_y: positive = north, negative = south
+            direction_map = {
+                "n": (0, 1),
+                "s": (0, -1),
+                "e": (1, 0),
+                "w": (-1, 0),
+                "ne": (1, 1),
+                "nw": (-1, 1),
+                "se": (1, -1),
+                "sw": (-1, -1),
+            }
+
+            axis_x, axis_y = direction_map.get(direction, (0, 0))
+
+            move_params = ScopeSpeedMoveParameters(
+                axis_x=axis_x * speed,
+                axis_y=axis_y * speed,
+                dur_sec=duration,
+            )
+
+            response = await self.client.send_and_recv(
+                ScopeSpeedMove(params=move_params)
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def stop_move(self) -> dict[str, Any]:
+        """Stop any ongoing telescope movement.
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            # Send zero movement to stop
+            move_params = ScopeSpeedMoveParameters(
+                axis_x=0,
+                axis_y=0,
+                dur_sec=0,
+            )
+
+            response = await self.client.send_and_recv(
+                ScopeSpeedMove(params=move_params)
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def focus(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Set focus position.
+
+        Args:
+            params: Focus parameters (position)
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            position = params.get("position", 0)
+
+            focus_params = MoveFocuserParameters(step=position)
+            response = await self.client.send_and_recv(
+                MoveFocuser(params=focus_params)
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def focus_increment(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Adjust focus by increment from current position.
+
+        Args:
+            params: Focus parameters (increment)
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            increment = params.get("increment", 0)
+
+            # Get current focus position first
+            try:
+                from scopinator.seestar.commands.simple import GetFocuserPosition
+                pos_response = await self.client.send_and_recv(GetFocuserPosition())
+                current_position = pos_response.step if pos_response else 0
+            except Exception:
+                current_position = 0
+
+            new_position = current_position + increment
+
+            focus_params = MoveFocuserParameters(step=new_position)
+            response = await self.client.send_and_recv(
+                MoveFocuser(params=focus_params)
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None,
+                "new_position": new_position
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def auto_focus(self) -> dict[str, Any]:
+        """Start auto-focus routine.
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            response = await self.client.send_and_recv(simple.StartAutoFocus())
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def set_gain(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Set camera gain.
+
+        Args:
+            params: Parameters with gain value
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            gain = params.get("gain", 80)
+
+            # Use imaging command to set gain
+            response = await self.client.send_and_recv(
+                imaging.SetGain(params={"gain": gain})
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def set_exposure(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Set exposure time.
+
+        Args:
+            params: Parameters with exposure_ms value
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            exposure_ms = params.get("exposure_ms", 10000)
+
+            # Use imaging command to set exposure
+            response = await self.client.send_and_recv(
+                imaging.SetExposure(params={"exposure_ms": exposure_ms})
+            )
+
+            return {
+                "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def stop_goto(self) -> dict[str, Any]:
+        """Stop any ongoing GOTO operation.
+
+        Returns:
+            Command response dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            # Stop the AutoGoto stage
+            response = await self.client.stop_goto()
+            return {
+                "success": True,
+                "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def get_focuser_position(self) -> dict[str, Any]:
+        """Get current focuser position.
+
+        Returns:
+            Position info dict
+        """
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        try:
+            from scopinator.seestar.commands.simple import GetFocuserPosition
+            response = await self.client.send_and_recv(GetFocuserPosition())
+            return {
+                "success": True,
+                "position": response.step if response else None,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
 
 # Synchronous wrapper for PyO3

@@ -51,6 +51,7 @@ export function VideoOverlays({ width, height, settings }: VideoOverlaysProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none">
+      {/* @ts-expect-error styled-jsx syntax */}
       <style jsx>{`
         @keyframes crosshairPulse {
           0%, 100% { opacity: 0.6; }

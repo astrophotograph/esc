@@ -130,7 +130,11 @@ pub async fn discover_telescopes(
         };
 
         if let Err(e) = db.save_telescope(&db_telescope) {
-            tracing::warn!("Failed to save discovered telescope {}: {}", telescope_id, e);
+            tracing::warn!(
+                "Failed to save discovered telescope {}: {}",
+                telescope_id,
+                e
+            );
         }
 
         // Add to state if not already present

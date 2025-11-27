@@ -70,5 +70,53 @@
     "permission_mode": "acceptEdits",
     "hook_event_name": "Stop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "5fe8c341-d719-44aa-8f79-7b6df899453b",
+    "transcript_path": "/home/dx/.claude/projects/-workspace/5fe8c341-d719-44aa-8f79-7b6df899453b.jsonl",
+    "cwd": "/workspace/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
   }
 ]

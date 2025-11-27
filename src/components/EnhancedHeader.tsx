@@ -1,11 +1,19 @@
-import { Wifi, WifiOff, Activity, Radar, Server } from 'lucide-react'
+import { Wifi, WifiOff, Activity, Radar, Server, PictureInPicture, Keyboard, Settings } from 'lucide-react'
 import { useTelescopeStore } from '../stores/telescopeStore'
+import { useUIStore } from '../stores/uiStore'
 import { ThemeToggle } from './ThemeToggle'
 import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
 export function EnhancedHeader() {
   const telescopes = useTelescopeStore(state => state.telescopes)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
+
+  const showPiP = useUIStore(state => state.showPiP)
+  const togglePiP = useUIStore(state => state.togglePiP)
+  const setShowKeyboardHelp = useUIStore(state => state.setShowKeyboardHelp)
+  const setShowSettings = useUIStore(state => state.setShowSettings)
 
   const connectedCount = telescopes.filter(t => t.status === 'connected').length
   const totalCount = telescopes.length
@@ -68,8 +76,65 @@ export function EnhancedHeader() {
           </div>
         </div>
 
-        {/* Theme Toggle */}
-        <ThemeToggle />
+        {/* Actions */}
+        <TooltipProvider>
+          <div className="flex items-center gap-2">
+            {/* PiP Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showPiP ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={togglePiP}
+                  className="w-9 h-9 p-0"
+                  disabled={!currentTelescopeId}
+                >
+                  <PictureInPicture className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Picture in Picture (Ctrl+P)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Keyboard Shortcuts */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowKeyboardHelp(true)}
+                  className="w-9 h-9 p-0"
+                >
+                  <Keyboard className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Keyboard Shortcuts (?)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Settings */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSettings(true)}
+                  className="w-9 h-9 p-0"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Settings (Ctrl+,)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+          </div>
+        </TooltipProvider>
       </div>
     </header>
   )

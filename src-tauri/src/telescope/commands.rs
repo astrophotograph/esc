@@ -27,6 +27,19 @@ pub struct ImagingParams {
     pub target_name: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MoveParams {
+    pub direction: String,         // "n", "s", "e", "w", "ne", "nw", "se", "sw"
+    pub speed: Option<f32>,        // Speed multiplier (0.0-1.0)
+    pub duration_sec: Option<f32>, // Duration of movement
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FocusParams {
+    pub position: Option<i32>,  // Absolute position
+    pub increment: Option<i32>, // Relative increment
+}
+
 /// Add a telescope manually by host and port
 #[tauri::command]
 pub async fn add_telescope(
@@ -57,12 +70,13 @@ pub async fn add_telescope(
     // Create a placeholder bridge object (will be replaced on connect)
     use pyo3::prelude::*;
     use std::sync::Arc;
-    let placeholder_bridge = Python::with_gil(|py| -> PyObject {
-        py.None()
-    });
+    let placeholder_bridge = Python::with_gil(|py| -> PyObject { py.None() });
 
     // Add to state
-    let telescope_name = config.name.clone().unwrap_or_else(|| format!("{}:{}", config.host, config.port));
+    let telescope_name = config
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("{}:{}", config.host, config.port));
     {
         let mut telescopes = state.telescopes.write();
         telescopes.insert(
@@ -131,40 +145,48 @@ pub async fn connect_telescope(
     let bridge_clone = Python::with_gil(|py| bridge_obj.clone_ref(py));
 
     // Connect using the bridge object (not a new instance!)
-    let result: serde_json::Value = tokio::task::spawn_blocking(move || -> Result<serde_json::Value, String> {
-        Python::with_gil(|py| {
-            let telescope_module = py.import("telescope.seestar_bridge")
-                .map_err(|e| format!("Failed to import module: {}", e))?;
-            let run_method = telescope_module.getattr("run_bridge_method")
-                .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
+    let result: serde_json::Value =
+        tokio::task::spawn_blocking(move || -> Result<serde_json::Value, String> {
+            Python::with_gil(|py| {
+                let telescope_module = py
+                    .import("telescope.seestar_bridge")
+                    .map_err(|e| format!("Failed to import module: {}", e))?;
+                let run_method = telescope_module
+                    .getattr("run_bridge_method")
+                    .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
 
-            // Call connect on the actual bridge object
-            let bridge_bound = bridge_obj.bind(py);
-            let result = run_method.call1((bridge_bound, "connect", py.None()))
-                .map_err(|e| format!("Failed to call connect: {}", e))?;
+                // Call connect on the actual bridge object
+                let bridge_bound = bridge_obj.bind(py);
+                let result = run_method
+                    .call1((bridge_bound, "connect", py.None()))
+                    .map_err(|e| format!("Failed to call connect: {}", e))?;
 
-            // Convert to JSON
-            let json_module = py.import("json")
-                .map_err(|e| format!("Failed to import json: {}", e))?;
-            let json_str: String = json_module
-                .call_method1("dumps", (result,))
-                .map_err(|e| format!("Failed to serialize: {}", e))?
-                .extract()
-                .map_err(|e| format!("Failed to extract string: {}", e))?;
+                // Convert to JSON
+                let json_module = py
+                    .import("json")
+                    .map_err(|e| format!("Failed to import json: {}", e))?;
+                let json_str: String = json_module
+                    .call_method1("dumps", (result,))
+                    .map_err(|e| format!("Failed to serialize: {}", e))?
+                    .extract()
+                    .map_err(|e| format!("Failed to extract string: {}", e))?;
 
-            serde_json::from_str(&json_str)
-                .map_err(|e| format!("JSON parse error: {}", e))
+                serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
+            })
         })
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
+        .await
+        .map_err(|e| format!("Task join error: {}", e))??;
 
     // Update status and store bridge based on result
     {
         use std::sync::Arc;
         let mut telescopes = state.telescopes.write();
         if let Some(t) = telescopes.get_mut(&telescope_id) {
-            if result.get("success").and_then(|v| v.as_bool()).unwrap_or(false) {
+            if result
+                .get("success")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
                 t.status = crate::state::ConnectionStatus::Connected;
                 t.bridge = Arc::new(bridge_clone);
                 emit_event(
@@ -173,7 +195,8 @@ pub async fn connect_telescope(
                     serde_json::json!({ "id": telescope_id }),
                 )?;
             } else {
-                let error = result.get("error")
+                let error = result
+                    .get("error")
                     .and_then(|v| v.as_str())
                     .unwrap_or("Unknown error");
                 t.status = crate::state::ConnectionStatus::Error(error.to_string());
@@ -342,4 +365,458 @@ pub async fn remove_telescope(
     }
 
     Ok(())
+}
+
+/// Move telescope in a direction
+#[tauri::command]
+pub async fn telescope_move(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    params: MoveParams,
+) -> Result<String, String> {
+    tracing::info!(
+        "Move command for telescope {}: direction={}, speed={:?}",
+        telescope_id,
+        params.direction,
+        params.speed
+    );
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let direction = params.direction.clone();
+    let speed = params.speed.unwrap_or(1.0);
+    let duration = params.duration_sec.unwrap_or(5.0);
+
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method(
+            "move",
+            serde_json::json!({
+                "direction": direction,
+                "speed": speed,
+                "duration_sec": duration,
+            }),
+        )
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "move",
+            "params": params,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Stop telescope movement
+#[tauri::command]
+pub async fn telescope_stop_move(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<String, String> {
+    tracing::info!("Stop move command for telescope {}", telescope_id);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result =
+        tokio::task::spawn_blocking(move || bridge.call_method("stop_move", serde_json::json!({})))
+            .await
+            .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "stop_move",
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Set focus position
+#[tauri::command]
+pub async fn telescope_focus(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    position: i32,
+) -> Result<String, String> {
+    tracing::info!(
+        "Focus command for telescope {}: position={}",
+        telescope_id,
+        position
+    );
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method("focus", serde_json::json!({ "position": position }))
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "focus",
+            "position": position,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Adjust focus by increment
+#[tauri::command]
+pub async fn telescope_focus_increment(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    increment: i32,
+) -> Result<String, String> {
+    tracing::info!(
+        "Focus increment command for telescope {}: increment={}",
+        telescope_id,
+        increment
+    );
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method(
+            "focus_increment",
+            serde_json::json!({ "increment": increment }),
+        )
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "focus_increment",
+            "increment": increment,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Start auto-focus routine
+#[tauri::command]
+pub async fn telescope_auto_focus(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<String, String> {
+    tracing::info!("Auto-focus command for telescope {}", telescope_id);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method("auto_focus", serde_json::json!({}))
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "auto_focus",
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Start imaging session
+#[tauri::command]
+pub async fn imaging_start(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    params: ImagingParams,
+) -> Result<String, String> {
+    tracing::info!(
+        "Start imaging for telescope {}: exposure={}ms, gain={}",
+        telescope_id,
+        params.exposure_ms,
+        params.gain
+    );
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let exposure_ms = params.exposure_ms;
+    let gain = params.gain;
+    let target_name = params.target_name.clone();
+
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method(
+            "start_imaging",
+            serde_json::json!({
+                "exposure_ms": exposure_ms,
+                "gain": gain,
+                "target_name": target_name,
+            }),
+        )
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::IMAGING_STARTED,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "params": params,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Stop imaging session
+#[tauri::command]
+pub async fn imaging_stop(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<String, String> {
+    tracing::info!("Stop imaging for telescope {}", telescope_id);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method("stop_imaging", serde_json::json!({}))
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::IMAGING_STOPPED,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Set camera gain
+#[tauri::command]
+pub async fn telescope_set_gain(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    gain: i32,
+) -> Result<String, String> {
+    tracing::info!("Set gain for telescope {}: gain={}", telescope_id, gain);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method("set_gain", serde_json::json!({ "gain": gain }))
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "set_gain",
+            "gain": gain,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Set exposure time
+#[tauri::command]
+pub async fn telescope_set_exposure(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+    exposure_ms: i32,
+) -> Result<String, String> {
+    tracing::info!(
+        "Set exposure for telescope {}: exposure={}ms",
+        telescope_id,
+        exposure_ms
+    );
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method(
+            "set_exposure",
+            serde_json::json!({ "exposure_ms": exposure_ms }),
+        )
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "set_exposure",
+            "exposure_ms": exposure_ms,
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Stop GOTO operation
+#[tauri::command]
+pub async fn telescope_stop_goto(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<String, String> {
+    tracing::info!("Stop GOTO for telescope {}", telescope_id);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result =
+        tokio::task::spawn_blocking(move || bridge.call_method("stop_goto", serde_json::json!({})))
+            .await
+            .map_err(|e| format!("Task join error: {}", e))??;
+
+    emit_event(
+        &app,
+        event_names::COMMAND_RESPONSE,
+        serde_json::json!({
+            "telescope_id": telescope_id,
+            "command": "stop_goto",
+            "result": result,
+        }),
+    )?;
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Get focuser position
+#[tauri::command]
+pub async fn telescope_get_focuser_position(
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<String, String> {
+    tracing::info!("Get focuser position for telescope {}", telescope_id);
+
+    let (host, port) = {
+        let telescopes = state.telescopes.read();
+        let telescope = telescopes
+            .get(&telescope_id)
+            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+        (telescope.host.clone(), telescope.port)
+    };
+
+    let bridge = TelescopeBridge::new(&host, port)?;
+    let result = tokio::task::spawn_blocking(move || {
+        bridge.call_method("get_focuser_position", serde_json::json!({}))
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
+
+    Ok(serde_json::to_string(&result).unwrap())
 }
