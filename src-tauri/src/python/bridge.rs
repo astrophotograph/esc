@@ -29,6 +29,20 @@ pub fn init_python() -> PyResult<()> {
         let python_path_str = python_path.to_str().unwrap();
         path.insert(0, python_path_str)?;
 
+        // Add venv site-packages to sys.path
+        let venv_site_packages = current_dir.parent()
+            .unwrap()
+            .join(".venv/lib/python3.12/site-packages");
+        tracing::info!("Checking for venv at: {:?}", venv_site_packages);
+        tracing::info!("Venv exists: {}", venv_site_packages.exists());
+        if venv_site_packages.exists() {
+            let venv_path_str = venv_site_packages.to_str().unwrap();
+            path.insert(1, venv_path_str)?;
+            tracing::info!("Added venv site-packages to sys.path: {:?}", venv_site_packages);
+        } else {
+            tracing::warn!("Venv site-packages not found at: {:?}", venv_site_packages);
+        }
+
         // Log sys.path for debugging
         tracing::info!("Python sys.path after init:");
         for (i, item) in path.iter().enumerate() {

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { invoke } from '../services/api'
+import { listen } from '@tauri-apps/api/event'
 import { PictureInPicture2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
@@ -26,11 +27,57 @@ export function TelescopeControl() {
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
   const setCurrentTelescope = useTelescopeStore(state => state.setCurrentTelescope)
   const setTelescopes = useTelescopeStore(state => state.setTelescopes)
+  const addTelescope = useTelescopeStore(state => state.addTelescope)
+  const updateTelescope = useTelescopeStore(state => state.updateTelescope)
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 50))
   }
+
+  // Listen for telescope events
+  useEffect(() => {
+    const unlistenPromises = [
+      listen('telescope-discovered', (event: any) => {
+        const { id, host, port, name, serial_number } = event.payload
+        const telescope = {
+          id,
+          host,
+          port,
+          name: name || `Seestar ${serial_number || host}`,
+          serial_number,
+          status: 'disconnected' as const
+        }
+        // Only add if it doesn't already exist
+        const exists = useTelescopeStore.getState().telescopes.find(t => t.id === id)
+        if (!exists) {
+          addTelescope(telescope)
+          addLog(`✓ Telescope discovered: ${telescope.name}`)
+        }
+      }),
+      listen('telescope-connected', (event: any) => {
+        const { id } = event.payload
+        updateTelescope(id, { status: 'connected' })
+        addLog(`✓ Telescope ${id} connected`)
+      }),
+      listen('telescope-disconnected', (event: any) => {
+        const { id } = event.payload
+        updateTelescope(id, { status: 'disconnected' })
+        addLog(`ℹ Telescope ${id} disconnected`)
+      }),
+      listen('telescope-error', (event: any) => {
+        const { id, error } = event.payload
+        updateTelescope(id, { status: 'error' })
+        addLog(`✗ Telescope ${id} error: ${error}`)
+      }),
+    ]
+
+    return () => {
+      Promise.all(unlistenPromises).then(unlisteners => {
+        unlisteners.forEach(unlisten => unlisten())
+      })
+    }
+  }, [updateTelescope, addTelescope])
 
   const handleDiscoverTelescopes = async () => {
     setDiscovering(true)
@@ -80,10 +127,14 @@ export function TelescopeControl() {
       return
     }
     setLoading(true)
+    // Update status to connecting immediately
+    updateTelescope(currentTelescopeId, { status: 'connecting' })
+    addLog(`⟳ Connecting to telescope...`)
     try {
       await invoke('connect_telescope', { telescopeId: currentTelescopeId })
-      addLog(`✓ Connected to telescope`)
+      // Status update will come from the event listener
     } catch (error) {
+      updateTelescope(currentTelescopeId, { status: 'error' })
       addLog(`✗ Connection failed: ${error}`)
     } finally {
       setLoading(false)
@@ -93,9 +144,10 @@ export function TelescopeControl() {
   const handleDisconnect = async () => {
     if (!currentTelescopeId) return
     setLoading(true)
+    addLog(`⟳ Disconnecting...`)
     try {
       await invoke('disconnect_telescope', { telescopeId: currentTelescopeId })
-      addLog(`✓ Disconnected from telescope`)
+      // Status update will come from the event listener
     } catch (error) {
       addLog(`✗ Disconnect failed: ${error}`)
     } finally {
@@ -161,7 +213,7 @@ export function TelescopeControl() {
                 currentTelescope?.status === 'error' ? 'bg-red-500 text-white' :
                 'bg-gray-300 text-gray-700'
               }`}>
-                {currentTelescope?.status.toUpperCase() || 'DISCONNECTED'}
+                {(currentTelescope?.status || 'disconnected').toUpperCase()}
               </div>
             </div>
           </div>
@@ -266,7 +318,7 @@ export function TelescopeControl() {
                         telescope.status === 'error' ? 'bg-red-500 text-white' :
                         'bg-gray-300 text-gray-700'
                       }`}>
-                        {telescope.status.toUpperCase()}
+                        {(telescope.status || 'disconnected').toUpperCase()}
                       </div>
                     </div>
                   ))}

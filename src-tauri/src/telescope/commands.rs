@@ -122,7 +122,7 @@ pub async fn connect_telescope(
         (host, port)
     };
 
-    // Create Python bridge object and connect
+    // Create Python bridge object
     let bridge_helper = TelescopeBridge::new(&host, port)?;
     let bridge_obj = bridge_helper.create_bridge_object()?;
 
@@ -130,9 +130,31 @@ pub async fn connect_telescope(
     use pyo3::prelude::*;
     let bridge_clone = Python::with_gil(|py| bridge_obj.clone_ref(py));
 
-    let result = tokio::task::spawn_blocking(move || {
-        TelescopeBridge::new(&host, port)
-            .and_then(|b| b.connect())
+    // Connect using the bridge object (not a new instance!)
+    let result: serde_json::Value = tokio::task::spawn_blocking(move || -> Result<serde_json::Value, String> {
+        Python::with_gil(|py| {
+            let telescope_module = py.import("telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import module: {}", e))?;
+            let run_method = telescope_module.getattr("run_bridge_method")
+                .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
+
+            // Call connect on the actual bridge object
+            let bridge_bound = bridge_obj.bind(py);
+            let result = run_method.call1((bridge_bound, "connect", py.None()))
+                .map_err(|e| format!("Failed to call connect: {}", e))?;
+
+            // Convert to JSON
+            let json_module = py.import("json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract string: {}", e))?;
+
+            serde_json::from_str(&json_str)
+                .map_err(|e| format!("JSON parse error: {}", e))
+        })
     })
     .await
     .map_err(|e| format!("Task join error: {}", e))??;

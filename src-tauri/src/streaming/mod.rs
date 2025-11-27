@@ -105,12 +105,17 @@ async fn get_frame_from_bridge(
     use pyo3::prelude::*;
     use pyo3::types::PyBytes;
 
+    tracing::info!("get_frame_from_bridge called for telescope: {}", telescope_id);
+
     // Get the telescope's bridge
     let bridge = {
         let telescopes = state.telescopes.read();
         telescopes
             .get(telescope_id)
-            .ok_or_else(|| "Telescope not found".to_string())?
+            .ok_or_else(|| {
+                tracing::warn!("Telescope {} not found in state", telescope_id);
+                "Telescope not found".to_string()
+            })?
             .bridge.clone()
     };
 
@@ -133,14 +138,20 @@ async fn get_frame_from_bridge(
                 Ok(None)
             } else {
                 let bytes = result.downcast::<PyBytes>()?;
-                Ok(Some(bytes.as_bytes().to_vec()))
+                let vec = bytes.as_bytes().to_vec();
+                tracing::info!("Got frame from Python: {} bytes", vec.len());
+                Ok(Some(vec))
             }
         })
     })
     .await
     .map_err(|e| format!("Task join error: {}", e))?;
 
-    result.map_err(|e: PyErr| format!("Python error: {}", e))
+    let frame_result = result.map_err(|e: PyErr| format!("Python error: {}", e))?;
+    if frame_result.is_none() {
+        tracing::info!("get_next_frame returned None");
+    }
+    Ok(frame_result)
 }
 
 /// Start the streaming server on a separate port
