@@ -1,123 +1,247 @@
-# ESC (Experimental Scope Creep)
+# EESC - Telescope Control Application
 
-Advanced telescope control interface for Seestar telescopes. This project provides enhanced features and experimental capabilities beyond the standard Seestar app.
+A modern telescope control application built with Tauri 2, React, Rust, and Python. Features observation session planning, image management (FITS support), and cloud-based image sharing.
 
-There are two parts: the `server` written in Python and `ui` written in NextJS.
-Both pieces need to be run at the same time.
+## Features
 
-## Quick Start with Docker
+- **Telescope Control**: Connect and control telescopes via ASCOM, INDI, or Alpaca protocols
+- **Observation Planning**: Plan observation sessions with target selection and visibility analysis
+- **Image Management**: Manage astronomical images with FITS file support
+- **Image Sharing**: Share images via cloud storage with public gallery
+- **Dual Deployment**: Run as desktop application (Tauri) or web application
+- **Dark Theme**: Beautiful dark blue color palette optimized for astronomy
 
-The easiest way to get started is to use our setup script which will:
-- Check that Docker is installed
-- Pull pre-built Docker images from GitHub Container Registry
-- Start the application automatically
+## Technology Stack
 
-### Running Latest Version
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for build tooling
+- **Zod** for runtime type validation
+- **Vitest** for testing
 
-Run this single command:
+### Backend
+- **Rust** (Tauri commands and core logic)
+- **Python** (PyO3 embedded)
+  - Astronomical calculations (astropy, astroplan)
+  - Telescope hardware control
+  - User scripting engine
+- **Tauri 2** for desktop application framework
+
+## Project Structure
+
+```
+eesc/
+├── src/                          # React frontend
+│   ├── features/                 # Feature modules
+│   │   ├── telescope-control/
+│   │   ├── session-planning/
+│   │   ├── image-management/
+│   │   └── image-sharing/
+│   ├── services/                 # API abstraction layer
+│   ├── types/                    # TypeScript types (Zod schemas)
+│   ├── styles/                   # Global styles and theme
+│   ├── test/                     # Test utilities
+│   ├── App.tsx
+│   └── main.tsx
+│
+├── src-tauri/                    # Rust backend
+│   ├── src/
+│   │   ├── commands/             # Tauri commands
+│   │   ├── telescope/            # Telescope control logic
+│   │   ├── imaging/              # Image processing
+│   │   ├── python/               # PyO3 bridge
+│   │   ├── main.rs
+│   │   └── lib.rs
+│   │
+│   ├── python/                   # Python modules
+│   │   ├── astronomy/            # Coordinate transforms, ephemeris
+│   │   ├── hardware/             # Telescope drivers
+│   │   └── scripting/            # User script engine
+│   │
+│   ├── Cargo.toml
+│   ├── tauri.conf.json
+│   └── build.rs
+│
+├── tests/                        # Python tests
+│   ├── test_astronomy.py
+│   └── test_scripting.py
+│
+├── package.json                  # pnpm configuration
+├── pyproject.toml                # Python/uv configuration
+├── vite.config.ts                # Vite configuration
+├── vitest.config.ts              # Vitest configuration
+└── README.md
+```
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** (v18+)
+- **pnpm** (v8+)
+- **Rust** (latest stable)
+- **Python** (3.11+)
+- **uv** (Python package manager)
+- **Tauri Prerequisites**: See [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
+
+### Installation
+
+1. **Install dependencies**:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+# Install JavaScript dependencies
+pnpm install
+
+# Install Python dependencies
+uv sync
+
+# The Rust dependencies will be installed automatically when building
 ```
 
-### Running Specific Version
-
-You can specify a version using an environment variable with curl:
+2. **Development**:
 
 ```bash
-# Run specific version v1.0.0
-VERSION=v1.0.0 curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+# Run desktop app in development mode
+pnpm tauri:dev
 
-# Run beta version
-VERSION=beta curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
-
-# Run nightly/development version
-VERSION=main curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh | bash
+# Run web version in development mode
+pnpm web:dev
 ```
 
-Or download the script and use command-line arguments:
+### Building
 
 ```bash
-# Download the script
-curl -sSL https://raw.githubusercontent.com/astrophotograph/esc/main/setup-and-run.sh -o setup-and-run.sh
+# Build desktop application
+pnpm tauri:build
 
-# Run specific version
-bash setup-and-run.sh --version v1.0.0
-
-# Or run beta version
-bash setup-and-run.sh --version beta
-
-# Or run latest (default)
-bash setup-and-run.sh --version latest
+# Build web version
+pnpm web:build
 ```
 
-### Script Options
+### Testing
 
 ```bash
-# View all options
-bash setup-and-run.sh --help
+# Run all tests
+pnpm test:all
 
-# Force download source code
-bash setup-and-run.sh --force-download
+# Run TypeScript/React tests
+pnpm test
 
-# Run specific version with source download
-bash setup-and-run.sh --version v1.0.0 --force-download
+# Run TypeScript tests with UI
+pnpm test:ui
+
+# Run Python tests
+pnpm test:python
+
+# Run Rust tests
+pnpm test:rust
+
+# Run tests with coverage
+pnpm test:coverage
 ```
 
-After running, the application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-
-### Data Persistence
-
-The application automatically persists manually added telescopes in a SQLite database. In Docker setups, this database is stored in a volume and survives container restarts and updates.
-
-- **Auto-discovered telescopes**: Rediscovered on each startup
-- **Manually added telescopes**: Persisted and restored automatically
-- **Backup instructions**: See [Docker documentation](README.Docker.md#backup-and-recovery)
-
-## Manual Setup
-
-### Raspberry Pi 4 Setup
-
-For Raspberry Pi 4 users, we provide a special setup script that handles ARM64 compatibility:
+### Linting and Formatting
 
 ```bash
-cd server
-./setup-rpi.sh  # Installs ARM64-compatible dependencies
-uv run python main.py server
+# Format all code
+pnpm format
+pnpm format:python
+
+# Lint code
+pnpm lint
+pnpm lint:python
 ```
 
-**Requirements:**
-- Raspberry Pi 4 with 64-bit OS (required)
-- At least 4GB RAM recommended
-- 5GB free disk space
+## Development Workflow
 
-The setup script will:
-- Install system dependencies for ARM64
-- Compile critical packages from source to avoid illegal instruction errors
-- Configure optimized settings for Raspberry Pi hardware
+### Adding New Tauri Commands
 
-### Standard Server Setup
+1. Define the command in `src-tauri/src/commands/mod.rs`
+2. Register it in `src-tauri/src/main.rs` via `generate_handler![]`
+3. Call from frontend using `invoke('command_name', { args })`
 
-```shell
-cd server
-uv run python main.py server
+### Using Python from Rust
+
+Python modules are integrated via PyO3 in `src-tauri/src/python/mod.rs`. To call Python code:
+
+```rust
+use pyo3::prelude::*;
+
+Python::with_gil(|py| {
+    // Execute Python code
+    let result = py.eval("1 + 1", None, None)?;
+    println!("{}", result);
+    Ok(())
+})
 ```
 
-The above should autodetect any Seestars on the network.
+### Adding New Features
 
-### UI Setup
+1. Create feature directory in `src/features/`
+2. Implement React components with TypeScript
+3. Define types using Zod schemas in `src/types/`
+4. Create corresponding Rust commands if needed
+5. Add Python modules for complex calculations
 
-```shell
-cd ui
-npm install --legacy-peer-deps   # Only need to run first time
-npm run dev
+### Dual Deployment (Desktop & Web)
+
+The API abstraction layer (`src/services/api.ts`) automatically detects the runtime environment:
+
+- **Desktop (Tauri)**: Uses `@tauri-apps/api` for direct Rust communication
+- **Web**: Falls back to REST API calls (requires separate backend server)
+
+## Architecture
+
+### Frontend → Backend Communication
+
+```
+React Components
+    ↓
+API Abstraction Layer (src/services/api.ts)
+    ↓
+    ├─→ Tauri (Desktop): invoke() → Rust Commands
+    └─→ Web: fetch() → REST API → Rust Server
+            ↓
+        Rust Backend
+            ↓
+            ├─→ Pure Rust (telescope, imaging)
+            └─→ PyO3 Bridge → Python Modules
+                    ↓
+                ├─→ Astronomy (astropy, astroplan)
+                ├─→ Hardware (ASCOM/INDI drivers)
+                └─→ Scripting (user scripts)
 ```
 
-### Running
+## Python Modules
 
-After the above are run, go to `http://localhost:3000/`. It will have
-automatically discovered any Seestars on the network.
+### Astronomy (`src-tauri/python/astronomy/`)
+- **coordinates.py**: RA/Dec ↔ Alt/Az transformations
+- **ephemeris.py**: Sun, Moon, and planet positions
+- **planning.py**: Observation planning and visibility analysis
 
+### Hardware (`src-tauri/python/hardware/`)
+- **telescope_driver.py**: Abstract telescope driver for ASCOM/INDI/Alpaca
+
+### Scripting (`src-tauri/python/scripting/`)
+- **script_engine.py**: Embedded Python interpreter for user scripts
+
+## Contributing
+
+1. Follow the existing code style
+2. Use `pnpm format` and `pnpm lint` before committing
+3. Add tests for new features
+4. Update documentation as needed
+
+## License
+
+See LICENSE file for details.
+
+## Roadmap
+
+- [ ] Implement actual telescope hardware communication
+- [ ] Add FITS image viewer with stretch algorithms
+- [ ] Integrate star catalogs and deep sky object databases
+- [ ] Add plate solving capabilities
+- [ ] Implement cloud storage backend
+- [ ] Add session scheduling and weather integration
+- [ ] Create mobile companion app

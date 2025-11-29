@@ -1,0 +1,34 @@
+{
+  "name": "esc",
+  "version": "1.0.0",
+  "description": "Experimental Scope Creep - Telescope control application",
+  "private": true,
+  "scripts": {
+    "dev:ui": "cd ui && pnpm run dev",
+    "dev:server": "cd server && uv run python main.py server",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:ui\"",
+    "build:ui": "cd ui && pnpm run build",
+    "build:server": "cd server && uv run pyinstaller --onefile --name main main.py",
+    "build:server:nuitka": "cd server && make build-nuitka-folder",
+    "build:server:nuitka:fast": "cd server && make build-nuitka-fast",
+    "build:server:nuitka:onefile": "cd server && make build-nuitka",
+    "electron:sync-version": "node scripts/sync-electron-version.js",
+    "electron:dev": "cd electron && pnpm start",
+    "electron:build": "npm run electron:sync-version && npm run build:ui && npm run build:server && cd electron && pnpm run build",
+    "electron:build:nuitka": "npm run electron:sync-version && npm run build:ui && npm run build:server:nuitka && cd electron && pnpm run build:nuitka",
+    "electron:dist": "npm run electron:sync-version && npm run build:ui && npm run build:server && cd electron && pnpm run dist",
+    "electron:dist:mac": "npm run electron:sync-version && npm run build:ui && cd electron && pnpm run build:mac",
+    "electron:dist:win": "npm run electron:sync-version && npm run build:ui && npm run build:server && cd electron && pnpm run build:win",
+    "test": "cd ui && pnpm test && cd ../server && uv run pytest",
+    "lint": "cd ui && pnpm run lint && cd ../server && uv run ruff check .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7"
+  },
+  "workspaces": [
+    "ui",
+    "electron"
+  ]
+}

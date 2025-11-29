@@ -1,0 +1,8 @@
+dist/
+dist-web/
+target/
+node_modules/
+.jj/
+*.lock
+pnpm-lock.yaml
+Cargo.lock
