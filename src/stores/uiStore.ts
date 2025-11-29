@@ -35,6 +35,18 @@ interface UIStore {
   setPipTelescopeId: (id: string | null) => void
   togglePiP: () => void
 
+  // Allsky Panel
+  showAllskyPanel: boolean
+  setShowAllskyPanel: (show: boolean) => void
+
+  // Telescope Status Overlay
+  showTelescopeStatus: boolean
+  setShowTelescopeStatus: (show: boolean) => void
+
+  // Telescope Controls Overlay
+  showTelescopeControls: boolean
+  setShowTelescopeControls: (show: boolean) => void
+
   // Modals
   showKeyboardHelp: boolean
   showSettings: boolean
@@ -97,6 +109,18 @@ export const useUIStore = create<UIStore>()(
       setPipPosition: (pipPosition) => set({ pipPosition }),
       setPipTelescopeId: (pipTelescopeId) => set({ pipTelescopeId }),
       togglePiP: () => set((state) => ({ showPiP: !state.showPiP })),
+
+      // Allsky Panel
+      showAllskyPanel: true,
+      setShowAllskyPanel: (showAllskyPanel) => set({ showAllskyPanel }),
+
+      // Telescope Status Overlay
+      showTelescopeStatus: true,
+      setShowTelescopeStatus: (showTelescopeStatus) => set({ showTelescopeStatus }),
+
+      // Telescope Controls Overlay
+      showTelescopeControls: false,
+      setShowTelescopeControls: (showTelescopeControls) => set({ showTelescopeControls }),
 
       // Modals
       showKeyboardHelp: false,

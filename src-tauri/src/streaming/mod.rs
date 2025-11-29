@@ -35,11 +35,17 @@ async fn stream_handler(
     // Check if telescope exists
     let telescope_exists = {
         let telescopes = state.telescopes.read();
-        telescopes.contains_key(&telescope_id)
+        let exists = telescopes.contains_key(&telescope_id);
+        let all_ids: Vec<_> = telescopes.keys().collect();
+        info!(
+            "Stream handler: checking for telescope '{}', exists={}, all_ids={:?}",
+            telescope_id, exists, all_ids
+        );
+        exists
     };
 
     if !telescope_exists {
-        return (StatusCode::NOT_FOUND, "Telescope not found").into_response();
+        return (StatusCode::NOT_FOUND, format!("Telescope '{}' not found in state", telescope_id)).into_response();
     }
 
     // Create an async stream that yields JPEG frames
@@ -109,20 +115,12 @@ async fn get_frame_from_bridge(
     use pyo3::prelude::*;
     use pyo3::types::PyBytes;
 
-    tracing::info!(
-        "get_frame_from_bridge called for telescope: {}",
-        telescope_id
-    );
-
     // Get the telescope's bridge
     let bridge = {
         let telescopes = state.telescopes.read();
         telescopes
             .get(telescope_id)
-            .ok_or_else(|| {
-                tracing::warn!("Telescope {} not found in state", telescope_id);
-                "Telescope not found".to_string()
-            })?
+            .ok_or_else(|| "Telescope not found".to_string())?
             .bridge
             .clone()
     };
@@ -143,11 +141,12 @@ async fn get_frame_from_bridge(
 
             // Extract bytes if present
             if result.is_none() {
+                tracing::info!("get_frame_from_bridge: got None from Python");
                 Ok(None)
             } else {
                 let bytes = result.downcast::<PyBytes>()?;
                 let vec = bytes.as_bytes().to_vec();
-                tracing::info!("Got frame from Python: {} bytes", vec.len());
+                tracing::info!("get_frame_from_bridge: got {} bytes", vec.len());
                 Ok(Some(vec))
             }
         })
@@ -155,10 +154,10 @@ async fn get_frame_from_bridge(
     .await
     .map_err(|e| format!("Task join error: {}", e))?;
 
-    let frame_result = result.map_err(|e: PyErr| format!("Python error: {}", e))?;
-    if frame_result.is_none() {
-        tracing::info!("get_next_frame returned None");
-    }
+    let frame_result = result.map_err(|e: PyErr| {
+        tracing::error!("get_frame_from_bridge: Python error: {}", e);
+        format!("Python error: {}", e)
+    })?;
     Ok(frame_result)
 }
 

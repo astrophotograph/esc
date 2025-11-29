@@ -192,8 +192,12 @@ export const useTelescopeStore = create<TelescopeStore>()(
     {
       name: 'telescope-storage',
       partialize: (state) => ({
-        // Only persist these fields
-        telescopes: state.telescopes,
+        // Only persist these fields - exclude status since backend state is lost on restart
+        telescopes: state.telescopes.map(t => ({
+          ...t,
+          status: 'disconnected' as const,  // Always persist as disconnected
+          error: undefined,
+        })),
         currentTelescopeId: state.currentTelescopeId,
         telescopeSettings: state.telescopeSettings,
       }),

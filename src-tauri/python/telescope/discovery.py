@@ -36,17 +36,29 @@ def discover_telescopes_sync(timeout: float = 3.0) -> list[Dict[str, Any]]:
 
             devices = loop.run_until_complete(discover_seestars(timeout=timeout))
 
-            return [
-                {
-                    "host": device.host,
-                    "port": device.port,
-                    "serial_number": device.device_name,
-                    "product_model": "Seestar S50",
-                    "ssid": getattr(device, 'ssid', ''),
+            # Parse scopinator discovery results
+            # Each device is a dict with: address, data (containing result), discovered_via
+            result = []
+            for device in devices:
+                # Extract the address (IP)
+                host = device.get("address", "")
+                if not host:
+                    continue
+
+                # Extract data from the result field
+                data = device.get("data", {})
+                device_info = data.get("result", {})
+
+                result.append({
+                    "host": host,
+                    "port": 4700,  # Default Seestar port
+                    "serial_number": device_info.get("sn", ""),
+                    "product_model": device_info.get("product_model", "Seestar"),
+                    "ssid": device_info.get("ssid", ""),
                     "discovery_method": "auto_discovery"
-                }
-                for device in devices
-            ]
+                })
+
+            return result
         else:
             logging.info("[MOCK] Discovering telescopes")
             # Return mock telescope for testing

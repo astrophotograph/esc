@@ -3,6 +3,7 @@ import { X, Minimize2, Maximize2, Expand, Minimize, Settings, Camera } from 'luc
 import { Button } from './ui/button'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
 import { VideoOverlayControls } from './VideoOverlayControls'
+import { useTelescopeStore } from '@/stores/telescopeStore'
 import {
   Select,
   SelectContent,
@@ -41,6 +42,11 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
 
   const pipRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLDivElement>(null)
+
+  // Get telescope connection status
+  const telescopes = useTelescopeStore(state => state.telescopes)
+  const activeTelescope = telescopes.find(t => t.id === telescopeId)
+  const isConnected = activeTelescope?.status === 'connected'
 
   const currentSize = fullscreen
     ? { width: window.innerWidth, height: window.innerHeight }
@@ -142,6 +148,10 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
 
     switch (camera) {
       case 'primary':
+        // Only return stream URL if telescope is connected
+        if (!isConnected) {
+          return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=Not%20Connected`
+        }
         return `http://localhost:8080/stream/${telescopeId}`
       case 'allsky':
         return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=All-Sky`

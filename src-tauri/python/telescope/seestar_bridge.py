@@ -72,9 +72,10 @@ class TelescopeBridge:
                 )
                 self._loop.run_until_complete(self.imaging_client.connect())
 
-                # NOTE: Don't call start_streaming() here - the telescope automatically
-                # enters ContinuousExposure mode and sends frames. Calling start_streaming()
-                # would change the mode unnecessarily.
+                # Start streaming to receive images
+                # This puts the telescope in ContinuousExposure mode and starts sending frames
+                self._loop.run_until_complete(self.imaging_client.start_streaming())
+                logging.info(f"Started streaming for telescope at {self.host}:{self.port}")
 
                 return {
                     "success": True,
@@ -114,6 +115,10 @@ class TelescopeBridge:
             # Disconnect imaging client
             if self.imaging_client and SCOPINATOR_AVAILABLE:
                 if self._loop:
+                    try:
+                        self._loop.run_until_complete(self.imaging_client.stop_streaming())
+                    except Exception as e:
+                        logging.warning(f"Error stopping streaming: {e}")
                     self._loop.run_until_complete(self.imaging_client.disconnect())
                 self.imaging_client = None
 
@@ -271,75 +276,64 @@ class TelescopeBridge:
     def get_next_frame(self) -> Optional[bytes]:
         """
         Get the next video frame from the telescope.
-        Supports both Stack/ContinuousExposure mode (via imaging_client.image)
-        and RTSP Streaming mode (via RtspClient).
+        Uses the imaging client's get_next_image async generator.
 
         Returns:
             JPEG frame bytes, or None if no frame available
         """
         try:
             if not SCOPINATOR_AVAILABLE:
-                logging.warning("Scopinator not available!")
+                logging.info("get_next_frame: scopinator not available")
                 return None
 
             if not self.imaging_client:
-                logging.warning("No imaging_client available!")
+                logging.info("get_next_frame: no imaging_client")
                 return None
 
-            logging.info(f"get_next_frame: imaging_client exists and is_connected={self.imaging_client.is_connected}")
-            logging.info(f"get_next_frame: imaging_client.image is not None: {self.imaging_client.image is not None}")
-            if self.imaging_client.image is not None:
-                logging.info(f"get_next_frame: imaging_client.image.image is not None: {self.imaging_client.image.image is not None}")
+            if self._loop is None:
+                logging.info("get_next_frame: no event loop")
+                return None
 
-            # Try Stack/ContinuousExposure mode first (imaging_client.image)
-            if self.imaging_client.image is not None and self.imaging_client.image.image is not None:
-                logging.info(f"Got frame from imaging_client: shape={self.imaging_client.image.image.shape}, dtype={self.imaging_client.image.image.dtype}")
-                # Get the numpy array from the ScopeImage
-                frame = self.imaging_client.image.image  # numpy array (RGB)
+            logging.info("get_next_frame: fetching frame from imaging client...")
 
-                # Convert from uint16 to uint8 if needed
-                # Telescope images are 16-bit, but JPEG needs 8-bit
-                import numpy as np
-                if frame.dtype == np.uint16:
-                    # Scale from 16-bit to 8-bit
-                    frame = (frame / 256).astype(np.uint8)
+            # Use the async generator to get the next image
+            # This properly yields to the event loop and waits for frames
+            async def fetch_one_frame():
+                async for image in self.imaging_client.get_next_image(camera_id=0):
+                    if image is not None and image.image is not None:
+                        logging.info(f"get_next_frame: got image with shape {image.image.shape}")
+                        return image
+                logging.info("get_next_frame: async generator yielded no images")
+                return None
 
-                # Convert numpy array to JPEG bytes
-                img = Image.fromarray(frame)
-                buffer = io.BytesIO()
-                img.save(buffer, format='JPEG', quality=85)
-                jpeg_bytes = buffer.getvalue()
+            scope_image = self._loop.run_until_complete(fetch_one_frame())
 
-                return jpeg_bytes
+            if scope_image is None or scope_image.image is None:
+                logging.info("get_next_frame: scope_image is None")
+                return None
 
-            # Fall back to RTSP streaming mode
-            # Initialize RTSP client if not already done
-            if self.rtsp_client is None:
-                rtsp_port = 4554 + self._rtsp_camera_id
-                rtsp_url = f"rtsp://{self.host}:{rtsp_port}/stream"
-                logging.debug(f"Initializing RTSP client for {rtsp_url}")
-                self.rtsp_client = RtspClient(rtsp_url)
-                self.rtsp_client.__enter__()  # Start the RTSP client
+            # Get the numpy array from the ScopeImage
+            frame = scope_image.image  # numpy array (RGB)
+            logging.info(f"get_next_frame: frame dtype={frame.dtype}, shape={frame.shape}")
 
-            # Check if RTSP stream is open
-            if self.rtsp_client and self.rtsp_client.is_opened():
-                # Read frame from RTSP stream
-                frame = self.rtsp_client.read()  # Returns numpy array (RGB)
+            # Convert from uint16 to uint8 if needed
+            # Telescope images are 16-bit, but JPEG needs 8-bit
+            import numpy as np
+            if frame.dtype == np.uint16:
+                # Scale from 16-bit to 8-bit
+                frame = (frame / 256).astype(np.uint8)
 
-                if frame is not None:
-                    # Convert numpy array to JPEG bytes
-                    img = Image.fromarray(frame)
-                    buffer = io.BytesIO()
-                    img.save(buffer, format='JPEG', quality=85)
-                    jpeg_bytes = buffer.getvalue()
+            # Convert numpy array to JPEG bytes
+            img = Image.fromarray(frame)
+            buffer = io.BytesIO()
+            img.save(buffer, format='JPEG', quality=85)
+            jpeg_bytes = buffer.getvalue()
 
-                    return jpeg_bytes
-
-            # No frames available from either source
-            return None
+            logging.info(f"get_next_frame: returning {len(jpeg_bytes)} bytes")
+            return jpeg_bytes
 
         except Exception as e:
-            logging.error(f"Failed to get frame: {e}")
+            logging.error(f"Failed to get frame: {e}", exc_info=True)
             return None
 
 
@@ -353,15 +347,31 @@ async def discover_telescopes() -> list[Dict[str, Any]]:
     try:
         if SCOPINATOR_AVAILABLE:
             devices = await discover_seestars(timeout=3.0)
-            return [
-                {
-                    "host": device.host,
-                    "port": device.port,
-                    "serial_number": device.device_name,
-                    "product_model": "Seestar S50"
-                }
-                for device in devices
-            ]
+            result = []
+            for device in devices:
+                # Scopinator returns dicts like:
+                # {"address": "192.168.42.41", "data": {"result": {"sn": "...", ...}}, ...}
+                if isinstance(device, dict):
+                    host = device.get("address", "")
+                    if not host:
+                        continue
+                    data = device.get("data", {})
+                    device_info = data.get("result", {})
+                    result.append({
+                        "host": host,
+                        "port": 4700,
+                        "serial_number": device_info.get("sn", ""),
+                        "product_model": device_info.get("product_model", "Seestar"),
+                    })
+                else:
+                    # Handle object-style response (older scopinator versions)
+                    result.append({
+                        "host": device.host,
+                        "port": device.port,
+                        "serial_number": device.device_name,
+                        "product_model": "Seestar S50"
+                    })
+            return result
         else:
             logging.info("[MOCK] Discovering telescopes")
             # Return mock telescope for testing

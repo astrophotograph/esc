@@ -1,10 +1,38 @@
 """
-Pytest configuration and fixtures
+Pytest configuration and fixtures for telescope integration tests.
 """
+import os
+import pytest
 
-import sys
-from pathlib import Path
+# Default telescope IP for integration tests
+TELESCOPE_HOST = os.environ.get("TELESCOPE_HOST", "192.168.42.41")
+TELESCOPE_PORT = int(os.environ.get("TELESCOPE_PORT", "4700"))
 
-# Add src-tauri/python to Python path
-python_path = Path(__file__).parent.parent / "src-tauri" / "python"
-sys.path.insert(0, str(python_path))
+
+def pytest_addoption(parser):
+    """Add command line options for integration tests."""
+    parser.addoption(
+        "--telescope-host",
+        action="store",
+        default=TELESCOPE_HOST,
+        help="Telescope IP address (default: 192.168.42.41)",
+    )
+    parser.addoption(
+        "--telescope-port",
+        action="store",
+        default=TELESCOPE_PORT,
+        type=int,
+        help="Telescope port (default: 4700)",
+    )
+
+
+@pytest.fixture
+def telescope_host(request) -> str:
+    """Get telescope host from command line or environment."""
+    return request.config.getoption("--telescope-host")
+
+
+@pytest.fixture
+def telescope_port(request) -> int:
+    """Get telescope port from command line or environment."""
+    return request.config.getoption("--telescope-port")

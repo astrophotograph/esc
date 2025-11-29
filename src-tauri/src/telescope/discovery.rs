@@ -140,7 +140,13 @@ pub async fn discover_telescopes(
         // Add to state if not already present
         {
             let telescopes_state = state.telescopes.read();
-            if !telescopes_state.contains_key(&telescope_id) {
+            let already_exists = telescopes_state.contains_key(&telescope_id);
+            tracing::info!(
+                "Discovery: telescope {} exists in state: {}",
+                telescope_id,
+                already_exists
+            );
+            if !already_exists {
                 drop(telescopes_state);
 
                 // Create placeholder bridge
@@ -157,6 +163,11 @@ pub async fn discover_telescopes(
                         status: crate::state::ConnectionStatus::Disconnected,
                         bridge: Arc::new(placeholder_bridge),
                     },
+                );
+                tracing::info!(
+                    "Discovery: added telescope {} to state (now {} telescopes)",
+                    telescope_id,
+                    telescopes_state.len()
                 );
 
                 // Emit discovery event

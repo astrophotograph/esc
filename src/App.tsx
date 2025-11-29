@@ -1,14 +1,10 @@
 import { useEffect } from 'react'
-import { Crosshair, Search, Image, Calendar } from 'lucide-react'
-import { EnhancedHeader } from './components/EnhancedHeader'
-import { TelescopeControl } from './components/TelescopeControl'
-import { CatalogSearch } from './components/CatalogSearch'
-import { ImageViewer } from './components/ImageViewer'
-import { SessionPlanning } from './components/SessionPlanning'
+import { TelescopeHeader } from './components/TelescopeHeader'
+import { TelescopeView } from './components/TelescopeView'
+import { AppFooter } from './components/AppFooter'
 import { PictureInPicture } from './components/PictureInPicture'
 import { KeyboardHelp } from './components/KeyboardHelp'
 import { SettingsModal } from './components/SettingsModal'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Toaster } from './components/ui/toaster'
 import { initializeTauriEvents, cleanupTauriEvents } from './services/tauriEvents'
 import { runtime } from './services/api'
@@ -24,8 +20,6 @@ function App() {
     pipTelescopeId,
     setPipTelescopeId,
     theme,
-    activeTab,
-    setActiveTab,
   } = useUIStore()
 
   const { currentTelescopeId } = useTelescopeStore()
@@ -86,56 +80,17 @@ function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <EnhancedHeader />
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+      {/* Header */}
+      <TelescopeHeader />
 
-      <main className="max-w-7xl mx-auto px-4 py-4">
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="telescope" className="gap-2">
-              <Crosshair className="h-4 w-4" />
-              <span className="hidden sm:inline">Telescope</span>
-            </TabsTrigger>
-            <TabsTrigger value="catalog" className="gap-2">
-              <Search className="h-4 w-4" />
-              <span className="hidden sm:inline">Catalog</span>
-            </TabsTrigger>
-            <TabsTrigger value="imaging" className="gap-2">
-              <Image className="h-4 w-4" />
-              <span className="hidden sm:inline">Imaging</span>
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Planning</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="telescope" className="mt-4">
-            <TelescopeControl />
-          </TabsContent>
-
-          <TabsContent value="catalog" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <CatalogSearch />
-              <div className="space-y-4">
-                <SessionPlanning compact />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="imaging" className="mt-4">
-            <ImageViewer />
-          </TabsContent>
-
-          <TabsContent value="planning" className="mt-4">
-            <SessionPlanning />
-          </TabsContent>
-        </Tabs>
+      {/* Main Content - Telescope View */}
+      <main className="flex-1 overflow-hidden">
+        <TelescopeView />
       </main>
+
+      {/* Footer */}
+      <AppFooter />
 
       {/* Picture in Picture */}
       <PictureInPicture

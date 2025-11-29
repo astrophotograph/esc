@@ -114,14 +114,23 @@ pub async fn connect_telescope(
     state: State<'_, AppState>,
     telescope_id: String,
 ) -> Result<String, String> {
-    tracing::info!("Connecting to telescope: {}", telescope_id);
+    tracing::info!("connect_telescope: starting for telescope_id={}", telescope_id);
 
     // Get telescope info from state and update status
     let (host, port) = {
         let telescopes = state.telescopes.read();
+        let all_ids: Vec<_> = telescopes.keys().collect();
+        tracing::info!(
+            "connect_telescope: looking up telescope '{}', available telescopes: {:?}",
+            telescope_id,
+            all_ids
+        );
         let telescope = telescopes
             .get(&telescope_id)
-            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
+            .ok_or_else(|| {
+                tracing::error!("connect_telescope: Telescope {} not found in state!", telescope_id);
+                format!("Telescope {} not found", telescope_id)
+            })?;
 
         let host = telescope.host.clone();
         let port = telescope.port;
@@ -137,8 +146,10 @@ pub async fn connect_telescope(
     };
 
     // Create Python bridge object
+    tracing::info!("connect_telescope: creating bridge for {}:{}", host, port);
     let bridge_helper = TelescopeBridge::new(&host, port)?;
     let bridge_obj = bridge_helper.create_bridge_object()?;
+    tracing::info!("connect_telescope: bridge created, calling connect method");
 
     // Clone the bridge object using Python GIL
     use pyo3::prelude::*;
@@ -176,6 +187,8 @@ pub async fn connect_telescope(
         })
         .await
         .map_err(|e| format!("Task join error: {}", e))??;
+
+    tracing::info!("connect_telescope: connect result: {:?}", result);
 
     // Update status and store bridge based on result
     {
