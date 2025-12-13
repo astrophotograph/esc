@@ -16,7 +16,9 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
   const [showControls, setShowControls] = useState(false)
   const [overlaySettings, setOverlaySettings] = useState<OverlaySettings>(defaultOverlaySettings)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
   const telescopes = useTelescopeStore(state => state.telescopes)
 
@@ -118,26 +120,66 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
 
   const streamUrl = `http://localhost:8080/stream/${activeTelescopeId}`
 
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = img.naturalWidth / img.naturalHeight
+      setImageAspectRatio(ratio)
+    }
+    setIsStreaming(true)
+    setError(null)
+  }
+
   return (
-    <div ref={containerRef} className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>
-      {/* Video stream */}
+    <div
+      ref={containerRef}
+      className={`bg-black rounded-lg overflow-hidden ${className}`}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+    >
+      {/* Video stream - uses flexbox centering with constrained dimensions */}
       <img
+        ref={imgRef}
         src={streamUrl}
         alt="Telescope live feed"
-        className="w-full h-full object-contain"
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain'
+        }}
         onError={() => {
           setError('Failed to load video stream')
           setIsStreaming(false)
         }}
-        onLoad={() => {
-          setIsStreaming(true)
-          setError(null)
-        }}
+        onLoad={handleImageLoad}
       />
 
-      {/* Video Overlays */}
-      {dimensions.width > 0 && dimensions.height > 0 && (
-        <VideoOverlays width={dimensions.width} height={dimensions.height} settings={overlaySettings} />
+      {/* Video Overlays - positioned over the image area */}
+      {imageAspectRatio && dimensions.width > 0 && dimensions.height > 0 && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div
+            style={{
+              width: imageAspectRatio > (dimensions.width / dimensions.height)
+                ? '100%'
+                : `${dimensions.height * imageAspectRatio}px`,
+              height: imageAspectRatio > (dimensions.width / dimensions.height)
+                ? `${dimensions.width / imageAspectRatio}px`
+                : '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              position: 'relative'
+            }}
+          >
+            <VideoOverlays
+              width={imageAspectRatio > (dimensions.width / dimensions.height)
+                ? dimensions.width
+                : dimensions.height * imageAspectRatio}
+              height={imageAspectRatio > (dimensions.width / dimensions.height)
+                ? dimensions.width / imageAspectRatio
+                : dimensions.height}
+              settings={overlaySettings}
+            />
+          </div>
+        </div>
       )}
 
       {/* Overlay Controls Dialog */}

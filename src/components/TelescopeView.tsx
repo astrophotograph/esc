@@ -39,7 +39,7 @@ export function TelescopeView() {
   }
 
   return (
-    <div ref={containerRef} className="relative flex-1 bg-black overflow-hidden">
+    <div ref={containerRef} className="relative h-full bg-black overflow-hidden">
       {/* Left Sidebar Controls */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
         {/* View Mode Toggle */}

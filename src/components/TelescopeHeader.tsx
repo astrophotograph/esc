@@ -41,13 +41,16 @@ interface TelescopeStatus {
   batteryPercent?: number
   temperatureC?: number
   humidityPercent?: number
-  gain?: number
+  dewHeaterPower?: number
+  ra?: number
+  dec?: number
+  isGoto?: boolean
   isTracking?: boolean
-  mountType?: string
-  guideStatus?: string
-  errorCount?: number
-  warningCount?: number
-  alertCount?: number
+  viewState?: string
+  gain?: number
+  focusPosition?: number
+  stackedFrame?: number
+  targetName?: string
 }
 
 // Helper functions for status display
@@ -423,15 +426,30 @@ export function TelescopeHeader() {
               <TooltipContent>Temperature</TooltipContent>
             </Tooltip>
 
-            {/* Gain - Seestar actually has this */}
+            {/* Gain */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <span className="text-xs text-muted-foreground">G:</span>
                   <span className="font-mono">{status?.gain ?? '--'}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Gain</TooltipContent>
+              <TooltipContent>Camera Gain</TooltipContent>
+            </Tooltip>
+
+            {/* RA/Dec Position */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <Compass className="h-4 w-4 text-cyan-500" />
+                  <span className="font-mono text-xs">
+                    {status?.ra != null ? `${status.ra.toFixed(2)}h` : '--'}
+                    {' / '}
+                    {status?.dec != null ? `${status.dec.toFixed(1)}°` : '--'}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>RA / Dec (J2000)</TooltipContent>
             </Tooltip>
 
             {/* Tracking */}
@@ -440,22 +458,24 @@ export function TelescopeHeader() {
                 <div className="flex items-center gap-1">
                   <Navigation className="h-4 w-4" />
                   <span className={`font-mono ${status?.isTracking ? 'text-green-500' : 'text-muted-foreground'}`}>
-                    {status?.isTracking ? 'ON' : 'OFF'}
+                    {status?.isTracking ? 'TRK' : 'OFF'}
                   </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Tracking</TooltipContent>
+              <TooltipContent>Tracking {status?.isTracking ? 'Enabled' : 'Disabled'}</TooltipContent>
             </Tooltip>
 
-            {/* Mount Type - Seestar is Alt-Az */}
+            {/* View State / Mode */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <Compass className="h-4 w-4 text-cyan-500" />
-                  <span className="font-mono">Alt-Az</span>
+                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <span className="font-mono text-xs">
+                    {status?.viewState || 'Idle'}
+                  </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Mount Type</TooltipContent>
+              <TooltipContent>View State / Mode</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>

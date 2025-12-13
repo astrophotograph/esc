@@ -8,14 +8,18 @@ interface ApiResponse {
   error?: string
 }
 
+interface DiscoveredTelescopeInfo {
+  host: string
+  port: number
+  serial_number: string
+  product_model: string
+  ssid?: string
+  discovery_method?: string
+  name?: string
+}
+
 interface TelescopeDiscoveryResult {
-  telescopes: Array<{
-    host: string
-    port: number
-    serial_number?: string
-    product_model?: string
-    name?: string
-  }>
+  telescopes: DiscoveredTelescopeInfo[]
 }
 
 interface TelescopeStatusResult {
@@ -55,11 +59,13 @@ export function useTelescope() {
 
       if (result.telescopes) {
         for (const t of result.telescopes) {
+          // Use serial_number as ID if available (must match backend discovery.rs)
+          const telescopeId = t.serial_number || `${t.host}:${t.port}`
           const telescope: TelescopeInfo = {
-            id: `${t.host}:${t.port}`,
+            id: telescopeId,
             host: t.host,
             port: t.port,
-            name: t.name || `Telescope at ${t.host}`,
+            name: t.name || t.product_model || `Telescope at ${t.host}`,
             serial_number: t.serial_number,
             product_model: t.product_model,
             status: 'disconnected',
@@ -84,14 +90,22 @@ export function useTelescope() {
    * Add a telescope manually by IP/port
    */
   const addTelescopeManual = useCallback(async (host: string, port: number, name?: string) => {
+    // Use host:port as ID for manually added telescopes (consistent with backend)
+    const telescopeId = `${host}:${port}`
+
     try {
       const result = await invoke<ApiResponse>('add_telescope', {
-        config: { host, port, name }
+        config: {
+          id: telescopeId,
+          host,
+          port,
+          name: name || `Telescope at ${host}`
+        }
       })
 
       if (result.success) {
         const telescope: TelescopeInfo = {
-          id: `${host}:${port}`,
+          id: telescopeId,
           host,
           port,
           name: name || `Telescope at ${host}`,

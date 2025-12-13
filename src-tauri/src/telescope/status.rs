@@ -17,6 +17,10 @@ pub struct TelescopeStatus {
     pub is_goto: Option<bool>,
     pub is_tracking: Option<bool>,
     pub view_state: Option<String>,
+    pub gain: Option<i32>,
+    pub focus_position: Option<i32>,
+    pub stacked_frame: Option<i32>,
+    pub target_name: Option<String>,
 }
 
 /// Get current telescope status
@@ -45,6 +49,10 @@ pub async fn get_telescope_status(
                 is_goto: None,
                 is_tracking: None,
                 view_state: None,
+                gain: None,
+                focus_position: None,
+                stacked_frame: None,
+                target_name: None,
             });
         }
 
@@ -138,6 +146,26 @@ pub async fn get_telescope_status(
                 .ok()
                 .and_then(|v| v.extract().ok());
 
+            let gain = state_dict
+                .get_item("gain")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let focus_position = state_dict
+                .get_item("focus_position")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let stacked_frame = state_dict
+                .get_item("stacked_frame")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let target_name = state_dict
+                .get_item("target_name")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
             Ok(TelescopeStatus {
                 connected: true,
                 battery_percent,
@@ -149,6 +177,10 @@ pub async fn get_telescope_status(
                 is_goto,
                 is_tracking,
                 view_state,
+                gain,
+                focus_position,
+                stacked_frame,
+                target_name,
             })
         })
     })

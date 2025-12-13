@@ -261,16 +261,46 @@ class SeestarBridge:
         """Get current telescope status.
 
         Returns:
-            Status dict
+            Status dict with fields expected by Rust backend:
+            - battery: battery percentage
+            - cur_temp: temperature in Celsius
+            - cur_hum: humidity percentage (not available)
+            - dew_heater_power: dew heater power (not available)
+            - ra: right ascension in hours
+            - dec: declination in degrees
+            - is_goto: whether currently doing GOTO
+            - is_tracking: whether tracking is enabled
+            - view: current view state/mode
+            - gain: camera gain
         """
         if not self.client:
             return {"success": False, "error": "Not connected"}
 
         try:
-            response = await self.client.send_and_recv(simple.GetViewState())
+            # Get aggregated status from client (updated from events)
+            status = self.client.status
+
+            # Also trigger a view state update to ensure fresh data
+            await self.client.send_and_recv(simple.GetViewState())
+
+            # Return data in format expected by Rust backend
             return {
                 "success": True,
-                "state": response.model_dump() if response else None
+                "state": {
+                    "battery": status.battery_capacity,
+                    "cur_temp": status.temp,
+                    "cur_hum": None,  # Not available from Seestar
+                    "dew_heater_power": None,  # Not available from Seestar
+                    "ra": status.ra,
+                    "dec": status.dec,
+                    "is_goto": status.stage == "AutoGoto" if status.stage else False,
+                    "is_tracking": status.stage in ("Stack", "ContinuousExposure") if status.stage else False,
+                    "view": status.stage or "Idle",
+                    "gain": status.gain,
+                    "focus_position": status.focus_position,
+                    "stacked_frame": status.stacked_frame,
+                    "target_name": status.target_name,
+                }
             }
         except Exception as e:
             return {

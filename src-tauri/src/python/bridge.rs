@@ -4,12 +4,9 @@ use serde_json::Value;
 
 /// Initialize the Python interpreter and add the project's Python path
 pub fn init_python() -> PyResult<()> {
-    // Set PYTHONHOME to the Python 3.12 installation
-    // This helps PyO3 find the standard library
-    std::env::set_var(
-        "PYTHONHOME",
-        "/opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12",
-    );
+    // Note: PYTHONHOME is NOT set here because we use the venv Python
+    // which manages its own library paths. Setting PYTHONHOME would
+    // conflict with the venv's path resolution.
 
     // Get the current directory (project root)
     let current_dir = std::env::current_dir()?;
@@ -36,7 +33,7 @@ pub fn init_python() -> PyResult<()> {
         let venv_site_packages = current_dir
             .parent()
             .unwrap()
-            .join(".venv/lib/python3.12/site-packages");
+            .join(".venv/lib/python3.13/site-packages");
         tracing::info!("Checking for venv at: {:?}", venv_site_packages);
         tracing::info!("Venv exists: {}", venv_site_packages.exists());
         if venv_site_packages.exists() {

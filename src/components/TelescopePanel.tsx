@@ -4,7 +4,7 @@ import { Button } from './ui/button'
 import { useTelescopeStore } from '../stores/telescopeStore'
 
 export function TelescopePanel() {
-  const [host, setHost] = useState('192.168.1.100')
+  const [host, setHost] = useState('192.168.42.41')
   const [port, setPort] = useState(4700)
   const [targetName, setTargetName] = useState('M42')
   const [ra, setRa] = useState(5.583333) // Orion Nebula RA in hours
@@ -20,13 +20,14 @@ export function TelescopePanel() {
     setLoading(true)
     setMessage('')
     try {
-      const id = `telescope_${Date.now()}`
+      // Use host:port as ID for consistency with backend
+      const id = `${host}:${port}`
       await invoke('add_telescope', {
         config: {
           id,
           host,
           port,
-          name: `${host}:${port}`
+          name: `Telescope at ${host}`
         }
       })
       setMessage(`Telescope added: ${id}`)
