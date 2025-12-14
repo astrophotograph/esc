@@ -47,6 +47,7 @@ interface StreamStatus {
   ra?: number
   dec?: number
   stage?: string
+  focusPosition?: number
 }
 
 export function TelescopeControlsOverlay() {
@@ -57,7 +58,8 @@ export function TelescopeControlsOverlay() {
   )
 
   const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
-  const [focusPosition, setFocusPosition] = useState(50)
+  // Track local focus position for UI, sync from status
+  const [localFocusPosition, setLocalFocusPosition] = useState<number | null>(null)
   const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -119,6 +121,10 @@ export function TelescopeControlsOverlay() {
           telescopeId: currentTelescopeId,
         })
         setStreamStatus(result)
+        // Sync focus position from status if available and we don't have a local override
+        if (result.focusPosition != null && localFocusPosition === null) {
+          setLocalFocusPosition(result.focusPosition)
+        }
       } catch (error) {
         // Silently ignore errors - telescope may not be in backend state yet
       }
@@ -127,7 +133,7 @@ export function TelescopeControlsOverlay() {
     fetchStatus()
     const interval = setInterval(fetchStatus, 2000)
     return () => clearInterval(interval)
-  }, [currentTelescopeId])
+  }, [currentTelescopeId, localFocusPosition])
 
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -204,16 +210,45 @@ export function TelescopeControlsOverlay() {
     async (value: number) => {
       if (!currentTelescopeId) return
       try {
-        await invoke('set_focus', {
+        await invoke('telescope_focus', {
           telescopeId: currentTelescopeId,
           position: value,
         })
+        setLocalFocusPosition(value)
       } catch (error) {
         console.error('Focus adjust failed:', error)
       }
     },
     [currentTelescopeId]
   )
+
+  const handleFocusIncrement = useCallback(
+    async (increment: number) => {
+      if (!currentTelescopeId) return
+      try {
+        await invoke('telescope_focus_increment', {
+          telescopeId: currentTelescopeId,
+          increment,
+        })
+        // Update local position optimistically
+        setLocalFocusPosition((prev) => (prev !== null ? prev + increment : increment))
+      } catch (error) {
+        console.error('Focus increment failed:', error)
+      }
+    },
+    [currentTelescopeId]
+  )
+
+  const handleAutoFocus = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_auto_focus', {
+        telescopeId: currentTelescopeId,
+      })
+    } catch (error) {
+      console.error('Auto focus failed:', error)
+    }
+  }, [currentTelescopeId])
 
   const startContinuousMove = useCallback(
     (direction: string) => {
@@ -458,15 +493,17 @@ export function TelescopeControlsOverlay() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Position</Label>
-                    <span className="text-sm font-mono text-muted-foreground">{focusPosition}</span>
+                    <span className="text-sm font-mono text-muted-foreground">
+                      {localFocusPosition ?? streamStatus?.focusPosition ?? '—'}
+                    </span>
                   </div>
                   <Slider
-                    value={[focusPosition]}
-                    onValueChange={([value]) => setFocusPosition(value)}
+                    value={[localFocusPosition ?? streamStatus?.focusPosition ?? 0]}
+                    onValueChange={([value]) => setLocalFocusPosition(value)}
                     onValueCommit={([value]) => handleFocusAdjust(value)}
                     min={0}
-                    max={100}
-                    step={1}
+                    max={10000}
+                    step={10}
                     disabled={!isConnected}
                     className="w-full"
                   />
@@ -477,11 +514,7 @@ export function TelescopeControlsOverlay() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const newPos = Math.max(0, focusPosition - 5)
-                            setFocusPosition(newPos)
-                            handleFocusAdjust(newPos)
-                          }}
+                          onClick={() => handleFocusIncrement(-50)}
                           disabled={!isConnected}
                           className="flex-1"
                         >
@@ -489,7 +522,7 @@ export function TelescopeControlsOverlay() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Focus Out (-5)</p>
+                        <p>Focus Out (-50 steps)</p>
                       </TooltipContent>
                     </Tooltip>
 
@@ -498,11 +531,7 @@ export function TelescopeControlsOverlay() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const newPos = Math.min(100, focusPosition + 5)
-                            setFocusPosition(newPos)
-                            handleFocusAdjust(newPos)
-                          }}
+                          onClick={() => handleFocusIncrement(50)}
                           disabled={!isConnected}
                           className="flex-1"
                         >
@@ -510,11 +539,17 @@ export function TelescopeControlsOverlay() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Focus In (+5)</p>
+                        <p>Focus In (+50 steps)</p>
                       </TooltipContent>
                     </Tooltip>
 
-                    <Button size="sm" variant="secondary" disabled={!isConnected} className="flex-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleAutoFocus}
+                      disabled={!isConnected}
+                      className="flex-1"
+                    >
                       Auto Focus
                     </Button>
                   </div>

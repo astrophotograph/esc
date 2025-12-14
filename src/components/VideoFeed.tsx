@@ -8,15 +8,28 @@ import { Button } from './ui/button'
 interface VideoFeedProps {
   telescopeId?: string
   className?: string
+  zoom?: number
+  rotation?: number
+  panPosition?: { x: number; y: number }
+  onPanChange?: (pan: { x: number; y: number }) => void
 }
 
-export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
+export function VideoFeed({
+  telescopeId,
+  className = '',
+  zoom = 1,
+  rotation = 0,
+  panPosition = { x: 0, y: 0 },
+  onPanChange
+}: VideoFeedProps) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showControls, setShowControls] = useState(false)
   const [overlaySettings, setOverlaySettings] = useState<OverlaySettings>(defaultOverlaySettings)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
@@ -130,21 +143,135 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
     setError(null)
   }
 
+  // Calculate pan boundaries based on zoom level
+  const calculateBoundaries = () => {
+    if (!containerRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+    const containerWidth = containerRef.current.clientWidth
+    const containerHeight = containerRef.current.clientHeight
+    const maxPanX = (containerWidth / 2) * (zoom - 1)
+    const maxPanY = (containerHeight / 2) * (zoom - 1)
+    return {
+      minX: -maxPanX,
+      maxX: maxPanX,
+      minY: -maxPanY,
+      maxY: maxPanY
+    }
+  }
+
+  // Constrain pan position within boundaries
+  const constrainPan = (x: number, y: number) => {
+    const boundaries = calculateBoundaries()
+    return {
+      x: Math.max(boundaries.minX, Math.min(boundaries.maxX, x)),
+      y: Math.max(boundaries.minY, Math.min(boundaries.maxY, y))
+    }
+  }
+
+  // Transform delta coordinates based on rotation angle
+  const transformDeltaForRotation = (dx: number, dy: number) => {
+    const angleRad = (rotation * Math.PI) / 180
+    const cos = Math.cos(angleRad)
+    const sin = Math.sin(angleRad)
+    return {
+      x: dx * cos + dy * sin,
+      y: -dx * sin + dy * cos
+    }
+  }
+
+  // Handle mouse down for panning
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom <= 1) return
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  // Handle mouse move for panning
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || zoom <= 1) return
+    e.preventDefault()
+
+    const dx = e.clientX - dragStart.x
+    const dy = e.clientY - dragStart.y
+    const transformedDelta = transformDeltaForRotation(dx, dy)
+
+    const newPan = constrainPan(
+      panPosition.x + transformedDelta.x / zoom,
+      panPosition.y + transformedDelta.y / zoom
+    )
+
+    onPanChange?.(newPan)
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  // Handle mouse up for panning
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  // Handle touch events for mobile panning
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (zoom <= 1 || e.touches.length !== 1) return
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || zoom <= 1 || e.touches.length !== 1) return
+    e.preventDefault()
+
+    const dx = e.touches[0].clientX - dragStart.x
+    const dy = e.touches[0].clientY - dragStart.y
+    const transformedDelta = transformDeltaForRotation(dx, dy)
+
+    const newPan = constrainPan(
+      panPosition.x + transformedDelta.x / zoom,
+      panPosition.y + transformedDelta.y / zoom
+    )
+
+    onPanChange?.(newPan)
+    setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+  }
+
   return (
     <div
       ref={containerRef}
       className={`bg-black rounded-lg overflow-hidden ${className}`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* Video stream - uses flexbox centering with constrained dimensions */}
       <img
         ref={imgRef}
         src={streamUrl}
         alt="Telescope live feed"
+        draggable={false}
         style={{
           maxWidth: '100%',
           maxHeight: '100%',
-          objectFit: 'contain'
+          objectFit: 'contain',
+          transform: `scale(${zoom}) rotate(${rotation}deg) translate(${panPosition.x}px, ${panPosition.y}px)`,
+          transformOrigin: 'center center',
+          transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+          userSelect: 'none'
         }}
         onError={() => {
           setError('Failed to load video stream')

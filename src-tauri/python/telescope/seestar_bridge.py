@@ -244,11 +244,19 @@ class TelescopeBridge:
         """
         try:
             if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import ScopePark
+
                 logging.info("Parking telescope")
-                # TODO: Implement park command
+
+                async def do_park():
+                    return await self.client.send_and_recv(ScopePark())
+
+                response = self._run_async(do_park())
+
                 return {
                     "success": True,
-                    "message": "Telescope parked"
+                    "message": "Telescope parked",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
                 }
             else:
                 logging.info("[MOCK] Parking telescope")
@@ -429,6 +437,147 @@ class TelescopeBridge:
             Dict with success status
         """
         return self.move(direction="stop", speed=0, duration_sec=1)
+
+    def focus(self, position: int) -> Dict[str, Any]:
+        """
+        Set focus to an absolute position.
+
+        Args:
+            position: Target focus position (steps)
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.parameterized import (
+                    MoveFocuser,
+                    MoveFocuserParameters,
+                )
+
+                logging.info(f"Setting focus to position: {position}")
+
+                command = MoveFocuser(
+                    params=MoveFocuserParameters(
+                        step=position,
+                        ret_step=True,
+                    )
+                )
+
+                async def do_focus():
+                    return await self.client.send_and_recv(command)
+
+                response = self._run_async(do_focus())
+
+                # Update status with new position if available
+                if (
+                    response is not None
+                    and hasattr(response, "result")
+                    and response.result is not None
+                ):
+                    if isinstance(response.result, dict) and "step" in response.result:
+                        if hasattr(self.client, 'status') and self.client.status:
+                            self.client.status.focus_position = response.result["step"]
+
+                return {
+                    "success": True,
+                    "message": f"Focus set to {position}",
+                    "position": position,
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info(f"[MOCK] Setting focus to position: {position}")
+                return {
+                    "success": True,
+                    "message": f"[MOCK] Focus set to {position}",
+                    "position": position
+                }
+
+        except Exception as e:
+            logging.error(f"Focus command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def focus_increment(self, increment: int) -> Dict[str, Any]:
+        """
+        Adjust focus by an increment from current position.
+
+        Args:
+            increment: Focus steps to move (positive or negative)
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                # Get current focus position from status
+                current_position = None
+                if hasattr(self.client, 'status') and self.client.status:
+                    current_position = self.client.status.focus_position
+
+                if current_position is None:
+                    logging.warning("Current focus position unknown, using increment as absolute position")
+                    new_position = abs(increment)
+                else:
+                    new_position = current_position + increment
+
+                logging.info(f"Focus increment: {increment}, current: {current_position}, new: {new_position}")
+
+                # Use the absolute focus command
+                return self.focus(new_position)
+            else:
+                logging.info(f"[MOCK] Focus increment: {increment}")
+                return {
+                    "success": True,
+                    "message": f"[MOCK] Focus incremented by {increment}",
+                    "increment": increment
+                }
+
+        except Exception as e:
+            logging.error(f"Focus increment command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def auto_focus(self) -> Dict[str, Any]:
+        """
+        Start auto-focus routine.
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import StartAutoFocus
+
+                logging.info("Starting auto focus")
+
+                async def do_auto_focus():
+                    return await self.client.send_and_recv(StartAutoFocus())
+
+                response = self._run_async(do_auto_focus())
+
+                return {
+                    "success": True,
+                    "message": "Auto focus started",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info("[MOCK] Starting auto focus")
+                return {
+                    "success": True,
+                    "message": "[MOCK] Auto focus started"
+                }
+
+        except Exception as e:
+            logging.error(f"Auto focus command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
     def get_next_frame(self) -> Optional[bytes]:
         """

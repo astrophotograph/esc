@@ -4,7 +4,7 @@ import { TelescopeView } from './components/TelescopeView'
 import { AppFooter } from './components/AppFooter'
 import { PictureInPicture } from './components/PictureInPicture'
 import { KeyboardHelp } from './components/KeyboardHelp'
-import { SettingsModal } from './components/SettingsModal'
+import { SettingsPanel } from './components/SettingsPanel'
 import { Toaster } from './components/ui/toaster'
 import { initializeTauriEvents, cleanupTauriEvents } from './services/tauriEvents'
 import { runtime, invoke } from './services/api'
@@ -149,8 +149,8 @@ function App() {
       {/* Keyboard Help Modal */}
       <KeyboardHelp />
 
-      {/* Settings Modal */}
-      <SettingsModal />
+      {/* Settings Panel */}
+      <SettingsPanel />
 
       {/* Toast Notifications */}
       <Toaster />

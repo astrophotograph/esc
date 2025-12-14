@@ -591,15 +591,16 @@ export function TelescopeHeader() {
             <TooltipContent>Help (?)</TooltipContent>
           </Tooltip>
 
-          {/* User/Settings */}
+          {/* Settings */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowSettings(true)}
+                className="h-8 w-8"
               >
-                OM
+                <Settings className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
