@@ -5,11 +5,10 @@ import {
   ChevronDown,
   ChevronUp,
   Battery,
-  BatteryCharging,
   Thermometer,
   Activity,
-  RotateCw,
   TrendingUp,
+  RotateCw,
   Minimize2,
   Maximize2,
 } from 'lucide-react'
@@ -39,22 +38,33 @@ function decToDMS(decDegrees: number): string {
   return `${sign}${degrees}° ${minutes}' ${seconds}"`
 }
 
+interface BalanceSensorData {
+  x?: number
+  y?: number
+  z?: number
+  angle?: number
+}
+
 interface StreamStatus {
+  connected: boolean
   ra?: number
   dec?: number
   alt?: number
   az?: number
-  stage?: string
-  battery_capacity?: number
-  charger_status?: string
-  temp?: number
-  stacked_frame?: number
-  dropped_frame?: number
-  skipped_frame?: number
-  balance_sensor?: {
-    data?: { x?: number; y?: number; z?: number }
-  }
-  server_browser_rtt_ms?: number
+  viewState?: string  // camelCase from Rust serde
+  batteryPercent?: number
+  temperatureC?: number
+  humidityPercent?: number
+  dewHeaterPower?: number
+  isGoto?: boolean
+  isTracking?: boolean
+  gain?: number
+  focusPosition?: number
+  stackedFrame?: number
+  targetName?: string
+  freeMb?: number
+  totalMb?: number
+  balanceSensor?: BalanceSensorData
 }
 
 export function TelescopeStatusOverlay() {
@@ -187,9 +197,7 @@ export function TelescopeStatusOverlay() {
 
   if (!showTelescopeStatus || !overlayPosition) return null
 
-  const stackedFrames = streamStatus?.stacked_frame || 0
-  const droppedFrames = streamStatus?.dropped_frame || 0
-  const skippedFrames = streamStatus?.skipped_frame || 0
+  const stackedFrames = streamStatus?.stackedFrame || 0
 
   return (
     <>
@@ -262,20 +270,16 @@ export function TelescopeStatusOverlay() {
                   {/* Battery */}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      {streamStatus?.charger_status === 'Charging' ? (
-                        <BatteryCharging className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Battery
-                          className={`w-4 h-4 ${
-                            (streamStatus?.battery_capacity ?? 0) > 20 ? 'text-green-400' : 'text-red-400'
-                          }`}
-                        />
-                      )}
+                      <Battery
+                        className={`w-4 h-4 ${
+                          (streamStatus?.batteryPercent ?? 0) > 20 ? 'text-green-400' : 'text-red-400'
+                        }`}
+                      />
                       <span className="text-muted-foreground">Battery</span>
                     </div>
                     <span className="font-mono">
-                      {streamStatus?.battery_capacity != null
-                        ? `${Math.round(streamStatus.battery_capacity)}%`
+                      {streamStatus?.batteryPercent != null
+                        ? `${Math.round(streamStatus.batteryPercent)}%`
                         : '—'}
                     </span>
                   </div>
@@ -285,13 +289,35 @@ export function TelescopeStatusOverlay() {
                     <div className="flex items-center gap-2">
                       <Thermometer
                         className={`w-4 h-4 ${
-                          (streamStatus?.temp ?? 50) < 40 ? 'text-blue-400' : 'text-orange-400'
+                          (streamStatus?.temperatureC ?? 50) < 40 ? 'text-blue-400' : 'text-orange-400'
                         }`}
                       />
                       <span className="text-muted-foreground">Temperature</span>
                     </div>
                     <span className="font-mono">
-                      {streamStatus?.temp != null ? `${streamStatus.temp.toFixed(1)}°C` : '—'}
+                      {streamStatus?.temperatureC != null ? `${streamStatus.temperatureC.toFixed(1)}°C` : '—'}
+                    </span>
+                  </div>
+
+                  {/* Gain */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-purple-400" />
+                      <span className="text-muted-foreground">Gain</span>
+                    </div>
+                    <span className="font-mono">
+                      {streamStatus?.gain != null ? streamStatus.gain : '—'}
+                    </span>
+                  </div>
+
+                  {/* Focus Position */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-cyan-400" />
+                      <span className="text-muted-foreground">Focus</span>
+                    </div>
+                    <span className="font-mono">
+                      {streamStatus?.focusPosition != null ? streamStatus.focusPosition : '—'}
                     </span>
                   </div>
                 </>
@@ -349,63 +375,65 @@ export function TelescopeStatusOverlay() {
               )}
             </div>
 
-            {/* Balance Section */}
-            <div className="space-y-2">
-              <h4
-                className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
-                onClick={() => toggleSection('balance')}
-              >
-                Balance
-                {collapsedSections.balance ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronUp className="w-3 h-3" />
+            {/* Balance Section - only show if balance sensor data is available */}
+            {streamStatus?.balanceSensor && (
+              <div className="space-y-2">
+                <h4
+                  className="text-xs font-semibold uppercase tracking-wider flex items-center justify-between cursor-pointer hover:text-foreground"
+                  onClick={() => toggleSection('balance')}
+                >
+                  Balance
+                  {collapsedSections.balance ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronUp className="w-3 h-3" />
+                  )}
+                </h4>
+
+                {!collapsedSections.balance && (
+                  <>
+                    {/* Tilt Angle - calculated from Z accelerometer */}
+                    {streamStatus.balanceSensor.z != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-orange-400" />
+                          <span className="text-muted-foreground">Tilt Angle</span>
+                        </div>
+                        <span className="font-mono">
+                          {(Math.acos(Math.min(1, Math.max(-1, streamStatus.balanceSensor.z))) * 180 / Math.PI).toFixed(1)}°
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Rotation Angle - calculated from X and Y */}
+                    {streamStatus.balanceSensor.x != null && streamStatus.balanceSensor.y != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <RotateCw className="w-4 h-4 text-yellow-400" />
+                          <span className="text-muted-foreground">Rotation</span>
+                        </div>
+                        <span className="font-mono">
+                          {(Math.atan2(streamStatus.balanceSensor.y, streamStatus.balanceSensor.x) * 180 / Math.PI).toFixed(1)}°
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Raw angle from sensor if available */}
+                    {streamStatus.balanceSensor.angle != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-400" />
+                          <span className="text-muted-foreground">Sensor Angle</span>
+                        </div>
+                        <span className="font-mono">
+                          {streamStatus.balanceSensor.angle.toFixed(1)}°
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
-              </h4>
-
-              {!collapsedSections.balance && (
-                <>
-                  {/* Tilt Angle - from balance_sensor.data.x */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-orange-400" />
-                      <span className="text-muted-foreground">Tilt Angle</span>
-                    </div>
-                    <span className="font-mono">
-                      {streamStatus?.balance_sensor?.data?.x != null
-                        ? `${streamStatus.balance_sensor.data.x.toFixed(1)}°`
-                        : '—'}
-                    </span>
-                  </div>
-
-                  {/* Rotation - from balance_sensor.data.y */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <RotateCw className="w-4 h-4 text-yellow-400" />
-                      <span className="text-muted-foreground">Rotation</span>
-                    </div>
-                    <span className="font-mono">
-                      {streamStatus?.balance_sensor?.data?.y != null
-                        ? `${streamStatus.balance_sensor.data.y.toFixed(1)}°`
-                        : '—'}
-                    </span>
-                  </div>
-
-                  {/* Z axis - from balance_sensor.data.z */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-400" />
-                      <span className="text-muted-foreground">Z Axis</span>
-                    </div>
-                    <span className="font-mono">
-                      {streamStatus?.balance_sensor?.data?.z != null
-                        ? `${streamStatus.balance_sensor.data.z.toFixed(1)}°`
-                        : '—'}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Imaging Section */}
             <div className="space-y-2">
@@ -423,20 +451,26 @@ export function TelescopeStatusOverlay() {
 
               {!collapsedSections.imaging && (
                 <>
-                  {/* Frame Counts */}
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-muted rounded px-2 py-1">
-                      <div className="text-muted-foreground">Stacked</div>
-                      <div className="font-mono">{stackedFrames}</div>
-                    </div>
-                    <div className="bg-muted rounded px-2 py-1">
-                      <div className="text-muted-foreground">Dropped</div>
-                      <div className="font-mono">{droppedFrames}</div>
-                    </div>
-                    <div className="bg-muted rounded px-2 py-1">
-                      <div className="text-muted-foreground">Skipped</div>
-                      <div className="font-mono">{skippedFrames}</div>
-                    </div>
+                  {/* Stacked Frames */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Stacked Frames</span>
+                    <span className="font-mono">{stackedFrames}</span>
+                  </div>
+
+                  {/* Target Name */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Target</span>
+                    <span className="font-mono">
+                      {streamStatus?.targetName || '—'}
+                    </span>
+                  </div>
+
+                  {/* View State */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Mode</span>
+                    <span className="font-mono">
+                      {streamStatus?.viewState || '—'}
+                    </span>
                   </div>
                 </>
               )}
@@ -469,12 +503,12 @@ export function TelescopeStatusOverlay() {
                     <span className="font-mono">{isConnected ? 'Connected' : 'Disconnected'}</span>
                   </div>
 
-                  {/* Browser RTT */}
+                  {/* Disk Space */}
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Browser RTT</span>
+                    <span className="text-muted-foreground">Disk Space</span>
                     <span className="font-mono">
-                      {streamStatus?.server_browser_rtt_ms != null
-                        ? `${streamStatus.server_browser_rtt_ms}ms`
+                      {streamStatus?.freeMb != null && streamStatus?.totalMb != null
+                        ? `${(streamStatus.freeMb / 1024).toFixed(1)} / ${(streamStatus.totalMb / 1024).toFixed(1)} GB`
                         : '—'}
                     </span>
                   </div>

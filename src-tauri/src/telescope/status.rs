@@ -6,6 +6,15 @@ use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct BalanceSensorData {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub z: Option<f64>,
+    pub angle: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TelescopeStatus {
     pub connected: bool,
     pub battery_percent: Option<f32>,
@@ -21,6 +30,9 @@ pub struct TelescopeStatus {
     pub focus_position: Option<i32>,
     pub stacked_frame: Option<i32>,
     pub target_name: Option<String>,
+    pub free_mb: Option<i32>,
+    pub total_mb: Option<i32>,
+    pub balance_sensor: Option<BalanceSensorData>,
 }
 
 /// Get current telescope status
@@ -53,6 +65,9 @@ pub async fn get_telescope_status(
                 focus_position: None,
                 stacked_frame: None,
                 target_name: None,
+                free_mb: None,
+                total_mb: None,
+                balance_sensor: None,
             });
         }
 
@@ -166,6 +181,31 @@ pub async fn get_telescope_status(
                 .ok()
                 .and_then(|v| v.extract().ok());
 
+            let free_mb = state_dict
+                .get_item("free_mb")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let total_mb = state_dict
+                .get_item("total_mb")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            // Extract balance sensor data
+            let balance_sensor = state_dict
+                .get_item("balance_sensor")
+                .ok()
+                .and_then(|v| {
+                    if v.is_none() {
+                        return None;
+                    }
+                    let x: Option<f64> = v.get_item("x").ok().and_then(|x| x.extract().ok());
+                    let y: Option<f64> = v.get_item("y").ok().and_then(|y| y.extract().ok());
+                    let z: Option<f64> = v.get_item("z").ok().and_then(|z| z.extract().ok());
+                    let angle: Option<f64> = v.get_item("angle").ok().and_then(|a| a.extract().ok());
+                    Some(BalanceSensorData { x, y, z, angle })
+                });
+
             Ok(TelescopeStatus {
                 connected: true,
                 battery_percent,
@@ -181,6 +221,9 @@ pub async fn get_telescope_status(
                 focus_position,
                 stacked_frame,
                 target_name,
+                free_mb,
+                total_mb,
+                balance_sensor,
             })
         })
     })

@@ -97,10 +97,38 @@ fn main() {
             tracing::info!("Database path: {:?}", db_path);
 
             let db = database::Database::new(db_path).expect("Failed to initialize database");
+
+            // Load existing telescopes from database into state
+            let app_state = app.state::<state::AppState>();
+            match db.get_telescopes() {
+                Ok(telescopes) => {
+                    use pyo3::prelude::*;
+                    let mut state_telescopes = app_state.telescopes.write();
+                    for t in telescopes {
+                        let placeholder_bridge = Python::with_gil(|py| -> pyo3::PyObject { py.None() });
+                        state_telescopes.insert(
+                            t.id.clone(),
+                            state::TelescopeConnection {
+                                id: t.id.clone(),
+                                host: t.host.clone(),
+                                port: t.port,
+                                name: t.name.unwrap_or_else(|| format!("{}:{}", t.host, t.port)),
+                                status: state::ConnectionStatus::Disconnected,
+                                bridge: std::sync::Arc::new(placeholder_bridge),
+                            },
+                        );
+                        tracing::info!("Loaded telescope from database: {} ({}:{})", t.id, t.host, t.port);
+                    }
+                    tracing::info!("Loaded {} telescopes from database", state_telescopes.len());
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to load telescopes from database: {}", e);
+                }
+            }
+
             app.manage(db);
 
             // Start streaming server on port 8080 using Tauri's async runtime
-            let app_state = app.state::<state::AppState>();
             let state_clone = std::sync::Arc::new(app_state.inner().clone());
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = streaming::start_streaming_server(state_clone, 8080).await {
@@ -109,11 +137,7 @@ fn main() {
             });
             tracing::info!("Streaming server starting on port 8080");
 
-            #[cfg(debug_assertions)]
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
+            // Dev tools can be opened manually with Ctrl+Shift+I if needed
             Ok(())
         })
         .run(tauri::generate_context!())

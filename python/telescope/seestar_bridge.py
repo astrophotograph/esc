@@ -300,6 +300,8 @@ class SeestarBridge:
                     "focus_position": status.focus_position,
                     "stacked_frame": status.stacked_frame,
                     "target_name": status.target_name,
+                    "free_mb": status.freeMB,
+                    "total_mb": status.totalMB,
                 }
             }
         except Exception as e:

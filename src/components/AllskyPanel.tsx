@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+import { useUIStore } from '../stores/uiStore'
 
 type PanelSize = 'S' | 'M' | 'L'
 
@@ -18,7 +19,7 @@ const SIZE_CONFIG = {
 }
 
 export function AllskyPanel() {
-  const [show, setShow] = useState(true)
+  const { showAllskyPanel: show, setShowAllskyPanel: setShow } = useUIStore()
   const [size, setSize] = useState<PanelSize>('M')
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())

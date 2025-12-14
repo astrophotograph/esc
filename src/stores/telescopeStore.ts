@@ -43,6 +43,10 @@ export interface ActivityLogEntry {
 }
 
 interface TelescopeStore {
+  // Hydration state
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
+
   // State
   telescopes: TelescopeInfo[]
   currentTelescopeId: string | null
@@ -89,6 +93,10 @@ const DEFAULT_SETTINGS: TelescopeSettings = {
 export const useTelescopeStore = create<TelescopeStore>()(
   persist(
     (set, get) => ({
+      // Hydration state
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+
       // Initial state
       telescopes: [],
       currentTelescopeId: null,
@@ -201,6 +209,9 @@ export const useTelescopeStore = create<TelescopeStore>()(
         currentTelescopeId: state.currentTelescopeId,
         telescopeSettings: state.telescopeSettings,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

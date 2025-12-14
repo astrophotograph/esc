@@ -443,7 +443,7 @@ export function TelescopeHeader() {
                 <div className="flex items-center gap-1">
                   <Compass className="h-4 w-4 text-cyan-500" />
                   <span className="font-mono text-xs">
-                    {status?.ra != null ? `${status.ra.toFixed(2)}h` : '--'}
+                    {status?.ra != null ? `${(status.ra / 15).toFixed(2)}h` : '--'}
                     {' / '}
                     {status?.dec != null ? `${status.dec.toFixed(1)}°` : '--'}
                   </span>

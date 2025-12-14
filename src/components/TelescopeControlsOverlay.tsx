@@ -50,7 +50,7 @@ interface StreamStatus {
 }
 
 export function TelescopeControlsOverlay() {
-  const { showTelescopeControls, setShowTelescopeControls } = useUIStore()
+  const { showTelescopeControls, setShowTelescopeControls, setIsManuallyMoving } = useUIStore()
   const { currentTelescopeId } = useTelescopeStore()
   const currentTelescope = useTelescopeStore((state) =>
     state.telescopes.find((t) => t.id === state.currentTelescopeId)
@@ -178,7 +178,11 @@ export function TelescopeControlsOverlay() {
       try {
         await invoke('telescope_move', {
           telescopeId: currentTelescopeId,
-          direction,
+          params: {
+            direction,
+            speed: 1.0,
+            duration_sec: 5.0,
+          },
         })
       } catch (error) {
         console.error('Move failed:', error)
@@ -216,12 +220,14 @@ export function TelescopeControlsOverlay() {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
+      // Signal that we're manually moving for fast coordinate polling
+      setIsManuallyMoving(true)
       handleTelescopeMove(direction)
       intervalRef.current = setInterval(() => {
         handleTelescopeMove(direction)
       }, 500)
     },
-    [handleTelescopeMove]
+    [handleTelescopeMove, setIsManuallyMoving]
   )
 
   const stopContinuousMove = useCallback(
@@ -230,11 +236,13 @@ export function TelescopeControlsOverlay() {
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
+      // Clear manual moving state
+      setIsManuallyMoving(false)
       if (!fromMouseLeave || isMouseDownRef.current) {
         handleTelescopeMove('stop')
       }
     },
-    [handleTelescopeMove]
+    [handleTelescopeMove, setIsManuallyMoving]
   )
 
   const handleMoveMouseDown = useCallback(

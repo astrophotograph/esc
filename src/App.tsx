@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { TelescopeHeader } from './components/TelescopeHeader'
 import { TelescopeView } from './components/TelescopeView'
 import { AppFooter } from './components/AppFooter'
@@ -7,7 +7,7 @@ import { KeyboardHelp } from './components/KeyboardHelp'
 import { SettingsModal } from './components/SettingsModal'
 import { Toaster } from './components/ui/toaster'
 import { initializeTauriEvents, cleanupTauriEvents } from './services/tauriEvents'
-import { runtime } from './services/api'
+import { runtime, invoke } from './services/api'
 import { useUIStore } from './stores/uiStore'
 import { useTelescopeStore } from './stores/telescopeStore'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -22,7 +22,15 @@ function App() {
     theme,
   } = useUIStore()
 
-  const { currentTelescopeId } = useTelescopeStore()
+  const {
+    currentTelescopeId,
+    telescopes,
+    updateTelescope,
+    _hasHydrated: telescopeHydrated,
+  } = useTelescopeStore()
+
+  const uiHydrated = useUIStore((state) => state._hasHydrated)
+  const autoConnectAttempted = useRef(false)
 
   // Initialize keyboard shortcuts
   useKeyboardShortcuts()
@@ -78,6 +86,45 @@ function App() {
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
+
+  // Auto-connect to telescope if only one exists and was previously selected
+  useEffect(() => {
+    // Wait for stores to hydrate
+    if (!telescopeHydrated || !uiHydrated) return
+
+    // Only attempt auto-connect once
+    if (autoConnectAttempted.current) return
+
+    // Check if there's exactly one telescope that was previously selected
+    if (
+      telescopes.length === 1 &&
+      currentTelescopeId &&
+      telescopes[0].id === currentTelescopeId &&
+      telescopes[0].status === 'disconnected'
+    ) {
+      autoConnectAttempted.current = true
+      const telescope = telescopes[0]
+
+      console.log(`Auto-connecting to telescope: ${telescope.name || telescope.host}`)
+      updateTelescope(telescope.id, { status: 'connecting' })
+
+      invoke('connect_telescope', { telescopeId: telescope.id })
+        .then(() => {
+          updateTelescope(telescope.id, { status: 'connected' })
+          console.log(`Auto-connected to telescope: ${telescope.name || telescope.host}`)
+        })
+        .catch((error) => {
+          console.error('Auto-connect failed:', error)
+          updateTelescope(telescope.id, {
+            status: 'error',
+            error: String(error),
+          })
+        })
+    } else {
+      // Mark as attempted so we don't retry
+      autoConnectAttempted.current = true
+    }
+  }, [telescopeHydrated, uiHydrated, telescopes, currentTelescopeId, updateTelescope])
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">

@@ -33,7 +33,7 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
   const [size, setSize] = useState<PipSize>('medium')
   const [minimized, setMinimized] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [camera, setCamera] = useState<CameraSource>('allsky')
+  const [camera, setCamera] = useState<CameraSource>('primary')
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [showControls, setShowControls] = useState(false)

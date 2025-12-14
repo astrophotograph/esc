@@ -282,22 +282,71 @@ pub async fn goto_target(
         params.dec
     );
 
-    let (host, port) = {
+    // Get the stored bridge from state
+    let bridge = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+
+        if !matches!(telescope.status, crate::state::ConnectionStatus::Connected) {
+            return Err("Telescope not connected".to_string());
+        }
+
+        telescope.bridge.clone()
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
     let target_name = params.target_name.clone();
     let ra = params.ra;
     let dec = params.dec;
 
-    let result = tokio::task::spawn_blocking(move || bridge.goto_target(&target_name, ra, dec))
-        .await
-        .map_err(|e| format!("Task join error: {}", e))??;
+    let result = tokio::task::spawn_blocking(move || {
+        use pyo3::prelude::*;
+        use pyo3::types::PyDict;
+
+        Python::with_gil(|py| -> Result<serde_json::Value, String> {
+            let telescope_module = py
+                .import("telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import module: {}", e))?;
+
+            let run_async = telescope_module
+                .getattr("_run_async")
+                .map_err(|e| format!("Failed to get _run_async: {}", e))?;
+
+            // Create params dict
+            let params_dict = PyDict::new(py);
+            params_dict
+                .set_item("target_name", &target_name)
+                .map_err(|e| format!("Failed to set target_name: {}", e))?;
+            params_dict
+                .set_item("ra", ra)
+                .map_err(|e| format!("Failed to set ra: {}", e))?;
+            params_dict
+                .set_item("dec", dec)
+                .map_err(|e| format!("Failed to set dec: {}", e))?;
+
+            let bridge_ref = bridge.as_ref();
+            let bridge_bound = bridge_ref.bind(py);
+
+            let result = run_async
+                .call1((bridge_bound, "goto_target", params_dict))
+                .map_err(|e| format!("goto_target call failed: {}", e))?;
+
+            // Convert result to JSON
+            let json_module = py
+                .import("json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract string: {}", e))?;
+
+            serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
+        })
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
 
     emit_event(
         &app,
@@ -322,18 +371,54 @@ pub async fn park_telescope(
 ) -> Result<String, String> {
     tracing::info!("Park command for telescope {}", telescope_id);
 
-    let (host, port) = {
+    // Get the stored bridge from state
+    let bridge = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+
+        if !matches!(telescope.status, crate::state::ConnectionStatus::Connected) {
+            return Err("Telescope not connected".to_string());
+        }
+
+        telescope.bridge.clone()
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
-    let result = tokio::task::spawn_blocking(move || bridge.park())
-        .await
-        .map_err(|e| format!("Task join error: {}", e))??;
+    let result = tokio::task::spawn_blocking(move || {
+        use pyo3::prelude::*;
+
+        Python::with_gil(|py| -> Result<serde_json::Value, String> {
+            let telescope_module = py
+                .import("telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import module: {}", e))?;
+
+            let run_async = telescope_module
+                .getattr("_run_async")
+                .map_err(|e| format!("Failed to get _run_async: {}", e))?;
+
+            let bridge_ref = bridge.as_ref();
+            let bridge_bound = bridge_ref.bind(py);
+
+            let result = run_async
+                .call1((bridge_bound, "park"))
+                .map_err(|e| format!("park call failed: {}", e))?;
+
+            // Convert result to JSON
+            let json_module = py
+                .import("json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract string: {}", e))?;
+
+            serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
+        })
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
 
     emit_event(
         &app,
@@ -395,28 +480,69 @@ pub async fn telescope_move(
         params.speed
     );
 
-    let (host, port) = {
+    // Get the stored bridge from state
+    let bridge = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+
+        if !matches!(telescope.status, crate::state::ConnectionStatus::Connected) {
+            return Err("Telescope not connected".to_string());
+        }
+
+        telescope.bridge.clone()
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
     let direction = params.direction.clone();
     let speed = params.speed.unwrap_or(1.0);
     let duration = params.duration_sec.unwrap_or(5.0);
 
+    // Use the stored bridge to call the move method
     let result = tokio::task::spawn_blocking(move || {
-        bridge.call_method(
-            "move",
-            serde_json::json!({
-                "direction": direction,
-                "speed": speed,
-                "duration_sec": duration,
-            }),
-        )
+        use pyo3::prelude::*;
+        use pyo3::types::PyDict;
+
+        Python::with_gil(|py| -> Result<serde_json::Value, String> {
+            let telescope_module = py
+                .import("telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import module: {}", e))?;
+
+            let run_async = telescope_module
+                .getattr("_run_async")
+                .map_err(|e| format!("Failed to get _run_async: {}", e))?;
+
+            // Create params dict
+            let params_dict = PyDict::new(py);
+            params_dict
+                .set_item("direction", &direction)
+                .map_err(|e| format!("Failed to set direction: {}", e))?;
+            params_dict
+                .set_item("speed", speed)
+                .map_err(|e| format!("Failed to set speed: {}", e))?;
+            params_dict
+                .set_item("duration_sec", duration)
+                .map_err(|e| format!("Failed to set duration_sec: {}", e))?;
+
+            let bridge_ref = bridge.as_ref();
+            let bridge_bound = bridge_ref.bind(py);
+
+            let result = run_async
+                .call1((bridge_bound, "move", params_dict))
+                .map_err(|e| format!("move call failed: {}", e))?;
+
+            // Convert result to JSON
+            let json_module = py
+                .import("json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract string: {}", e))?;
+
+            serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
+        })
     })
     .await
     .map_err(|e| format!("Task join error: {}", e))??;
@@ -444,19 +570,54 @@ pub async fn telescope_stop_move(
 ) -> Result<String, String> {
     tracing::info!("Stop move command for telescope {}", telescope_id);
 
-    let (host, port) = {
+    // Get the stored bridge from state
+    let bridge = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+
+        if !matches!(telescope.status, crate::state::ConnectionStatus::Connected) {
+            return Err("Telescope not connected".to_string());
+        }
+
+        telescope.bridge.clone()
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
-    let result =
-        tokio::task::spawn_blocking(move || bridge.call_method("stop_move", serde_json::json!({})))
-            .await
-            .map_err(|e| format!("Task join error: {}", e))??;
+    let result = tokio::task::spawn_blocking(move || {
+        use pyo3::prelude::*;
+
+        Python::with_gil(|py| -> Result<serde_json::Value, String> {
+            let telescope_module = py
+                .import("telescope.seestar_bridge")
+                .map_err(|e| format!("Failed to import module: {}", e))?;
+
+            let run_async = telescope_module
+                .getattr("_run_async")
+                .map_err(|e| format!("Failed to get _run_async: {}", e))?;
+
+            let bridge_ref = bridge.as_ref();
+            let bridge_bound = bridge_ref.bind(py);
+
+            let result = run_async
+                .call1((bridge_bound, "stop_move"))
+                .map_err(|e| format!("stop_move call failed: {}", e))?;
+
+            // Convert result to JSON
+            let json_module = py
+                .import("json")
+                .map_err(|e| format!("Failed to import json: {}", e))?;
+            let json_str: String = json_module
+                .call_method1("dumps", (result,))
+                .map_err(|e| format!("Failed to serialize: {}", e))?
+                .extract()
+                .map_err(|e| format!("Failed to extract string: {}", e))?;
+
+            serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
+        })
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))??;
 
     emit_event(
         &app,
