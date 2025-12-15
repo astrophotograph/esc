@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { TelescopeHeader } from './components/TelescopeHeader'
 import { TelescopeView } from './components/TelescopeView'
 import { AppFooter } from './components/AppFooter'
-import { PictureInPicture } from './components/PictureInPicture'
 import { KeyboardHelp } from './components/KeyboardHelp'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Toaster } from './components/ui/toaster'
@@ -14,13 +13,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { themes } from './themes'
 
 function App() {
-  const {
-    showPiP,
-    setShowPiP,
-    pipTelescopeId,
-    setPipTelescopeId,
-    theme,
-  } = useUIStore()
+  const { theme } = useUIStore()
 
   const {
     currentTelescopeId,
@@ -69,13 +62,6 @@ function App() {
       }
     }
   }, [theme])
-
-  // Sync PiP telescope ID with current telescope
-  useEffect(() => {
-    if (showPiP && !pipTelescopeId && currentTelescopeId) {
-      setPipTelescopeId(currentTelescopeId)
-    }
-  }, [showPiP, pipTelescopeId, currentTelescopeId, setPipTelescopeId])
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -138,13 +124,6 @@ function App() {
 
       {/* Footer */}
       <AppFooter />
-
-      {/* Picture in Picture */}
-      <PictureInPicture
-        show={showPiP}
-        onClose={() => setShowPiP(false)}
-        telescopeId={pipTelescopeId || currentTelescopeId || undefined}
-      />
 
       {/* Keyboard Help Modal */}
       <KeyboardHelp />

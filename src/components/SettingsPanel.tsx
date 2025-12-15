@@ -9,6 +9,7 @@ import {
 import { Label } from './ui/label'
 import { Switch } from './ui/switch'
 import { Slider } from './ui/slider'
+import { Input } from './ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import {
   Select,
@@ -30,6 +31,10 @@ import {
   Palette,
   Camera,
   RotateCcw,
+  Eye,
+  EyeOff,
+  Target,
+  ExternalLink,
 } from 'lucide-react'
 
 export function SettingsPanel() {
@@ -54,12 +59,40 @@ export function SettingsPanel() {
 
   // Allsky settings
   const [allskySettings, setAllskySettings] = useState({
+    cameraType: 'custom' as 'teamallsky' | 'indi' | 'custom',
+    hostname: '',
+    customUrl: '',
     defaultCamera: 'allsky' as 'allsky' | 'guide' | 'finder',
     defaultSize: 'medium' as 'small' | 'medium' | 'large',
     autoShow: false,
     showStatusByDefault: false,
     minimizedByDefault: true,
   })
+
+  // Plate solving / Astrometry settings
+  const [plateSolveSettings, setPlateSolveSettings] = useState({
+    enabled: false,
+    apiKey: '',
+    apiUrl: 'https://nova.astrometry.net',
+  })
+  const [showApiKey, setShowApiKey] = useState(false)
+
+  // Generate URL based on camera type and hostname
+  const generateCameraUrl = (type: typeof allskySettings.cameraType, host: string): string => {
+    switch (type) {
+      case 'teamallsky':
+        return host ? `http://${host}/current/tmp/image.jpg` : ''
+      case 'indi':
+        return host ? `http://${host}/indi-allsky/latestimage` : ''
+      case 'custom':
+        return allskySettings.customUrl
+      default:
+        return ''
+    }
+  }
+
+  // Get the current effective URL
+  const effectiveAllskyUrl = generateCameraUrl(allskySettings.cameraType, allskySettings.hostname)
 
   const updateOverlaySetting = <K extends keyof OverlaySettings>(
     category: K,
@@ -93,7 +126,7 @@ export function SettingsPanel() {
         </DialogHeader>
 
         <Tabs defaultValue="overlays" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overlays" className="flex items-center gap-1 text-xs">
               <Video className="h-3 w-3" />
               Overlays
@@ -109,6 +142,10 @@ export function SettingsPanel() {
             <TabsTrigger value="allsky" className="flex items-center gap-1 text-xs">
               <Camera className="h-3 w-3" />
               Allsky
+            </TabsTrigger>
+            <TabsTrigger value="platesolve" className="flex items-center gap-1 text-xs">
+              <Target className="h-3 w-3" />
+              Plate Solve
             </TabsTrigger>
             <TabsTrigger value="appearance" className="flex items-center gap-1 text-xs">
               <Palette className="h-3 w-3" />
@@ -482,23 +519,71 @@ export function SettingsPanel() {
 
             {/* Allsky Settings */}
             <TabsContent value="allsky" className="space-y-4 mt-0">
+              {/* Camera Type Selection */}
               <div className="space-y-2 p-3 rounded-lg bg-muted/50">
-                <Label>Default Camera Source</Label>
+                <Label>Camera Type</Label>
                 <Select
-                  value={allskySettings.defaultCamera}
-                  onValueChange={(value: 'allsky' | 'guide' | 'finder') =>
-                    setAllskySettings({ ...allskySettings, defaultCamera: value })
+                  value={allskySettings.cameraType}
+                  onValueChange={(value: 'teamallsky' | 'indi' | 'custom') =>
+                    setAllskySettings({ ...allskySettings, cameraType: value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="allsky">All-Sky Camera</SelectItem>
-                    <SelectItem value="guide">Guide Camera</SelectItem>
-                    <SelectItem value="finder">Finder Scope</SelectItem>
+                    <SelectItem value="teamallsky">TeamAllsky Allsky</SelectItem>
+                    <SelectItem value="indi">INDI Allsky</SelectItem>
+                    <SelectItem value="custom">Custom URL</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Hostname input for TeamAllsky or INDI */}
+              {(allskySettings.cameraType === 'teamallsky' || allskySettings.cameraType === 'indi') && (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                  <Label htmlFor="allsky-hostname">Hostname or IP Address</Label>
+                  <Input
+                    id="allsky-hostname"
+                    placeholder="192.168.1.100 or allsky.local"
+                    value={allskySettings.hostname}
+                    onChange={(e) =>
+                      setAllskySettings({ ...allskySettings, hostname: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {allskySettings.cameraType === 'teamallsky'
+                      ? `URL will be: http://${allskySettings.hostname || 'hostname'}/current/tmp/image.jpg`
+                      : `URL will be: http://${allskySettings.hostname || 'hostname'}/indi-allsky/latestimage`}
+                  </p>
+                </div>
+              )}
+
+              {/* Custom URL input */}
+              {allskySettings.cameraType === 'custom' && (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                  <Label htmlFor="allsky-custom-url">Custom URL</Label>
+                  <Input
+                    id="allsky-custom-url"
+                    type="url"
+                    placeholder="http://allsky/image.jpg"
+                    value={allskySettings.customUrl}
+                    onChange={(e) =>
+                      setAllskySettings({ ...allskySettings, customUrl: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter the complete URL to your all-sky camera image
+                  </p>
+                </div>
+              )}
+
+              {/* Show effective URL */}
+              <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                <Label className="text-xs text-muted-foreground">Current URL</Label>
+                <div className="p-2 bg-background rounded text-xs font-mono break-all">
+                  {effectiveAllskyUrl || 'No URL configured'}
+                </div>
               </div>
 
               <div className="space-y-2 p-3 rounded-lg bg-muted/50">
@@ -567,6 +652,86 @@ export function SettingsPanel() {
                   }
                 />
               </div>
+            </TabsContent>
+
+            {/* Plate Solving Settings */}
+            <TabsContent value="platesolve" className="space-y-4 mt-0">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div>
+                  <Label htmlFor="platesolve-enabled" className="font-medium">Astrometry.net Integration</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable plate solving for accurate position determination
+                  </p>
+                </div>
+                <Switch
+                  id="platesolve-enabled"
+                  checked={plateSolveSettings.enabled}
+                  onCheckedChange={(checked) =>
+                    setPlateSolveSettings({ ...plateSolveSettings, enabled: checked })
+                  }
+                />
+              </div>
+
+              {plateSolveSettings.enabled && (
+                <>
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                    <Label htmlFor="astrometry-key">API Key</Label>
+                    <div className="relative">
+                      <Input
+                        id="astrometry-key"
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="Enter your Astrometry.net API key"
+                        value={plateSolveSettings.apiKey}
+                        onChange={(e) =>
+                          setPlateSolveSettings({ ...plateSolveSettings, apiKey: e.target.value })
+                        }
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                    <Label htmlFor="astrometry-url">API URL (Optional)</Label>
+                    <Input
+                      id="astrometry-url"
+                      type="url"
+                      placeholder="https://nova.astrometry.net (default)"
+                      value={plateSolveSettings.apiUrl}
+                      onChange={(e) =>
+                        setPlateSolveSettings({ ...plateSolveSettings, apiUrl: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Leave blank to use the default astrometry.net server
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <a
+                      href="https://nova.astrometry.net/api_help"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Get your Astrometry.net API key
+                    </a>
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             {/* Appearance Settings */}

@@ -13,11 +13,24 @@ import {
   ZoomIn,
   ZoomOut,
   Navigation,
+  Circle,
+  Target,
+  Power,
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
 import { Label } from './ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog'
 import { useUIStore } from '../stores/uiStore'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { invoke } from '../services/api'
@@ -68,6 +81,9 @@ export function TelescopeControlsOverlay() {
   const overlayRef = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const isMouseDownRef = useRef<boolean>(false)
+
+  // Reboot confirmation dialog state
+  const [showRebootConfirm, setShowRebootConfirm] = useState(false)
 
   const isConnected = currentTelescope?.status === 'connected'
   const isStacking = streamStatus?.stage === 'Stack'

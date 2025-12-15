@@ -15,7 +15,6 @@ import {
   Compass,
   Search,
   Maximize2,
-  PictureInPicture,
   Mountain,
   HelpCircle,
   Cpu,
@@ -118,8 +117,6 @@ export function TelescopeHeader() {
   } = useTelescopeStore()
 
   const {
-    showPiP,
-    togglePiP,
     setShowKeyboardHelp,
     setShowSettings,
     showTelescopeStatus,
@@ -515,22 +512,6 @@ export function TelescopeHeader() {
           </Tooltip>
 
           <div className="w-px h-6 bg-border mx-2" />
-
-          {/* PiP Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={showPiP ? 'default' : 'outline'}
-                size="sm"
-                onClick={togglePiP}
-                className="gap-2"
-              >
-                <PictureInPicture className="h-4 w-4" />
-                PiP
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Picture in Picture (Ctrl+P)</TooltipContent>
-          </Tooltip>
 
           {/* Telescope Status Toggle */}
           <Tooltip>
