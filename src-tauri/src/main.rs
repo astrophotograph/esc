@@ -60,6 +60,10 @@ fn main() {
             telescope::telescope_set_exposure,
             telescope::telescope_stop_goto,
             telescope::telescope_get_focuser_position,
+            telescope::telescope_start_recording,
+            telescope::telescope_stop_recording,
+            telescope::telescope_plate_solve,
+            telescope::telescope_reboot,
             // Catalog commands
             catalog::catalog_search,
             catalog::catalog_quick_search,

@@ -84,6 +84,8 @@ export function TelescopeControlsOverlay() {
 
   // Reboot confirmation dialog state
   const [showRebootConfirm, setShowRebootConfirm] = useState(false)
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false)
 
   const isConnected = currentTelescope?.status === 'connected'
   const isStacking = streamStatus?.stage === 'Stack'
@@ -263,6 +265,49 @@ export function TelescopeControlsOverlay() {
       })
     } catch (error) {
       console.error('Auto focus failed:', error)
+    }
+  }, [currentTelescopeId])
+
+  const handleRecord = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      if (isRecording) {
+        await invoke('telescope_stop_recording', {
+          telescopeId: currentTelescopeId,
+        })
+        setIsRecording(false)
+      } else {
+        await invoke('telescope_start_recording', {
+          telescopeId: currentTelescopeId,
+        })
+        setIsRecording(true)
+      }
+    } catch (error) {
+      console.error('Record toggle failed:', error)
+    }
+  }, [currentTelescopeId, isRecording])
+
+  const handlePlateSolve = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_plate_solve', {
+        telescopeId: currentTelescopeId,
+      })
+    } catch (error) {
+      console.error('Plate solve failed:', error)
+    }
+  }, [currentTelescopeId])
+
+  const handleRebootConfirm = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_reboot', {
+        telescopeId: currentTelescopeId,
+      })
+      setShowRebootConfirm(false)
+    } catch (error) {
+      console.error('Reboot failed:', error)
+      setShowRebootConfirm(false)
     }
   }, [currentTelescopeId])
 
@@ -573,6 +618,72 @@ export function TelescopeControlsOverlay() {
               </div>
             )}
 
+            {/* System Controls - Record, Plate Solve, Reboot */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Power className="w-3 h-3" />
+                System Controls
+              </h4>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant={isRecording ? 'destructive' : 'outline'}
+                      onClick={handleRecord}
+                      disabled={!isConnected}
+                      className="w-full"
+                    >
+                      <Circle
+                        className={`h-4 w-4 mr-2 ${isRecording ? 'fill-current animate-pulse' : ''}`}
+                      />
+                      {isRecording ? 'Stop' : 'Record'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isRecording ? 'Stop recording video' : 'Start recording video'}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handlePlateSolve}
+                      disabled={!isConnected || isStacking}
+                      className="w-full"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Plate Solve
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Solve current image position</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowRebootConfirm(true)}
+                    disabled={!isConnected}
+                    className="w-full text-orange-500 hover:text-orange-400 hover:border-orange-500"
+                  >
+                    <Power className="h-4 w-4 mr-2" />
+                    Reboot Telescope
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Restart the telescope system</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
             {/* Show message when stacking */}
             {isStacking && (
               <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
@@ -584,6 +695,28 @@ export function TelescopeControlsOverlay() {
           </div>
         )}
       </div>
+
+      {/* Reboot Confirmation Dialog */}
+      <AlertDialog open={showRebootConfirm} onOpenChange={setShowRebootConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reboot Telescope?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will restart the telescope system. The connection will be lost and you will need
+              to reconnect after the telescope has rebooted. This typically takes 1-2 minutes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRebootConfirm}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Reboot
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   )
 }

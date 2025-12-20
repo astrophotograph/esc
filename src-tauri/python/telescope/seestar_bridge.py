@@ -579,6 +579,154 @@ class TelescopeBridge:
                 "error": str(e)
             }
 
+    def start_recording(self) -> Dict[str, Any]:
+        """
+        Start video recording.
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import StartRecording
+
+                logging.info("Starting video recording")
+
+                async def do_start_recording():
+                    return await self.client.send_and_recv(StartRecording())
+
+                response = self._run_async(do_start_recording())
+
+                return {
+                    "success": True,
+                    "message": "Recording started",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info("[MOCK] Starting video recording")
+                return {
+                    "success": True,
+                    "message": "[MOCK] Recording started"
+                }
+
+        except Exception as e:
+            logging.error(f"Start recording command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def stop_recording(self) -> Dict[str, Any]:
+        """
+        Stop video recording.
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import StopRecording
+
+                logging.info("Stopping video recording")
+
+                async def do_stop_recording():
+                    return await self.client.send_and_recv(StopRecording())
+
+                response = self._run_async(do_stop_recording())
+
+                return {
+                    "success": True,
+                    "message": "Recording stopped",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info("[MOCK] Stopping video recording")
+                return {
+                    "success": True,
+                    "message": "[MOCK] Recording stopped"
+                }
+
+        except Exception as e:
+            logging.error(f"Stop recording command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def plate_solve(self) -> Dict[str, Any]:
+        """
+        Run plate solving on the current image.
+
+        Returns:
+            Dict with success status and solved coordinates if successful
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import StartPlateSolve
+
+                logging.info("Starting plate solve")
+
+                async def do_plate_solve():
+                    return await self.client.send_and_recv(StartPlateSolve())
+
+                response = self._run_async(do_plate_solve())
+
+                return {
+                    "success": True,
+                    "message": "Plate solve started",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info("[MOCK] Starting plate solve")
+                return {
+                    "success": True,
+                    "message": "[MOCK] Plate solve started"
+                }
+
+        except Exception as e:
+            logging.error(f"Plate solve command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def reboot(self) -> Dict[str, Any]:
+        """
+        Reboot the telescope system.
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            if self.client and SCOPINATOR_AVAILABLE:
+                from scopinator.seestar.commands.simple import Reboot
+
+                logging.info("Rebooting telescope")
+
+                async def do_reboot():
+                    return await self.client.send_and_recv(Reboot())
+
+                response = self._run_async(do_reboot())
+
+                return {
+                    "success": True,
+                    "message": "Telescope rebooting",
+                    "response": response.model_dump() if response and hasattr(response, 'model_dump') else str(response)
+                }
+            else:
+                logging.info("[MOCK] Rebooting telescope")
+                return {
+                    "success": True,
+                    "message": "[MOCK] Telescope rebooting"
+                }
+
+        except Exception as e:
+            logging.error(f"Reboot command failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
     def get_next_frame(self) -> Optional[bytes]:
         """
         Get the next video frame from the telescope.

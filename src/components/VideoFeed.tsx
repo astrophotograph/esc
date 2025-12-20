@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTelescopeStore } from '@/stores/telescopeStore'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
+import { RandomTestPattern } from './RandomTestPattern'
+import { invoke } from '@/services/api'
+
+interface StreamStatus {
+  ra?: number
+  dec?: number
+  stage?: string
+  focusPosition?: number
+}
 
 interface VideoFeedProps {
   telescopeId?: string
@@ -26,6 +35,7 @@ export function VideoFeed({
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
@@ -48,6 +58,30 @@ export function VideoFeed({
   }, [])
 
   const activeTelescopeId = telescopeId || currentTelescopeId
+
+  // Fetch stream status periodically to check for Idle state
+  useEffect(() => {
+    if (!activeTelescopeId) {
+      setStreamStatus(null)
+      return
+    }
+
+    const fetchStatus = async () => {
+      try {
+        const result = await invoke<StreamStatus>('get_telescope_status', {
+          telescopeId: activeTelescopeId,
+        })
+        setStreamStatus(result)
+      } catch (error) {
+        // Silently ignore errors - telescope may not be in backend state yet
+      }
+    }
+
+    fetchStatus()
+    const interval = setInterval(fetchStatus, 2000)
+
+    return () => clearInterval(interval)
+  }, [activeTelescopeId])
 
   // Get connection status of the active telescope
   const activeTelescope = telescopes.find(t => t.id === activeTelescopeId)
@@ -126,6 +160,10 @@ export function VideoFeed({
       </div>
     )
   }
+
+  // Check if telescope is in Idle state (or similar non-imaging states) - show test pattern
+  // Only show for specific idle stages, NOT for active imaging modes like ContinuousExposure, Stack, RTSP
+  const isIdle = streamStatus?.stage === 'Idle'
 
   const streamUrl = `http://localhost:8080/stream/${activeTelescopeId}`
 
@@ -234,6 +272,14 @@ export function VideoFeed({
     setIsDragging(false)
   }
 
+  // Get status text for test pattern
+  const getStatusText = () => {
+    if (streamStatus?.stage === 'Idle') {
+      return 'Telescope is idle - waiting for imaging to start'
+    }
+    return undefined
+  }
+
   return (
     <div
       ref={containerRef}
@@ -254,62 +300,74 @@ export function VideoFeed({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* Video stream - uses flexbox centering with constrained dimensions */}
-      <img
-        ref={imgRef}
-        src={streamUrl}
-        alt="Telescope live feed"
-        draggable={false}
-        style={{
-          maxWidth: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain',
-          transform: `scale(${zoom}) rotate(${rotation}deg) translate(${panPosition.x}px, ${panPosition.y}px)`,
-          transformOrigin: 'center center',
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-          userSelect: 'none'
-        }}
-        onError={() => {
-          setError('Failed to load video stream')
-          setIsStreaming(false)
-        }}
-        onLoad={handleImageLoad}
-      />
-
-      {/* Video Overlays - positioned over the image area */}
-      {imageAspectRatio && dimensions.width > 0 && dimensions.height > 0 && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          <div
+      {/* Show test pattern when idle, otherwise show video stream */}
+      {isIdle ? (
+        <RandomTestPattern
+          width={dimensions.width || 800}
+          height={dimensions.height || 600}
+          className="w-full h-full"
+          statusText={getStatusText()}
+        />
+      ) : (
+        <>
+          {/* Video stream - uses flexbox centering with constrained dimensions */}
+          <img
+            ref={imgRef}
+            src={streamUrl}
+            alt="Telescope live feed"
+            draggable={false}
             style={{
-              width: imageAspectRatio > (dimensions.width / dimensions.height)
-                ? '100%'
-                : `${dimensions.height * imageAspectRatio}px`,
-              height: imageAspectRatio > (dimensions.width / dimensions.height)
-                ? `${dimensions.width / imageAspectRatio}px`
-                : '100%',
               maxWidth: '100%',
               maxHeight: '100%',
-              position: 'relative'
+              objectFit: 'contain',
+              transform: `scale(${zoom}) rotate(${rotation}deg) translate(${panPosition.x}px, ${panPosition.y}px)`,
+              transformOrigin: 'center center',
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              userSelect: 'none'
             }}
-          >
-            <VideoOverlays
-              width={imageAspectRatio > (dimensions.width / dimensions.height)
-                ? dimensions.width
-                : dimensions.height * imageAspectRatio}
-              height={imageAspectRatio > (dimensions.width / dimensions.height)
-                ? dimensions.width / imageAspectRatio
-                : dimensions.height}
-              settings={overlaySettings}
-            />
-          </div>
-        </div>
+            onError={() => {
+              setError('Failed to load video stream')
+              setIsStreaming(false)
+            }}
+            onLoad={handleImageLoad}
+          />
+
+          {/* Video Overlays - positioned over the image area */}
+          {imageAspectRatio && dimensions.width > 0 && dimensions.height > 0 && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+              <div
+                style={{
+                  width: imageAspectRatio > (dimensions.width / dimensions.height)
+                    ? '100%'
+                    : `${dimensions.height * imageAspectRatio}px`,
+                  height: imageAspectRatio > (dimensions.width / dimensions.height)
+                    ? `${dimensions.width / imageAspectRatio}px`
+                    : '100%',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  position: 'relative'
+                }}
+              >
+                <VideoOverlays
+                  width={imageAspectRatio > (dimensions.width / dimensions.height)
+                    ? dimensions.width
+                    : dimensions.height * imageAspectRatio}
+                  height={imageAspectRatio > (dimensions.width / dimensions.height)
+                    ? dimensions.width / imageAspectRatio
+                    : dimensions.height}
+                  settings={overlaySettings}
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Status indicator */}
       <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 px-3 py-2 rounded-lg">
-        <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+        <div className={`w-2 h-2 rounded-full ${isIdle ? 'bg-yellow-500' : isStreaming ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
         <span className="text-white text-sm font-medium">
-          {isStreaming ? 'LIVE' : 'CONNECTING...'}
+          {isIdle ? 'IDLE' : isStreaming ? 'LIVE' : 'CONNECTING...'}
         </span>
       </div>
 
