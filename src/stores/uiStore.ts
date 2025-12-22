@@ -88,6 +88,16 @@ interface UIStore {
   // Manual movement tracking (for fast coordinate polling)
   isManuallyMoving: boolean
   setIsManuallyMoving: (moving: boolean) => void
+
+  // Plate solve settings
+  plateSolveApiKey: string
+  setPlateSolveApiKey: (key: string) => void
+
+  // Additional dialogs
+  showImageSaveDialog: boolean
+  showPlateSolveDialog: boolean
+  setShowImageSaveDialog: (show: boolean) => void
+  setShowPlateSolveDialog: (show: boolean) => void
 }
 
 export const useUIStore = create<UIStore>()(
@@ -185,6 +195,16 @@ export const useUIStore = create<UIStore>()(
       // Manual movement tracking
       isManuallyMoving: false,
       setIsManuallyMoving: (isManuallyMoving) => set({ isManuallyMoving }),
+
+      // Plate solve settings
+      plateSolveApiKey: '',
+      setPlateSolveApiKey: (plateSolveApiKey) => set({ plateSolveApiKey }),
+
+      // Additional dialogs
+      showImageSaveDialog: false,
+      showPlateSolveDialog: false,
+      setShowImageSaveDialog: (showImageSaveDialog) => set({ showImageSaveDialog }),
+      setShowPlateSolveDialog: (showPlateSolveDialog) => set({ showPlateSolveDialog }),
     }),
     {
       name: 'ui-storage',
@@ -202,6 +222,8 @@ export const useUIStore = create<UIStore>()(
         showTelescopeStatus: state.showTelescopeStatus,
         showTelescopeControls: state.showTelescopeControls,
         showAllskyPanel: state.showAllskyPanel,
+        // Plate solve settings
+        plateSolveApiKey: state.plateSolveApiKey,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

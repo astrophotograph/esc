@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '../services/api'
 import { listen } from '@tauri-apps/api/event'
-import { PictureInPicture2 } from 'lucide-react'
+import { PictureInPicture2, Save, Compass } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { useTelescopeStore } from '../stores/telescopeStore'
+import { useUIStore } from '../stores/uiStore'
 import { VideoFeed } from './VideoFeed'
 import { StatusBar } from './StatusBar'
 import { PictureInPicture } from './PictureInPicture'
+import { ImagingPanel } from './ImagingPanel'
+import { FocusControlPanel } from './FocusControlPanel'
+import { GotoProgressOverlay } from './GotoProgressOverlay'
+import { ImageSaveDialog } from './ImageSaveDialog'
+import { PlateSolveDialog } from './PlateSolveDialog'
 
 export function TelescopeControl() {
   const [host, setHost] = useState('192.168.1.100')
@@ -22,6 +28,8 @@ export function TelescopeControl() {
   const [discovering, setDiscovering] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
   const [showPip, setShowPip] = useState(false)
+  const [showGotoOverlay, setShowGotoOverlay] = useState(false)
+  const [gotoTarget, setGotoTarget] = useState<{ name: string; ra: number; dec: number } | null>(null)
 
   const telescopes = useTelescopeStore(state => state.telescopes)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
@@ -29,6 +37,13 @@ export function TelescopeControl() {
   const mergeTelescopes = useTelescopeStore(state => state.mergeTelescopes)
   const addTelescope = useTelescopeStore(state => state.addTelescope)
   const updateTelescope = useTelescopeStore(state => state.updateTelescope)
+
+  const {
+    showImageSaveDialog,
+    setShowImageSaveDialog,
+    showPlateSolveDialog,
+    setShowPlateSolveDialog,
+  } = useUIStore()
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -162,6 +177,11 @@ export function TelescopeControl() {
     }
     setLoading(true)
     try {
+      // Convert RA from hours to degrees for the overlay
+      const raDeg = ra * 15
+      setGotoTarget({ name: targetName, ra: raDeg, dec })
+      setShowGotoOverlay(true)
+
       await invoke('goto_target', {
         telescopeId: currentTelescopeId,
         params: { target_name: targetName, ra, dec }
@@ -169,6 +189,7 @@ export function TelescopeControl() {
       addLog(`✓ GOTO ${targetName} (RA: ${ra}h, Dec: ${dec}°)`)
     } catch (error) {
       addLog(`✗ GOTO failed: ${error}`)
+      setShowGotoOverlay(false)
     } finally {
       setLoading(false)
     }
@@ -420,63 +441,67 @@ export function TelescopeControl() {
               <CardTitle>Live View</CardTitle>
               <CardDescription>Real-time video feed from telescope</CardDescription>
             </CardHeader>
-            <CardContent>
-              <VideoFeed className="w-full h-[500px]" />
+            <CardContent className="relative">
+              <VideoFeed className="w-full h-[400px]" />
+              {/* GOTO Progress Overlay */}
+              {showGotoOverlay && gotoTarget && (
+                <GotoProgressOverlay
+                  targetName={gotoTarget.name}
+                  targetRa={gotoTarget.ra}
+                  targetDec={gotoTarget.dec}
+                  onComplete={() => {
+                    setShowGotoOverlay(false)
+                    addLog(`✓ GOTO to ${gotoTarget.name} complete`)
+                  }}
+                  onCancel={() => {
+                    setShowGotoOverlay(false)
+                    addLog(`⚠ GOTO to ${gotoTarget.name} cancelled`)
+                  }}
+                />
+              )}
             </CardContent>
           </Card>
 
-          {/* Imaging Controls */}
+          {/* Stacking and Focus Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Imaging/Stacking Panel */}
+            <ImagingPanel />
+
+            {/* Focus Control Panel */}
+            <FocusControlPanel />
+          </div>
+
+          {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Imaging Settings</CardTitle>
-              <CardDescription>Configure exposure and gain for imaging</CardDescription>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Common imaging operations</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="exposure">Exposure (ms)</Label>
-                  <Input
-                    id="exposure"
-                    type="number"
-                    placeholder="10000"
-                    min="100"
-                    max="300000"
-                    step="100"
-                  />
-                  <p className="text-xs text-muted-foreground">100ms - 300s</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gain">Gain</Label>
-                  <Input
-                    id="gain"
-                    type="number"
-                    placeholder="80"
-                    min="0"
-                    max="300"
-                  />
-                  <p className="text-xs text-muted-foreground">0 - 300</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button className="flex-1" disabled={!currentTelescopeId}>
-                  Start Imaging
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowImageSaveDialog(true)}
+                  disabled={!currentTelescopeId || currentTelescope?.status !== 'connected'}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Image
                 </Button>
-                <Button variant="destructive" className="flex-1" disabled={!currentTelescopeId}>
-                  Stop Imaging
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPlateSolveDialog(true)}
+                  disabled={!currentTelescopeId || currentTelescope?.status !== 'connected'}
+                >
+                  <Compass className="mr-2 h-4 w-4" />
+                  Plate Solve
                 </Button>
-              </div>
-
-              {/* PIP Toggle */}
-              <div className="pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={() => setShowPip(!showPip)}
                   disabled={!currentTelescopeId}
-                  className="w-full"
                 >
                   <PictureInPicture2 className="mr-2 h-4 w-4" />
-                  {showPip ? 'Hide' : 'Show'} Picture-in-Picture
+                  {showPip ? 'Hide' : 'Show'} PiP
                 </Button>
               </div>
             </CardContent>
@@ -517,6 +542,27 @@ export function TelescopeControl() {
         show={showPip}
         onClose={() => setShowPip(false)}
         telescopeId={currentTelescopeId || undefined}
+      />
+
+      {/* Image Save Dialog */}
+      <ImageSaveDialog
+        open={showImageSaveDialog}
+        onOpenChange={setShowImageSaveDialog}
+        onSaved={(path) => addLog(`✓ Image saved to ${path}`)}
+      />
+
+      {/* Plate Solve Dialog */}
+      <PlateSolveDialog
+        open={showPlateSolveDialog}
+        onOpenChange={setShowPlateSolveDialog}
+        onSolved={(result) => {
+          if (result.ra && result.dec) {
+            addLog(`✓ Plate solved: RA ${result.ra.toFixed(4)}°, Dec ${result.dec.toFixed(4)}°`)
+          }
+        }}
+        onSyncMount={(syncRa, syncDec) => {
+          addLog(`✓ Mount synced to RA ${syncRa.toFixed(4)}°, Dec ${syncDec.toFixed(4)}°`)
+        }}
       />
     </div>
   )

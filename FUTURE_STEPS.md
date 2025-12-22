@@ -2,16 +2,18 @@
 
 Based on analysis of the current Tauri app and legacy codebase, here are the potential future enhancements.
 
+**Last Updated:** 2025-12-22
+
 ---
 
 ## 1. Telescope Control Features
 
 | Feature | Status | Legacy Reference | Description |
 |---------|--------|------------------|-------------|
-| Focus Control Panel | Missing | `legacy/ui/components/telescope/panels/FocusControl.tsx` | Manual focus adjustment with step controls |
-| Auto-Focus | Missing | `legacy/ui/components/telescope/AutoFocusOverlay.tsx` | Automated focus routine |
+| Focus Control Panel | **Implemented** | `legacy/ui/components/telescope/panels/FocusControl.tsx` | Manual focus adjustment with step controls |
+| Auto-Focus | Implemented | `legacy/ui/components/telescope/AutoFocusOverlay.tsx` | Automated focus routine |
 | Telescope Movement Joystick | Missing | `legacy/ui/components/telescope/panels/TelescopeMovement.tsx` | Virtual joystick for manual slewing |
-| GOTO Progress Overlay | Missing | `legacy/ui/components/telescope/AutoGotoOverlay.tsx` | Visual progress during slew operations |
+| GOTO Progress Overlay | **Implemented** | `legacy/ui/components/telescope/AutoGotoOverlay.tsx` | Visual progress during slew operations |
 | Park/Unpark Controls | Partial | `TelescopePanel.tsx:110-128` | Park works, unpark not exposed |
 
 ---
@@ -20,12 +22,12 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 
 | Feature | Status | Legacy Reference | Description |
 |---------|--------|------------------|-------------|
-| Imaging/Stacking Panel | Missing | `legacy/ui/components/telescope/panels/ImagingPanel.tsx` | Start/stop stacking, exposure controls |
-| Imaging Metrics | Missing | `legacy/ui/components/telescope/panels/ImagingMetrics.tsx` | Stack count, exposure time, progress |
+| Imaging/Stacking Panel | **Implemented** | `legacy/ui/components/telescope/panels/ImagingPanel.tsx` | Start/stop stacking, exposure controls |
+| Imaging Metrics | **Implemented** | `legacy/ui/components/telescope/panels/ImagingMetrics.tsx` | Stack count, exposure time, progress (in ImagingPanel) |
 | Image Enhancement Controls | Missing | `legacy/ui/components/telescope/ImageEnhancementOverlay.tsx` | Histogram stretch, noise reduction |
 | Image Controls Panel | Missing | `legacy/ui/components/telescope/panels/ImageControls.tsx` | Brightness, contrast, saturation |
 | Dark Library | Missing | `legacy/ui/components/telescope/DarkLibraryOverlay.tsx` | Dark frame acquisition and management |
-| Image Saving | Stub | - | Save captured images to disk (Tauri native) |
+| Image Saving | **Implemented** | - | Save captured images to disk (Tauri native) |
 | Image Gallery | Missing | - | Browse saved images |
 
 ---
@@ -47,8 +49,8 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 | Feature | Status | Legacy Reference | Description |
 |---------|--------|------------------|-------------|
 | Plate Solve Settings | Implemented | `SettingsPanel.tsx:658-735` | API key configuration |
-| Plate Solve Dialog | Missing | `legacy/ui/components/telescope/modals/PlateSolveSyncDialog.tsx` | Solve current image, sync mount |
-| Solve Results Overlay | Missing | - | Show detected objects, coordinates |
+| Plate Solve Dialog | **Implemented** | `legacy/ui/components/telescope/modals/PlateSolveSyncDialog.tsx` | Solve current image, sync mount |
+| Solve Results Overlay | **Implemented** | - | Show detected objects, coordinates (in PlateSolveDialog) |
 
 ---
 
@@ -114,7 +116,7 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Native File Dialogs | Missing | Save/export images using Tauri dialog API |
+| Native File Dialogs | **Implemented** | Save/export images using Tauri dialog API |
 | System Tray | Missing | Minimize to tray, background operation |
 | Native Notifications | Missing | OS-level notifications for events |
 | Multi-Window Support | Missing | Detachable panels (PiP as separate window) |
@@ -131,6 +133,7 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 |---------|--------|-------------|
 | Seestar Protocol | Implemented | Full pyscopinator v2 support |
 | Alpaca Protocol | Implemented | Basic support via pyscopinator |
+| Stacking Commands | **Implemented** | start_stack, stop_stack, get_stacking_status |
 | INDI Protocol | Missing | Add INDI backend to pyscopinator |
 | PHD2 Integration | Missing | Guiding support |
 | ASCOM on Windows | Missing | Windows-specific drivers |
@@ -139,13 +142,13 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 
 ## Priority Recommendations
 
-### High Priority (Core functionality)
+### High Priority (Core functionality) - COMPLETED
 
-1. **Imaging/Stacking Panel** - Essential for actual observations
-2. **Focus Control** - Critical for sharp images
-3. **GOTO Progress Overlay** - User feedback during slews
-4. **Image Saving** - Preserve captured data
-5. **Plate Solve Dialog** - Use the configured API
+1. ~~**Imaging/Stacking Panel**~~ - **Done** (`ImagingPanel.tsx`)
+2. ~~**Focus Control**~~ - **Done** (`FocusControlPanel.tsx`)
+3. ~~**GOTO Progress Overlay**~~ - **Done** (`GotoProgressOverlay.tsx`)
+4. ~~**Image Saving**~~ - **Done** (`ImageSaveDialog.tsx`)
+5. ~~**Plate Solve Dialog**~~ - **Done** (`PlateSolveDialog.tsx`)
 
 ### Medium Priority (Enhanced experience)
 
@@ -162,6 +165,33 @@ Based on analysis of the current Tauri app and legacy codebase, here are the pot
 13. **Starmap Overlay** - Visual aid
 14. **Multi-window/System Tray** - Desktop integration
 15. **Additional protocols** (INDI, PHD2)
+
+---
+
+## Recently Implemented (2025-12-22)
+
+### Frontend Components
+
+- `ImagingPanel.tsx` - Stacking controls with frame count, exposure time, start/stop
+- `FocusControlPanel.tsx` - Manual focus with step sizes, auto-focus button
+- `GotoProgressOverlay.tsx` - Visual GOTO progress with coordinates and cancel
+- `ImageSaveDialog.tsx` - Save images with format selection (PNG, JPEG, FITS)
+- `PlateSolveDialog.tsx` - Plate solve with results display and mount sync
+
+### Backend Commands (Rust/Tauri)
+
+- `telescope_start_stack` - Start stacking on Seestar
+- `telescope_stop_stack` - Stop stacking
+- `telescope_get_stacking_status` - Get current stacking status
+- `telescope_save_image` - Save current frame to file
+
+### Python Bridge Methods
+
+- `start_stack(restart)` - Start stacking with optional restart
+- `stop_stack()` - Stop stacking (via IscopeStopView)
+- `stop_goto()` - Stop GOTO operation
+- `get_stacking_status()` - Get stacking state from telescope
+- `save_current_image(path, format)` - Save frame to disk
 
 ---
 

@@ -64,6 +64,10 @@ fn main() {
             telescope::telescope_stop_recording,
             telescope::telescope_plate_solve,
             telescope::telescope_reboot,
+            telescope::telescope_start_stack,
+            telescope::telescope_stop_stack,
+            telescope::telescope_get_stacking_status,
+            telescope::telescope_save_image,
             // Catalog commands
             catalog::catalog_search,
             catalog::catalog_quick_search,

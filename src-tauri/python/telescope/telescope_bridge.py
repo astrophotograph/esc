@@ -14,6 +14,7 @@ import asyncio
 import io
 import threading
 import concurrent.futures
+from datetime import datetime
 from typing import Any, Optional
 from enum import Enum
 
@@ -586,6 +587,204 @@ class UnifiedTelescopeBridge:
 
         except Exception as e:
             logging.error(f"Reboot failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def start_stack(self, restart: bool = False) -> dict[str, Any]:
+        """Start stacking on the telescope (Seestar only).
+
+        Args:
+            restart: If True, restart stacking from scratch
+        """
+        try:
+            if self.protocol != Protocol.SEESTAR:
+                return {"success": False, "error": "Stacking only supported on Seestar"}
+
+            from scopinator.seestar.commands.parameterized import (
+                IscopeStartStack,
+                StartStackParams,
+            )
+
+            async def do_start_stack():
+                client = self._backend.client
+                params = StartStackParams(restart=restart) if restart else None
+                command = IscopeStartStack(params=params)
+                return await client.send_and_recv(command)
+
+            response = self._run_async(do_start_stack())
+            return {
+                "success": True,
+                "message": "Stacking started",
+                "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)
+            }
+
+        except Exception as e:
+            logging.error(f"Start stack failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def stop_stack(self) -> dict[str, Any]:
+        """Stop stacking on the telescope (Seestar only)."""
+        try:
+            if self.protocol != Protocol.SEESTAR:
+                return {"success": False, "error": "Stacking only supported on Seestar"}
+
+            from scopinator.seestar.commands.parameterized import (
+                IscopeStopView,
+                StopStage,
+            )
+
+            async def do_stop_stack():
+                client = self._backend.client
+                command = IscopeStopView(params={"stage": StopStage.STACK})
+                return await client.send_and_recv(command)
+
+            response = self._run_async(do_stop_stack())
+            return {
+                "success": True,
+                "message": "Stacking stopped",
+                "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)
+            }
+
+        except Exception as e:
+            logging.error(f"Stop stack failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def stop_goto(self) -> dict[str, Any]:
+        """Stop GOTO operation on the telescope (Seestar only)."""
+        try:
+            if self.protocol != Protocol.SEESTAR:
+                # For Alpaca, use abort_slew if available
+                if self._mount and hasattr(self._mount, 'abort_slew'):
+                    async def do_abort():
+                        await self._mount.abort_slew()
+                    self._run_async(do_abort())
+                    return {"success": True, "message": "Slew aborted"}
+                return {"success": False, "error": "Stop GOTO not supported for this protocol"}
+
+            from scopinator.seestar.commands.parameterized import (
+                IscopeStopView,
+                StopStage,
+            )
+
+            async def do_stop_goto():
+                client = self._backend.client
+                command = IscopeStopView(params={"stage": StopStage.AUTO_GOTO})
+                return await client.send_and_recv(command)
+
+            response = self._run_async(do_stop_goto())
+            return {
+                "success": True,
+                "message": "GOTO stopped",
+                "response": response.model_dump() if hasattr(response, 'model_dump') else str(response)
+            }
+
+        except Exception as e:
+            logging.error(f"Stop GOTO failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def get_stacking_status(self) -> dict[str, Any]:
+        """Get current stacking status from the telescope."""
+        try:
+            if not self._backend:
+                return {
+                    "success": True,
+                    "is_stacking": False,
+                    "stacked_frames": 0,
+                    "total_exposure_ms": 0,
+                    "target_name": None,
+                }
+
+            if self.protocol == Protocol.SEESTAR:
+                client = self._backend.client
+                if client and hasattr(client, 'status') and client.status:
+                    status = client.status
+                    is_stacking = getattr(status, 'stage', 'Idle') == 'Stack'
+                    stacked_frame = getattr(status, 'stacked_frame', 0) or 0
+                    # Seestar uses 10-second exposures by default when stacking
+                    total_exposure = stacked_frame * 10000
+                    return {
+                        "success": True,
+                        "is_stacking": is_stacking,
+                        "stacked_frames": stacked_frame,
+                        "total_exposure_ms": total_exposure,
+                        "target_name": getattr(status, 'target_name', None),
+                        "stage": getattr(status, 'stage', 'Idle'),
+                    }
+
+            return {
+                "success": True,
+                "is_stacking": False,
+                "stacked_frames": 0,
+                "total_exposure_ms": 0,
+                "target_name": None,
+            }
+
+        except Exception as e:
+            logging.error(f"Get stacking status failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    def save_current_image(self, file_path: str, format: str = "png") -> dict[str, Any]:
+        """Save the current frame to a file.
+
+        Args:
+            file_path: Path to save the image to
+            format: Image format (png, jpg, fits)
+        """
+        try:
+            frame_bytes = self.get_next_frame()
+            if frame_bytes is None:
+                return {"success": False, "error": "No frame available"}
+
+            # If the requested format is the same as what we have (JPEG), just save
+            if format.lower() in ('jpg', 'jpeg'):
+                with open(file_path, 'wb') as f:
+                    f.write(frame_bytes)
+                return {
+                    "success": True,
+                    "message": f"Image saved to {file_path}",
+                    "path": file_path,
+                }
+
+            # Otherwise, convert using PIL
+            img = Image.open(io.BytesIO(frame_bytes))
+
+            if format.lower() == 'png':
+                img.save(file_path, format='PNG')
+            elif format.lower() == 'fits':
+                # For FITS, need to use astropy or similar
+                try:
+                    import numpy as np
+                    from astropy.io import fits as pyfits
+
+                    # Convert to numpy array
+                    img_array = np.array(img)
+
+                    # Create FITS HDU
+                    hdu = pyfits.PrimaryHDU(img_array)
+                    hdu.header['DATE'] = datetime.now().isoformat()
+                    hdu.header['INSTRUME'] = 'Seestar' if self.protocol == Protocol.SEESTAR else 'Alpaca'
+
+                    # Write to file
+                    hdu.writeto(file_path, overwrite=True)
+                except ImportError:
+                    # If astropy not available, save as PNG instead
+                    file_path = file_path.replace('.fits', '.png')
+                    img.save(file_path, format='PNG')
+                    return {
+                        "success": True,
+                        "message": f"FITS not available, saved as PNG to {file_path}",
+                        "path": file_path,
+                    }
+            else:
+                img.save(file_path)
+
+            return {
+                "success": True,
+                "message": f"Image saved to {file_path}",
+                "path": file_path,
+            }
+
+        except Exception as e:
+            logging.error(f"Save image failed: {e}")
             return {"success": False, "error": str(e)}
 
     def get_next_frame(self) -> Optional[bytes]:
