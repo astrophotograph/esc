@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { invoke } from '../services/api'
 import { Button } from './ui/button'
-import { useTelescopeStore } from '../stores/telescopeStore'
+import { useTelescopeStore, type TelescopeProtocol } from '../stores/telescopeStore'
 
 export function TelescopePanel() {
   const [host, setHost] = useState('192.168.42.41')
   const [port, setPort] = useState(4700)
+  const [protocol, setProtocol] = useState<TelescopeProtocol>('seestar')
   const [targetName, setTargetName] = useState('M42')
   const [ra, setRa] = useState(5.583333) // Orion Nebula RA in hours
   const [dec, setDec] = useState(-5.391111) // Orion Nebula Dec in degrees
@@ -22,15 +23,17 @@ export function TelescopePanel() {
     try {
       // Use host:port as ID for consistency with backend
       const id = `${host}:${port}`
+      const protocolLabel = protocol === 'alpaca' ? 'Alpaca' : 'Seestar'
       await invoke('add_telescope', {
         config: {
           id,
           host,
           port,
-          name: `Telescope at ${host}`
+          protocol,
+          name: `${protocolLabel} at ${host}`
         }
       })
-      setMessage(`Telescope added: ${id}`)
+      setMessage(`Telescope added: ${id} (${protocol})`)
       setCurrentTelescope(id)
     } catch (error) {
       setMessage(`Error: ${error}`)
@@ -129,7 +132,27 @@ export function TelescopePanel() {
       {/* Add Telescope */}
       <div className="bg-card border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Add Telescope</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm font-medium block mb-2">Protocol</label>
+            <select
+              value={protocol}
+              onChange={(e) => {
+                const newProtocol = e.target.value as TelescopeProtocol
+                setProtocol(newProtocol)
+                // Update default port when protocol changes
+                if (newProtocol === 'alpaca') {
+                  setPort(11111)
+                } else {
+                  setPort(4700)
+                }
+              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="seestar">Seestar</option>
+              <option value="alpaca">Alpaca</option>
+            </select>
+          </div>
           <div>
             <label className="text-sm font-medium block mb-2">Host</label>
             <input
@@ -146,7 +169,7 @@ export function TelescopePanel() {
               type="number"
               value={port}
               onChange={(e) => setPort(Number(e.target.value))}
-              placeholder="4700"
+              placeholder={protocol === 'alpaca' ? '11111' : '4700'}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
@@ -178,7 +201,16 @@ export function TelescopePanel() {
                 onClick={() => setCurrentTelescope(telescope.id)}
               >
                 <div>
-                  <p className="font-medium">{telescope.name || telescope.id}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{telescope.name || telescope.id}</p>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      telescope.protocol === 'alpaca'
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    }`}>
+                      {telescope.protocol === 'alpaca' ? 'Alpaca' : 'Seestar'}
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground">{telescope.host}:{telescope.port}</p>
                 </div>
                 <div className={`px-2 py-1 rounded text-xs ${

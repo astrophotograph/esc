@@ -110,18 +110,20 @@ fn main() {
                     let mut state_telescopes = app_state.telescopes.write();
                     for t in telescopes {
                         let placeholder_bridge = Python::with_gil(|py| -> pyo3::PyObject { py.None() });
+                        let protocol = t.protocol.clone().unwrap_or_else(|| "seestar".to_string());
                         state_telescopes.insert(
                             t.id.clone(),
                             state::TelescopeConnection {
                                 id: t.id.clone(),
                                 host: t.host.clone(),
                                 port: t.port,
+                                protocol: protocol.clone(),
                                 name: t.name.unwrap_or_else(|| format!("{}:{}", t.host, t.port)),
                                 status: state::ConnectionStatus::Disconnected,
                                 bridge: std::sync::Arc::new(placeholder_bridge),
                             },
                         );
-                        tracing::info!("Loaded telescope from database: {} ({}:{})", t.id, t.host, t.port);
+                        tracing::info!("Loaded telescope from database: {} ({}) ({}:{})", t.id, protocol, t.host, t.port);
                     }
                     tracing::info!("Loaded {} telescopes from database", state_telescopes.len());
                 }

@@ -222,7 +222,7 @@ async fn get_frame_from_bridge(
     let result = tokio::task::spawn_blocking(move || {
         Python::with_gil(|py| {
             // Import the helper function
-            let telescope_module = py.import("telescope.seestar_bridge")?;
+            let telescope_module = py.import("telescope.telescope_bridge")?;
             let run_async = telescope_module.getattr("_run_async")?;
 
             // Dereference the Arc to get &PyObject, then bind it to Python context

@@ -2,10 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 // Types
+export type TelescopeProtocol = 'seestar' | 'alpaca'
+
 export interface TelescopeInfo {
   id: string
   host: string
   port: number
+  protocol?: TelescopeProtocol
   name?: string
   serial_number?: string
   product_model?: string

@@ -10,6 +10,7 @@ pub struct TelescopeConfig {
     pub id: String,
     pub host: String,
     pub port: u16,
+    pub protocol: Option<String>, // "seestar" or "alpaca", defaults to "seestar"
     pub name: Option<String>,
 }
 
@@ -48,13 +49,16 @@ pub async fn add_telescope(
     db: State<'_, Database>,
     config: TelescopeConfig,
 ) -> Result<String, String> {
-    tracing::info!("Adding telescope: {}:{}", config.host, config.port);
+    let protocol = config.protocol.clone().unwrap_or_else(|| "seestar".to_string());
+    tracing::info!("Adding telescope: {}:{} (protocol: {})", config.host, config.port, protocol);
 
     // Create telescope entry in database
+    // Manually added telescopes have last_seen = None so they won't be auto-removed
     let telescope = crate::database::models::Telescope {
         id: config.id.clone(),
         host: config.host.clone(),
         port: config.port,
+        protocol: Some(protocol.clone()),
         serial_number: None,
         product_model: None,
         name: config.name.clone(),
@@ -62,6 +66,7 @@ pub async fn add_telescope(
         discovery_method: Some("manual".to_string()),
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
+        last_seen: None, // Manual telescopes are never auto-removed
     };
 
     db.save_telescope(&telescope)
@@ -85,6 +90,7 @@ pub async fn add_telescope(
                 id: config.id.clone(),
                 host: config.host.clone(),
                 port: config.port,
+                protocol: protocol.clone(),
                 name: telescope_name,
                 status: crate::state::ConnectionStatus::Disconnected,
                 bridge: Arc::new(placeholder_bridge),
@@ -100,6 +106,7 @@ pub async fn add_telescope(
             "id": config.id,
             "host": config.host,
             "port": config.port,
+            "protocol": protocol,
             "name": config.name,
         }),
     )?;
@@ -117,7 +124,7 @@ pub async fn connect_telescope(
     tracing::info!("connect_telescope: starting for telescope_id={}", telescope_id);
 
     // Get telescope info from state and update status
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let all_ids: Vec<_> = telescopes.keys().collect();
         tracing::info!(
@@ -134,6 +141,7 @@ pub async fn connect_telescope(
 
         let host = telescope.host.clone();
         let port = telescope.port;
+        let protocol = telescope.protocol.clone();
         drop(telescopes);
 
         // Update status to connecting
@@ -142,12 +150,12 @@ pub async fn connect_telescope(
             t.status = crate::state::ConnectionStatus::Connecting;
         }
 
-        (host, port)
+        (host, port, protocol)
     };
 
-    // Create Python bridge object
-    tracing::info!("connect_telescope: creating bridge for {}:{}", host, port);
-    let bridge_helper = TelescopeBridge::new(&host, port)?;
+    // Create Python bridge object using the unified bridge with protocol support
+    tracing::info!("connect_telescope: creating bridge for {}:{} (protocol: {})", host, port, protocol);
+    let bridge_helper = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let bridge_obj = bridge_helper.create_bridge_object()?;
     tracing::info!("connect_telescope: bridge created, calling connect method");
 
@@ -159,8 +167,9 @@ pub async fn connect_telescope(
     let result: serde_json::Value =
         tokio::task::spawn_blocking(move || -> Result<serde_json::Value, String> {
             Python::with_gil(|py| {
+                // Import the unified bridge module
                 let telescope_module = py
-                    .import("telescope.seestar_bridge")
+                    .import("telescope.telescope_bridge")
                     .map_err(|e| format!("Failed to import module: {}", e))?;
                 let run_method = telescope_module
                     .getattr("run_bridge_method")
@@ -235,16 +244,16 @@ pub async fn disconnect_telescope(
     tracing::info!("Disconnecting from telescope: {}", telescope_id);
 
     // Get telescope info
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
     // Disconnect via Python bridge
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || bridge.disconnect())
         .await
         .map_err(|e| format!("Task join error: {}", e))??;
@@ -306,7 +315,7 @@ pub async fn goto_target(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -390,7 +399,7 @@ pub async fn park_telescope(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -505,7 +514,7 @@ pub async fn telescope_move(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -589,7 +598,7 @@ pub async fn telescope_stop_move(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -666,7 +675,7 @@ pub async fn telescope_focus(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -750,7 +759,7 @@ pub async fn telescope_focus_increment(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -809,15 +818,15 @@ pub async fn telescope_auto_focus(
 ) -> Result<String, String> {
     tracing::info!("Auto-focus command for telescope {}", telescope_id);
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || {
         bridge.call_method("auto_focus", serde_json::json!({}))
     })
@@ -852,15 +861,15 @@ pub async fn imaging_start(
         params.gain
     );
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let exposure_ms = params.exposure_ms;
     let gain = params.gain;
     let target_name = params.target_name.clone();
@@ -900,15 +909,15 @@ pub async fn imaging_stop(
 ) -> Result<String, String> {
     tracing::info!("Stop imaging for telescope {}", telescope_id);
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || {
         bridge.call_method("stop_imaging", serde_json::json!({}))
     })
@@ -937,15 +946,15 @@ pub async fn telescope_set_gain(
 ) -> Result<String, String> {
     tracing::info!("Set gain for telescope {}: gain={}", telescope_id, gain);
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || {
         bridge.call_method("set_gain", serde_json::json!({ "gain": gain }))
     })
@@ -980,15 +989,15 @@ pub async fn telescope_set_exposure(
         exposure_ms
     );
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || {
         bridge.call_method(
             "set_exposure",
@@ -1021,15 +1030,15 @@ pub async fn telescope_stop_goto(
 ) -> Result<String, String> {
     tracing::info!("Stop GOTO for telescope {}", telescope_id);
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result =
         tokio::task::spawn_blocking(move || bridge.call_method("stop_goto", serde_json::json!({})))
             .await
@@ -1056,15 +1065,15 @@ pub async fn telescope_get_focuser_position(
 ) -> Result<String, String> {
     tracing::info!("Get focuser position for telescope {}", telescope_id);
 
-    let (host, port) = {
+    let (host, port, protocol) = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
             .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port)
+        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
-    let bridge = TelescopeBridge::new(&host, port)?;
+    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || {
         bridge.call_method("get_focuser_position", serde_json::json!({}))
     })
@@ -1102,7 +1111,7 @@ pub async fn telescope_start_recording(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -1166,7 +1175,7 @@ pub async fn telescope_stop_recording(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -1230,7 +1239,7 @@ pub async fn telescope_plate_solve(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -1294,7 +1303,7 @@ pub async fn telescope_reboot(
 
         Python::with_gil(|py| -> Result<serde_json::Value, String> {
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module

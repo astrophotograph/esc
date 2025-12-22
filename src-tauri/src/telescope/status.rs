@@ -79,7 +79,7 @@ pub async fn get_telescope_status(
         Python::with_gil(|py| -> Result<TelescopeStatus, String> {
             // Import the helper function
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module

@@ -33,16 +33,32 @@ impl Database {
                 id TEXT PRIMARY KEY,
                 host TEXT NOT NULL,
                 port INTEGER NOT NULL,
+                protocol TEXT DEFAULT 'seestar',
                 serial_number TEXT,
                 product_model TEXT,
                 name TEXT,
                 location TEXT,
                 discovery_method TEXT,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                last_seen TEXT
             )",
             [],
         )?;
+
+        // Add protocol column if it doesn't exist (for existing databases)
+        conn.execute(
+            "ALTER TABLE telescopes ADD COLUMN protocol TEXT DEFAULT 'seestar'",
+            [],
+        )
+        .ok(); // Ignore error if column already exists
+
+        // Add last_seen column if it doesn't exist (for existing databases)
+        conn.execute(
+            "ALTER TABLE telescopes ADD COLUMN last_seen TEXT",
+            [],
+        )
+        .ok(); // Ignore error if column already exists
 
         // Legacy observations table (kept for backwards compatibility)
         conn.execute(
@@ -132,13 +148,14 @@ impl Database {
         let conn = self.conn.lock();
         conn.execute(
             "INSERT OR REPLACE INTO telescopes (
-                id, host, port, serial_number, product_model, name,
-                location, discovery_method, created_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                id, host, port, protocol, serial_number, product_model, name,
+                location, discovery_method, created_at, updated_at, last_seen
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
                 telescope.id,
                 telescope.host,
                 telescope.port,
+                telescope.protocol.as_deref().unwrap_or("seestar"),
                 telescope.serial_number,
                 telescope.product_model,
                 telescope.name,
@@ -146,6 +163,7 @@ impl Database {
                 telescope.discovery_method,
                 telescope.created_at.to_rfc3339(),
                 telescope.updated_at.to_rfc3339(),
+                telescope.last_seen.map(|dt| dt.to_rfc3339()),
             ],
         )?;
         Ok(())
@@ -155,29 +173,49 @@ impl Database {
     pub fn get_telescopes(&self) -> Result<Vec<Telescope>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id, host, port, serial_number, product_model, name,
-                    location, discovery_method, created_at, updated_at
+            "SELECT id, host, port, protocol, serial_number, product_model, name,
+                    location, discovery_method, created_at, updated_at, last_seen
              FROM telescopes",
         )?;
 
         let telescopes = stmt
             .query_map([], |row| {
+                let last_seen_str: Option<String> = row.get(11)?;
                 Ok(Telescope {
                     id: row.get(0)?,
                     host: row.get(1)?,
                     port: row.get(2)?,
-                    serial_number: row.get(3)?,
-                    product_model: row.get(4)?,
-                    name: row.get(5)?,
-                    location: row.get(6)?,
-                    discovery_method: row.get(7)?,
-                    created_at: row.get::<_, String>(8)?.parse().unwrap(),
-                    updated_at: row.get::<_, String>(9)?.parse().unwrap(),
+                    protocol: row.get(3)?,
+                    serial_number: row.get(4)?,
+                    product_model: row.get(5)?,
+                    name: row.get(6)?,
+                    location: row.get(7)?,
+                    discovery_method: row.get(8)?,
+                    created_at: row.get::<_, String>(9)?.parse().unwrap(),
+                    updated_at: row.get::<_, String>(10)?.parse().unwrap(),
+                    last_seen: last_seen_str.and_then(|s| s.parse().ok()),
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(telescopes)
+    }
+
+    /// Remove auto-discovered telescopes not seen in the specified duration
+    pub fn cleanup_stale_telescopes(&self, max_age: chrono::Duration) -> Result<usize> {
+        let conn = self.conn.lock();
+        let cutoff = (chrono::Utc::now() - max_age).to_rfc3339();
+
+        // Only remove auto-discovered telescopes (not manually added ones)
+        let count = conn.execute(
+            "DELETE FROM telescopes
+             WHERE (discovery_method = 'auto_discovery' OR discovery_method = 'alpaca_discovery')
+               AND last_seen IS NOT NULL
+               AND last_seen < ?1",
+            params![cutoff],
+        )?;
+
+        Ok(count)
     }
 
     /// Delete a telescope
