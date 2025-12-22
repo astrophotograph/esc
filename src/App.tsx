@@ -10,6 +10,7 @@ import { runtime, invoke } from './services/api'
 import { useUIStore } from './stores/uiStore'
 import { useTelescopeStore } from './stores/telescopeStore'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useFontScaling } from './hooks/useFontScaling'
 import { themes } from './themes'
 
 function App() {
@@ -27,6 +28,9 @@ function App() {
 
   // Initialize keyboard shortcuts
   useKeyboardShortcuts()
+
+  // Handle system font scaling (DPI/accessibility settings)
+  useFontScaling()
 
   // Initialize Tauri event listeners
   useEffect(() => {

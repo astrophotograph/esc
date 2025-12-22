@@ -65,6 +65,7 @@ interface TelescopeStore {
 
   // Telescope actions
   setTelescopes: (telescopes: TelescopeInfo[]) => void
+  mergeTelescopes: (telescopes: TelescopeInfo[]) => void
   addTelescope: (telescope: TelescopeInfo) => void
   removeTelescope: (id: string) => void
   updateTelescope: (id: string, updates: Partial<TelescopeInfo>) => void
@@ -126,6 +127,40 @@ export const useTelescopeStore = create<TelescopeStore>()(
 
       // Telescope actions
       setTelescopes: (telescopes) => set({ telescopes }),
+
+      mergeTelescopes: (newTelescopes) => set((state) => {
+        // Merge new telescopes with existing ones
+        // - Update existing telescopes with new info (but preserve status)
+        // - Add new telescopes that don't exist
+        // - Keep existing telescopes that weren't in the new list (manually added ones)
+        const merged = [...state.telescopes]
+        const newSettings = { ...state.telescopeSettings }
+
+        for (const newTelescope of newTelescopes) {
+          const existingIndex = merged.findIndex(t => t.id === newTelescope.id)
+
+          if (existingIndex >= 0) {
+            // Update existing telescope but preserve connection status
+            const existing = merged[existingIndex]
+            merged[existingIndex] = {
+              ...newTelescope,
+              // Preserve these fields from existing
+              status: existing.status,
+              error: existing.error,
+            }
+          } else {
+            // Add new telescope
+            merged.push(newTelescope)
+            // Initialize settings for new telescope
+            newSettings[newTelescope.id] = DEFAULT_SETTINGS
+          }
+        }
+
+        return {
+          telescopes: merged,
+          telescopeSettings: newSettings,
+        }
+      }),
 
       addTelescope: (telescope) => set((state) => {
         // Don't add duplicates

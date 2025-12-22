@@ -26,7 +26,7 @@ export function TelescopeControl() {
   const telescopes = useTelescopeStore(state => state.telescopes)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
   const setCurrentTelescope = useTelescopeStore(state => state.setCurrentTelescope)
-  const setTelescopes = useTelescopeStore(state => state.setTelescopes)
+  const mergeTelescopes = useTelescopeStore(state => state.mergeTelescopes)
   const addTelescope = useTelescopeStore(state => state.addTelescope)
   const updateTelescope = useTelescopeStore(state => state.updateTelescope)
 
@@ -93,7 +93,7 @@ export function TelescopeControl() {
         port: t.port,
         status: 'disconnected' as const
       }))
-      setTelescopes(discovered)
+      mergeTelescopes(discovered)
 
       if (discovered.length > 0) {
         setCurrentTelescope(discovered[0].id)
