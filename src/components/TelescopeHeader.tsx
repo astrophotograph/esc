@@ -94,6 +94,10 @@ const getStatusText = (status: TelescopeInfo['status']) => {
 }
 
 const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
+  // Prefer user-defined friendly name
+  if (telescope.friendlyName) {
+    return telescope.friendlyName
+  }
   if (telescope.product_model) {
     return telescope.name ? `${telescope.product_model} - ${telescope.name}` : telescope.product_model
   }
@@ -115,6 +119,8 @@ export function TelescopeHeader() {
     updateTelescope,
     setIsDiscovering,
     addActivity,
+    getTelescopesBySection,
+    toggleSectionCollapse,
   } = useTelescopeStore()
 
   const {
@@ -314,51 +320,68 @@ export function TelescopeHeader() {
                   {isDiscovering ? 'Discovering telescopes...' : 'No telescopes found'}
                 </DropdownMenuItem>
               ) : (
-                telescopes.map((telescope) => (
-                  <DropdownMenuItem
-                    key={telescope.id}
-                    onClick={() => selectTelescope(telescope)}
-                    className="flex items-center justify-between p-3 hover:bg-accent focus:bg-accent cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium truncate">{getTelescopeDisplayName(telescope)}</span>
-                          {getStatusIcon(telescope.status)}
-                          {currentTelescopeId === telescope.id && (
-                            <Badge variant="secondary" className="text-xs bg-blue-600 text-white border-0">
-                              Active
-                            </Badge>
-                          )}
+                getTelescopesBySection().map(({ section, telescopes: sectionTelescopes }) => (
+                  <div key={section?.id ?? 'unsectioned'}>
+                    {section && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel
+                          className="flex items-center gap-2 cursor-pointer hover:bg-accent rounded"
+                          onClick={() => toggleSectionCollapse(section.id)}
+                        >
+                          <ChevronDown className={`w-3 h-3 transition-transform ${section.collapsed ? '-rotate-90' : ''}`} />
+                          <span>{section.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{sectionTelescopes.length}</span>
+                        </DropdownMenuLabel>
+                      </>
+                    )}
+                    {(!section || !section.collapsed) && sectionTelescopes.map((telescope) => (
+                      <DropdownMenuItem
+                        key={telescope.id}
+                        onClick={() => selectTelescope(telescope)}
+                        className={`flex items-center justify-between p-3 hover:bg-accent focus:bg-accent cursor-pointer ${section ? 'ml-4' : ''}`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium truncate">{getTelescopeDisplayName(telescope)}</span>
+                              {getStatusIcon(telescope.status)}
+                              {currentTelescopeId === telescope.id && (
+                                <Badge variant="secondary" className="text-xs bg-blue-600 text-white border-0">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{telescope.product_model || telescope.protocol || 'Unknown'}</span>
+                              {telescope.location && (
+                                <>
+                                  <span>•</span>
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{telescope.location}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{telescope.host}:{telescope.port}</span>
+                              {telescope.serial_number && (
+                                <>
+                                  <Radio className="w-3 h-3" />
+                                  <span>{telescope.serial_number}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{telescope.product_model || 'Unknown Type'}</span>
-                          {telescope.location && (
-                            <>
-                              <span>•</span>
-                              <MapPin className="w-3 h-3" />
-                              <span>{telescope.location}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{telescope.host}:{telescope.port}</span>
-                          {telescope.serial_number && (
-                            <>
-                              <Radio className="w-3 h-3" />
-                              <span>{telescope.serial_number}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs ${getStatusColor(telescope.status)} border-0 flex-shrink-0`}
-                    >
-                      {getStatusText(telescope.status)}
-                    </Badge>
-                  </DropdownMenuItem>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${getStatusColor(telescope.status)} border-0 flex-shrink-0`}
+                        >
+                          {getStatusText(telescope.status)}
+                        </Badge>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
                 ))
               )}
             </DropdownMenuContent>

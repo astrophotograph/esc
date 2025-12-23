@@ -24,6 +24,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { themes } from '../themes'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { type OverlaySettings, defaultOverlaySettings } from './VideoOverlays'
+import { TelescopeEditor } from './TelescopeEditor'
 import {
   Video,
   Settings,
@@ -35,6 +36,7 @@ import {
   EyeOff,
   Target,
   ExternalLink,
+  Radio,
 } from 'lucide-react'
 
 export function SettingsPanel() {
@@ -126,7 +128,11 @@ export function SettingsPanel() {
         </DialogHeader>
 
         <Tabs defaultValue="overlays" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="telescopes" className="flex items-center gap-1 text-xs">
+              <Radio className="h-3 w-3" />
+              Telescopes
+            </TabsTrigger>
             <TabsTrigger value="overlays" className="flex items-center gap-1 text-xs">
               <Video className="h-3 w-3" />
               Overlays
@@ -137,7 +143,7 @@ export function SettingsPanel() {
             </TabsTrigger>
             <TabsTrigger value="telescope" className="flex items-center gap-1 text-xs">
               <Focus className="h-3 w-3" />
-              Telescope
+              Settings
             </TabsTrigger>
             <TabsTrigger value="allsky" className="flex items-center gap-1 text-xs">
               <Camera className="h-3 w-3" />
@@ -145,15 +151,20 @@ export function SettingsPanel() {
             </TabsTrigger>
             <TabsTrigger value="platesolve" className="flex items-center gap-1 text-xs">
               <Target className="h-3 w-3" />
-              Plate Solve
+              Solve
             </TabsTrigger>
             <TabsTrigger value="appearance" className="flex items-center gap-1 text-xs">
               <Palette className="h-3 w-3" />
-              Appearance
+              Theme
             </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto mt-4 pr-2">
+            {/* Telescopes Management Tab */}
+            <TabsContent value="telescopes" className="space-y-4 mt-0">
+              <TelescopeEditor />
+            </TabsContent>
+
             {/* Video Overlays Tab */}
             <TabsContent value="overlays" className="space-y-6 mt-0">
               <div className="flex items-center justify-between">
