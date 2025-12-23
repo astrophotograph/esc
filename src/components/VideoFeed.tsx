@@ -165,10 +165,14 @@ export function VideoFeed({
   // Only show for specific idle stages, NOT for active imaging modes like ContinuousExposure, Stack, RTSP
   const isIdle = streamStatus?.stage === 'Idle'
 
-  const streamUrl = `http://localhost:8080/stream/${activeTelescopeId}`
+  const streamUrl = `http://localhost:8080/stream/${encodeURIComponent(activeTelescopeId)}`
+
+  // Debug logging
+  console.log(`[VideoFeed] Rendering: isIdle=${isIdle}, isConnected=${isConnected}, url=${streamUrl}`)
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget
+    console.log(`[VideoFeed] Image loaded: ${img.naturalWidth}x${img.naturalHeight}`)
     if (img.naturalWidth && img.naturalHeight) {
       const ratio = img.naturalWidth / img.naturalHeight
       setImageAspectRatio(ratio)
@@ -325,7 +329,8 @@ export function VideoFeed({
               transition: isDragging ? 'none' : 'transform 0.1s ease-out',
               userSelect: 'none'
             }}
-            onError={() => {
+            onError={(e) => {
+              console.error('[VideoFeed] Stream error:', e, 'URL:', streamUrl)
               setError('Failed to load video stream')
               setIsStreaming(false)
             }}

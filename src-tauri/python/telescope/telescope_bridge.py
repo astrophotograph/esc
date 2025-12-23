@@ -10,13 +10,26 @@ represents one telescope system that may contain multiple devices
 (mount, camera, focuser, filterwheel).
 """
 import logging
+import sys
 import asyncio
+
+# Configure logging to output to stderr so it's visible in Tauri
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%H:%M:%S",
+    stream=sys.stderr,
+    force=True,  # Override any existing config
+)
+logger = logging.getLogger(__name__)
 import io
 import threading
 import concurrent.futures
 from datetime import datetime
 from typing import Any, Optional
 from enum import Enum
+
+import time
 
 from scopinator.v2 import Coordinates
 from scopinator.v2.backends.seestar import SeestarBackend
@@ -58,6 +71,11 @@ class UnifiedTelescopeBridge:
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
+
+        # Status caching to reduce Alpaca API calls
+        self._status_cache: Optional[dict[str, Any]] = None
+        self._status_cache_time: float = 0.0
+        self._status_cache_ttl: float = 1.0  # Cache status for 1 second
 
     def _start_event_loop_thread(self):
         """Start a background thread with a running event loop."""
@@ -190,6 +208,10 @@ class UnifiedTelescopeBridge:
             self._focuser = None
             self._imaging_client = None
 
+            # Clear status cache
+            self._status_cache = None
+            self._status_cache_time = 0.0
+
             if self._loop is not None:
                 self._loop.call_soon_threadsafe(self._loop.stop)
                 self._loop = None
@@ -258,7 +280,11 @@ class UnifiedTelescopeBridge:
             return {"success": False, "error": str(e)}
 
     def get_status(self) -> dict[str, Any]:
-        """Get current telescope status."""
+        """Get current telescope status.
+
+        Uses caching to reduce Alpaca API calls when multiple components
+        poll status simultaneously.
+        """
         try:
             if not self._backend:
                 return {
@@ -277,6 +303,15 @@ class UnifiedTelescopeBridge:
                         "target_name": None,
                     }
                 }
+
+            # Check if we have a valid cached status (for Alpaca protocol)
+            if self.protocol == Protocol.ALPACA:
+                current_time = time.time()
+                if (
+                    self._status_cache is not None
+                    and (current_time - self._status_cache_time) < self._status_cache_ttl
+                ):
+                    return self._status_cache
 
             async def do_get_status():
                 status_data = {
@@ -319,8 +354,14 @@ class UnifiedTelescopeBridge:
                 return status_data
 
             status = self._run_async(do_get_status())
+            result = {"success": True, "state": status}
 
-            return {"success": True, "state": status}
+            # Cache the result for Alpaca
+            if self.protocol == Protocol.ALPACA:
+                self._status_cache = result
+                self._status_cache_time = time.time()
+
+            return result
 
         except Exception as e:
             logging.error(f"Failed to get telescope status: {e}")
@@ -376,43 +417,80 @@ class UnifiedTelescopeBridge:
 
             else:
                 # For Alpaca, use move_axis (more universally supported than pulse_guide)
-                async def do_move():
-                    if not self._mount:
-                        return
+                # This follows the pattern from seestar-alpaca-demo: start movement immediately,
+                # optionally schedule auto-stop in background task
 
-                    # Map direction to axis and rate
-                    # Axis 0 = RA, Axis 1 = Dec
-                    # Positive rate = one direction, negative = opposite
-                    dir_lower = direction.lower()
+                logging.info(f"Alpaca move: direction={direction}, speed={speed}, duration={duration_sec}")
+                logging.info(f"Alpaca move: mount={self._mount}, has_move_axis={hasattr(self._mount, 'move_axis') if self._mount else 'N/A'}")
 
-                    # Default move rate in degrees/second (adjustable via speed param)
-                    # Use 4 deg/sec as base for visible movement (max is typically 6)
-                    base_rate = 4.0 * speed
+                # Map direction to axis and rate
+                # Axis 0 = RA, Axis 1 = Dec
+                # Positive rate = one direction, negative = opposite
+                dir_lower = direction.lower()
 
-                    if dir_lower in ("n", "north"):
-                        axis, rate = 1, base_rate   # Dec positive
-                    elif dir_lower in ("s", "south"):
-                        axis, rate = 1, -base_rate  # Dec negative
-                    elif dir_lower in ("e", "east"):
-                        axis, rate = 0, base_rate   # RA positive
-                    elif dir_lower in ("w", "west"):
-                        axis, rate = 0, -base_rate  # RA negative
-                    elif dir_lower == "stop":
-                        # Stop both axes
+                # Move rate in degrees/second (adjustable via speed param)
+                # Speed is expected on a 1-10 scale from the frontend
+                # Map to sensible rates: 0.5 deg/sec (slow) to 4.0 deg/sec (fast)
+                # Most mounts have max rates around 4-6 deg/sec
+                min_rate = 0.5
+                max_rate = 4.0
+                # Clamp speed to 1-10 range and interpolate
+                clamped_speed = max(1.0, min(10.0, speed))
+                base_rate = min_rate + (clamped_speed - 1.0) * (max_rate - min_rate) / 9.0
+                logging.info(f"Alpaca move: speed={speed} -> rate={base_rate:.2f} deg/sec")
+
+                if dir_lower in ("n", "north"):
+                    axis, rate = 1, base_rate   # Dec positive
+                elif dir_lower in ("s", "south"):
+                    axis, rate = 1, -base_rate  # Dec negative
+                elif dir_lower in ("e", "east"):
+                    axis, rate = 0, base_rate   # RA positive
+                elif dir_lower in ("w", "west"):
+                    axis, rate = 0, -base_rate  # RA negative
+                elif dir_lower == "stop":
+                    # Stop both axes
+                    logging.info("Alpaca move: stopping both axes")
+                    async def do_stop():
                         if hasattr(self._mount, 'move_axis'):
                             await self._mount.move_axis(0, 0)
                             await self._mount.move_axis(1, 0)
-                        return
-                    else:
-                        axis, rate = 1, base_rate  # Default to north
+                    self._run_async(do_stop())
+                    return {"success": True, "message": "Movement stopped"}
+                else:
+                    axis, rate = 1, base_rate  # Default to north
 
-                    if hasattr(self._mount, 'move_axis'):
-                        await self._mount.move_axis(axis, rate)
-                        # Wait for duration then stop
-                        await asyncio.sleep(duration_sec)
-                        await self._mount.move_axis(axis, 0)
+                logging.info(f"Alpaca move: axis={axis}, rate={rate}")
 
-                self._run_async(do_move())
+                if hasattr(self._mount, 'move_axis'):
+                    # Start movement immediately (non-blocking)
+                    async def start_move():
+                        logging.info(f"Alpaca move: calling move_axis({axis}, {rate})")
+                        try:
+                            await self._mount.move_axis(axis, rate)
+                            logging.info(f"Alpaca move: move_axis returned successfully")
+                        except Exception as e:
+                            logging.error(f"Alpaca move: move_axis failed: {e}")
+                            raise
+                    self._run_async(start_move())
+
+                    # Schedule auto-stop in background if duration specified
+                    if duration_sec > 0:
+                        async def auto_stop():
+                            await asyncio.sleep(duration_sec)
+                            # Only stop if mount still exists and is connected
+                            if self._mount and hasattr(self._mount, 'move_axis'):
+                                try:
+                                    await self._mount.move_axis(axis, 0)
+                                    logging.info(f"Auto-stopped axis {axis} after {duration_sec}s")
+                                except Exception as e:
+                                    logging.warning(f"Failed to auto-stop: {e}")
+
+                        # Fire and forget - don't block on auto-stop
+                        if self._loop:
+                            asyncio.run_coroutine_threadsafe(auto_stop(), self._loop)
+                else:
+                    logging.warning(f"Alpaca move: mount has no move_axis method")
+
                 return {"success": True, "message": f"Moving {direction}"}
 
         except Exception as e:
@@ -787,12 +865,131 @@ class UnifiedTelescopeBridge:
             logging.error(f"Save image failed: {e}")
             return {"success": False, "error": str(e)}
 
+    def _add_timestamp(self, img: Image.Image) -> Image.Image:
+        """Add a timestamp overlay to the image.
+
+        Args:
+            img: PIL Image (can be grayscale or RGB)
+
+        Returns:
+            Image with timestamp overlay (RGB format)
+        """
+        from PIL import ImageDraw, ImageFont
+
+        # Convert to RGB for consistent drawing
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # Get current timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Try to use a monospace font, fall back to alternatives
+        # Use a reasonable fixed font size that works for most image sizes
+        font_size = max(14, min(24, img.width // 50))
+        font = None
+        font_loaded_from = None
+
+        # List of font paths to try (covers Debian, Ubuntu, Arch, Fedora, etc.)
+        font_paths = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+            "/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf",
+            "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",
+            "/usr/share/fonts/gnu-free/FreeSans.ttf",
+            "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
+        ]
+
+        for font_path in font_paths:
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+                font_loaded_from = font_path
+                break
+            except (OSError, IOError):
+                continue
+
+        if font is None:
+            # Use default font
+            try:
+                font = ImageFont.load_default(size=font_size)
+                font_loaded_from = "default (sized)"
+            except TypeError:
+                font = ImageFont.load_default()
+                font_loaded_from = "default (basic)"
+
+        logging.info(f"_add_timestamp: font loaded from: {font_loaded_from}")
+
+        # Create a drawing context
+        draw = ImageDraw.Draw(img)
+
+        # Log image info for debugging
+        logging.info(f"_add_timestamp: img size={img.size}, mode={img.mode}, font_size={font_size}")
+
+        # Calculate text dimensions using getbbox on the font directly
+        try:
+            text_bbox = draw.textbbox((0, 0), timestamp, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            logging.info(f"_add_timestamp: textbbox={text_bbox}, width={text_width}, height={text_height}")
+        except Exception as e:
+            logging.warning(f"_add_timestamp: textbbox failed: {e}")
+            # Fallback: estimate based on font size and character count
+            text_width = len(timestamp) * (font_size * 0.6)
+            text_height = font_size
+
+        # Ensure minimum dimensions for the timestamp (19 chars: "2024-12-22 12:34:56")
+        min_text_width = len(timestamp) * (font_size * 0.6)
+        text_width = max(text_width, min_text_width)
+        text_height = max(text_height, font_size + 4)
+
+        # Position: bottom-left with padding
+        padding = 8
+        x = padding
+        y = img.height - int(text_height) - padding - 4
+
+        # Ensure y is not negative
+        y = max(padding, y)
+
+        logging.info(f"_add_timestamp: drawing at x={x}, y={y}, text='{timestamp}'")
+
+        # Draw semi-transparent black background
+        bg_padding = 4
+        bg_bbox = (
+            x - bg_padding,
+            y - bg_padding,
+            x + int(text_width) + bg_padding,
+            y + int(text_height) + bg_padding
+        )
+
+        # Clamp background to image bounds
+        bg_bbox = (
+            max(0, bg_bbox[0]),
+            max(0, bg_bbox[1]),
+            min(img.width, bg_bbox[2]),
+            min(img.height, bg_bbox[3])
+        )
+
+        # Draw dark background rectangle (solid, no alpha on RGB)
+        draw.rectangle(bg_bbox, fill=(0, 0, 0))
+
+        # Draw timestamp text in bright green
+        draw.text((x, y), timestamp, fill=(0, 255, 0), font=font)
+
+        return img
+
     def get_next_frame(self) -> Optional[bytes]:
         """Get the next video frame from the telescope.
 
         For Seestar: Uses the streaming imaging client.
         For Alpaca: Takes a short exposure from the camera.
         """
+        import sys
+        print(f"[Python] get_next_frame: CALLED, protocol={self.protocol}", file=sys.stderr, flush=True)
         try:
             import numpy as np
 
@@ -817,28 +1014,49 @@ class UnifiedTelescopeBridge:
                     frame = (frame / 256).astype(np.uint8)
 
                 img = Image.fromarray(frame)
+
+                # Add timestamp overlay
+                img = self._add_timestamp(img)
+
                 buffer = io.BytesIO()
                 img.save(buffer, format='JPEG', quality=85)
                 return buffer.getvalue()
 
             elif self.protocol == Protocol.ALPACA:
                 # Use Alpaca camera for exposures
+                import sys
+                print("[Python] get_next_frame: Alpaca protocol, checking camera...", file=sys.stderr, flush=True)
+                logging.info("get_next_frame: Alpaca protocol, checking camera...")
                 if not self._camera:
-                    logging.debug("No Alpaca camera available for frame capture")
+                    print("[Python] get_next_frame: No Alpaca camera available!", file=sys.stderr, flush=True)
+                    logging.warning("get_next_frame: No Alpaca camera available")
                     return None
 
+                print("[Python] get_next_frame: Camera available, will capture frame", file=sys.stderr, flush=True)
+                logging.info("get_next_frame: Camera available, defining capture function...")
+
                 async def capture_alpaca_frame():
+                    import time
                     from scopinator.v2.core.types import ExposureSettings
 
                     # Check if an image is already ready (from a previous exposure)
                     try:
+                        print("[Python] capture_alpaca_frame: checking if image ready...", file=sys.stderr, flush=True)
                         if await self._camera.is_image_ready():
+                            print("[Python] capture_alpaca_frame: image ready, starting download...", file=sys.stderr, flush=True)
+                            logging.info("Alpaca: Image already ready, downloading...")
+                            start_time = time.time()
                             image_data = await self._camera.get_image()
+                            elapsed = time.time() - start_time
+                            print(f"[Python] capture_alpaca_frame: download complete in {elapsed:.1f}s", file=sys.stderr, flush=True)
+                            logging.info(f"Alpaca: Downloaded image {image_data.width}x{image_data.height}")
                             return image_data
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"[Python] capture_alpaca_frame: no existing image ready: {e}", file=sys.stderr, flush=True)
+                        logging.debug(f"No existing image ready: {e}")
 
                     # Start a short exposure (0.5 seconds for live view)
+                    # Note: Many cameras (including Seestar) don't support binning
                     settings = ExposureSettings(
                         duration_seconds=0.5,
                         light=True,
@@ -847,27 +1065,37 @@ class UnifiedTelescopeBridge:
                     )
 
                     try:
+                        logging.info("Alpaca: Starting 0.5s exposure...")
                         await self._camera.start_exposure(settings)
                     except Exception as e:
-                        logging.debug(f"Failed to start Alpaca exposure: {e}")
+                        logging.warning(f"Failed to start Alpaca exposure: {e}")
                         return None
 
-                    # Wait for exposure to complete
-                    for _ in range(60):  # Max 6 seconds wait
+                    # Wait for exposure to complete (up to 15 seconds)
+                    logging.info("Alpaca: Waiting for exposure to complete...")
+                    for i in range(150):  # Max 15 seconds wait
                         await asyncio.sleep(0.1)
                         try:
                             if await self._camera.is_image_ready():
+                                logging.info(f"Alpaca: Exposure complete after {i * 0.1:.1f}s, downloading image...")
                                 image_data = await self._camera.get_image()
+                                logging.info(f"Alpaca: Downloaded image {image_data.width}x{image_data.height}")
                                 return image_data
-                        except Exception:
+                        except Exception as e:
+                            if i % 50 == 49:  # Log every 5 seconds
+                                logging.debug(f"Still waiting for image: {e}")
                             continue
 
-                    logging.warning("Alpaca exposure timed out")
+                    logging.warning("Alpaca exposure timed out waiting for image ready")
                     return None
 
-                image_data = self._run_async(capture_alpaca_frame(), timeout=10.0)
+                # Timeout: 0.5s exposure + 15s wait + up to 60s download = ~75s max
+                logging.info("get_next_frame: calling _run_async for capture_alpaca_frame...")
+                image_data = self._run_async(capture_alpaca_frame(), timeout=90.0)
+                logging.info(f"get_next_frame: _run_async returned, image_data={image_data is not None}")
 
                 if image_data is None or not image_data.data:
+                    logging.warning("Alpaca: No image data received")
                     return None
 
                 # Convert image data to JPEG
@@ -876,21 +1104,44 @@ class UnifiedTelescopeBridge:
                 height = image_data.height
                 data = image_data.data
 
+                logging.info(f"Alpaca: Processing {width}x{height} image ({len(data)} bytes)")
+
                 if len(data) > 0:
                     # Unpack the 16-bit data
                     import struct
                     try:
                         num_pixels = width * height
+                        expected_bytes = num_pixels * 2
+                        if len(data) != expected_bytes:
+                            logging.warning(f"Alpaca: Data size mismatch: got {len(data)}, expected {expected_bytes}")
+
                         pixels = struct.unpack(f">{num_pixels}H", data)
-                        frame = np.array(pixels, dtype=np.uint16).reshape((height, width))
-                        # Convert to 8-bit for JPEG
-                        frame = (frame / 256).astype(np.uint8)
+                        # Alpaca returns imagearray with width as first dimension
+                        # So reshape as (width, height) then transpose to (height, width)
+                        frame = np.array(pixels, dtype=np.uint16).reshape((width, height)).T
+
+                        logging.info(f"Alpaca: Frame shape after transpose: {frame.shape} (height, width)")
+
+                        # Auto-stretch for better display
+                        min_val = np.percentile(frame, 1)
+                        max_val = np.percentile(frame, 99)
+                        if max_val > min_val:
+                            frame = ((frame - min_val) / (max_val - min_val) * 255).clip(0, 255).astype(np.uint8)
+                        else:
+                            frame = (frame / 256).astype(np.uint8)
+
                         img = Image.fromarray(frame, mode='L')  # Grayscale
+                        logging.info(f"Alpaca: PIL image created: size={img.size} (width, height), mode={img.mode}")
+
+                        # Add timestamp overlay
+                        img = self._add_timestamp(img)
+
                         buffer = io.BytesIO()
                         img.save(buffer, format='JPEG', quality=85)
+                        logging.info(f"Alpaca: Final JPEG image {img.size[0]}x{img.size[1]}, {len(buffer.getvalue())} bytes")
                         return buffer.getvalue()
                     except Exception as e:
-                        logging.error(f"Failed to process Alpaca image: {e}")
+                        logging.error(f"Failed to process Alpaca image: {e}", exc_info=True)
                         return None
 
                 return None
@@ -900,6 +1151,93 @@ class UnifiedTelescopeBridge:
         except Exception as e:
             logging.error(f"Failed to get frame: {e}")
             return None
+
+
+def generate_placeholder_image(width: int = 640, height: int = 480, message: str = "Stream Starting...") -> bytes:
+    """Generate a placeholder image with a message.
+
+    Called by Rust code via PyO3 for the initial stream frame.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    # Create a dark blue background
+    img = Image.new('RGB', (width, height), (10, 20, 40))
+    draw = ImageDraw.Draw(img)
+
+    # Draw a subtle grid pattern
+    grid_color = (20, 35, 60)
+    for gx in range(0, width, 40):
+        draw.line([(gx, 0), (gx, height)], fill=grid_color, width=1)
+    for gy in range(0, height, 40):
+        draw.line([(0, gy), (width, gy)], fill=grid_color, width=1)
+
+    # Draw crosshairs in center
+    cx, cy = width // 2, height // 2
+    crosshair_color = (60, 80, 120)
+    draw.line([(cx - 30, cy), (cx + 30, cy)], fill=crosshair_color, width=2)
+    draw.line([(cx, cy - 30), (cx, cy + 30)], fill=crosshair_color, width=2)
+    draw.ellipse([(cx - 20, cy - 20), (cx + 20, cy + 20)], outline=crosshair_color, width=2)
+
+    # Try to load a font - use larger size for placeholder
+    font_size = max(24, width // 20)
+    font = None
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+
+    for font_path in font_paths:
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+            logging.info(f"generate_placeholder: loaded font from {font_path}")
+            break
+        except (OSError, IOError):
+            continue
+
+    if font is None:
+        try:
+            font = ImageFont.load_default(size=font_size)
+            logging.info(f"generate_placeholder: using default font (sized)")
+        except TypeError:
+            font = ImageFont.load_default()
+            logging.info(f"generate_placeholder: using default font (basic)")
+
+    # Calculate text dimensions - ensure we get reasonable values
+    try:
+        text_bbox = draw.textbbox((0, 0), message, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+    except Exception:
+        # Fallback estimation
+        text_width = len(message) * (font_size * 0.6)
+        text_height = font_size
+
+    # Ensure minimum dimensions
+    text_width = max(text_width, len(message) * 10)
+    text_height = max(text_height, font_size)
+
+    # Center the text
+    text_x = (width - int(text_width)) // 2
+    text_y = (height - int(text_height)) // 2 + 50  # Below center
+
+    logging.info(f"generate_placeholder: text='{message}', pos=({text_x}, {text_y}), size=({text_width}, {text_height})")
+
+    # Draw text shadow
+    draw.text((text_x + 2, text_y + 2), message, fill=(0, 0, 0), font=font)
+    # Draw main text in light blue
+    draw.text((text_x, text_y), message, fill=(100, 150, 255), font=font)
+
+    # Draw a subtle border
+    border_color = (40, 60, 100)
+    draw.rectangle([(0, 0), (width - 1, height - 1)], outline=border_color, width=2)
+
+    # Convert to JPEG bytes
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG', quality=85)
+    return buffer.getvalue()
 
 
 def create_bridge(host: str, port: int, protocol: str = "seestar") -> UnifiedTelescopeBridge:
@@ -949,6 +1287,12 @@ def _run_async(
 
     Called by Rust code via PyO3.
     """
+    # Only log non-frequent methods to reduce noise
+    verbose = method_name not in ('get_status', 'get_next_frame')
+
+    if verbose:
+        logging.info(f"_run_async: called with method '{method_name}'")
+
     try:
         if args is None:
             args = {}
@@ -957,7 +1301,12 @@ def _run_async(
         if method is None:
             raise AttributeError(f"Bridge has no method '{method_name}'")
 
-        return method(**args)
+        result = method(**args)
+
+        if verbose:
+            logging.info(f"_run_async: method '{method_name}' returned")
+
+        return result
 
     except Exception as e:
         logging.error(f"Error running method {method_name}: {e}")

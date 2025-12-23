@@ -165,13 +165,22 @@ export function TelescopeHeader() {
         }
         // 'connecting' and 'disconnected' both become 'disconnected'
 
+        // Get protocol from discovery result, default based on port
+        const protocol = t.protocol || (t.port === 4700 ? 'seestar' : 'alpaca')
+
+        // Generate appropriate name based on protocol
+        const defaultName = protocol === 'alpaca'
+          ? `Alpaca ${t.host}`
+          : `Seestar ${t.serial_number || t.host}`
+
         return {
           id,
           host: t.host,
           port: t.port,
-          name: t.name || `Seestar ${t.serial_number || t.host}`,
+          protocol: protocol as 'seestar' | 'alpaca',
+          name: t.name || defaultName,
           serial_number: t.serial_number,
-          product_model: t.product_model || 'Seestar S30',
+          product_model: t.product_model || (protocol === 'alpaca' ? 'Alpaca Server' : 'Seestar S30'),
           discovery_method: 'auto_discovery',
           status,
           error: existing?.error,
@@ -208,15 +217,21 @@ export function TelescopeHeader() {
   }, [fetchTelescopes])
 
   // Auto-connect to selected telescope
-  const connectToTelescope = useCallback(async (telescopeId: string) => {
-    updateTelescope(telescopeId, { status: 'connecting' })
+  const connectToTelescope = useCallback(async (telescope: TelescopeInfo) => {
+    updateTelescope(telescope.id, { status: 'connecting' })
     try {
-      await invoke('connect_telescope', { telescopeId })
-      updateTelescope(telescopeId, { status: 'connected' })
-      addActivity(telescopeId, 'success', 'Connected to telescope')
+      // Pass host/port/protocol for manually added telescopes
+      await invoke('connect_telescope', {
+        telescopeId: telescope.id,
+        host: telescope.host,
+        port: telescope.port,
+        protocol: telescope.protocol || 'seestar',
+      })
+      updateTelescope(telescope.id, { status: 'connected' })
+      addActivity(telescope.id, 'success', 'Connected to telescope')
     } catch (error) {
-      updateTelescope(telescopeId, { status: 'error', error: String(error) })
-      addActivity(telescopeId, 'error', `Connection failed: ${error}`)
+      updateTelescope(telescope.id, { status: 'error', error: String(error) })
+      addActivity(telescope.id, 'error', `Connection failed: ${error}`)
     }
   }, [updateTelescope, addActivity])
 
@@ -225,7 +240,7 @@ export function TelescopeHeader() {
     setCurrentTelescope(telescope.id)
     // Connect if not already connected (handles 'disconnected', 'connecting' from stale state, or 'error')
     if (telescope.status !== 'connected') {
-      connectToTelescope(telescope.id)
+      connectToTelescope(telescope)
     }
   }, [setCurrentTelescope, connectToTelescope])
 

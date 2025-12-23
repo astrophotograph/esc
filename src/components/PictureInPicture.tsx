@@ -152,7 +152,7 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
         if (!isConnected) {
           return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=Not%20Connected`
         }
-        return `http://localhost:8080/stream/${telescopeId}`
+        return `http://localhost:8080/stream/${encodeURIComponent(telescopeId)}`
       case 'allsky':
         return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=All-Sky`
       case 'guide':

@@ -120,37 +120,63 @@ pub async fn connect_telescope(
     app: AppHandle,
     state: State<'_, AppState>,
     telescope_id: String,
+    host: Option<String>,
+    port: Option<u16>,
+    protocol: Option<String>,
 ) -> Result<String, String> {
     tracing::info!("connect_telescope: starting for telescope_id={}", telescope_id);
 
-    // Get telescope info from state and update status
+    // Get telescope info - either from provided params or from state
     let (host, port, protocol) = {
-        let telescopes = state.telescopes.read();
-        let all_ids: Vec<_> = telescopes.keys().collect();
-        tracing::info!(
-            "connect_telescope: looking up telescope '{}', available telescopes: {:?}",
-            telescope_id,
-            all_ids
-        );
-        let telescope = telescopes
-            .get(&telescope_id)
-            .ok_or_else(|| {
-                tracing::error!("connect_telescope: Telescope {} not found in state!", telescope_id);
+        let mut telescopes = state.telescopes.write();
+
+        if let (Some(h), Some(p), Some(proto)) = (host.clone(), port, protocol.clone()) {
+            // Manually added telescope - create/update entry in state
+            tracing::info!(
+                "connect_telescope: using provided params for manual telescope {}:{}",
+                h,
+                p
+            );
+
+            let connection = crate::state::TelescopeConnection {
+                id: telescope_id.clone(),
+                host: h.clone(),
+                port: p,
+                protocol: proto.clone(),
+                name: format!("{} @ {}:{}", proto, h, p),
+                status: crate::state::ConnectionStatus::Connecting,
+                bridge: std::sync::Arc::new(pyo3::Python::with_gil(|py| py.None().into())),
+            };
+            telescopes.insert(telescope_id.clone(), connection);
+
+            (h, p, proto)
+        } else {
+            // Look up from state (discovered telescope)
+            let all_ids: Vec<_> = telescopes.keys().collect();
+            tracing::info!(
+                "connect_telescope: looking up telescope '{}', available telescopes: {:?}",
+                telescope_id,
+                all_ids
+            );
+            let telescope = telescopes.get(&telescope_id).ok_or_else(|| {
+                tracing::error!(
+                    "connect_telescope: Telescope {} not found in state!",
+                    telescope_id
+                );
                 format!("Telescope {} not found", telescope_id)
             })?;
 
-        let host = telescope.host.clone();
-        let port = telescope.port;
-        let protocol = telescope.protocol.clone();
-        drop(telescopes);
+            let h = telescope.host.clone();
+            let p = telescope.port;
+            let proto = telescope.protocol.clone();
 
-        // Update status to connecting
-        let mut telescopes = state.telescopes.write();
-        if let Some(t) = telescopes.get_mut(&telescope_id) {
-            t.status = crate::state::ConnectionStatus::Connecting;
+            // Update status to connecting
+            if let Some(t) = telescopes.get_mut(&telescope_id) {
+                t.status = crate::state::ConnectionStatus::Connecting;
+            }
+
+            (h, p, proto)
         }
-
-        (host, port, protocol)
     };
 
     // Create Python bridge object using the unified bridge with protocol support
