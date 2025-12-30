@@ -77,6 +77,10 @@ class UnifiedTelescopeBridge:
         self._status_cache_time: float = 0.0
         self._status_cache_ttl: float = 1.0  # Cache status for 1 second
 
+        # Track pending auto-stop task to cancel on new move/stop
+        self._auto_stop_task: Optional[asyncio.Task] = None
+        self._auto_stop_cancelled = False
+
     def _start_event_loop_thread(self):
         """Start a background thread with a running event loop."""
         if self._thread is not None and self._thread.is_alive():
@@ -421,7 +425,12 @@ class UnifiedTelescopeBridge:
                 # optionally schedule auto-stop in background task
 
                 logging.info(f"Alpaca move: direction={direction}, speed={speed}, duration={duration_sec}")
-                logging.info(f"Alpaca move: mount={self._mount}, has_move_axis={hasattr(self._mount, 'move_axis') if self._mount else 'N/A'}")
+
+                # Cancel any pending auto-stop task
+                if self._auto_stop_task is not None:
+                    self._auto_stop_task.cancel()
+                    self._auto_stop_task = None
+                    logging.debug("Alpaca move: cancelled pending auto-stop task")
 
                 # Map direction to axis and rate
                 # Axis 0 = RA, Axis 1 = Dec
@@ -430,14 +439,12 @@ class UnifiedTelescopeBridge:
 
                 # Move rate in degrees/second (adjustable via speed param)
                 # Speed is expected on a 1-10 scale from the frontend
-                # Map to sensible rates: 0.5 deg/sec (slow) to 4.0 deg/sec (fast)
-                # Most mounts have max rates around 4-6 deg/sec
-                min_rate = 0.5
-                max_rate = 4.0
+                # Map to rates: 2.5 deg/sec (slow) to 20.0 deg/sec (fast)
+                min_rate = 2.5
+                max_rate = 20.0
                 # Clamp speed to 1-10 range and interpolate
                 clamped_speed = max(1.0, min(10.0, speed))
                 base_rate = min_rate + (clamped_speed - 1.0) * (max_rate - min_rate) / 9.0
-                logging.info(f"Alpaca move: speed={speed} -> rate={base_rate:.2f} deg/sec")
 
                 if dir_lower in ("n", "north"):
                     axis, rate = 1, base_rate   # Dec positive
@@ -459,35 +466,38 @@ class UnifiedTelescopeBridge:
                 else:
                     axis, rate = 1, base_rate  # Default to north
 
-                logging.info(f"Alpaca move: axis={axis}, rate={rate}")
+                logging.info(f"Alpaca move: axis={axis}, rate={base_rate:.2f} deg/sec")
 
                 if hasattr(self._mount, 'move_axis'):
                     # Start movement immediately (non-blocking)
                     async def start_move():
-                        logging.info(f"Alpaca move: calling move_axis({axis}, {rate})")
                         try:
                             await self._mount.move_axis(axis, rate)
-                            logging.info(f"Alpaca move: move_axis returned successfully")
                         except Exception as e:
                             logging.error(f"Alpaca move: move_axis failed: {e}")
                             raise
                     self._run_async(start_move())
 
                     # Schedule auto-stop in background if duration specified
-                    if duration_sec > 0:
-                        async def auto_stop():
-                            await asyncio.sleep(duration_sec)
-                            # Only stop if mount still exists and is connected
-                            if self._mount and hasattr(self._mount, 'move_axis'):
-                                try:
-                                    await self._mount.move_axis(axis, 0)
-                                    logging.info(f"Auto-stopped axis {axis} after {duration_sec}s")
-                                except Exception as e:
-                                    logging.warning(f"Failed to auto-stop: {e}")
+                    if duration_sec > 0 and self._loop:
+                        async def auto_stop(stop_axis: int, stop_duration: float):
+                            try:
+                                await asyncio.sleep(stop_duration)
+                                # Only stop if mount still exists and is connected
+                                if self._mount and hasattr(self._mount, 'move_axis'):
+                                    await self._mount.move_axis(stop_axis, 0)
+                                    logging.info(f"Auto-stopped axis {stop_axis} after {stop_duration}s")
+                            except asyncio.CancelledError:
+                                logging.debug(f"Auto-stop cancelled for axis {stop_axis}")
+                            except Exception as e:
+                                logging.warning(f"Failed to auto-stop: {e}")
 
-                        # Fire and forget - don't block on auto-stop
-                        if self._loop:
-                            asyncio.run_coroutine_threadsafe(auto_stop(), self._loop)
+                        # Create task and store reference for cancellation
+                        future = asyncio.run_coroutine_threadsafe(
+                            auto_stop(axis, duration_sec), self._loop
+                        )
+                        # Wrap in a task-like object we can cancel
+                        self._auto_stop_task = future
                 else:
                     logging.warning(f"Alpaca move: mount has no move_axis method")
 
