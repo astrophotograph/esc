@@ -138,14 +138,14 @@ fn main() {
 
             app.manage(db);
 
-            // Start streaming server on port 8080 using Tauri's async runtime
+            // Start streaming server on port 9847 using Tauri's async runtime
             let state_clone = std::sync::Arc::new(app_state.inner().clone());
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = streaming::start_streaming_server(state_clone, 8080).await {
+                if let Err(e) = streaming::start_streaming_server(state_clone, 9847).await {
                     tracing::error!("Streaming server error: {}", e);
                 }
             });
-            tracing::info!("Streaming server starting on port 8080");
+            tracing::info!("Streaming server starting on port 9847");
 
             // Dev tools can be opened manually with Ctrl+Shift+I if needed
             Ok(())
