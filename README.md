@@ -105,6 +105,7 @@ uv sync
 pnpm tauri:dev
 
 # Run web version in development mode
+pnpm web:api
 pnpm web:dev
 ```
 

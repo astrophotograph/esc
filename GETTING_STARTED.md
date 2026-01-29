@@ -27,9 +27,11 @@ pnpm tauri:dev
 
 **Web Version**
 ```bash
+pnpm web:api
 pnpm web:dev
 ```
 
+The web version requires the API server to be running (`pnpm web:api`).
 The application will open automatically. The desktop version includes hot-reload and React DevTools.
 
 ## Project Overview

@@ -466,8 +466,14 @@ export function TelescopeHeader() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">G:</span>
-                  <span className="font-mono">{status?.gain ?? '--'}</span>
+                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <span className="font-mono">
+                    {status?.gain != null
+                      ? status.gain
+                      : status?.gainMode === 'auto'
+                        ? 'AUTO'
+                        : '--'}
+                  </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>Camera Gain</TooltipContent>
@@ -505,10 +511,8 @@ export function TelescopeHeader() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <Gauge className="h-4 w-4 text-purple-500" />
-                  <span className="font-mono text-xs">
-                    {status?.viewState || 'Idle'}
-                  </span>
+                  <Compass className="h-4 w-4 text-cyan-500" />
+                  <span className="font-mono">{status?.mountType ?? 'Alt-Az'}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>View State / Mode</TooltipContent>
