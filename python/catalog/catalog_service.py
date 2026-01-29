@@ -204,10 +204,20 @@ class CatalogService:
         catalog_ids = obj.get("catalog_ids", {})
         names = obj.get("names", {})
         all_names = []
+        def _add_name(value: Any) -> None:
+            if value is None:
+                return
+            if isinstance(value, (list, tuple)):
+                for item in value:
+                    _add_name(item)
+                return
+            all_names.append(str(value))
 
         # Messier
         if catalog_ids.get("messier"):
             messier_id = catalog_ids["messier"]
+            if isinstance(messier_id, (list, tuple)):
+                messier_id = next((v for v in messier_id if isinstance(v, str)), "")
             if messier_id.startswith("M"):
                 number = messier_id[1:].lstrip("0") or "0"
             else:
@@ -225,37 +235,49 @@ class CatalogService:
         # NGC/IC
         if catalog_ids.get("ngc"):
             ngc_num = catalog_ids["ngc"]
-            all_names.extend([f"NGC{ngc_num}", f"NGC {ngc_num}"])
+            if isinstance(ngc_num, (list, tuple)):
+                ngc_num = next((v for v in ngc_num if isinstance(v, str)), "")
+            if ngc_num:
+                all_names.extend([f"NGC{ngc_num}", f"NGC {ngc_num}"])
 
         if catalog_ids.get("ic"):
             ic_num = catalog_ids["ic"]
-            all_names.extend([f"IC{ic_num}", f"IC {ic_num}"])
+            if isinstance(ic_num, (list, tuple)):
+                ic_num = next((v for v in ic_num if isinstance(v, str)), "")
+            if ic_num:
+                all_names.extend([f"IC{ic_num}", f"IC {ic_num}"])
 
         # Other catalogs
         if catalog_ids.get("sharpless"):
             sharpless_id = catalog_ids["sharpless"]
-            all_names.extend(
-                [sharpless_id, sharpless_id.replace("-", ""), f"Sharpless {sharpless_id[3:]}"]
-            )
+            if isinstance(sharpless_id, (list, tuple)):
+                sharpless_id = next((v for v in sharpless_id if isinstance(v, str)), "")
+            if sharpless_id:
+                all_names.extend(
+                    [sharpless_id, sharpless_id.replace("-", ""), f"Sharpless {sharpless_id[3:]}"]
+                )
         if catalog_ids.get("barnard"):
             barnard_id = catalog_ids["barnard"]
-            all_names.extend([barnard_id, f"Barnard {barnard_id[1:]}", f"B {barnard_id[1:]}"])
+            if isinstance(barnard_id, (list, tuple)):
+                barnard_id = next((v for v in barnard_id if isinstance(v, str)), "")
+            if barnard_id:
+                all_names.extend([barnard_id, f"Barnard {barnard_id[1:]}", f"B {barnard_id[1:]}"])
 
         # Names
         if names.get("proper"):
-            all_names.append(names["proper"])
+            _add_name(names["proper"])
         if names.get("bayer_flamsteed"):
-            all_names.append(names["bayer_flamsteed"])
+            _add_name(names["bayer_flamsteed"])
         if names.get("common"):
-            all_names.extend(names["common"])
+            _add_name(names["common"])
         if names.get("other"):
-            all_names.extend(names["other"])
+            _add_name(names["other"])
 
         # Object ID as fallback
         obj_id = obj.get("id", "")
-        all_names.append(obj_id)
+        _add_name(obj_id)
 
-        return [name for name in all_names if name]
+        return [name for name in all_names if isinstance(name, str) and name]
 
     @staticmethod
     def matches_search_query(obj: dict[str, Any], query: str) -> bool:
@@ -322,11 +344,17 @@ class CatalogService:
                 return True
 
         # Check object type and constellation
-        obj_type = obj.get("object_type", "").lower()
+        obj_type_value = obj.get("object_type", "")
+        if isinstance(obj_type_value, list):
+            obj_type_value = next((v for v in obj_type_value if isinstance(v, str)), "")
+        obj_type = str(obj_type_value).lower()
         if query_lower in obj_type:
             return True
 
-        constellation = obj.get("coordinates", {}).get("constellation", "").lower()
+        constellation_value = obj.get("coordinates", {}).get("constellation", "")
+        if isinstance(constellation_value, list):
+            constellation_value = next((v for v in constellation_value if isinstance(v, str)), "")
+        constellation = str(constellation_value).lower()
         if query_lower in constellation:
             return True
 
@@ -577,7 +605,10 @@ class CatalogService:
 
                 # Get object details
                 name = self.get_object_name(obj)
-                obj_type_str = obj.get("object_type", "Unknown")
+                obj_type_value = obj.get("object_type", "Unknown")
+                if isinstance(obj_type_value, list):
+                    obj_type_value = next((v for v in obj_type_value if isinstance(v, str)), "Unknown")
+                obj_type_str = str(obj_type_value)
                 constellation = coordinates.get("constellation", "Unknown")
                 magnitudes = obj.get("magnitudes", {})
                 magnitude = self.get_object_magnitude(magnitudes)
@@ -676,7 +707,10 @@ class CatalogService:
 
         type_counts: dict[str, int] = {}
         for obj in objects:
-            obj_type = obj.get("object_type", "Unknown")
+            obj_type_value = obj.get("object_type", "Unknown")
+            if isinstance(obj_type_value, list):
+                obj_type_value = next((v for v in obj_type_value if isinstance(v, str)), "Unknown")
+            obj_type = str(obj_type_value)
             type_counts[obj_type] = type_counts.get(obj_type, 0) + 1
 
         return type_counts

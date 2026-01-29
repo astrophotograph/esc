@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { invoke } from '../services/api'
+import { invoke, runtime } from '../services/api'
 import { useSessionStore, ObservationSession, TonightTarget, VisibilityInfo } from '../stores'
 
 // API response types
@@ -289,6 +289,10 @@ export function useSession() {
    */
   const getLocationFromBrowser = useCallback(async () => {
     return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      if (!window.isSecureContext) {
+        reject(new Error('Failed to get location: Geolocation requires HTTPS (or localhost).'))
+        return
+      }
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'))
         return
@@ -314,6 +318,24 @@ export function useSession() {
         }
       )
     })
+      .catch(async (error) => {
+        // In web mode only, fall back to IP-based location.
+        if (!runtime.isTauri) {
+          const fallback = await invoke<{ success?: boolean; latitude?: number; longitude?: number; name?: string; error?: string }>(
+            'get_ip_location'
+          )
+          if (fallback?.success && typeof fallback.latitude === 'number' && typeof fallback.longitude === 'number') {
+            setLocation({
+              latitude: fallback.latitude,
+              longitude: fallback.longitude,
+              elevation: 0,
+              name: fallback.name || 'Approximate (IP)',
+            })
+            return { latitude: fallback.latitude, longitude: fallback.longitude }
+          }
+        }
+        throw error
+      })
   }, [setLocation])
 
   return {

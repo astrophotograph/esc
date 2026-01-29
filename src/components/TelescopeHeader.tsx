@@ -102,6 +102,7 @@ const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
 
 export function TelescopeHeader() {
   const [status, setStatus] = useState<TelescopeStatus | null>(null)
+  const [isSceneryMode, setIsSceneryMode] = useState(false)
 
   const {
     telescopes,
@@ -244,6 +245,28 @@ export function TelescopeHeader() {
     const interval = setInterval(fetchStatus, 2000)
     return () => clearInterval(interval)
   }, [currentTelescopeId])
+
+  // Reset view mode when switching telescopes
+  useEffect(() => {
+    setIsSceneryMode(false)
+  }, [currentTelescopeId])
+
+  const toggleSceneryMode = useCallback(async () => {
+    if (!currentTelescopeId) {
+      return
+    }
+    const nextMode = !isSceneryMode
+    try {
+      await invoke('telescope_set_view_mode', {
+        telescopeId: currentTelescopeId,
+        mode: nextMode ? 'scenery' : 'star',
+      })
+      setIsSceneryMode(nextMode)
+      addActivity(currentTelescopeId, 'info', `View mode: ${nextMode ? 'scenery' : 'star'}`)
+    } catch (error) {
+      addActivity(currentTelescopeId, 'error', `Failed to set view mode: ${error}`)
+    }
+  }, [currentTelescopeId, isSceneryMode, addActivity])
 
   const formatBattery = (percent?: number) => {
     if (percent == null) return '--'
@@ -553,12 +576,20 @@ export function TelescopeHeader() {
           {/* Scenery */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant={isSceneryMode ? 'default' : 'outline'}
+                size="sm"
+                className="gap-2"
+                disabled={!isConnected}
+                onClick={toggleSceneryMode}
+              >
                 <Mountain className="h-4 w-4" />
                 Scenery
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Scenery Mode</TooltipContent>
+            <TooltipContent>
+              {isSceneryMode ? 'Switch to star mode' : 'Switch to scenery mode'}
+            </TooltipContent>
           </Tooltip>
 
           {/* Help */}

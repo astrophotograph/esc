@@ -257,6 +257,14 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
     if command == "goto_target":
         telescope_id = _extract_telescope_id(payload)
         params = payload.get("params") or {}
+        if "targetName" in payload and "target_name" not in params:
+            params["target_name"] = payload["targetName"]
+        if "ra" not in params:
+            params["ra"] = payload.get("ra") or payload.get("ra_decimal") or payload.get("ra_deg")
+        if "dec" not in params:
+            params["dec"] = payload.get("dec") or payload.get("dec_decimal") or payload.get("dec_deg")
+        if "is_j2000" not in params:
+            params["is_j2000"] = bool(payload.get("is_j2000", True))
         entry = await _get_or_create_entry(telescope_id=telescope_id or "")
         bridge, connect_result = await _get_connected_bridge(entry)
         if connect_result:
@@ -289,6 +297,15 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         if connect_result:
             return connect_result
         return await bridge.stop_move()
+
+    if command == "telescope_set_view_mode":
+        telescope_id = _extract_telescope_id(payload)
+        mode = payload.get("mode") or payload.get("view_mode") or "star"
+        entry = await _get_or_create_entry(telescope_id=telescope_id or "")
+        bridge, connect_result = await _get_connected_bridge(entry)
+        if connect_result:
+            return connect_result
+        return await bridge.set_view_mode({"mode": mode})
 
     if command in ("telescope_focus", "set_focus"):
         telescope_id = _extract_telescope_id(payload)
@@ -528,6 +545,31 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         async with _sessions_lock:
             _sessions.pop(session_id, None)
         return {"success": True}
+
+    if command == "get_ip_location":
+        try:
+            import json as _json
+            import urllib.request
+
+            with urllib.request.urlopen("https://ipapi.co/json/", timeout=5) as response:
+                data = _json.load(response)
+
+            latitude = data.get("latitude")
+            longitude = data.get("longitude")
+            if latitude is None or longitude is None:
+                raise ValueError("Missing latitude/longitude in response")
+
+            name_parts = [data.get("city"), data.get("region"), data.get("country_name")]
+            name = ", ".join([part for part in name_parts if part])
+
+            return {
+                "success": True,
+                "latitude": latitude,
+                "longitude": longitude,
+                "name": name or "Approximate (IP)",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     raise HTTPException(status_code=404, detail=f"Unknown command: {command}")
 

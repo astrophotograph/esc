@@ -80,9 +80,12 @@ class SeestarBridge:
         self.client: Optional[SeestarClient] = None
         self.imaging_client: Optional[SeestarImagingClient] = None
         self._event_queue: list[dict[str, Any]] = []
+        self.view_mode: str = "star"
         # Avoid spamming start/view/stream commands while streaming is idle.
         self._last_view_start_attempt: float = 0.0
         self._last_stream_start_attempt: float = 0.0
+        # Temporarily suppress streaming (e.g. during goto) to avoid conflicts.
+        self._suppress_streaming_until: float = 0.0
 
         # Event subscriptions are optional; leaving the queue empty in web mode.
 
@@ -150,15 +153,91 @@ class SeestarBridge:
             return {"success": False, "error": "Not connected"}
 
         try:
+            target_name = params.get("target_name") or params.get("targetName")
+            ra = params.get("ra") or params.get("ra_decimal") or params.get("ra_deg")
+            dec = params.get("dec") or params.get("dec_decimal") or params.get("dec_deg")
+
+            if target_name is None or ra is None or dec is None:
+                return {"success": False, "error": "Missing target_name, ra, or dec"}
+
+            # Pause streaming briefly to avoid interfering with AutoGoto.
+            if self.imaging_client and self.imaging_client.status.is_streaming:
+                try:
+                    await self.imaging_client.stop_streaming()
+                except Exception:
+                    pass
+            import time
+            self._suppress_streaming_until = time.monotonic() + 30.0
+
+            # Ensure tracking is enabled (some firmware won't move if tracking is off/parked).
+            try:
+                await self.client.send_and_recv(parameterized_commands.ScopeSetTrackState(params=True))
+            except Exception:
+                pass
+
+            # Use the GotoTarget command with J2000 coordinates.
             goto_params = parameterized_commands.GotoTargetParameters(
-                target_name=params["target_name"],
-                ra_h=params["ra"],
-                dec_deg=params["dec"]
+                target_name=target_name,
+                is_j2000=True,
+                ra=float(ra),
+                dec=float(dec),
             )
 
             response = await self.client.send_and_recv(
                 parameterized_commands.GotoTarget(params=goto_params)
             )
+
+            if response is None:
+                return {"success": False, "error": "No response from telescope"}
+
+            response_code = getattr(response, "code", 0)
+            response_error = getattr(response, "error", None)
+            if response_code not in (None, 0) or response_error:
+                error_str = str(response_error) if response_error else f"code {response_code}"
+                # Some firmware doesn't support GotoTarget; fall back to IscopeStartView.
+                if "method not found" in error_str.lower() or response_code not in (None, 0):
+                    # Convert J2000 coordinates to current epoch for IscopeStartView.
+                    try:
+                        from astropy.coordinates import SkyCoord, FK5
+                        from astropy.time import Time
+                        import astropy.units as u
+
+                        sky = SkyCoord(ra=float(ra) * u.deg, dec=float(dec) * u.deg, frame=FK5(equinox=Time("J2000")))
+                        current = sky.transform_to(FK5(equinox=Time.now()))
+                        ra_now = float(current.ra.deg)
+                        dec_now = float(current.dec.deg)
+                    except Exception:
+                        ra_now = float(ra)
+                        dec_now = float(dec)
+
+                    # IscopeStartView appears to expect RA in hours.
+                    ra_hours = ra_now / 15.0
+                    print(f"GOTO debug: fallback iscope_start_view ra_hours={ra_hours:.6f} dec_deg={dec_now:.6f}")
+                    response = await self.client.goto(
+                        target_name=target_name,
+                        in_ra=ra_hours,
+                        in_dec=dec_now,
+                        mode="star",
+                    )
+                    if response is None:
+                        return {"success": False, "error": "No response from telescope"}
+                    if hasattr(response, "error") and response.error:
+                        return {"success": False, "error": str(response.error)}
+                else:
+                    return {"success": False, "error": error_str}
+
+            # Debug: capture immediate view/coord state after issuing goto.
+            try:
+                view_state = await self.client.send_and_recv(simple.GetViewState())
+                coord_state = await self.client.send_and_recv(simple.ScopeGetEquCoord())
+                print(
+                    "GOTO debug: view_state=",
+                    view_state.model_dump() if view_state else None,
+                    "coords=",
+                    coord_state.model_dump() if coord_state else None,
+                )
+            except Exception as e:
+                print(f"GOTO debug: failed to fetch view/coord state: {e}")
 
             return {
                 "success": True,
@@ -237,6 +316,31 @@ class SeestarBridge:
             response = await self.client.send_and_recv(imaging.StopImaging())
             return {
                 "success": True,
+                "response": response.model_dump() if response else None
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    async def set_view_mode(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Set the view mode (star/scenery/solar_sys)."""
+        if not self.client:
+            return {"success": False, "error": "Not connected"}
+
+        mode = (params.get("mode") or "star").lower()
+        if mode not in {"star", "scenery", "solar_sys"}:
+            return {"success": False, "error": f"Unsupported view mode: {mode}"}
+
+        try:
+            self.view_mode = mode
+            response = await self.client.scope_view(mode=mode)
+            # Reset backoff so stream startup can re-assert the mode if needed.
+            self._last_view_start_attempt = 0.0
+            return {
+                "success": True,
+                "mode": mode,
                 "response": response.model_dump() if response else None
             }
         except Exception as e:
@@ -334,13 +438,16 @@ class SeestarBridge:
                 if now - self._last_view_start_attempt > 5.0:
                     self._last_view_start_attempt = now
                     try:
-                        await self.client.scope_view()
+                        await self.client.scope_view(mode=self.view_mode)
                     except Exception as e:
                         print(f"Error starting view mode: {e}")
                         return None
 
             # Ensure streaming is enabled so the imaging client actually receives frames.
             if not self.imaging_client.status.is_streaming:
+                now = time.monotonic()
+                if now < self._suppress_streaming_until:
+                    return None
                 now = time.monotonic()
                 if now - self._last_stream_start_attempt > 2.0:
                     self._last_stream_start_attempt = now
