@@ -255,30 +255,34 @@ class SeestarBridge:
             return {"success": False, "error": "Not connected"}
 
         try:
-            device_state = await self.client.send_and_recv(GetDeviceState())
-            equ_coord = await self.client.send_and_recv(ScopeGetEquCoord())
+            # Prefer cached status to avoid blocking the command pipeline.
+            status = getattr(self.client, "status", None)
+            device_result = (status.device_state or {}) if status else {}
+            coord_result = {
+                "ra": status.ra if status else None,
+                "dec": status.dec if status else None,
+            }
 
-            device_result = device_state.result if device_state else {}
-            coord_result = equ_coord.result if equ_coord else {}
-
-            pi_status = (device_result or {}).get("pi_status", {})
+            pi_status = (device_result or {}).get("pi_status", {}) or (status.pi_status if status else {})
             mount = (device_result or {}).get("mount", {})
             setting = (device_result or {}).get("setting", {})
             balance_sensor = (device_result or {}).get("balance_sensor")
             isp_gain = setting.get("isp_gain")
             manual_exp = setting.get("manual_exp")
             gain_value = isp_gain if isinstance(isp_gain, (int, float)) and isp_gain >= 0 else None
+            if gain_value is None and status is not None and status.gain is not None:
+                gain_value = status.gain
             gain_mode = "manual" if gain_value is not None else "auto" if manual_exp is False else None
             equ_mode = mount.get("equ_mode")
             mount_type = "Equatorial" if equ_mode else "Alt-Az"
             is_tracking = bool(mount.get("tracking")) or mount.get("move_type") in {"tracking", "track"}
 
             state = {
-                "battery": pi_status.get("battery_capacity"),
-                "battery_capacity": pi_status.get("battery_capacity"),
-                "charger_status": pi_status.get("charger_status"),
-                "cur_temp": pi_status.get("temp"),
-                "temp": pi_status.get("temp"),
+                "battery": pi_status.get("battery_capacity") if isinstance(pi_status, dict) else None,
+                "battery_capacity": pi_status.get("battery_capacity") if isinstance(pi_status, dict) else None,
+                "charger_status": pi_status.get("charger_status") if isinstance(pi_status, dict) else None,
+                "cur_temp": pi_status.get("temp") if isinstance(pi_status, dict) else (status.temp if status else None),
+                "temp": pi_status.get("temp") if isinstance(pi_status, dict) else (status.temp if status else None),
                 "cur_hum": None,
                 "dew_heater_power": 100 if setting.get("heater_enable") else 0,
                 "ra": coord_result.get("ra"),
@@ -286,7 +290,7 @@ class SeestarBridge:
                 "is_goto": mount.get("move_type") not in (None, "none"),
                 "is_tracking": is_tracking,
                 "view": None,
-                "balance_sensor": balance_sensor,
+                "balance_sensor": balance_sensor if balance_sensor is not None else (status.balance_sensor if status else None),
                 "gain": gain_value,
                 "gain_mode": gain_mode,
                 "mount_type": mount_type,
@@ -360,8 +364,15 @@ class SeestarBridge:
                         # Normalize non-8bit images for JPEG encoding.
                         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
                         img = img.astype(np.uint8)
-                    _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                    return buffer.tobytes()
+
+                    # Offload JPEG encoding to a thread to avoid blocking the event loop.
+                    def _encode_jpeg():
+                        ok, buffer = cv2.imencode(
+                            ".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85]
+                        )
+                        return buffer.tobytes() if ok else None
+
+                    return await asyncio.to_thread(_encode_jpeg)
 
                 # Only get one frame
                 break
