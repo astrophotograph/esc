@@ -109,6 +109,7 @@ const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
 
 export function TelescopeHeader() {
   const [status, setStatus] = useState<TelescopeStatus | null>(null)
+  const [isSceneryMode, setIsSceneryMode] = useState(false)
 
   const {
     telescopes,
@@ -266,6 +267,28 @@ export function TelescopeHeader() {
     const interval = setInterval(fetchStatus, 2000)
     return () => clearInterval(interval)
   }, [currentTelescopeId])
+
+  // Reset view mode when switching telescopes
+  useEffect(() => {
+    setIsSceneryMode(false)
+  }, [currentTelescopeId])
+
+  const toggleSceneryMode = useCallback(async () => {
+    if (!currentTelescopeId) {
+      return
+    }
+    const nextMode = !isSceneryMode
+    try {
+      await invoke('telescope_set_view_mode', {
+        telescopeId: currentTelescopeId,
+        mode: nextMode ? 'scenery' : 'star',
+      })
+      setIsSceneryMode(nextMode)
+      addActivity(currentTelescopeId, 'info', `View mode: ${nextMode ? 'scenery' : 'star'}`)
+    } catch (error) {
+      addActivity(currentTelescopeId, 'error', `Failed to set view mode: ${error}`)
+    }
+  }, [currentTelescopeId, isSceneryMode, addActivity])
 
   const formatBattery = (percent?: number) => {
     if (percent == null) return '--'
@@ -523,107 +546,128 @@ export function TelescopeHeader() {
 
       {/* Right Section - Action Buttons */}
       <TooltipProvider>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Desktop buttons - hidden on small screens */}
-          <div className="hidden lg:flex items-center gap-1">
-            {/* Search */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Search</TooltipContent>
-            </Tooltip>
+        <div className="flex items-center gap-1">
+          {/* Search */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search</TooltipContent>
+          </Tooltip>
 
-            {/* Refresh */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchTelescopes} disabled={isDiscovering}>
-                  <RefreshCw className={`h-4 w-4 ${isDiscovering ? 'animate-spin' : ''}`} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Refresh</TooltipContent>
-            </Tooltip>
+          {/* Refresh */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchTelescopes} disabled={isDiscovering}>
+                <RefreshCw className={`h-4 w-4 ${isDiscovering ? 'animate-spin' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
 
-            {/* Fullscreen */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Fullscreen</TooltipContent>
-            </Tooltip>
+          {/* Fullscreen */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Fullscreen</TooltipContent>
+          </Tooltip>
 
-            <div className="w-px h-6 bg-border mx-2" />
+          <div className="w-px h-6 bg-border mx-2" />
 
-            {/* Telescope Status Toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={showTelescopeStatus ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setShowTelescopeStatus(!showTelescopeStatus)}
-                  className="gap-2"
-                >
-                  <Cpu className="h-4 w-4" />
-                  <span className="hidden xl:inline">Status</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Telescope Status Panel</TooltipContent>
-            </Tooltip>
-
-            {/* Telescope Controls Toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={showTelescopeControls ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setShowTelescopeControls(!showTelescopeControls)}
-                  className="gap-2"
-                >
-                  <Move className="h-4 w-4" />
-                  <span className="hidden xl:inline">Controls</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Telescope Controls Panel</TooltipContent>
-            </Tooltip>
-
-            {/* Scenery */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Mountain className="h-4 w-4" />
-                  <span className="hidden xl:inline">Scenery</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Scenery Mode</TooltipContent>
-            </Tooltip>
-
-            {/* Help */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowKeyboardHelp(true)}
-                  className="gap-2"
-                >
-                  <HelpCircle className="h-4 w-4" />
-                  <span className="hidden xl:inline">Help</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Help (?)</TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Settings - always visible */}
+          {/* PiP Toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
+                variant={showPiP ? 'default' : 'outline'}
+                size="sm"
+                onClick={togglePiP}
+                className="gap-2"
+              >
+                <PictureInPicture className="h-4 w-4" />
+                PiP
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Picture in Picture (Ctrl+P)</TooltipContent>
+          </Tooltip>
+
+          {/* Telescope Status Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showTelescopeStatus ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowTelescopeStatus(!showTelescopeStatus)}
+                className="gap-2"
+              >
+                <Cpu className="h-4 w-4" />
+                Status
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Telescope Status Panel</TooltipContent>
+          </Tooltip>
+
+          {/* Telescope Controls Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showTelescopeControls ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowTelescopeControls(!showTelescopeControls)}
+                className="gap-2"
+              >
+                <Move className="h-4 w-4" />
+                Controls
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Telescope Controls Panel</TooltipContent>
+          </Tooltip>
+
+          {/* Scenery */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={isSceneryMode ? 'default' : 'outline'}
+                size="sm"
+                className="gap-2"
+                disabled={!isConnected}
+                onClick={toggleSceneryMode}
+              >
+                <Mountain className="h-4 w-4" />
+                Scenery
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isSceneryMode ? 'Switch to star mode' : 'Switch to scenery mode'}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Help */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowKeyboardHelp(true)}
+                className="gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Help
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Help (?)</TooltipContent>
+          </Tooltip>
+
+          {/* User/Settings */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowSettings(true)}
                 className="h-8 w-8"
               >

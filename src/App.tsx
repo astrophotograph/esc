@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { TelescopeHeader } from './components/TelescopeHeader'
 import { TelescopeView } from './components/TelescopeView'
+import { CatalogSearch } from './components/CatalogSearch'
+import { ImageViewer } from './components/ImageViewer'
+import { SessionPlanning } from './components/SessionPlanning'
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { AppFooter } from './components/AppFooter'
 import { KeyboardHelp } from './components/KeyboardHelp'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -17,11 +21,14 @@ function App() {
   const { theme } = useUIStore()
 
   const {
-    currentTelescopeId,
-    telescopes,
-    updateTelescope,
-    _hasHydrated: telescopeHydrated,
-  } = useTelescopeStore()
+    showPiP,
+    setShowPiP,
+    pipTelescopeId,
+    setPipTelescopeId,
+    theme,
+    activeTab,
+    setActiveTab,
+  } = useUIStore()
 
   const uiHydrated = useUIStore((state) => state._hasHydrated)
   const autoConnectAttempted = useRef(false)
@@ -121,9 +128,37 @@ function App() {
       {/* Header */}
       <TelescopeHeader />
 
-      {/* Main Content - Telescope View */}
-      <main className="flex-1 min-h-0 overflow-hidden">
-        <TelescopeView />
+      {/* Main Content */}
+      <main className="flex-1 overflow-hidden flex flex-col">
+        <div className="px-4 py-2 border-b border-border bg-card/80">
+          <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as typeof activeTab)}>
+            <TabsList>
+              <TabsTrigger value="telescope">Telescope</TabsTrigger>
+              <TabsTrigger value="catalog">Catalog</TabsTrigger>
+              <TabsTrigger value="imaging">Imaging</TabsTrigger>
+              <TabsTrigger value="planning">Planning</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          {activeTab === 'telescope' && <TelescopeView />}
+          {activeTab === 'catalog' && (
+            <div className="h-full overflow-auto p-4">
+              <CatalogSearch />
+            </div>
+          )}
+          {activeTab === 'imaging' && (
+            <div className="h-full overflow-auto p-4">
+              <ImageViewer />
+            </div>
+          )}
+          {activeTab === 'planning' && (
+            <div className="h-full overflow-auto p-4">
+              <SessionPlanning />
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Footer */}
