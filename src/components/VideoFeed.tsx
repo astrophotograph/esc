@@ -116,7 +116,7 @@ export function VideoFeed({ telescopeId, className = '' }: VideoFeedProps) {
     )
   }
 
-  const streamUrl = `http://localhost:8080/stream/${activeTelescopeId}`
+  const streamUrl = `/api/stream/${activeTelescopeId}`
 
   return (
     <div ref={containerRef} className={`relative bg-gray-900 rounded-lg overflow-hidden ${className}`}>

@@ -428,7 +428,13 @@ export function TelescopeHeader() {
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
                   <Gauge className="h-4 w-4 text-purple-500" />
-                  <span className="font-mono">{status?.gain ?? '--'}</span>
+                  <span className="font-mono">
+                    {status?.gain != null
+                      ? status.gain
+                      : status?.gainMode === 'auto'
+                        ? 'AUTO'
+                        : '--'}
+                  </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>Gain</TooltipContent>
@@ -452,7 +458,7 @@ export function TelescopeHeader() {
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
                   <Compass className="h-4 w-4 text-cyan-500" />
-                  <span className="font-mono">Alt-Az</span>
+                  <span className="font-mono">{status?.mountType ?? 'Alt-Az'}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>Mount Type</TooltipContent>

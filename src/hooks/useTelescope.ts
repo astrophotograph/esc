@@ -51,10 +51,15 @@ export function useTelescope() {
   const discoverTelescopes = useCallback(async () => {
     setIsDiscovering(true)
     try {
-      const result = await invoke<TelescopeDiscoveryResult>('discover_telescopes')
+      const result = await invoke<TelescopeDiscoveryResult | TelescopeDiscoveryResult['telescopes']>(
+        'discover_telescopes'
+      )
+      const telescopesResult = Array.isArray(result)
+        ? result
+        : result.telescopes || []
 
-      if (result.telescopes) {
-        for (const t of result.telescopes) {
+      if (telescopesResult.length > 0) {
+        for (const t of telescopesResult) {
           const telescope: TelescopeInfo = {
             id: `${t.host}:${t.port}`,
             host: t.host,
@@ -67,7 +72,7 @@ export function useTelescope() {
           }
           addTelescope(telescope)
         }
-        addActivity('system', 'success', `Discovered ${result.telescopes.length} telescope(s)`)
+        addActivity('system', 'success', `Discovered ${telescopesResult.length} telescope(s)`)
       }
 
       return result

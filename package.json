@@ -11,6 +11,7 @@
     "tauri:dev": "PYO3_PYTHON=$PWD/.venv/bin/python tauri dev",
     "tauri:build": "PYO3_PYTHON=$PWD/.venv/bin/python tauri build",
     "web:dev": "vite --mode web",
+    "web:api": "uv run python -m python.web_api",
     "web:build": "tsc && vite build --mode web",
     "test": "vitest",
     "test:ui": "vitest --ui",

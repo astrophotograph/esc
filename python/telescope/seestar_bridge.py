@@ -10,14 +10,15 @@ from pydantic import BaseModel
 
 from scopinator.seestar.client import SeestarClient, EventBus
 from scopinator.seestar.imaging_client import SeestarImagingClient
-from scopinator.seestar.commands import simple, goto, imaging
+from scopinator.seestar.commands import imaging, simple
+from scopinator.seestar.commands import parameterized as parameterized_commands
 from scopinator.seestar.commands.parameterized import (
     ScopeSpeedMove,
     ScopeSpeedMoveParameters,
     MoveFocuser,
     MoveFocuserParameters,
 )
-from scopinator.seestar.events import DeviceStateEvent, ActionResultEvent
+from scopinator.seestar.commands.simple import GetDeviceState, ScopeGetEquCoord
 
 
 class TelescopeInfo(BaseModel):
@@ -64,7 +65,7 @@ class FocusParameters(BaseModel):
 class SeestarBridge:
     """Bridge to scopinator for controlling Seestar telescopes."""
 
-    def __init__(self, host: str, port: int = 4700, imaging_port: int = 554):
+    def __init__(self, host: str, port: int = 4700, imaging_port: int = 4800):
         """Initialize the bridge.
 
         Args:
@@ -79,24 +80,11 @@ class SeestarBridge:
         self.client: Optional[SeestarClient] = None
         self.imaging_client: Optional[SeestarImagingClient] = None
         self._event_queue: list[dict[str, Any]] = []
+        # Avoid spamming start/view/stream commands while streaming is idle.
+        self._last_view_start_attempt: float = 0.0
+        self._last_stream_start_attempt: float = 0.0
 
-        # Subscribe to events
-        self.event_bus.subscribe(DeviceStateEvent, self._on_device_state)
-        self.event_bus.subscribe(ActionResultEvent, self._on_action_result)
-
-    def _on_device_state(self, event: DeviceStateEvent) -> None:
-        """Handle device state events."""
-        self._event_queue.append({
-            "type": "device_state",
-            "data": event.model_dump()
-        })
-
-    def _on_action_result(self, event: ActionResultEvent) -> None:
-        """Handle action result events."""
-        self._event_queue.append({
-            "type": "action_result",
-            "data": event.model_dump()
-        })
+        # Event subscriptions are optional; leaving the queue empty in web mode.
 
     async def connect(self) -> dict[str, Any]:
         """Connect to the telescope.
@@ -137,7 +125,7 @@ class SeestarBridge:
                 await self.imaging_client.disconnect()
                 self.imaging_client = None
             if self.client:
-                await self.client.close()
+                await self.client.disconnect()
                 self.client = None
             return {
                 "success": True,
@@ -162,14 +150,14 @@ class SeestarBridge:
             return {"success": False, "error": "Not connected"}
 
         try:
-            goto_params = goto.GotoTargetParameters(
+            goto_params = parameterized_commands.GotoTargetParameters(
                 target_name=params["target_name"],
                 ra_h=params["ra"],
                 dec_deg=params["dec"]
             )
 
             response = await self.client.send_and_recv(
-                goto.GotoTarget(params=goto_params)
+                parameterized_commands.GotoTarget(params=goto_params)
             )
 
             return {
@@ -192,7 +180,7 @@ class SeestarBridge:
             return {"success": False, "error": "Not connected"}
 
         try:
-            response = await self.client.send_and_recv(simple.Park())
+            response = await self.client.send_and_recv(simple.ScopePark())
             return {
                 "success": True,
                 "response": response.model_dump() if response else None
@@ -267,11 +255,44 @@ class SeestarBridge:
             return {"success": False, "error": "Not connected"}
 
         try:
-            response = await self.client.send_and_recv(simple.GetViewState())
-            return {
-                "success": True,
-                "state": response.model_dump() if response else None
+            device_state = await self.client.send_and_recv(GetDeviceState())
+            equ_coord = await self.client.send_and_recv(ScopeGetEquCoord())
+
+            device_result = device_state.result if device_state else {}
+            coord_result = equ_coord.result if equ_coord else {}
+
+            pi_status = (device_result or {}).get("pi_status", {})
+            mount = (device_result or {}).get("mount", {})
+            setting = (device_result or {}).get("setting", {})
+            balance_sensor = (device_result or {}).get("balance_sensor")
+            isp_gain = setting.get("isp_gain")
+            manual_exp = setting.get("manual_exp")
+            gain_value = isp_gain if isinstance(isp_gain, (int, float)) and isp_gain >= 0 else None
+            gain_mode = "manual" if gain_value is not None else "auto" if manual_exp is False else None
+            equ_mode = mount.get("equ_mode")
+            mount_type = "Equatorial" if equ_mode else "Alt-Az"
+            is_tracking = bool(mount.get("tracking")) or mount.get("move_type") in {"tracking", "track"}
+
+            state = {
+                "battery": pi_status.get("battery_capacity"),
+                "battery_capacity": pi_status.get("battery_capacity"),
+                "charger_status": pi_status.get("charger_status"),
+                "cur_temp": pi_status.get("temp"),
+                "temp": pi_status.get("temp"),
+                "cur_hum": None,
+                "dew_heater_power": 100 if setting.get("heater_enable") else 0,
+                "ra": coord_result.get("ra"),
+                "dec": coord_result.get("dec"),
+                "is_goto": mount.get("move_type") not in (None, "none"),
+                "is_tracking": is_tracking,
+                "view": None,
+                "balance_sensor": balance_sensor,
+                "gain": gain_value,
+                "gain_mode": gain_mode,
+                "mount_type": mount_type,
             }
+
+            return {"success": True, "state": state}
         except Exception as e:
             return {
                 "success": False,
@@ -301,6 +322,32 @@ class SeestarBridge:
             return None
 
         try:
+            import time
+
+            # Ensure the telescope is in a view mode that produces frames.
+            if self.client and getattr(self.client, "client_mode", None) in (None, "Idle"):
+                now = time.monotonic()
+                if now - self._last_view_start_attempt > 5.0:
+                    self._last_view_start_attempt = now
+                    try:
+                        await self.client.scope_view()
+                    except Exception as e:
+                        print(f"Error starting view mode: {e}")
+                        return None
+
+            # Ensure streaming is enabled so the imaging client actually receives frames.
+            if not self.imaging_client.status.is_streaming:
+                now = time.monotonic()
+                if now - self._last_stream_start_attempt > 2.0:
+                    self._last_stream_start_attempt = now
+                    try:
+                        await self.imaging_client.start_streaming()
+                        # Match scopinator's "ContinuousExposure" mode for binary stream images.
+                        self.imaging_client.client_mode = "ContinuousExposure"
+                    except Exception as e:
+                        print(f"Error starting streaming: {e}")
+                        return None
+
             import cv2
             import numpy as np
 
@@ -309,6 +356,10 @@ class SeestarBridge:
                 if image is not None and image.image is not None:
                     # Convert numpy array to JPEG
                     img = image.image
+                    if img.dtype != np.uint8:
+                        # Normalize non-8bit images for JPEG encoding.
+                        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+                        img = img.astype(np.uint8)
                     _, buffer = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, 85])
                     return buffer.tobytes()
 
@@ -334,29 +385,43 @@ class SeestarBridge:
 
         try:
             direction = params.get("direction", "n").lower()
-            speed = params.get("speed", 1.0)
-            duration = params.get("duration_sec", 5.0)
+            speed = float(params.get("speed", 0.5))
+            duration = float(params.get("duration_sec", 5.0))
 
-            # Map direction strings to axis values
-            # axis_x: positive = east, negative = west
-            # axis_y: positive = north, negative = south
-            direction_map = {
-                "n": (0, 1),
-                "s": (0, -1),
-                "e": (1, 0),
-                "w": (-1, 0),
-                "ne": (1, 1),
-                "nw": (-1, 1),
-                "se": (1, -1),
-                "sw": (-1, -1),
+            # Map direction to angle in degrees (0=N, 90=E, 180=S, 270=W).
+            angle_map = {
+                "n": 0,
+                "north": 0,
+                "ne": 45,
+                "northeast": 45,
+                "e": 90,
+                "east": 90,
+                "se": 135,
+                "southeast": 135,
+                "s": 180,
+                "south": 180,
+                "sw": 225,
+                "southwest": 225,
+                "w": 270,
+                "west": 270,
+                "nw": 315,
+                "northwest": 315,
+                "stop": 0,
             }
+            angle = angle_map.get(direction, 0)
 
-            axis_x, axis_y = direction_map.get(direction, (0, 0))
+            # ScopeSpeedMoveParameters expects level/percent/dur_sec.
+            # Keep level at 1 (slow) and scale percent from speed.
+            percent = max(0, min(100, int(speed * 100)))
+            if direction == "stop":
+                percent = 0
+                duration = 0.0
 
             move_params = ScopeSpeedMoveParameters(
-                axis_x=axis_x * speed,
-                axis_y=axis_y * speed,
-                dur_sec=duration,
+                angle=angle,
+                level=1,
+                dur_sec=int(duration),
+                percent=percent,
             )
 
             response = await self.client.send_and_recv(

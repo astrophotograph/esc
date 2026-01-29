@@ -5,6 +5,8 @@ description = "Python modules for EESC telescope control application"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.9.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
     "astropy>=6.1.0",
     "astroplan>=0.10.0",
     "numpy>=2.1.0",
@@ -54,6 +56,9 @@ disallow_untyped_defs = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src-tauri/python"]
+
+[tool.uv.sources]
+scopinator = { path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" }
 
 [build-system]
 requires = ["hatchling"]

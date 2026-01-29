@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 const host = process.env.TAURI_DEV_HOST
+const webApiTarget = process.env.VITE_WEB_API_TARGET || 'http://127.0.0.1:8000'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -27,6 +28,15 @@ export default defineConfig(({ mode }) => ({
           port: 5183,
         }
       : undefined,
+    proxy:
+      mode === 'web'
+        ? {
+            '/api': {
+              target: webApiTarget,
+              changeOrigin: true,
+            },
+          }
+        : undefined,
   },
 
   // Build configuration differs for web vs desktop
