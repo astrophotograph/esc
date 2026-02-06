@@ -11,6 +11,9 @@ export type ActiveTab = 'telescope' | 'catalog' | 'imaging' | 'planning'
 export type SidebarPanel = 'controls' | 'info' | 'settings' | 'activity' | null
 
 interface UIStore {
+  // Hydration state
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
   // Theme
   theme: ThemeId
   setTheme: (theme: ThemeId) => void
@@ -81,11 +84,29 @@ interface UIStore {
 
   // Quick actions
   closeAllModals: () => void
+
+  // Manual movement tracking (for fast coordinate polling)
+  isManuallyMoving: boolean
+  setIsManuallyMoving: (moving: boolean) => void
+
+  // Plate solve settings
+  plateSolveApiKey: string
+  setPlateSolveApiKey: (key: string) => void
+
+  // Additional dialogs
+  showImageSaveDialog: boolean
+  showPlateSolveDialog: boolean
+  setShowImageSaveDialog: (show: boolean) => void
+  setShowPlateSolveDialog: (show: boolean) => void
 }
 
 export const useUIStore = create<UIStore>()(
   persist(
     (set, get) => ({
+      // Hydration state
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+
       // Theme
       theme: 'dark',
       setTheme: (theme) => set({ theme }),
@@ -111,7 +132,7 @@ export const useUIStore = create<UIStore>()(
       togglePiP: () => set((state) => ({ showPiP: !state.showPiP })),
 
       // Allsky Panel
-      showAllskyPanel: true,
+      showAllskyPanel: false,
       setShowAllskyPanel: (showAllskyPanel) => set({ showAllskyPanel }),
 
       // Telescope Status Overlay
@@ -170,6 +191,20 @@ export const useUIStore = create<UIStore>()(
         showEquipmentManager: false,
         showCelestialSearch: false,
       }),
+
+      // Manual movement tracking
+      isManuallyMoving: false,
+      setIsManuallyMoving: (isManuallyMoving) => set({ isManuallyMoving }),
+
+      // Plate solve settings
+      plateSolveApiKey: '',
+      setPlateSolveApiKey: (plateSolveApiKey) => set({ plateSolveApiKey }),
+
+      // Additional dialogs
+      showImageSaveDialog: false,
+      showPlateSolveDialog: false,
+      setShowImageSaveDialog: (showImageSaveDialog) => set({ showImageSaveDialog }),
+      setShowPlateSolveDialog: (showPlateSolveDialog) => set({ showPlateSolveDialog }),
     }),
     {
       name: 'ui-storage',
@@ -182,7 +217,17 @@ export const useUIStore = create<UIStore>()(
         streamingQuality: state.streamingQuality,
         toastsEnabled: state.toastsEnabled,
         pipPosition: state.pipPosition,
+        // Persist window visibility states
+        showPiP: state.showPiP,
+        showTelescopeStatus: state.showTelescopeStatus,
+        showTelescopeControls: state.showTelescopeControls,
+        showAllskyPanel: state.showAllskyPanel,
+        // Plate solve settings
+        plateSolveApiKey: state.plateSolveApiKey,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

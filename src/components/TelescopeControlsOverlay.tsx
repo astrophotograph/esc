@@ -13,11 +13,24 @@ import {
   ZoomIn,
   ZoomOut,
   Navigation,
+  Circle,
+  Target,
+  Power,
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
 import { Label } from './ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog'
 import { useUIStore } from '../stores/uiStore'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { invoke } from '../services/api'
@@ -47,17 +60,19 @@ interface StreamStatus {
   ra?: number
   dec?: number
   stage?: string
+  focusPosition?: number
 }
 
 export function TelescopeControlsOverlay() {
-  const { showTelescopeControls, setShowTelescopeControls } = useUIStore()
+  const { showTelescopeControls, setShowTelescopeControls, setIsManuallyMoving } = useUIStore()
   const { currentTelescopeId } = useTelescopeStore()
   const currentTelescope = useTelescopeStore((state) =>
     state.telescopes.find((t) => t.id === state.currentTelescopeId)
   )
 
   const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
-  const [focusPosition, setFocusPosition] = useState(50)
+  // Track local focus position for UI, sync from status
+  const [localFocusPosition, setLocalFocusPosition] = useState<number | null>(null)
   const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -66,6 +81,11 @@ export function TelescopeControlsOverlay() {
   const overlayRef = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const isMouseDownRef = useRef<boolean>(false)
+
+  // Reboot confirmation dialog state
+  const [showRebootConfirm, setShowRebootConfirm] = useState(false)
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false)
 
   const isConnected = currentTelescope?.status === 'connected'
   const isStacking = streamStatus?.stage === 'Stack'
@@ -119,6 +139,10 @@ export function TelescopeControlsOverlay() {
           telescopeId: currentTelescopeId,
         })
         setStreamStatus(result)
+        // Sync focus position from status if available and we don't have a local override
+        if (result.focusPosition != null && localFocusPosition === null) {
+          setLocalFocusPosition(result.focusPosition)
+        }
       } catch (error) {
         // Silently ignore errors - telescope may not be in backend state yet
       }
@@ -127,7 +151,7 @@ export function TelescopeControlsOverlay() {
     fetchStatus()
     const interval = setInterval(fetchStatus, 2000)
     return () => clearInterval(interval)
-  }, [currentTelescopeId])
+  }, [currentTelescopeId, localFocusPosition])
 
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -178,7 +202,11 @@ export function TelescopeControlsOverlay() {
       try {
         await invoke('telescope_move', {
           telescopeId: currentTelescopeId,
-          direction,
+          params: {
+            direction,
+            speed: 1.0,
+            duration_sec: 5.0,
+          },
         })
       } catch (error) {
         console.error('Move failed:', error)
@@ -200,10 +228,11 @@ export function TelescopeControlsOverlay() {
     async (value: number) => {
       if (!currentTelescopeId) return
       try {
-        await invoke('set_focus', {
+        await invoke('telescope_focus', {
           telescopeId: currentTelescopeId,
           position: value,
         })
+        setLocalFocusPosition(value)
       } catch (error) {
         console.error('Focus adjust failed:', error)
       }
@@ -211,17 +240,90 @@ export function TelescopeControlsOverlay() {
     [currentTelescopeId]
   )
 
+  const handleFocusIncrement = useCallback(
+    async (increment: number) => {
+      if (!currentTelescopeId) return
+      try {
+        await invoke('telescope_focus_increment', {
+          telescopeId: currentTelescopeId,
+          increment,
+        })
+        // Update local position optimistically
+        setLocalFocusPosition((prev) => (prev !== null ? prev + increment : increment))
+      } catch (error) {
+        console.error('Focus increment failed:', error)
+      }
+    },
+    [currentTelescopeId]
+  )
+
+  const handleAutoFocus = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_auto_focus', {
+        telescopeId: currentTelescopeId,
+      })
+    } catch (error) {
+      console.error('Auto focus failed:', error)
+    }
+  }, [currentTelescopeId])
+
+  const handleRecord = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      if (isRecording) {
+        await invoke('telescope_stop_recording', {
+          telescopeId: currentTelescopeId,
+        })
+        setIsRecording(false)
+      } else {
+        await invoke('telescope_start_recording', {
+          telescopeId: currentTelescopeId,
+        })
+        setIsRecording(true)
+      }
+    } catch (error) {
+      console.error('Record toggle failed:', error)
+    }
+  }, [currentTelescopeId, isRecording])
+
+  const handlePlateSolve = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_plate_solve', {
+        telescopeId: currentTelescopeId,
+      })
+    } catch (error) {
+      console.error('Plate solve failed:', error)
+    }
+  }, [currentTelescopeId])
+
+  const handleRebootConfirm = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_reboot', {
+        telescopeId: currentTelescopeId,
+      })
+      setShowRebootConfirm(false)
+    } catch (error) {
+      console.error('Reboot failed:', error)
+      setShowRebootConfirm(false)
+    }
+  }, [currentTelescopeId])
+
   const startContinuousMove = useCallback(
     (direction: string) => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
+      // Signal that we're manually moving for fast coordinate polling
+      setIsManuallyMoving(true)
       handleTelescopeMove(direction)
       intervalRef.current = setInterval(() => {
         handleTelescopeMove(direction)
       }, 500)
     },
-    [handleTelescopeMove]
+    [handleTelescopeMove, setIsManuallyMoving]
   )
 
   const stopContinuousMove = useCallback(
@@ -230,11 +332,13 @@ export function TelescopeControlsOverlay() {
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
+      // Clear manual moving state
+      setIsManuallyMoving(false)
       if (!fromMouseLeave || isMouseDownRef.current) {
         handleTelescopeMove('stop')
       }
     },
-    [handleTelescopeMove]
+    [handleTelescopeMove, setIsManuallyMoving]
   )
 
   const handleMoveMouseDown = useCallback(
@@ -450,15 +554,17 @@ export function TelescopeControlsOverlay() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">Position</Label>
-                    <span className="text-sm font-mono text-muted-foreground">{focusPosition}</span>
+                    <span className="text-sm font-mono text-muted-foreground">
+                      {localFocusPosition ?? streamStatus?.focusPosition ?? '—'}
+                    </span>
                   </div>
                   <Slider
-                    value={[focusPosition]}
-                    onValueChange={([value]) => setFocusPosition(value)}
+                    value={[localFocusPosition ?? streamStatus?.focusPosition ?? 0]}
+                    onValueChange={([value]) => setLocalFocusPosition(value)}
                     onValueCommit={([value]) => handleFocusAdjust(value)}
                     min={0}
-                    max={100}
-                    step={1}
+                    max={10000}
+                    step={10}
                     disabled={!isConnected}
                     className="w-full"
                   />
@@ -469,11 +575,7 @@ export function TelescopeControlsOverlay() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const newPos = Math.max(0, focusPosition - 5)
-                            setFocusPosition(newPos)
-                            handleFocusAdjust(newPos)
-                          }}
+                          onClick={() => handleFocusIncrement(-50)}
                           disabled={!isConnected}
                           className="flex-1"
                         >
@@ -481,7 +583,7 @@ export function TelescopeControlsOverlay() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Focus Out (-5)</p>
+                        <p>Focus Out (-50 steps)</p>
                       </TooltipContent>
                     </Tooltip>
 
@@ -490,11 +592,7 @@ export function TelescopeControlsOverlay() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const newPos = Math.min(100, focusPosition + 5)
-                            setFocusPosition(newPos)
-                            handleFocusAdjust(newPos)
-                          }}
+                          onClick={() => handleFocusIncrement(50)}
                           disabled={!isConnected}
                           className="flex-1"
                         >
@@ -502,17 +600,89 @@ export function TelescopeControlsOverlay() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Focus In (+5)</p>
+                        <p>Focus In (+50 steps)</p>
                       </TooltipContent>
                     </Tooltip>
 
-                    <Button size="sm" variant="secondary" disabled={!isConnected} className="flex-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleAutoFocus}
+                      disabled={!isConnected}
+                      className="flex-1"
+                    >
                       Auto Focus
                     </Button>
                   </div>
                 </div>
               </div>
             )}
+
+            {/* System Controls - Record, Plate Solve, Reboot */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Power className="w-3 h-3" />
+                System Controls
+              </h4>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant={isRecording ? 'destructive' : 'outline'}
+                      onClick={handleRecord}
+                      disabled={!isConnected}
+                      className="w-full"
+                    >
+                      <Circle
+                        className={`h-4 w-4 mr-2 ${isRecording ? 'fill-current animate-pulse' : ''}`}
+                      />
+                      {isRecording ? 'Stop' : 'Record'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isRecording ? 'Stop recording video' : 'Start recording video'}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handlePlateSolve}
+                      disabled={!isConnected || isStacking}
+                      className="w-full"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Plate Solve
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Solve current image position</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowRebootConfirm(true)}
+                    disabled={!isConnected}
+                    className="w-full text-orange-500 hover:text-orange-400 hover:border-orange-500"
+                  >
+                    <Power className="h-4 w-4 mr-2" />
+                    Reboot Telescope
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Restart the telescope system</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
             {/* Show message when stacking */}
             {isStacking && (
@@ -525,6 +695,28 @@ export function TelescopeControlsOverlay() {
           </div>
         )}
       </div>
+
+      {/* Reboot Confirmation Dialog */}
+      <AlertDialog open={showRebootConfirm} onOpenChange={setShowRebootConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reboot Telescope?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will restart the telescope system. The connection will be lost and you will need
+              to reconnect after the telescope has rebooted. This typically takes 1-2 minutes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRebootConfirm}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Reboot
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   )
 }

@@ -4,12 +4,9 @@ use serde_json::Value;
 
 /// Initialize the Python interpreter and add the project's Python path
 pub fn init_python() -> PyResult<()> {
-    // Set PYTHONHOME to the Python 3.12 installation
-    // This helps PyO3 find the standard library
-    std::env::set_var(
-        "PYTHONHOME",
-        "/opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12",
-    );
+    // Note: PYTHONHOME is NOT set here because we use the venv Python
+    // which manages its own library paths. Setting PYTHONHOME would
+    // conflict with the venv's path resolution.
 
     // Get the current directory (project root)
     let current_dir = std::env::current_dir()?;
@@ -36,7 +33,7 @@ pub fn init_python() -> PyResult<()> {
         let venv_site_packages = current_dir
             .parent()
             .unwrap()
-            .join(".venv/lib/python3.12/site-packages");
+            .join(".venv/lib/python3.13/site-packages");
         tracing::info!("Checking for venv at: {:?}", venv_site_packages);
         tracing::info!("Venv exists: {}", venv_site_packages.exists());
         if venv_site_packages.exists() {
@@ -74,31 +71,43 @@ pub fn init_python() -> PyResult<()> {
 pub struct TelescopeBridge {
     host: String,
     port: u16,
+    protocol: String,
 }
 
 impl TelescopeBridge {
-    /// Create a new telescope bridge
+    /// Create a new telescope bridge (defaults to Seestar protocol)
     pub fn new(host: &str, port: u16) -> Result<Self, String> {
         Ok(TelescopeBridge {
             host: host.to_string(),
             port,
+            protocol: "seestar".to_string(),
+        })
+    }
+
+    /// Create a new telescope bridge with protocol specification
+    pub fn new_with_protocol(host: &str, port: u16, protocol: &str) -> Result<Self, String> {
+        Ok(TelescopeBridge {
+            host: host.to_string(),
+            port,
+            protocol: protocol.to_string(),
         })
     }
 
     /// Create a persistent Python bridge object
     pub fn create_bridge_object(&self) -> Result<PyObject, String> {
         Python::with_gil(|py| {
-            // Import the bridge module
-            let bridge_module = PyModule::import(py, "telescope.seestar_bridge")
-                .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
+            // Import the unified bridge module
+            let bridge_module = PyModule::import(py, "telescope.telescope_bridge")
+                .map_err(|e| format!("Failed to import telescope bridge module: {}", e))?;
 
             // Create bridge instance
             let create_fn = bridge_module
                 .getattr("create_bridge")
                 .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
 
+            // Create bridge with host, port, and protocol
             let bridge_obj = create_fn
-                .call1((self.host.as_str(), self.port))
+                .call1((self.host.as_str(), self.port, self.protocol.as_str()))
                 .map_err(|e| format!("Failed to create bridge: {}", e))?;
 
             // Convert to PyObject for storage
@@ -109,9 +118,9 @@ impl TelescopeBridge {
     /// Helper to call Python bridge methods
     fn call_python(&self, method: &str, args: Option<Bound<'_, PyDict>>) -> Result<Value, String> {
         Python::with_gil(|py| {
-            // Import the bridge module
-            let bridge_module = PyModule::import(py, "telescope.seestar_bridge")
-                .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
+            // Import the unified bridge module
+            let bridge_module = PyModule::import(py, "telescope.telescope_bridge")
+                .map_err(|e| format!("Failed to import telescope.telescope_bridge: {}", e))?;
 
             // Create bridge instance
             let create_fn = bridge_module
@@ -119,7 +128,7 @@ impl TelescopeBridge {
                 .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
 
             let bridge_obj = create_fn
-                .call1((self.host.as_str(), self.port))
+                .call1((self.host.as_str(), self.port, self.protocol.as_str()))
                 .map_err(|e| format!("Failed to create bridge: {}", e))?;
 
             // Get the run method
@@ -234,9 +243,9 @@ impl TelescopeBridge {
                 .call_method1("loads", (params_str,))
                 .map_err(|e| format!("Failed to convert params to Python: {}", e))?;
 
-            // Import the bridge module
-            let bridge_module = PyModule::import(py, "telescope.seestar_bridge")
-                .map_err(|e| format!("Failed to import telescope.seestar_bridge: {}", e))?;
+            // Import the unified bridge module
+            let bridge_module = PyModule::import(py, "telescope.telescope_bridge")
+                .map_err(|e| format!("Failed to import telescope.telescope_bridge: {}", e))?;
 
             // Create bridge instance
             let create_fn = bridge_module
@@ -244,7 +253,7 @@ impl TelescopeBridge {
                 .map_err(|e| format!("Failed to get create_bridge: {}", e))?;
 
             let bridge_obj = create_fn
-                .call1((self.host.as_str(), self.port))
+                .call1((self.host.as_str(), self.port, self.protocol.as_str()))
                 .map_err(|e| format!("Failed to create bridge: {}", e))?;
 
             // Get the run method

@@ -15,11 +15,11 @@ import {
   Compass,
   Search,
   Maximize2,
-  PictureInPicture,
   Mountain,
   HelpCircle,
   Cpu,
   Move,
+  Menu,
 } from 'lucide-react'
 import { invoke } from '../services/api'
 import { useTelescopeStore, type TelescopeInfo } from '../stores/telescopeStore'
@@ -41,13 +41,16 @@ interface TelescopeStatus {
   batteryPercent?: number
   temperatureC?: number
   humidityPercent?: number
-  gain?: number
+  dewHeaterPower?: number
+  ra?: number
+  dec?: number
+  isGoto?: boolean
   isTracking?: boolean
-  mountType?: string
-  guideStatus?: string
-  errorCount?: number
-  warningCount?: number
-  alertCount?: number
+  viewState?: string
+  gain?: number
+  focusPosition?: number
+  stackedFrame?: number
+  targetName?: string
 }
 
 // Helper functions for status display
@@ -91,6 +94,10 @@ const getStatusText = (status: TelescopeInfo['status']) => {
 }
 
 const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
+  // Prefer user-defined friendly name
+  if (telescope.friendlyName) {
+    return telescope.friendlyName
+  }
   if (telescope.product_model) {
     return telescope.name ? `${telescope.product_model} - ${telescope.name}` : telescope.product_model
   }
@@ -108,15 +115,15 @@ export function TelescopeHeader() {
     currentTelescopeId,
     isDiscovering,
     setCurrentTelescope,
-    setTelescopes,
+    mergeTelescopes,
     updateTelescope,
     setIsDiscovering,
     addActivity,
+    getTelescopesBySection,
+    toggleSectionCollapse,
   } = useTelescopeStore()
 
   const {
-    showPiP,
-    togglePiP,
     setShowKeyboardHelp,
     setShowSettings,
     showTelescopeStatus,
@@ -158,13 +165,22 @@ export function TelescopeHeader() {
         }
         // 'connecting' and 'disconnected' both become 'disconnected'
 
+        // Get protocol from discovery result, default based on port
+        const protocol = t.protocol || (t.port === 4700 ? 'seestar' : 'alpaca')
+
+        // Generate appropriate name based on protocol
+        const defaultName = protocol === 'alpaca'
+          ? `Alpaca ${t.host}`
+          : `Seestar ${t.serial_number || t.host}`
+
         return {
           id,
           host: t.host,
           port: t.port,
-          name: t.name || `Seestar ${t.serial_number || t.host}`,
+          protocol: protocol as 'seestar' | 'alpaca',
+          name: t.name || defaultName,
           serial_number: t.serial_number,
-          product_model: t.product_model || 'Seestar S30',
+          product_model: t.product_model || (protocol === 'alpaca' ? 'Alpaca Server' : 'Seestar S30'),
           discovery_method: 'auto_discovery',
           status,
           error: existing?.error,
@@ -172,7 +188,7 @@ export function TelescopeHeader() {
       })
 
       if (discovered.length > 0) {
-        setTelescopes(discovered)
+        mergeTelescopes(discovered)
         // Auto-select first telescope if none selected
         if (!currentTelescopeIdRef.current) {
           setCurrentTelescope(discovered[0].id)
@@ -191,7 +207,7 @@ export function TelescopeHeader() {
     } finally {
       setIsDiscovering(false)
     }
-  }, [setIsDiscovering, setTelescopes, setCurrentTelescope, addActivity])
+  }, [setIsDiscovering, mergeTelescopes, setCurrentTelescope, addActivity])
 
   // Auto-discover on mount and periodically
   useEffect(() => {
@@ -201,15 +217,21 @@ export function TelescopeHeader() {
   }, [fetchTelescopes])
 
   // Auto-connect to selected telescope
-  const connectToTelescope = useCallback(async (telescopeId: string) => {
-    updateTelescope(telescopeId, { status: 'connecting' })
+  const connectToTelescope = useCallback(async (telescope: TelescopeInfo) => {
+    updateTelescope(telescope.id, { status: 'connecting' })
     try {
-      await invoke('connect_telescope', { telescopeId })
-      updateTelescope(telescopeId, { status: 'connected' })
-      addActivity(telescopeId, 'success', 'Connected to telescope')
+      // Pass host/port/protocol for manually added telescopes
+      await invoke('connect_telescope', {
+        telescopeId: telescope.id,
+        host: telescope.host,
+        port: telescope.port,
+        protocol: telescope.protocol || 'seestar',
+      })
+      updateTelescope(telescope.id, { status: 'connected' })
+      addActivity(telescope.id, 'success', 'Connected to telescope')
     } catch (error) {
-      updateTelescope(telescopeId, { status: 'error', error: String(error) })
-      addActivity(telescopeId, 'error', `Connection failed: ${error}`)
+      updateTelescope(telescope.id, { status: 'error', error: String(error) })
+      addActivity(telescope.id, 'error', `Connection failed: ${error}`)
     }
   }, [updateTelescope, addActivity])
 
@@ -218,7 +240,7 @@ export function TelescopeHeader() {
     setCurrentTelescope(telescope.id)
     // Connect if not already connected (handles 'disconnected', 'connecting' from stale state, or 'error')
     if (telescope.status !== 'connected') {
-      connectToTelescope(telescope.id)
+      connectToTelescope(telescope)
     }
   }, [setCurrentTelescope, connectToTelescope])
 
@@ -256,32 +278,32 @@ export function TelescopeHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 bg-card border-b border-border">
+    <header className="flex items-center justify-between px-2 sm:px-4 py-2 bg-card border-b border-border gap-2">
       {/* Left Section - Telescope Selector */}
       <TooltipProvider>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-shrink">
           {/* Telescope Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="flex items-center gap-2 min-w-[220px] justify-between"
+                className="flex items-center gap-2 min-w-0 sm:min-w-[180px] lg:min-w-[220px] justify-between"
               >
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-lg">🔭</span>
-                  <span className="truncate font-medium">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="text-lg hidden sm:inline">🔭</span>
+                  <span className="truncate font-medium text-sm sm:text-base">
                     {currentTelescope ? getTelescopeDisplayName(currentTelescope) : 'Select Telescope'}
                   </span>
                   {currentTelescope && (
-                    <div className="flex items-center gap-1 ml-auto">
+                    <div className="flex items-center gap-1 ml-auto flex-shrink-0">
                       {getStatusIcon(currentTelescope.status)}
                     </div>
                   )}
                 </div>
-                <ChevronDown className="w-4 h-4 ml-1" />
+                <ChevronDown className="w-4 h-4 ml-1 flex-shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[480px]">
+            <DropdownMenuContent align="start" className="w-[min(480px,calc(100vw-2rem))]">
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span>Available Telescopes</span>
                 <div className="flex items-center gap-1">
@@ -313,59 +335,76 @@ export function TelescopeHeader() {
                   {isDiscovering ? 'Discovering telescopes...' : 'No telescopes found'}
                 </DropdownMenuItem>
               ) : (
-                telescopes.map((telescope) => (
-                  <DropdownMenuItem
-                    key={telescope.id}
-                    onClick={() => selectTelescope(telescope)}
-                    className="flex items-center justify-between p-3 hover:bg-accent focus:bg-accent cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="flex flex-col gap-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{getTelescopeDisplayName(telescope)}</span>
-                          {getStatusIcon(telescope.status)}
-                          {currentTelescopeId === telescope.id && (
-                            <Badge variant="secondary" className="text-xs bg-blue-600 text-white border-0">
-                              Active
-                            </Badge>
-                          )}
+                getTelescopesBySection().map(({ section, telescopes: sectionTelescopes }) => (
+                  <div key={section?.id ?? 'unsectioned'}>
+                    {section && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel
+                          className="flex items-center gap-2 cursor-pointer hover:bg-accent rounded"
+                          onClick={() => toggleSectionCollapse(section.id)}
+                        >
+                          <ChevronDown className={`w-3 h-3 transition-transform ${section.collapsed ? '-rotate-90' : ''}`} />
+                          <span>{section.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{sectionTelescopes.length}</span>
+                        </DropdownMenuLabel>
+                      </>
+                    )}
+                    {(!section || !section.collapsed) && sectionTelescopes.map((telescope) => (
+                      <DropdownMenuItem
+                        key={telescope.id}
+                        onClick={() => selectTelescope(telescope)}
+                        className={`flex items-center justify-between p-3 hover:bg-accent focus:bg-accent cursor-pointer ${section ? 'ml-4' : ''}`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium truncate">{getTelescopeDisplayName(telescope)}</span>
+                              {getStatusIcon(telescope.status)}
+                              {currentTelescopeId === telescope.id && (
+                                <Badge variant="secondary" className="text-xs bg-blue-600 text-white border-0">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{telescope.product_model || telescope.protocol || 'Unknown'}</span>
+                              {telescope.location && (
+                                <>
+                                  <span>•</span>
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{telescope.location}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{telescope.host}:{telescope.port}</span>
+                              {telescope.serial_number && (
+                                <>
+                                  <Radio className="w-3 h-3" />
+                                  <span>{telescope.serial_number}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{telescope.product_model || 'Unknown Type'}</span>
-                          {telescope.location && (
-                            <>
-                              <span>•</span>
-                              <MapPin className="w-3 h-3" />
-                              <span>{telescope.location}</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{telescope.host}:{telescope.port}</span>
-                          {telescope.serial_number && (
-                            <>
-                              <Radio className="w-3 h-3" />
-                              <span>{telescope.serial_number}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs ${getStatusColor(telescope.status)} border-0`}
-                    >
-                      {getStatusText(telescope.status)}
-                    </Badge>
-                  </DropdownMenuItem>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${getStatusColor(telescope.status)} border-0 flex-shrink-0`}
+                        >
+                          {getStatusText(telescope.status)}
+                        </Badge>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
                 ))
               )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Connection Status */}
+          {/* Connection Status - hidden on small screens */}
           {currentTelescope && (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="hidden md:flex items-center gap-2 text-xs">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 cursor-default">
@@ -389,10 +428,10 @@ export function TelescopeHeader() {
         </div>
       </TooltipProvider>
 
-      {/* Center Section - Status Indicators */}
+      {/* Center Section - Status Indicators (hidden on small/medium screens) */}
       {isConnected && (
         <TooltipProvider>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="hidden xl:flex items-center gap-4 text-sm flex-shrink-0">
             {/* Battery */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -423,15 +462,30 @@ export function TelescopeHeader() {
               <TooltipContent>Temperature</TooltipContent>
             </Tooltip>
 
-            {/* Gain - Seestar actually has this */}
+            {/* Gain */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <span className="text-xs text-muted-foreground">G:</span>
                   <span className="font-mono">{status?.gain ?? '--'}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Gain</TooltipContent>
+              <TooltipContent>Camera Gain</TooltipContent>
+            </Tooltip>
+
+            {/* RA/Dec Position */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <Compass className="h-4 w-4 text-cyan-500" />
+                  <span className="font-mono text-xs">
+                    {status?.ra != null ? `${(status.ra / 15).toFixed(2)}h` : '--'}
+                    {' / '}
+                    {status?.dec != null ? `${status.dec.toFixed(1)}°` : '--'}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>RA / Dec (J2000)</TooltipContent>
             </Tooltip>
 
             {/* Tracking */}
@@ -440,22 +494,24 @@ export function TelescopeHeader() {
                 <div className="flex items-center gap-1">
                   <Navigation className="h-4 w-4" />
                   <span className={`font-mono ${status?.isTracking ? 'text-green-500' : 'text-muted-foreground'}`}>
-                    {status?.isTracking ? 'ON' : 'OFF'}
+                    {status?.isTracking ? 'TRK' : 'OFF'}
                   </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Tracking</TooltipContent>
+              <TooltipContent>Tracking {status?.isTracking ? 'Enabled' : 'Disabled'}</TooltipContent>
             </Tooltip>
 
-            {/* Mount Type - Seestar is Alt-Az */}
+            {/* View State / Mode */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1">
-                  <Compass className="h-4 w-4 text-cyan-500" />
-                  <span className="font-mono">Alt-Az</span>
+                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <span className="font-mono text-xs">
+                    {status?.viewState || 'Idle'}
+                  </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>Mount Type</TooltipContent>
+              <TooltipContent>View State / Mode</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -463,127 +519,212 @@ export function TelescopeHeader() {
 
       {/* Right Section - Action Buttons */}
       <TooltipProvider>
-        <div className="flex items-center gap-1">
-          {/* Search */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Search className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Search</TooltipContent>
-          </Tooltip>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Desktop buttons - hidden on small screens */}
+          <div className="hidden lg:flex items-center gap-1">
+            {/* Search */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Search className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Search</TooltipContent>
+            </Tooltip>
 
-          {/* Refresh */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchTelescopes} disabled={isDiscovering}>
-                <RefreshCw className={`h-4 w-4 ${isDiscovering ? 'animate-spin' : ''}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Refresh</TooltipContent>
-          </Tooltip>
+            {/* Refresh */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchTelescopes} disabled={isDiscovering}>
+                  <RefreshCw className={`h-4 w-4 ${isDiscovering ? 'animate-spin' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh</TooltipContent>
+            </Tooltip>
 
-          {/* Fullscreen */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Fullscreen</TooltipContent>
-          </Tooltip>
+            {/* Fullscreen */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fullscreen</TooltipContent>
+            </Tooltip>
 
-          <div className="w-px h-6 bg-border mx-2" />
+            <div className="w-px h-6 bg-border mx-2" />
 
-          {/* PiP Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={showPiP ? 'default' : 'outline'}
-                size="sm"
-                onClick={togglePiP}
-                className="gap-2"
-              >
-                <PictureInPicture className="h-4 w-4" />
-                PiP
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Picture in Picture (Ctrl+P)</TooltipContent>
-          </Tooltip>
+            {/* Telescope Status Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showTelescopeStatus ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowTelescopeStatus(!showTelescopeStatus)}
+                  className="gap-2"
+                >
+                  <Cpu className="h-4 w-4" />
+                  <span className="hidden xl:inline">Status</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Telescope Status Panel</TooltipContent>
+            </Tooltip>
 
-          {/* Telescope Status Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={showTelescopeStatus ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowTelescopeStatus(!showTelescopeStatus)}
-                className="gap-2"
-              >
-                <Cpu className="h-4 w-4" />
-                Status
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Telescope Status Panel</TooltipContent>
-          </Tooltip>
+            {/* Telescope Controls Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showTelescopeControls ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowTelescopeControls(!showTelescopeControls)}
+                  className="gap-2"
+                >
+                  <Move className="h-4 w-4" />
+                  <span className="hidden xl:inline">Controls</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Telescope Controls Panel</TooltipContent>
+            </Tooltip>
 
-          {/* Telescope Controls Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={showTelescopeControls ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowTelescopeControls(!showTelescopeControls)}
-                className="gap-2"
-              >
-                <Move className="h-4 w-4" />
-                Controls
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Telescope Controls Panel</TooltipContent>
-          </Tooltip>
+            {/* Scenery */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Mountain className="h-4 w-4" />
+                  <span className="hidden xl:inline">Scenery</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Scenery Mode</TooltipContent>
+            </Tooltip>
 
-          {/* Scenery */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Mountain className="h-4 w-4" />
-                Scenery
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Scenery Mode</TooltipContent>
-          </Tooltip>
+            {/* Help */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowKeyboardHelp(true)}
+                  className="gap-2"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="hidden xl:inline">Help</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Help (?)</TooltipContent>
+            </Tooltip>
+          </div>
 
-          {/* Help */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowKeyboardHelp(true)}
-                className="gap-2"
-              >
-                <HelpCircle className="h-4 w-4" />
-                Help
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Help (?)</TooltipContent>
-          </Tooltip>
-
-          {/* User/Settings */}
+          {/* Settings - always visible */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowSettings(true)}
+                className="h-8 w-8"
               >
-                OM
+                <Settings className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
           </Tooltip>
+
+          {/* Hamburger Menu - visible on small screens */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={fetchTelescopes} disabled={isDiscovering}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isDiscovering ? 'animate-spin' : ''}`} />
+                Refresh Telescopes
+              </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                <Maximize2 className="h-4 w-4 mr-2" />
+                Fullscreen
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Panels</DropdownMenuLabel>
+
+              <DropdownMenuItem onClick={() => setShowTelescopeStatus(!showTelescopeStatus)}>
+                <Cpu className="h-4 w-4 mr-2" />
+                {showTelescopeStatus ? '✓ ' : ''}Telescope Status
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => setShowTelescopeControls(!showTelescopeControls)}>
+                <Move className="h-4 w-4 mr-2" />
+                {showTelescopeControls ? '✓ ' : ''}Telescope Controls
+              </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                <Mountain className="h-4 w-4 mr-2" />
+                Scenery Mode
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={() => setShowKeyboardHelp(true)}>
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Help & Shortcuts
+              </DropdownMenuItem>
+
+              {/* Status info in hamburger menu for small screens */}
+              {isConnected && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <div className="px-2 py-1.5 text-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Battery
+                        className={`h-4 w-4 ${
+                          (status?.batteryPercent ?? 0) > 50
+                            ? 'text-green-500'
+                            : (status?.batteryPercent ?? 0) > 20
+                              ? 'text-yellow-500'
+                              : 'text-red-500'
+                        }`}
+                      />
+                      <span className="text-muted-foreground">Battery:</span>
+                      <span className="font-mono">{formatBattery(status?.batteryPercent)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Thermometer className="h-4 w-4 text-orange-500" />
+                      <span className="text-muted-foreground">Temp:</span>
+                      <span className="font-mono">{formatTemp(status?.temperatureC)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Compass className="h-4 w-4 text-cyan-500" />
+                      <span className="text-muted-foreground">Position:</span>
+                      <span className="font-mono text-xs">
+                        {status?.ra != null ? `${(status.ra / 15).toFixed(2)}h` : '--'}
+                        {' / '}
+                        {status?.dec != null ? `${status.dec.toFixed(1)}°` : '--'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      <span className="text-muted-foreground">Tracking:</span>
+                      <span className={`font-mono ${status?.isTracking ? 'text-green-500' : 'text-muted-foreground'}`}>
+                        {status?.isTracking ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </TooltipProvider>
     </header>

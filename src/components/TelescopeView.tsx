@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { ZoomIn, ZoomOut, Maximize2, Sparkles, Filter } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { ZoomIn, ZoomOut, Maximize2, Sparkles, Filter, RotateCw } from 'lucide-react'
 import { Button } from './ui/button'
 import { VideoFeed } from './VideoFeed'
 import { AllskyPanel } from './AllskyPanel'
@@ -12,6 +12,8 @@ type ViewMode = 'telescope' | 'allsky'
 export function TelescopeView() {
   const [viewMode, setViewMode] = useState<ViewMode>('telescope')
   const [zoom, setZoom] = useState(1)
+  const [rotation, setRotation] = useState(0)
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { currentTelescopeId } = useTelescopeStore()
@@ -26,7 +28,16 @@ export function TelescopeView() {
 
   const handleResetZoom = () => {
     setZoom(1)
+    setPanPosition({ x: 0, y: 0 })
   }
+
+  const handleRotate = () => {
+    setRotation((prev) => (prev + 90) % 360)
+  }
+
+  const handlePanChange = useCallback((newPan: { x: number; y: number }) => {
+    setPanPosition(newPan)
+  }, [])
 
   const handleFullscreen = () => {
     if (containerRef.current) {
@@ -39,7 +50,7 @@ export function TelescopeView() {
   }
 
   return (
-    <div ref={containerRef} className="relative flex-1 bg-black overflow-hidden">
+    <div ref={containerRef} className="relative h-full bg-black overflow-hidden">
       {/* Left Sidebar Controls */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
         {/* View Mode Toggle */}
@@ -105,6 +116,15 @@ export function TelescopeView() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={handleRotate}
+            className="rounded-none h-9 w-9"
+            title={`Rotate (${rotation}°)`}
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             className="rounded-none h-9 w-9"
             title="Enhance"
           >
@@ -122,17 +142,15 @@ export function TelescopeView() {
       </div>
 
       {/* Main Video Area */}
-      <div
-        className="w-full h-full flex items-center justify-center"
-        style={{
-          transform: `scale(${zoom})`,
-          transformOrigin: 'center center',
-        }}
-      >
+      <div className="w-full h-full flex items-center justify-center">
         {viewMode === 'telescope' ? (
           <VideoFeed
             telescopeId={currentTelescopeId || undefined}
             className="w-full h-full"
+            zoom={zoom}
+            rotation={rotation}
+            panPosition={panPosition}
+            onPanChange={handlePanChange}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">

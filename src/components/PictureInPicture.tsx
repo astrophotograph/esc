@@ -33,7 +33,7 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
   const [size, setSize] = useState<PipSize>('medium')
   const [minimized, setMinimized] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [camera, setCamera] = useState<CameraSource>('allsky')
+  const [camera, setCamera] = useState<CameraSource>('primary')
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [showControls, setShowControls] = useState(false)
@@ -152,7 +152,7 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
         if (!isConnected) {
           return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=Not%20Connected`
         }
-        return `http://localhost:8080/stream/${telescopeId}`
+        return `http://localhost:9847/stream/${encodeURIComponent(telescopeId)}`
       case 'allsky':
         return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=All-Sky`
       case 'guide':

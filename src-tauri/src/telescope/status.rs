@@ -6,6 +6,15 @@ use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct BalanceSensorData {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub z: Option<f64>,
+    pub angle: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TelescopeStatus {
     pub connected: bool,
     pub battery_percent: Option<f32>,
@@ -17,6 +26,13 @@ pub struct TelescopeStatus {
     pub is_goto: Option<bool>,
     pub is_tracking: Option<bool>,
     pub view_state: Option<String>,
+    pub gain: Option<i32>,
+    pub focus_position: Option<i32>,
+    pub stacked_frame: Option<i32>,
+    pub target_name: Option<String>,
+    pub free_mb: Option<i32>,
+    pub total_mb: Option<i32>,
+    pub balance_sensor: Option<BalanceSensorData>,
 }
 
 /// Get current telescope status
@@ -45,6 +61,13 @@ pub async fn get_telescope_status(
                 is_goto: None,
                 is_tracking: None,
                 view_state: None,
+                gain: None,
+                focus_position: None,
+                stacked_frame: None,
+                target_name: None,
+                free_mb: None,
+                total_mb: None,
+                balance_sensor: None,
             });
         }
 
@@ -56,7 +79,7 @@ pub async fn get_telescope_status(
         Python::with_gil(|py| -> Result<TelescopeStatus, String> {
             // Import the helper function
             let telescope_module = py
-                .import("telescope.seestar_bridge")
+                .import("telescope.telescope_bridge")
                 .map_err(|e| format!("Failed to import module: {}", e))?;
 
             let run_async = telescope_module
@@ -138,6 +161,51 @@ pub async fn get_telescope_status(
                 .ok()
                 .and_then(|v| v.extract().ok());
 
+            let gain = state_dict
+                .get_item("gain")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let focus_position = state_dict
+                .get_item("focus_position")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let stacked_frame = state_dict
+                .get_item("stacked_frame")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let target_name = state_dict
+                .get_item("target_name")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let free_mb = state_dict
+                .get_item("free_mb")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            let total_mb = state_dict
+                .get_item("total_mb")
+                .ok()
+                .and_then(|v| v.extract().ok());
+
+            // Extract balance sensor data
+            let balance_sensor = state_dict
+                .get_item("balance_sensor")
+                .ok()
+                .and_then(|v| {
+                    if v.is_none() {
+                        return None;
+                    }
+                    let x: Option<f64> = v.get_item("x").ok().and_then(|x| x.extract().ok());
+                    let y: Option<f64> = v.get_item("y").ok().and_then(|y| y.extract().ok());
+                    let z: Option<f64> = v.get_item("z").ok().and_then(|z| z.extract().ok());
+                    let angle: Option<f64> = v.get_item("angle").ok().and_then(|a| a.extract().ok());
+                    Some(BalanceSensorData { x, y, z, angle })
+                });
+
             Ok(TelescopeStatus {
                 connected: true,
                 battery_percent,
@@ -149,6 +217,13 @@ pub async fn get_telescope_status(
                 is_goto,
                 is_tracking,
                 view_state,
+                gain,
+                focus_position,
+                stacked_frame,
+                target_name,
+                free_mb,
+                total_mb,
+                balance_sensor,
             })
         })
     })

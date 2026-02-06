@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+import { useUIStore } from '../stores/uiStore'
 
 type PanelSize = 'S' | 'M' | 'L'
 
@@ -18,11 +19,11 @@ const SIZE_CONFIG = {
 }
 
 export function AllskyPanel() {
-  const [show, setShow] = useState(true)
+  const { showAllskyPanel: show, setShowAllskyPanel: setShow } = useUIStore()
   const [size, setSize] = useState<PanelSize>('M')
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  const [position, setPosition] = useState({ x: 16, y: 0 }) // Will be set relative to bottom
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null) // Initialized on first show
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [minimized, setMinimized] = useState(false)
@@ -30,6 +31,15 @@ export function AllskyPanel() {
   const panelRef = useRef<HTMLDivElement>(null)
 
   const currentSize = SIZE_CONFIG[size]
+
+  // Initialize position on first show
+  useEffect(() => {
+    if (show && position === null && typeof window !== 'undefined') {
+      // Position in bottom-left area by default
+      const initialY = window.innerHeight - currentSize.height - 100
+      setPosition({ x: 16, y: Math.max(60, initialY) })
+    }
+  }, [show, position, currentSize.height])
 
   // Auto-refresh timer
   useEffect(() => {
@@ -44,8 +54,6 @@ export function AllskyPanel() {
 
   // Dragging handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (minimized) return
-
     setIsDragging(true)
     const rect = panelRef.current?.getBoundingClientRect()
     if (rect) {
@@ -54,19 +62,21 @@ export function AllskyPanel() {
         y: e.clientY - rect.top,
       })
     }
-  }, [minimized])
+  }, [])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return
 
-    const maxX = window.innerWidth - currentSize.width - 32
-    const maxY = window.innerHeight - currentSize.height - 100
+    const panelWidth = minimized ? 140 : currentSize.width
+    const panelHeight = minimized ? 40 : currentSize.height + 80 // header + footer
+    const maxX = window.innerWidth - panelWidth - 16
+    const maxY = window.innerHeight - panelHeight - 16
 
     setPosition({
       x: Math.max(16, Math.min(maxX, e.clientX - dragOffset.x)),
-      y: Math.max(16, Math.min(maxY, e.clientY - dragOffset.y)),
+      y: Math.max(60, Math.min(maxY, e.clientY - dragOffset.y)),
     })
-  }, [isDragging, dragOffset, currentSize])
+  }, [isDragging, dragOffset, currentSize, minimized])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -83,7 +93,7 @@ export function AllskyPanel() {
     }
   }, [isDragging, handleMouseMove, handleMouseUp])
 
-  if (!show) {
+  if (!show || position === null) {
     return (
       <Button
         variant="secondary"
@@ -112,8 +122,8 @@ export function AllskyPanel() {
       className="absolute z-20 bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
       style={{
         left: position.x,
-        bottom: 60, // Account for footer
-        width: minimized ? 200 : currentSize.width,
+        top: position.y,
+        width: minimized ? 140 : currentSize.width,
         cursor: isDragging ? 'grabbing' : 'default',
       }}
     >
@@ -124,33 +134,38 @@ export function AllskyPanel() {
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">📷</span>
-          <span className="text-sm font-medium">Allsky Camera</span>
+          <span className="text-sm font-medium">{minimized ? 'Allsky' : 'Allsky Camera'}</span>
         </div>
 
         <div className="flex items-center gap-1">
-          {/* View Mode Selector */}
-          <Select defaultValue="All-Sky">
-            <SelectTrigger className="h-6 w-[70px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All-Sky">All-Sky</SelectItem>
-              <SelectItem value="Polar">Polar</SelectItem>
-              <SelectItem value="Fish">Fish</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Only show selectors when not minimized */}
+          {!minimized && (
+            <>
+              {/* View Mode Selector */}
+              <Select defaultValue="All-Sky">
+                <SelectTrigger className="h-6 w-[70px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All-Sky">All-Sky</SelectItem>
+                  <SelectItem value="Polar">Polar</SelectItem>
+                  <SelectItem value="Fish">Fish</SelectItem>
+                </SelectContent>
+              </Select>
 
-          {/* Size Selector */}
-          <Select value={size} onValueChange={(v: PanelSize) => setSize(v)}>
-            <SelectTrigger className="h-6 w-10 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="S">S</SelectItem>
-              <SelectItem value="M">M</SelectItem>
-              <SelectItem value="L">L</SelectItem>
-            </SelectContent>
-          </Select>
+              {/* Size Selector */}
+              <Select value={size} onValueChange={(v: PanelSize) => setSize(v)}>
+                <SelectTrigger className="h-6 w-10 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="S">S</SelectItem>
+                  <SelectItem value="M">M</SelectItem>
+                  <SelectItem value="L">L</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
 
           {/* Expand/Minimize */}
           <Button
@@ -158,19 +173,22 @@ export function AllskyPanel() {
             size="sm"
             onClick={() => setMinimized(!minimized)}
             className="h-6 w-6 p-0"
+            title={minimized ? 'Expand' : 'Minimize'}
           >
             {minimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
           </Button>
 
-          {/* Fullscreen */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            title="Fullscreen"
-          >
-            <Maximize2 className="h-3 w-3" />
-          </Button>
+          {/* Fullscreen - only show when not minimized */}
+          {!minimized && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              title="Fullscreen"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </Button>
+          )}
 
           {/* Close */}
           <Button

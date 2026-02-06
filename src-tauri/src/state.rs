@@ -18,6 +18,7 @@ pub struct TelescopeConnection {
     pub id: String,
     pub host: String,
     pub port: u16,
+    pub protocol: String, // "seestar" or "alpaca"
     pub name: String,
     pub status: ConnectionStatus,
     pub bridge: Arc<PyObject>, // Python bridge object
@@ -29,6 +30,7 @@ impl std::fmt::Debug for TelescopeConnection {
             .field("id", &self.id)
             .field("host", &self.host)
             .field("port", &self.port)
+            .field("protocol", &self.protocol)
             .field("name", &self.name)
             .field("status", &self.status)
             .field("bridge", &"<PyObject>")

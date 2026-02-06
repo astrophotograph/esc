@@ -12,20 +12,21 @@ use tracing::info;
 pub struct DiscoveredTelescope {
     pub host: String,
     pub port: u16,
+    pub protocol: String, // "seestar" or "alpaca"
     pub serial_number: String,
     pub product_model: String,
     pub ssid: String,
     pub discovery_method: String,
 }
 
-/// Discover Seestar telescopes on the network
+/// Discover telescopes on the network (both Seestar and Alpaca)
 #[tauri::command]
 pub async fn discover_telescopes(
     app: AppHandle,
     state: State<'_, AppState>,
     db: State<'_, Database>,
 ) -> Result<Vec<DiscoveredTelescope>, String> {
-    info!("Starting telescope discovery");
+    info!("Starting telescope discovery (Seestar and Alpaca)");
 
     // Call Python discovery function
     let telescopes = tokio::task::spawn_blocking(|| {
@@ -40,7 +41,7 @@ pub async fn discover_telescopes(
                 .getattr("discover_telescopes_sync")
                 .map_err(|e| format!("Failed to get discover function: {}", e))?;
 
-            // Call with 3 second timeout
+            // Call with 3 second timeout (discovers both protocols)
             let result = discover_fn
                 .call1((3.0,))
                 .map_err(|e| format!("Discovery failed: {}", e))?;
@@ -64,6 +65,12 @@ pub async fn discover_telescopes(
                     .map_err(|e| format!("No port field: {}", e))?
                     .extract()
                     .map_err(|e| format!("Invalid port: {}", e))?;
+
+                let protocol: String = item
+                    .get_item("protocol")
+                    .ok()
+                    .and_then(|v| v.extract().ok())
+                    .unwrap_or_else(|| "seestar".to_string());
 
                 let serial_number: String = item
                     .get_item("serial_number")
@@ -92,6 +99,7 @@ pub async fn discover_telescopes(
                 telescopes.push(DiscoveredTelescope {
                     host,
                     port,
+                    protocol,
                     serial_number,
                     product_model,
                     ssid,
@@ -107,7 +115,19 @@ pub async fn discover_telescopes(
 
     info!("Discovered {} telescopes", telescopes.len());
 
+    // Cleanup stale auto-discovered telescopes (not seen in 1 hour)
+    match db.cleanup_stale_telescopes(chrono::Duration::hours(1)) {
+        Ok(count) if count > 0 => {
+            tracing::info!("Cleaned up {} stale auto-discovered telescopes", count);
+        }
+        Err(e) => {
+            tracing::warn!("Failed to cleanup stale telescopes: {}", e);
+        }
+        _ => {}
+    }
+
     // Add discovered telescopes to database and state
+    let now = chrono::Utc::now();
     for telescope in &telescopes {
         let telescope_id = if !telescope.serial_number.is_empty() {
             telescope.serial_number.clone()
@@ -115,18 +135,33 @@ pub async fn discover_telescopes(
             format!("{}:{}", telescope.host, telescope.port)
         };
 
-        // Save to database
+        // Generate appropriate name based on protocol
+        let telescope_name = if telescope.protocol == "alpaca" {
+            if !telescope.product_model.is_empty() {
+                telescope.product_model.clone()
+            } else {
+                format!("Alpaca {}", telescope_id)
+            }
+        } else if !telescope.serial_number.is_empty() {
+            format!("Seestar {}", telescope.serial_number)
+        } else {
+            format!("Telescope {}", telescope_id)
+        };
+
+        // Save to database with last_seen timestamp
         let db_telescope = crate::database::models::Telescope {
             id: telescope_id.clone(),
             host: telescope.host.clone(),
             port: telescope.port,
+            protocol: Some(telescope.protocol.clone()),
             serial_number: Some(telescope.serial_number.clone()),
             product_model: Some(telescope.product_model.clone()),
-            name: Some(format!("Seestar {}", telescope.serial_number)),
+            name: Some(telescope_name.clone()),
             location: None,
             discovery_method: Some(telescope.discovery_method.clone()),
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
+            created_at: now,
+            updated_at: now,
+            last_seen: Some(now),
         };
 
         if let Err(e) = db.save_telescope(&db_telescope) {
@@ -142,8 +177,9 @@ pub async fn discover_telescopes(
             let telescopes_state = state.telescopes.read();
             let already_exists = telescopes_state.contains_key(&telescope_id);
             tracing::info!(
-                "Discovery: telescope {} exists in state: {}",
+                "Discovery: telescope {} ({}) exists in state: {}",
                 telescope_id,
+                telescope.protocol,
                 already_exists
             );
             if !already_exists {
@@ -159,14 +195,16 @@ pub async fn discover_telescopes(
                         id: telescope_id.clone(),
                         host: telescope.host.clone(),
                         port: telescope.port,
-                        name: format!("Seestar {}", telescope.serial_number),
+                        protocol: telescope.protocol.clone(),
+                        name: telescope_name.clone(),
                         status: crate::state::ConnectionStatus::Disconnected,
                         bridge: Arc::new(placeholder_bridge),
                     },
                 );
                 tracing::info!(
-                    "Discovery: added telescope {} to state (now {} telescopes)",
+                    "Discovery: added telescope {} ({}) to state (now {} telescopes)",
                     telescope_id,
+                    telescope.protocol,
                     telescopes_state.len()
                 );
 
@@ -178,6 +216,7 @@ pub async fn discover_telescopes(
                         "id": telescope_id,
                         "host": telescope.host,
                         "port": telescope.port,
+                        "protocol": telescope.protocol,
                         "serial_number": telescope.serial_number,
                         "product_model": telescope.product_model,
                     }),

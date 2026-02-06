@@ -1,3 +1,5 @@
+.envrc
+
 legacy/ui/test-results
 legacy/ui/playwright-report
 .pnpm-store/

@@ -70,7 +70,7 @@ export function EnhancedHeader() {
               <Server className="h-4 w-4 text-blue-500" />
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span className="text-sm font-medium text-muted-foreground">:8080</span>
+                <span className="text-sm font-medium text-muted-foreground">:9847</span>
               </div>
             </div>
           </div>

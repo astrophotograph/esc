@@ -7,6 +7,7 @@ pub struct Telescope {
     pub id: String,
     pub host: String,
     pub port: u16,
+    pub protocol: Option<String>, // "seestar" or "alpaca"
     pub serial_number: Option<String>,
     pub product_model: Option<String>,
     pub name: Option<String>,
@@ -14,6 +15,7 @@ pub struct Telescope {
     pub discovery_method: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub last_seen: Option<DateTime<Utc>>, // For auto-discovered telescopes
 }
 
 /// Observation log entry
