@@ -53,8 +53,10 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            bundles: deb,rpm
           - platform: macos-latest
             target: aarch64-apple-darwin
+            bundles: dmg
           # Uncomment when ready to support more platforms:
           # - platform: macos-13
           #   target: x86_64-apple-darwin
@@ -123,7 +125,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build Tauri app
-        run: pnpm tauri build --target ${{ matrix.target }} --bundles deb,rpm,dmg
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
