@@ -20,7 +20,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
@@ -52,7 +51,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
@@ -86,9 +84,13 @@ jobs:
       - uses: astral-sh/setup-uv@v5
 
       - name: Lint with ruff
+        env:
+          UV_NO_SOURCES: "1"
         run: |
           uv run --group dev ruff check src-tauri/python
           uv run --group dev ruff format --check src-tauri/python
 
       - name: Run tests
+        env:
+          UV_NO_SOURCES: "1"
         run: uv run --group dev pytest -x || true
