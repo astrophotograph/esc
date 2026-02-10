@@ -165,7 +165,7 @@ export function VideoFeed({
   // Only show for specific idle stages, NOT for active imaging modes like ContinuousExposure, Stack, RTSP
   const isIdle = streamStatus?.stage === 'Idle'
 
-  const streamUrl = `http://localhost:9847/stream/${encodeURIComponent(activeTelescopeId)}`
+  const streamUrl = `/api/stream/${encodeURIComponent(activeTelescopeId)}`
 
   // Debug logging
   console.log(`[VideoFeed] Rendering: isIdle=${isIdle}, isConnected=${isConnected}, url=${streamUrl}`)

@@ -327,17 +327,17 @@ export function CatalogSearch({ onSelectTarget, compact = false }: CatalogSearch
                     <div>
                       <h5 className="font-medium">{object.name}</h5>
                       <p className="text-xs text-muted-foreground">
-                        {object.object_type} • {object.constellation}
+                        {object.object_type} • {object.constellation || '—'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right text-xs">
-                    {object.magnitude !== undefined && (
+                    {typeof object.magnitude === 'number' && (
                       <span className="text-muted-foreground">
                         Mag {object.magnitude.toFixed(1)}
                       </span>
                     )}
-                    {object.altitude !== undefined && (
+                    {typeof object.altitude === 'number' && (
                       <div className={object.above_horizon ? 'text-green-500' : 'text-red-500'}>
                         Alt {object.altitude.toFixed(1)}°
                       </div>
