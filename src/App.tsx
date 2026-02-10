@@ -18,19 +18,21 @@ import { useFontScaling } from './hooks/useFontScaling'
 import { themes } from './themes'
 
 function App() {
-  const { theme } = useUIStore()
-
   const {
-    showPiP,
-    setShowPiP,
-    pipTelescopeId,
-    setPipTelescopeId,
     theme,
     activeTab,
     setActiveTab,
   } = useUIStore()
 
   const uiHydrated = useUIStore((state) => state._hasHydrated)
+
+  const {
+    telescopes,
+    currentTelescopeId,
+    updateTelescope,
+  } = useTelescopeStore()
+  const telescopeHydrated = useTelescopeStore((state) => state._hasHydrated)
+
   const autoConnectAttempted = useRef(false)
 
   // Initialize keyboard shortcuts

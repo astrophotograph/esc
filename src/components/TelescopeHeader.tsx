@@ -20,6 +20,7 @@ import {
   Cpu,
   Move,
   Menu,
+  PictureInPicture,
 } from 'lucide-react'
 import { invoke } from '../services/api'
 import { useTelescopeStore, type TelescopeInfo } from '../stores/telescopeStore'
@@ -48,6 +49,8 @@ interface TelescopeStatus {
   isTracking?: boolean
   viewState?: string
   gain?: number
+  gainMode?: string
+  mountType?: string
   focusPosition?: number
   stackedFrame?: number
   targetName?: string
@@ -131,6 +134,8 @@ export function TelescopeHeader() {
     setShowTelescopeStatus,
     showTelescopeControls,
     setShowTelescopeControls,
+    showPiP,
+    togglePiP,
   } = useUIStore()
 
   const currentTelescope = telescopes.find((t) => t.id === currentTelescopeId)

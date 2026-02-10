@@ -65,7 +65,7 @@ export function useTelescope() {
       if (telescopesResult.length > 0) {
         for (const t of telescopesResult) {
           const telescope: TelescopeInfo = {
-            id: telescopeId,
+            id: t.serial_number || `${t.host}:${t.port}`,
             host: t.host,
             port: t.port,
             name: t.name || t.product_model || `Telescope at ${t.host}`,

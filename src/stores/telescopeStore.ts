@@ -37,6 +37,11 @@ export interface TelescopeStatus {
   slewing?: boolean
   parked?: boolean
   focuserPosition?: number
+  gain?: number
+  gainMode?: string
+  mountType?: string
+  isTracking?: boolean
+  temperatureC?: number
 }
 
 export interface TelescopeSettings {

@@ -138,9 +138,38 @@ jobs:
             src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
           if-no-files-found: ignore
 
+  build-web:
+    name: Build (Web)
+    needs: determine-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build web frontend
+        run: pnpm web:build
+
+      - name: Package web build
+        run: tar -czf eesc-web-${{ needs.determine-version.outputs.version }}.tar.gz -C dist-web .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-web
+          path: eesc-web-*.tar.gz
+
   publish-release:
     name: Create GitHub Release
-    needs: [determine-version, build-tauri]
+    needs: [determine-version, build-tauri, build-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,7 +191,7 @@ jobs:
 
           # Collect all release assets
           ASSETS=""
-          for f in $(find artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.dmg" -o -name "*.exe" \) 2>/dev/null); do
+          for f in $(find artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.dmg" -o -name "*.exe" -o -name "*.tar.gz" \) 2>/dev/null); do
             ASSETS="$ASSETS $f"
           done
 
