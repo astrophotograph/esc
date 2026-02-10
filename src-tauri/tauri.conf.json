@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0",
-  "productName": "EESC",
+  "productName": "ESC",
   "version": "0.1.0",
-  "identifier": "com.erewhon.eesc",
+  "identifier": "com.erewhon.esc",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:9273",
@@ -16,7 +16,7 @@
   "app": {
     "windows": [
       {
-        "title": "EESC - Telescope Control",
+        "title": "ESC - Telescope Control",
         "width": 1280,
         "height": 800,
         "minWidth": 800,
