@@ -23,7 +23,7 @@ import {
   PictureInPicture,
 } from 'lucide-react'
 import { invoke } from '../services/api'
-import { useTelescopeStore, type TelescopeInfo } from '../stores/telescopeStore'
+import { useTelescopeStore, type TelescopeInfo, type TelescopeStatus } from '../stores/telescopeStore'
 import { useUIStore } from '../stores/uiStore'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -36,25 +36,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
-
-interface TelescopeStatus {
-  connected: boolean
-  batteryPercent?: number
-  temperatureC?: number
-  humidityPercent?: number
-  dewHeaterPower?: number
-  ra?: number
-  dec?: number
-  isGoto?: boolean
-  isTracking?: boolean
-  viewState?: string
-  gain?: number
-  gainMode?: string
-  mountType?: string
-  focusPosition?: number
-  stackedFrame?: number
-  targetName?: string
-}
 
 // Helper functions for status display
 const getStatusIcon = (status: TelescopeInfo['status']) => {
@@ -111,7 +92,9 @@ const getTelescopeDisplayName = (telescope: TelescopeInfo) => {
 }
 
 export function TelescopeHeader() {
-  const [status, setStatus] = useState<TelescopeStatus | null>(null)
+  const status = useTelescopeStore((s): TelescopeStatus | null =>
+    s.currentTelescopeId ? s.telescopeStatus[s.currentTelescopeId] ?? null : null
+  )
   const [isSceneryMode, setIsSceneryMode] = useState(false)
 
   const {
@@ -249,29 +232,6 @@ export function TelescopeHeader() {
       connectToTelescope(telescope)
     }
   }, [setCurrentTelescope, connectToTelescope])
-
-  // Fetch telescope status - only when connected
-  useEffect(() => {
-    if (!currentTelescopeId) {
-      setStatus(null)
-      return
-    }
-
-    const fetchStatus = async () => {
-      try {
-        const result = await invoke<TelescopeStatus>('get_telescope_status', {
-          telescopeId: currentTelescopeId,
-        })
-        setStatus(result)
-      } catch (error) {
-        // Silently ignore errors - telescope may not be in backend state yet
-      }
-    }
-
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 2000)
-    return () => clearInterval(interval)
-  }, [currentTelescopeId])
 
   // Reset view mode when switching telescopes
   useEffect(() => {

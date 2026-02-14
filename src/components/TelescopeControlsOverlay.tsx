@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   X,
   Minimize2,
@@ -56,13 +56,6 @@ function decToDMS(decDegrees: number): string {
   return `${sign}${degrees}° ${minutes}' ${seconds}"`
 }
 
-interface StreamStatus {
-  ra?: number
-  dec?: number
-  stage?: string
-  focusPosition?: number
-}
-
 export function TelescopeControlsOverlay() {
   const { showTelescopeControls, setShowTelescopeControls, setIsManuallyMoving } = useUIStore()
   const { currentTelescopeId } = useTelescopeStore()
@@ -70,7 +63,16 @@ export function TelescopeControlsOverlay() {
     state.telescopes.find((t) => t.id === state.currentTelescopeId)
   )
 
-  const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
+  const storeStatus = useTelescopeStore((s) =>
+    currentTelescopeId ? s.telescopeStatus[currentTelescopeId] : null
+  )
+  const streamStatus = useMemo(() => storeStatus ? {
+    ra: storeStatus.ra,
+    dec: storeStatus.dec,
+    stage: storeStatus.stage,
+    focusPosition: storeStatus.focuserPosition,
+  } : null, [storeStatus?.ra, storeStatus?.dec, storeStatus?.stage, storeStatus?.focuserPosition])
+
   // Track local focus position for UI, sync from status
   const [localFocusPosition, setLocalFocusPosition] = useState<number | null>(null)
   const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined)
@@ -126,32 +128,12 @@ export function TelescopeControlsOverlay() {
     }
   }, [showTelescopeControls, overlayPosition, ensureWithinBounds])
 
-  // Fetch status periodically - only when connected
+  // Sync focus position from store when we don't have a local override
   useEffect(() => {
-    if (!currentTelescopeId) {
-      setStreamStatus(null)
-      return
+    if (streamStatus?.focusPosition != null && localFocusPosition === null) {
+      setLocalFocusPosition(streamStatus.focusPosition)
     }
-
-    const fetchStatus = async () => {
-      try {
-        const result = await invoke<StreamStatus>('get_telescope_status', {
-          telescopeId: currentTelescopeId,
-        })
-        setStreamStatus(result)
-        // Sync focus position from status if available and we don't have a local override
-        if (result.focusPosition != null && localFocusPosition === null) {
-          setLocalFocusPosition(result.focusPosition)
-        }
-      } catch (error) {
-        // Silently ignore errors - telescope may not be in backend state yet
-      }
-    }
-
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 2000)
-    return () => clearInterval(interval)
-  }, [currentTelescopeId, localFocusPosition])
+  }, [streamStatus?.focusPosition, localFocusPosition])
 
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {

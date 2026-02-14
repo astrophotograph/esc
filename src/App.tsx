@@ -15,6 +15,7 @@ import { useUIStore } from './stores/uiStore'
 import { useTelescopeStore } from './stores/telescopeStore'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFontScaling } from './hooks/useFontScaling'
+import { useTelescopeStatusPoller } from './hooks/useTelescopeStatusPoller'
 import { themes } from './themes'
 
 function App() {
@@ -40,6 +41,9 @@ function App() {
 
   // Handle system font scaling (DPI/accessibility settings)
   useFontScaling()
+
+  // Centralized telescope status polling (single poller for all components)
+  useTelescopeStatusPoller()
 
   // Initialize Tauri event listeners
   useEffect(() => {

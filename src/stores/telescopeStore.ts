@@ -28,7 +28,15 @@ export interface TelescopeSection {
   collapsed?: boolean
 }
 
+export interface BalanceSensorData {
+  x?: number
+  y?: number
+  z?: number
+  angle?: number
+}
+
 export interface TelescopeStatus {
+  connected?: boolean
   ra?: number
   dec?: number
   alt?: number
@@ -41,7 +49,18 @@ export interface TelescopeStatus {
   gainMode?: string
   mountType?: string
   isTracking?: boolean
+  isGoto?: boolean
   temperatureC?: number
+  batteryPercent?: number
+  humidityPercent?: number
+  dewHeaterPower?: number
+  viewState?: string
+  stage?: string
+  stackedFrame?: number
+  targetName?: string
+  freeMb?: number
+  totalMb?: number
+  balanceSensor?: BalanceSensorData
 }
 
 export interface TelescopeSettings {

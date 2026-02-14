@@ -1,22 +1,5 @@
-import { useEffect, useState, useRef } from 'react'
-import { invoke } from '../services/api'
 import { Battery, Thermometer, Droplets, Gauge, Crosshair, HardDrive } from 'lucide-react'
-import { useUIStore } from '../stores/uiStore'
-
-interface TelescopeStatus {
-  connected: boolean
-  batteryPercent?: number
-  temperatureC?: number
-  humidityPercent?: number
-  dewHeaterPower?: number
-  ra?: number
-  dec?: number
-  isGoto?: boolean
-  isTracking?: boolean
-  viewState?: string
-  freeMb?: number
-  totalMb?: number
-}
+import { useTelescopeStore } from '../stores/telescopeStore'
 
 function formatRaDec(value: number | undefined, type: 'ra' | 'dec'): string {
   if (value === undefined || value === null) return 'N/A'
@@ -40,73 +23,10 @@ interface StatusBarProps {
   telescopeId?: string
 }
 
-// Polling intervals in milliseconds
-const FAST_POLL_INTERVAL = 500  // When telescope is moving
-const NORMAL_POLL_INTERVAL = 2000  // Normal operation
-
 export function StatusBar({ telescopeId }: StatusBarProps) {
-  const [status, setStatus] = useState<TelescopeStatus | null>(null)
-  const [_loading, setLoading] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const isMovingRef = useRef(false)
-  const isManuallyMoving = useUIStore((state) => state.isManuallyMoving)
-
-  const fetchStatus = async () => {
-    if (!telescopeId) return
-
-    try {
-      setLoading(true)
-      const result = await invoke<TelescopeStatus>('get_telescope_status', {
-        telescopeId
-      })
-      setStatus(result)
-
-      // Check if telescope is moving (slewing via goto OR manual joystick control)
-      const isCurrentlyMoving = result.isGoto === true || isManuallyMoving
-
-      // If movement state changed, update the polling interval
-      if (isCurrentlyMoving !== isMovingRef.current) {
-        isMovingRef.current = isCurrentlyMoving
-
-        // Clear existing interval and set new one with appropriate rate
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current)
-        }
-        const pollInterval = isCurrentlyMoving ? FAST_POLL_INTERVAL : NORMAL_POLL_INTERVAL
-        intervalRef.current = setInterval(fetchStatus, pollInterval)
-      }
-    } catch (error) {
-      console.error('Failed to fetch status:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Re-run effect when isManuallyMoving changes to update polling rate immediately
-  useEffect(() => {
-    if (!telescopeId) {
-      setStatus(null)
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-
-    // Fetch status immediately
-    fetchStatus()
-
-    // Set polling interval based on current movement state
-    const pollInterval = isManuallyMoving ? FAST_POLL_INTERVAL : NORMAL_POLL_INTERVAL
-    intervalRef.current = setInterval(fetchStatus, pollInterval)
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-  }, [telescopeId, isManuallyMoving])
+  const status = useTelescopeStore((s) =>
+    telescopeId ? s.telescopeStatus[telescopeId] : null
+  )
 
   if (!telescopeId || !status?.connected) {
     return null

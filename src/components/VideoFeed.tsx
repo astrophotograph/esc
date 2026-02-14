@@ -2,14 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useTelescopeStore } from '@/stores/telescopeStore'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
 import { RandomTestPattern } from './RandomTestPattern'
-import { invoke } from '@/services/api'
-
-interface StreamStatus {
-  ra?: number
-  dec?: number
-  stage?: string
-  focusPosition?: number
-}
 
 interface VideoFeedProps {
   telescopeId?: string
@@ -35,7 +27,6 @@ export function VideoFeed({
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
@@ -59,29 +50,10 @@ export function VideoFeed({
 
   const activeTelescopeId = telescopeId || currentTelescopeId
 
-  // Fetch stream status periodically to check for Idle state
-  useEffect(() => {
-    if (!activeTelescopeId) {
-      setStreamStatus(null)
-      return
-    }
-
-    const fetchStatus = async () => {
-      try {
-        const result = await invoke<StreamStatus>('get_telescope_status', {
-          telescopeId: activeTelescopeId,
-        })
-        setStreamStatus(result)
-      } catch (error) {
-        // Silently ignore errors - telescope may not be in backend state yet
-      }
-    }
-
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 2000)
-
-    return () => clearInterval(interval)
-  }, [activeTelescopeId])
+  // Read status from centralized store (populated by useTelescopeStatusPoller)
+  const streamStatus = useTelescopeStore((s) =>
+    activeTelescopeId ? s.telescopeStatus[activeTelescopeId] ?? null : null
+  )
 
   // Get connection status of the active telescope
   const activeTelescope = telescopes.find(t => t.id === activeTelescopeId)

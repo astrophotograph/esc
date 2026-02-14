@@ -15,7 +15,6 @@ import {
 import { Button } from './ui/button'
 import { useUIStore } from '../stores/uiStore'
 import { useTelescopeStore } from '../stores/telescopeStore'
-import { invoke } from '../services/api'
 
 // Helper function to convert RA degrees to HMS format
 function raToHMS(raDegrees: number): string {
@@ -38,35 +37,6 @@ function decToDMS(decDegrees: number): string {
   return `${sign}${degrees}° ${minutes}' ${seconds}"`
 }
 
-interface BalanceSensorData {
-  x?: number
-  y?: number
-  z?: number
-  angle?: number
-}
-
-interface StreamStatus {
-  connected: boolean
-  ra?: number
-  dec?: number
-  alt?: number
-  az?: number
-  viewState?: string  // camelCase from Rust serde
-  batteryPercent?: number
-  temperatureC?: number
-  humidityPercent?: number
-  dewHeaterPower?: number
-  isGoto?: boolean
-  isTracking?: boolean
-  gain?: number
-  focusPosition?: number
-  stackedFrame?: number
-  targetName?: string
-  freeMb?: number
-  totalMb?: number
-  balanceSensor?: BalanceSensorData
-}
-
 export function TelescopeStatusOverlay() {
   const { showTelescopeStatus, setShowTelescopeStatus } = useUIStore()
   const { currentTelescopeId } = useTelescopeStore()
@@ -74,7 +44,9 @@ export function TelescopeStatusOverlay() {
     state.telescopes.find((t) => t.id === state.currentTelescopeId)
   )
 
-  const [streamStatus, setStreamStatus] = useState<StreamStatus | null>(null)
+  const streamStatus = useTelescopeStore((s) =>
+    currentTelescopeId ? s.telescopeStatus[currentTelescopeId] : null
+  )
   const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number } | undefined>(undefined)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -123,32 +95,6 @@ export function TelescopeStatusOverlay() {
       }
     }
   }, [showTelescopeStatus, overlayPosition, ensureWithinBounds])
-
-  // Fetch status periodically - only when connected
-  useEffect(() => {
-    if (!currentTelescopeId) {
-      setStreamStatus(null)
-      return
-    }
-
-    // Only fetch status if we have a valid telescope selected
-    // Don't require isConnected since we want to show disconnected state too
-    const fetchStatus = async () => {
-      try {
-        const result = await invoke<StreamStatus>('get_telescope_status', {
-          telescopeId: currentTelescopeId,
-        })
-        setStreamStatus(result)
-      } catch (error) {
-        // Silently ignore errors - telescope may not be in backend state yet
-        // This happens during initial discovery before connection
-      }
-    }
-
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 2000)
-    return () => clearInterval(interval)
-  }, [currentTelescopeId])
 
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -317,7 +263,7 @@ export function TelescopeStatusOverlay() {
                       <span className="text-muted-foreground">Focus</span>
                     </div>
                     <span className="font-mono">
-                      {streamStatus?.focusPosition != null ? streamStatus.focusPosition : '—'}
+                      {streamStatus?.focuserPosition != null ? streamStatus.focuserPosition : '—'}
                     </span>
                   </div>
                 </>
