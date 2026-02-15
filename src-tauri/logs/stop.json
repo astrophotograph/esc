@@ -374,5 +374,13 @@
     "permission_mode": "acceptEdits",
     "hook_event_name": "Stop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "8f638956-ed82-4b02-8675-ce0fb71964ad",
+    "transcript_path": "/home/erewhon/.claude/projects/-home-erewhon-Projects-erewhon-esc/8f638956-ed82-4b02-8675-ce0fb71964ad.jsonl",
+    "cwd": "/home/erewhon/Projects/erewhon/esc/src-tauri",
+    "permission_mode": "acceptEdits",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
   }
 ]

@@ -58,8 +58,8 @@ disallow_untyped_defs = true
 [tool.hatch.build.targets.wheel]
 packages = ["src-tauri/python"]
 
-[tool.uv.sources]
-scopinator = { path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" }
+# [tool.uv.sources]
+# scopinator = { path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" }
 
 [build-system]
 requires = ["hatchling"]
