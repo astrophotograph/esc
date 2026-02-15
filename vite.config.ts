@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 const host = process.env.TAURI_DEV_HOST
-const webApiTarget = process.env.VITE_WEB_API_TARGET || 'http://127.0.0.1:8000'
+const webApiTarget = process.env.VITE_WEB_API_TARGET || 'http://127.0.0.1:9846'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({

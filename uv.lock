@@ -405,7 +405,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyerfa", specifier = ">=2.0.1.4" },
     { name = "scikit-image", specifier = ">=0.25.2" },
-    { name = "scopinator", path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" },
+    { name = "scopinator", specifier = ">=2025.9.13" },
     { name = "uvicorn", specifier = ">=0.30.0" },
 ]
 
@@ -1483,7 +1483,7 @@ wheels = [
 [[package]]
 name = "scopinator"
 version = "2026.1.26"
-source = { path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "beartype" },
@@ -1501,28 +1501,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tzlocal" },
 ]
-sdist = { hash = "sha256:7444a1f2d054e8004d4bb8cc1d5d545ba64cba3fd4302f2758e1906446667e76" }
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.8.0" },
-    { name = "beartype" },
-    { name = "click", specifier = ">=8.1.0,<8.2" },
-    { name = "click-completion", specifier = ">=0.5.2" },
-    { name = "click-repl", specifier = ">=0.3.0" },
-    { name = "loguru" },
-    { name = "numpy" },
-    { name = "numpy-typing", specifier = ">=1.1.1" },
-    { name = "opencv-python" },
-    { name = "pillow" },
-    { name = "psutil", specifier = ">=5.9.8" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pydash" },
-    { name = "pyindi-client", marker = "extra == 'indi'", specifier = ">=2.0.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "tzlocal" },
+sdist = { url = "https://files.pythonhosted.org/packages/49/08/713ee3e448671af0b8c00db1981a072aebaf83c7497829cfe077a7d625f3/scopinator-2026.1.26.tar.gz", hash = "sha256:69b6dfde415dad17106da92cab68dec5958ff58523a26b163db940d090588248", size = 134675, upload-time = "2026-01-29T04:00:52.293Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/58/9165f7031201e3fd8b57199402e01eb7ababf718793d04f45f820b9b8bd4/scopinator-2026.1.26-py3-none-any.whl", hash = "sha256:895fdeb9f6933ae05d5f4423d7fd6ade21bbb2fd30b042a58accfd8efd03ec2f", size = 175341, upload-time = "2026-01-29T04:00:50.606Z" },
 ]
-provides-extras = ["indi"]
 
 [[package]]
 name = "shellingham"

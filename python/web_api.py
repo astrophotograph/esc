@@ -608,5 +608,5 @@ if __name__ == "__main__":
     import uvicorn
 
     host = os.environ.get("WEB_API_HOST", "0.0.0.0")
-    port = int(os.environ.get("WEB_API_PORT", "8000"))
+    port = int(os.environ.get("WEB_API_PORT", "9846"))
     uvicorn.run("python.web_api:app", host=host, port=port, reload=False)
