@@ -11,10 +11,11 @@ import json
 import os
 from datetime import datetime
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import Body, FastAPI, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from .catalog.catalog_service import (
     catalog_get_object_types,
@@ -602,6 +603,26 @@ async def stream_video(telescope_id: str):
         media_type="multipart/x-mixed-replace; boundary=frame",
         headers={"Cache-Control": "no-store"},
     )
+
+
+_dist_dir = Path(__file__).resolve().parent.parent / "dist-web"
+
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve the SPA frontend — static files or index.html fallback."""
+    if not _dist_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Frontend not built. Run: pnpm web:build")
+
+    file_path = (_dist_dir / full_path).resolve()
+    if file_path.is_file() and file_path.is_relative_to(_dist_dir.resolve()):
+        return FileResponse(file_path)
+
+    index = _dist_dir / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+
+    raise HTTPException(status_code=404, detail="index.html not found")
 
 
 if __name__ == "__main__":
