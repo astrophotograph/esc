@@ -154,17 +154,31 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Update version in package.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${{ needs.determine-version.outputs.version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
       - name: Build web frontend
         run: pnpm web:build
 
-      - name: Package web build
+      - name: Package web tarball
         run: tar -czf esc-web-${{ needs.determine-version.outputs.version }}.tar.gz -C dist-web .
+
+      - name: Build web .deb
+        run: ./deploy/build-deb.sh "${{ needs.determine-version.outputs.version }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: artifacts-web
-          path: esc-web-*.tar.gz
+          path: |
+            esc-web-*.tar.gz
+            esc-web_*.deb
 
   publish-release:
     name: Create GitHub Release

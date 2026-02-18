@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+ESC_DIR=/opt/esc
+ESC_USER=esc
+
+# Create service user if it doesn't exist
+if ! id -u "$ESC_USER" >/dev/null 2>&1; then
+    useradd --system --home-dir "$ESC_DIR" --shell /usr/sbin/nologin "$ESC_USER"
+fi
+
+# Install uv if not present
+if ! command -v uv >/dev/null 2>&1 && [ ! -x "$ESC_DIR/.local/bin/uv" ]; then
+    echo "Installing uv package manager..."
+    export UV_INSTALL_DIR="$ESC_DIR/.local/bin"
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# Determine uv path
+if command -v uv >/dev/null 2>&1; then
+    UV=uv
+else
+    UV="$ESC_DIR/.local/bin/uv"
+fi
+
+# Create venv and install Python dependencies
+echo "Installing Python dependencies (this may take a few minutes on first install)..."
+cd "$ESC_DIR"
+"$UV" sync --frozen 2>&1 | tail -5
+
+# Fix ownership
+chown -R "$ESC_USER":"$ESC_USER" "$ESC_DIR"
+
+# Enable and start the service
+systemctl daemon-reload
+systemctl enable esc.service
+systemctl restart esc.service
+
+echo ""
+echo "ESC is running at http://$(hostname -I | awk '{print $1}'):9846"
+echo "Manage with: systemctl {start|stop|restart|status} esc"

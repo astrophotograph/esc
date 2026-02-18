@@ -1,0 +1,21 @@
+[Unit]
+Description=ESC Telescope Controller
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/esc
+ExecStart=/opt/esc/.venv/bin/python -m python.web_api
+Restart=on-failure
+RestartSec=5
+User=esc
+Group=esc
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/esc
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
