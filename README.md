@@ -1,248 +1,181 @@
-# EESC - Telescope Control Application
+# ESC - Telescope Controller
 
-A modern telescope control application built with Tauri 2, React, Rust, and Python. Features observation session planning, image management (FITS support), and cloud-based image sharing.
+A browser-based controller for Seestar smart telescopes. Connect from any device on your local network to control your telescope, browse catalogs, capture images, and plan observation sessions.
+
+Also available as a native desktop app for Linux and macOS.
+
+## Quick Start
+
+### Raspberry Pi / Linux Server
+
+Download and install the `.deb` — it sets up everything automatically:
+
+```bash
+curl -LO https://github.com/astrophotograph/esc/releases/latest/download/esc-web_2026.2.0_all.deb
+sudo dpkg -i esc-web_2026.2.0_all.deb
+```
+
+This installs ESC to `/opt/esc`, downloads Python and dependencies via [uv](https://docs.astral.sh/uv/), and starts a systemd service. First install takes a few minutes while dependencies are pulled.
+
+Once installed, open **http://\<pi-ip\>:9846** from any device on the same network.
+
+```bash
+# Manage the service
+sudo systemctl status esc
+sudo systemctl restart esc
+journalctl -u esc -f
+
+# Upgrade
+curl -LO https://github.com/astrophotograph/esc/releases/latest/download/esc-web_2026.2.0_all.deb
+sudo dpkg -i esc-web_2026.2.0_all.deb
+
+# Uninstall
+sudo dpkg -r esc-web        # remove
+sudo dpkg -P esc-web        # purge (also removes venv and service user)
+```
+
+### Linux Desktop
+
+Download the `.deb` or `.rpm` from the [latest release](https://github.com/astrophotograph/esc/releases/latest):
+
+```bash
+# Debian/Ubuntu
+sudo dpkg -i ESC_2026.2.0_amd64.deb
+
+# Fedora/RHEL
+sudo rpm -i ESC-2026.2.0-1.x86_64.rpm
+```
+
+### macOS
+
+Download `ESC_2026.2.0_aarch64.dmg` from the [latest release](https://github.com/astrophotograph/esc/releases/latest) and drag to Applications.
 
 ## Features
 
-- **Telescope Control**: Connect and control telescopes via ASCOM, INDI, or Alpaca protocols
-- **Observation Planning**: Plan observation sessions with target selection and visibility analysis
-- **Image Management**: Manage astronomical images with FITS file support
-- **Image Sharing**: Share images via cloud storage with public gallery
-- **Dual Deployment**: Run as desktop application (Tauri) or web application
-- **Dark Theme**: Beautiful dark blue color palette optimized for astronomy
+- **Live Video Feed**: MJPEG stream from the telescope with zoom, pan, and rotation
+- **Telescope Control**: GoTo, tracking, focus, park, and manual movement
+- **Catalog Search**: Browse deep sky objects, solar system targets, and star catalogs
+- **Session Planning**: Plan observation sessions with target visibility analysis
+- **Image Processing**: FITS support with stretch algorithms and plate solving
+- **Multiple Themes**: Dark, light, and astronomy-optimized color schemes
+- **Dual Deployment**: Run as a desktop app (Tauri) or web server (FastAPI)
 
-## Technology Stack
+## Architecture
 
-### Frontend
-- **React 18** with TypeScript
-- **Vite** for build tooling
-- **Zod** for runtime type validation
-- **Vitest** for testing
+ESC has two deployment modes that share the same React frontend:
 
-### Backend
-- **Rust** (Tauri commands and core logic)
-- **Python** (PyO3 embedded)
-  - Astronomical calculations (astropy, astroplan)
-  - Telescope hardware control
-  - User scripting engine
-- **Tauri 2** for desktop application framework
+- **Desktop (Tauri)**: Rust backend with embedded Python via PyO3. Frontend communicates with Rust directly through Tauri IPC.
+- **Web (FastAPI)**: Python backend serving both the API and static frontend. Any browser on the local network can connect.
 
-## Project Structure
+The API abstraction layer (`src/services/api.ts`) detects the runtime and routes calls accordingly:
 
 ```
-eesc/
-├── src/                          # React frontend
-│   ├── features/                 # Feature modules
-│   │   ├── telescope-control/
-│   │   ├── session-planning/
-│   │   ├── image-management/
-│   │   └── image-sharing/
-│   ├── services/                 # API abstraction layer
-│   ├── types/                    # TypeScript types (Zod schemas)
-│   ├── styles/                   # Global styles and theme
-│   ├── test/                     # Test utilities
-│   ├── App.tsx
-│   └── main.tsx
-│
-├── src-tauri/                    # Rust backend
-│   ├── src/
-│   │   ├── commands/             # Tauri commands
-│   │   ├── telescope/            # Telescope control logic
-│   │   ├── imaging/              # Image processing
-│   │   ├── python/               # PyO3 bridge
-│   │   ├── main.rs
-│   │   └── lib.rs
-│   │
-│   ├── python/                   # Python modules
-│   │   ├── astronomy/            # Coordinate transforms, ephemeris
-│   │   ├── hardware/             # Telescope drivers
-│   │   └── scripting/            # User script engine
-│   │
-│   ├── Cargo.toml
-│   ├── tauri.conf.json
-│   └── build.rs
-│
-├── tests/                        # Python tests
-│   ├── test_astronomy.py
-│   └── test_scripting.py
-│
-├── package.json                  # pnpm configuration
-├── pyproject.toml                # Python/uv configuration
-├── vite.config.ts                # Vite configuration
-├── vitest.config.ts              # Vitest configuration
-└── README.md
+React Frontend
+    ↓
+API Abstraction Layer
+    ├─→ Desktop: Tauri IPC → Rust → PyO3 → Python
+    └─→ Web: HTTP POST /api/{command} → FastAPI → Python
 ```
 
-## Getting Started
+## Development
 
 ### Prerequisites
 
-- **Node.js** (v18+)
-- **pnpm** (v8+)
-- **Rust** (latest stable)
-- **Python** (3.11+)
-- **uv** (Python package manager)
-- **Tauri Prerequisites**: See [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
+- **Node.js** 18+ and **pnpm** 8+
+- **Rust** (latest stable) — only needed for desktop builds
+- **uv** (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Tauri prerequisites** (desktop only): see [Tauri docs](https://v2.tauri.app/start/prerequisites/)
 
-### Installation
-
-1. **Install dependencies**:
+### Setup
 
 ```bash
-# Install JavaScript dependencies
+git clone https://github.com/astrophotograph/esc.git
+cd esc
 pnpm install
-
-# Install Python dependencies
 uv sync
-
-# The Rust dependencies will be installed automatically when building
 ```
 
-2. **Development**:
+### Running in Development
+
+**Web mode** (two terminals):
 
 ```bash
-# Run desktop app in development mode
-pnpm tauri:dev
+pnpm web:api     # Python backend on :9846
+pnpm web:dev     # Vite dev server on :9273 (proxies /api to backend)
+```
 
-# Run web version in development mode
-pnpm web:api
-pnpm web:dev
+Open http://localhost:9273
+
+**Desktop mode**:
+
+```bash
+./run-dev.sh     # Sets up LD_LIBRARY_PATH and launches Tauri
 ```
 
 ### Building
 
 ```bash
-# Build desktop application
+# Web frontend (outputs to dist-web/)
+pnpm web:build
+
+# Desktop app
 pnpm tauri:build
 
-# Build web version
-pnpm web:build
+# Web .deb package
+pnpm web:build && ./deploy/build-deb.sh
 ```
 
 ### Testing
 
 ```bash
-# Run all tests
-pnpm test:all
-
-# Run TypeScript/React tests
-pnpm test
-
-# Run TypeScript tests with UI
-pnpm test:ui
-
-# Run Python tests
-pnpm test:python
-
-# Run Rust tests
-pnpm test:rust
-
-# Run tests with coverage
-pnpm test:coverage
+pnpm test              # TypeScript/React tests
+pnpm test:python       # Python tests
+pnpm test:rust         # Rust tests
+pnpm test:all          # Everything
+pnpm test:coverage     # With coverage report
 ```
 
 ### Linting and Formatting
 
 ```bash
-# Format all code
-pnpm format
-pnpm format:python
-
-# Lint code
-pnpm lint
-pnpm lint:python
+pnpm format            # Prettier (TypeScript)
+pnpm format:python     # Ruff (Python)
+pnpm lint              # ESLint
+pnpm lint:python       # Ruff linter
 ```
 
-## Development Workflow
-
-### Adding New Tauri Commands
-
-1. Define the command in `src-tauri/src/commands/mod.rs`
-2. Register it in `src-tauri/src/main.rs` via `generate_handler![]`
-3. Call from frontend using `invoke('command_name', { args })`
-
-### Using Python from Rust
-
-Python modules are integrated via PyO3 in `src-tauri/src/python/mod.rs`. To call Python code:
-
-```rust
-use pyo3::prelude::*;
-
-Python::with_gil(|py| {
-    // Execute Python code
-    let result = py.eval("1 + 1", None, None)?;
-    println!("{}", result);
-    Ok(())
-})
-```
-
-### Adding New Features
-
-1. Create feature directory in `src/features/`
-2. Implement React components with TypeScript
-3. Define types using Zod schemas in `src/types/`
-4. Create corresponding Rust commands if needed
-5. Add Python modules for complex calculations
-
-### Dual Deployment (Desktop & Web)
-
-The API abstraction layer (`src/services/api.ts`) automatically detects the runtime environment:
-
-- **Desktop (Tauri)**: Uses `@tauri-apps/api` for direct Rust communication
-- **Web**: Falls back to REST API calls (requires separate backend server)
-
-## Architecture
-
-### Frontend → Backend Communication
+### Project Structure
 
 ```
-React Components
-    ↓
-API Abstraction Layer (src/services/api.ts)
-    ↓
-    ├─→ Tauri (Desktop): invoke() → Rust Commands
-    └─→ Web: fetch() → REST API → Rust Server
-            ↓
-        Rust Backend
-            ↓
-            ├─→ Pure Rust (telescope, imaging)
-            └─→ PyO3 Bridge → Python Modules
-                    ↓
-                ├─→ Astronomy (astropy, astroplan)
-                ├─→ Hardware (ASCOM/INDI drivers)
-                └─→ Scripting (user scripts)
+esc/
+├── src/                    # React frontend
+│   ├── components/         # UI components
+│   ├── hooks/              # React hooks (polling, shortcuts, etc.)
+│   ├── services/           # API abstraction layer
+│   ├── stores/             # Zustand state stores
+│   └── themes/             # Theme definitions
+├── src-tauri/              # Rust backend (desktop mode)
+│   └── src/
+│       ├── commands/       # Tauri command handlers
+│       └── python/         # PyO3 bridge
+├── python/                 # Python backend (web + embedded)
+│   ├── telescope/          # Seestar bridge and discovery
+│   ├── catalog/            # Deep sky object catalogs
+│   ├── imaging/            # FITS processing, plate solving
+│   ├── planning/           # Session planning
+│   └── web_api.py          # FastAPI server
+├── deploy/                 # Packaging (systemd, .deb build)
+├── run-dev.sh              # Desktop dev launcher
+├── pyproject.toml          # Python dependencies
+└── package.json            # Node dependencies
 ```
-
-## Python Modules
-
-### Astronomy (`src-tauri/python/astronomy/`)
-- **coordinates.py**: RA/Dec ↔ Alt/Az transformations
-- **ephemeris.py**: Sun, Moon, and planet positions
-- **planning.py**: Observation planning and visibility analysis
-
-### Hardware (`src-tauri/python/hardware/`)
-- **telescope_driver.py**: Abstract telescope driver for ASCOM/INDI/Alpaca
-
-### Scripting (`src-tauri/python/scripting/`)
-- **script_engine.py**: Embedded Python interpreter for user scripts
 
 ## Contributing
 
 1. Follow the existing code style
-2. Use `pnpm format` and `pnpm lint` before committing
+2. Run `pnpm format` and `pnpm lint` before committing
 3. Add tests for new features
-4. Update documentation as needed
 
 ## License
 
 See LICENSE file for details.
-
-## Roadmap
-
-- [ ] Implement actual telescope hardware communication
-- [ ] Add FITS image viewer with stretch algorithms
-- [ ] Integrate star catalogs and deep sky object databases
-- [ ] Add plate solving capabilities
-- [ ] Implement cloud storage backend
-- [ ] Add session scheduling and weather integration
-- [ ] Create mobile companion app
