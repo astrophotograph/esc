@@ -9,11 +9,13 @@ if ! id -u "$ESC_USER" >/dev/null 2>&1; then
     useradd --system --home-dir "$ESC_DIR" --shell /usr/sbin/nologin "$ESC_USER"
 fi
 
+# Fix ownership before installing (uv needs to write to ESC_DIR)
+chown -R "$ESC_USER":"$ESC_USER" "$ESC_DIR"
+
 # Install uv if not present
 if ! command -v uv >/dev/null 2>&1 && [ ! -x "$ESC_DIR/.local/bin/uv" ]; then
     echo "Installing uv package manager..."
-    export UV_INSTALL_DIR="$ESC_DIR/.local/bin"
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    su -s /bin/sh "$ESC_USER" -c "UV_INSTALL_DIR='$ESC_DIR/.local/bin' curl -LsSf https://astral.sh/uv/install.sh | sh"
 fi
 
 # Determine uv path
@@ -23,13 +25,11 @@ else
     UV="$ESC_DIR/.local/bin/uv"
 fi
 
-# Create venv and install Python dependencies
+# Create venv and install Python dependencies as the esc user
+# This ensures Python is downloaded to ~esc/.local/share/uv/ not /root/
 echo "Installing Python dependencies (this may take a few minutes on first install)..."
 cd "$ESC_DIR"
-"$UV" sync --frozen 2>&1 | tail -5
-
-# Fix ownership
-chown -R "$ESC_USER":"$ESC_USER" "$ESC_DIR"
+su -s /bin/sh "$ESC_USER" -c "'$UV' sync --frozen" 2>&1 | tail -5
 
 # Enable and start the service
 systemctl daemon-reload

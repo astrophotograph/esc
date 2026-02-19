@@ -1,6 +1,6 @@
 {
   "name": "eesc",
-  "version": "0.1.0",
+  "version": "2026.2.0",
   "description": "Telescope control application with observation planning and image management",
   "type": "module",
   "scripts": {
