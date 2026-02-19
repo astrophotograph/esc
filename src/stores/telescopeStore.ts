@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware'
 // Types
 export type TelescopeProtocol = 'seestar' | 'alpaca'
 
+export type ConnectionType = 'direct' | 'ssh'
+
 export interface TelescopeInfo {
   id: string
   host: string
@@ -19,6 +21,13 @@ export interface TelescopeInfo {
   sortOrder?: number  // Order within section
   status: 'disconnected' | 'connecting' | 'connected' | 'error'
   error?: string
+  // SSH tunnel fields (for remote connections)
+  connectionType?: ConnectionType
+  sshHost?: string
+  sshPort?: number        // default 22
+  sshUser?: string
+  sshKeyPath?: string     // default ~/.ssh/id_rsa
+  remoteHost?: string     // Seestar IP on the remote network
 }
 
 export interface TelescopeSection {

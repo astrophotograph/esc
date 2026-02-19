@@ -40,13 +40,21 @@ import {
   type TelescopeInfo,
   type TelescopeProtocol,
   type TelescopeSection,
+  type ConnectionType,
 } from '../stores/telescopeStore'
 
 interface AddTelescopeFormData {
   protocol: TelescopeProtocol
+  connectionType: ConnectionType
   host: string
   port: string
   friendlyName: string
+  // SSH fields
+  sshHost: string
+  sshPort: string
+  sshUser: string
+  sshKeyPath: string
+  remoteHost: string
 }
 
 const DEFAULT_PORTS: Record<TelescopeProtocol, number> = {
@@ -80,9 +88,15 @@ export function TelescopeEditor() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'telescope' | 'section'; id: string; name: string } | null>(null)
   const [formData, setFormData] = useState<AddTelescopeFormData>({
     protocol: 'seestar',
+    connectionType: 'direct',
     host: '',
     port: '4700',
     friendlyName: '',
+    sshHost: '',
+    sshPort: '22',
+    sshUser: 'pi',
+    sshKeyPath: '',
+    remoteHost: '',
   })
 
   const handleProtocolChange = (protocol: TelescopeProtocol) => {
@@ -94,28 +108,52 @@ export function TelescopeEditor() {
   }
 
   const handleAddTelescope = useCallback(() => {
-    if (!formData.host.trim()) return
+    const isSSH = formData.connectionType === 'ssh'
+
+    if (isSSH) {
+      if (!formData.sshHost.trim() || !formData.remoteHost.trim()) return
+    } else {
+      if (!formData.host.trim()) return
+    }
 
     const port = parseInt(formData.port) || DEFAULT_PORTS[formData.protocol]
-    const id = `manual-${formData.host}:${port}-${Date.now()}`
+    const host = isSSH ? formData.remoteHost.trim() : formData.host.trim()
+    const id = `manual-${host}:${port}-${Date.now()}`
 
-    addTelescope({
+    const telescope: TelescopeInfo = {
       id,
-      host: formData.host.trim(),
+      host,
       port,
       protocol: formData.protocol,
       friendlyName: formData.friendlyName.trim() || undefined,
-      name: formData.friendlyName.trim() || `${formData.protocol} @ ${formData.host}`,
+      name: formData.friendlyName.trim() || `${formData.protocol} @ ${host}`,
       discovery_method: 'manual',
       status: 'disconnected',
-    })
+      connectionType: formData.connectionType,
+    }
+
+    if (isSSH) {
+      telescope.sshHost = formData.sshHost.trim()
+      telescope.sshPort = parseInt(formData.sshPort) || 22
+      telescope.sshUser = formData.sshUser.trim() || 'pi'
+      telescope.sshKeyPath = formData.sshKeyPath.trim() || undefined
+      telescope.remoteHost = formData.remoteHost.trim()
+    }
+
+    addTelescope(telescope)
 
     // Reset form
     setFormData({
       protocol: 'seestar',
+      connectionType: 'direct',
       host: '',
       port: '4700',
       friendlyName: '',
+      sshHost: '',
+      sshPort: '22',
+      sshUser: 'pi',
+      sshKeyPath: '',
+      remoteHost: '',
     })
     setShowAddForm(false)
   }, [formData, addTelescope])
@@ -266,26 +304,108 @@ export function TelescopeEditor() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                placeholder={String(DEFAULT_PORTS[formData.protocol])}
-                value={formData.port}
-                onChange={(e) => setFormData(prev => ({ ...prev, port: e.target.value }))}
-              />
+              <Label htmlFor="connection-type">Connection</Label>
+              <Select
+                value={formData.connectionType}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, connectionType: v as ConnectionType }))}
+              >
+                <SelectTrigger id="connection-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">Direct</SelectItem>
+                  <SelectItem value="ssh">Remote (SSH)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="host">IP Address / Hostname</Label>
-            <Input
-              id="host"
-              placeholder="192.168.1.100"
-              value={formData.host}
-              onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-            />
-          </div>
+          {formData.connectionType === 'direct' ? (
+            <>
+              <div className="grid grid-cols-[1fr_auto] gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="host">IP Address / Hostname</Label>
+                  <Input
+                    id="host"
+                    placeholder="192.168.1.100"
+                    value={formData.host}
+                    onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="port">Port</Label>
+                  <Input
+                    id="port"
+                    type="number"
+                    className="w-24"
+                    placeholder={String(DEFAULT_PORTS[formData.protocol])}
+                    value={formData.port}
+                    onChange={(e) => setFormData(prev => ({ ...prev, port: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* SSH tunnel fields */}
+              <div className="space-y-3 p-2 border rounded bg-background/50">
+                <p className="text-xs text-muted-foreground">
+                  Connect to a remote Seestar via SSH port forwarding (e.g., Raspberry Pi at a dark site).
+                </p>
+                <div className="grid grid-cols-[1fr_auto] gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="ssh-host">Jump Host</Label>
+                    <Input
+                      id="ssh-host"
+                      placeholder="pi.example.com"
+                      value={formData.sshHost}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sshHost: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ssh-port">SSH Port</Label>
+                    <Input
+                      id="ssh-port"
+                      type="number"
+                      className="w-24"
+                      placeholder="22"
+                      value={formData.sshPort}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sshPort: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="ssh-user">SSH User</Label>
+                    <Input
+                      id="ssh-user"
+                      placeholder="pi"
+                      value={formData.sshUser}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sshUser: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="ssh-key-path">Key Path (optional)</Label>
+                    <Input
+                      id="ssh-key-path"
+                      placeholder="~/.ssh/id_rsa"
+                      value={formData.sshKeyPath}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sshKeyPath: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="remote-host">Remote Seestar IP</Label>
+                  <Input
+                    id="remote-host"
+                    placeholder="192.168.4.1"
+                    value={formData.remoteHost}
+                    onChange={(e) => setFormData(prev => ({ ...prev, remoteHost: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="friendly-name">Friendly Name (optional)</Label>
@@ -301,7 +421,15 @@ export function TelescopeEditor() {
             <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleAddTelescope} disabled={!formData.host.trim()}>
+            <Button
+              size="sm"
+              onClick={handleAddTelescope}
+              disabled={
+                formData.connectionType === 'ssh'
+                  ? !formData.sshHost.trim() || !formData.remoteHost.trim()
+                  : !formData.host.trim()
+              }
+            >
               Add Telescope
             </Button>
           </div>
@@ -536,6 +664,9 @@ function TelescopeRow({
             <div className="text-sm font-medium truncate">{getDisplayName(telescope)}</div>
             <div className="text-xs text-muted-foreground">
               {telescope.protocol || 'seestar'} @ {telescope.host}:{telescope.port}
+              {telescope.sshHost && (
+                <span className="ml-1 text-blue-500">(via SSH {telescope.sshHost})</span>
+              )}
             </div>
           </div>
 

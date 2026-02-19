@@ -209,13 +209,32 @@ export function TelescopeHeader() {
   const connectToTelescope = useCallback(async (telescope: TelescopeInfo) => {
     updateTelescope(telescope.id, { status: 'connecting' })
     try {
-      // Pass host/port/protocol for manually added telescopes
-      await invoke('connect_telescope', {
+      const connectPayload: Record<string, unknown> = {
         telescopeId: telescope.id,
         host: telescope.host,
         port: telescope.port,
         protocol: telescope.protocol || 'seestar',
-      })
+      }
+
+      // Include SSH tunnel config if this is an SSH connection
+      // Check both connectionType and sshHost to handle telescopes persisted
+      // before connectionType field existed
+      if (telescope.sshHost && (telescope.connectionType === 'ssh' || telescope.connectionType === undefined)) {
+        connectPayload.sshHost = telescope.sshHost
+        connectPayload.sshPort = telescope.sshPort ?? 22
+        connectPayload.sshUser = telescope.sshUser ?? 'pi'
+        connectPayload.sshKeyPath = telescope.sshKeyPath
+        connectPayload.remoteHost = telescope.remoteHost ?? telescope.host
+        addActivity(telescope.id, 'info', `Establishing SSH tunnel to ${telescope.sshHost}...`)
+      }
+
+      const result = await invoke<{ success?: boolean; error?: string }>('connect_telescope', connectPayload)
+      if (result.success === false) {
+        const errorMsg = result.error || 'Connection failed'
+        updateTelescope(telescope.id, { status: 'error', error: errorMsg })
+        addActivity(telescope.id, 'error', errorMsg)
+        return
+      }
       updateTelescope(telescope.id, { status: 'connected' })
       addActivity(telescope.id, 'success', 'Connected to telescope')
     } catch (error) {
@@ -367,6 +386,9 @@ export function TelescopeHeader() {
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>{telescope.host}:{telescope.port}</span>
+                              {telescope.sshHost && (
+                                <span className="text-blue-500">via SSH</span>
+                              )}
                               {telescope.serial_number && (
                                 <>
                                   <Radio className="w-3 h-3" />

@@ -62,6 +62,76 @@ class FocusParameters(BaseModel):
     increment: Optional[int] = None  # Relative increment
 
 
+def _astro_stretch_channel(
+    channel: "np.ndarray",
+    black_pt: float = 0.5,
+    white_pt: float = 99.5,
+    midtone: float = 0.25,
+) -> "np.ndarray":
+    """Apply a gentle astro stretch to a single channel.
+
+    Uses percentile-based black/white clipping with a midtone transfer
+    function (MTF) to lift faint detail without blowing out highlights.
+
+    Args:
+        channel: 2-D array of pixel values (any dtype).
+        black_pt: Lower percentile for black clipping (default 0.5).
+        white_pt: Upper percentile for white clipping (default 99.5).
+        midtone: MTF balance parameter (0..1). Lower = brighter midtones.
+                 0.5 = linear (no change). Default 0.25 = mild lift.
+    """
+    import numpy as np
+
+    vmin = float(np.percentile(channel, black_pt))
+    vmax = float(np.percentile(channel, white_pt))
+    if vmax - vmin < 1e-10:
+        vmin = float(np.min(channel))
+        vmax = float(np.max(channel))
+        if vmax - vmin < 1e-10:
+            return np.zeros_like(channel, dtype=np.float32)
+
+    normalized = (channel.astype(np.float32) - vmin) / (vmax - vmin)
+    normalized = np.clip(normalized, 0.0, 1.0)
+
+    # Midtone transfer function (MTF):  MTF(x, m) = (m-1)*x / ((2m-1)*x - m)
+    # Keeps 0→0 and 1→1 but reshapes the curve to lift midtones.
+    if midtone < 0.5 - 1e-6 or midtone > 0.5 + 1e-6:
+        m = midtone
+        denom = (2.0 * m - 1.0) * normalized - m
+        # Avoid division by zero at the singularity
+        safe = np.abs(denom) > 1e-10
+        result = np.where(safe, (m - 1.0) * normalized / denom, normalized)
+        normalized = np.clip(result, 0.0, 1.0)
+
+    return normalized
+
+
+def _astro_stretch_to_jpeg(
+    img: "np.ndarray",
+    jpeg_quality: int = 85,
+) -> bytes | None:
+    """Stretch a raw camera frame and encode it as JPEG."""
+    import cv2
+    import numpy as np
+
+    data = img.astype(np.float32) if img.dtype != np.float32 else img.copy()
+
+    if len(data.shape) == 3 and data.shape[2] == 3:
+        for c in range(3):
+            data[:, :, c] = _astro_stretch_channel(data[:, :, c])
+    elif len(data.shape) == 2:
+        data = _astro_stretch_channel(data)
+    else:
+        cv2.normalize(data, data, 0, 255, cv2.NORM_MINMAX)
+        data = data.astype(np.uint8)
+        ok, buf = cv2.imencode(".jpg", data, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
+        return buf.tobytes() if ok else None
+
+    out = (data * 255.0).clip(0, 255).astype(np.uint8)
+    ok, buf = cv2.imencode(".jpg", out, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
+    return buf.tobytes() if ok else None
+
+
 class SeestarBridge:
     """Bridge to scopinator for controlling Seestar telescopes."""
 
@@ -465,21 +535,13 @@ class SeestarBridge:
             # Get next image from the imaging client
             async for image in self.imaging_client.get_next_image(camera_id):
                 if image is not None and image.image is not None:
-                    # Convert numpy array to JPEG
                     img = image.image
-                    if img.dtype != np.uint8:
-                        # Normalize non-8bit images for JPEG encoding.
-                        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
-                        img = img.astype(np.uint8)
 
-                    # Offload JPEG encoding to a thread to avoid blocking the event loop.
-                    def _encode_jpeg():
-                        ok, buffer = cv2.imencode(
-                            ".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85]
-                        )
-                        return buffer.tobytes() if ok else None
+                    # Offload stretch + JPEG encoding to a thread.
+                    def _stretch_and_encode(frame: np.ndarray) -> bytes | None:
+                        return _astro_stretch_to_jpeg(frame)
 
-                    return await asyncio.to_thread(_encode_jpeg)
+                    return await asyncio.to_thread(_stretch_and_encode, img)
 
                 # Only get one frame
                 break

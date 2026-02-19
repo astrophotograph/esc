@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTelescopeStore } from '@/stores/telescopeStore'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
 import { RandomTestPattern } from './RandomTestPattern'
+
+const SNAPSHOT_POLL_MS = 500
 
 interface VideoFeedProps {
   telescopeId?: string
@@ -27,8 +29,12 @@ export function VideoFeed({
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [frameUrl, setFrameUrl] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+  const prevFrameUrlRef = useRef<string | null>(null)
+  const pollActiveRef = useRef(false)
+  const consecutiveErrorsRef = useRef(0)
   const currentTelescopeId = useTelescopeStore(state => state.currentTelescopeId)
   const telescopes = useTelescopeStore(state => state.telescopes)
 
@@ -60,31 +66,93 @@ export function VideoFeed({
   const isConnected = activeTelescope?.status === 'connected'
   const isConnecting = activeTelescope?.status === 'connecting'
 
-  useEffect(() => {
-    if (!activeTelescopeId) {
-      setError('No telescope selected')
-      setIsStreaming(false)
-      return
-    }
+  // Poll-based frame fetcher — keeps last frame visible while loading next
+  const fetchFrame = useCallback(async (tid: string) => {
+    const url = `/api/snapshot/${encodeURIComponent(tid)}`
+    try {
+      const res = await fetch(url)
+      if (!res.ok) {
+        throw new Error(`${res.status}`)
+      }
+      const blob = await res.blob()
+      const objectUrl = URL.createObjectURL(blob)
 
-    if (!isConnected) {
-      // Don't try to stream if not connected
+      // Revoke previous blob URL to avoid memory leaks
+      if (prevFrameUrlRef.current) {
+        URL.revokeObjectURL(prevFrameUrlRef.current)
+      }
+      prevFrameUrlRef.current = objectUrl
+
+      setFrameUrl(objectUrl)
+      setIsStreaming(true)
+      setError(null)
+      consecutiveErrorsRef.current = 0
+    } catch {
+      consecutiveErrorsRef.current++
+      // Only show error after several consecutive failures
+      if (consecutiveErrorsRef.current > 10) {
+        setError('Video stream unavailable')
+        setIsStreaming(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!activeTelescopeId || !isConnected) {
+      pollActiveRef.current = false
       setIsStreaming(false)
       if (isConnecting) {
-        setError(null) // Clear error while connecting
+        setError(null)
       }
+      // Clean up frame
+      if (prevFrameUrlRef.current) {
+        URL.revokeObjectURL(prevFrameUrlRef.current)
+        prevFrameUrlRef.current = null
+      }
+      setFrameUrl(null)
       return
     }
 
-    // Clear error when starting stream (only when connected)
     setError(null)
-    setIsStreaming(true)
+    pollActiveRef.current = true
+    consecutiveErrorsRef.current = 0
+    const tid = activeTelescopeId
 
-    // Cleanup function
-    return () => {
-      setIsStreaming(false)
+    let timeoutId: ReturnType<typeof setTimeout>
+
+    const poll = async () => {
+      if (!pollActiveRef.current) return
+      await fetchFrame(tid)
+      if (pollActiveRef.current) {
+        timeoutId = setTimeout(poll, SNAPSHOT_POLL_MS)
+      }
     }
-  }, [activeTelescopeId, isConnected, isConnecting])
+
+    poll()
+
+    return () => {
+      pollActiveRef.current = false
+      clearTimeout(timeoutId)
+    }
+  }, [activeTelescopeId, isConnected, isConnecting, fetchFrame])
+
+  // Clean up blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (prevFrameUrlRef.current) {
+        URL.revokeObjectURL(prevFrameUrlRef.current)
+        prevFrameUrlRef.current = null
+      }
+    }
+  }, [])
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = img.naturalWidth / img.naturalHeight
+      setImageAspectRatio(ratio)
+    }
+  }
 
   if (!activeTelescopeId) {
     return (
@@ -122,7 +190,7 @@ export function VideoFeed({
     )
   }
 
-  if (error) {
+  if (error && !frameUrl) {
     return (
       <div className={`flex items-center justify-center bg-gray-900 rounded-lg ${className}`}>
         <div className="text-center text-red-400">
@@ -134,23 +202,14 @@ export function VideoFeed({
   }
 
   // Check if telescope is in Idle state (or similar non-imaging states) - show test pattern
-  // Only show for specific idle stages, NOT for active imaging modes like ContinuousExposure, Stack, RTSP
   const isIdle = streamStatus?.stage === 'Idle'
 
-  const streamUrl = `/api/stream/${encodeURIComponent(activeTelescopeId)}`
-
-  // Debug logging
-  console.log(`[VideoFeed] Rendering: isIdle=${isIdle}, isConnected=${isConnected}, url=${streamUrl}`)
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget
-    console.log(`[VideoFeed] Image loaded: ${img.naturalWidth}x${img.naturalHeight}`)
-    if (img.naturalWidth && img.naturalHeight) {
-      const ratio = img.naturalWidth / img.naturalHeight
-      setImageAspectRatio(ratio)
+  // Get status text for test pattern
+  const getStatusText = () => {
+    if (streamStatus?.stage === 'Idle') {
+      return 'Telescope is idle - waiting for imaging to start'
     }
-    setIsStreaming(true)
-    setError(null)
+    return undefined
   }
 
   // Calculate pan boundaries based on zoom level
@@ -248,14 +307,6 @@ export function VideoFeed({
     setIsDragging(false)
   }
 
-  // Get status text for test pattern
-  const getStatusText = () => {
-    if (streamStatus?.stage === 'Idle') {
-      return 'Telescope is idle - waiting for imaging to start'
-    }
-    return undefined
-  }
-
   return (
     <div
       ref={containerRef}
@@ -286,28 +337,33 @@ export function VideoFeed({
         />
       ) : (
         <>
-          {/* Video stream - uses flexbox centering with constrained dimensions */}
-          <img
-            ref={imgRef}
-            src={streamUrl}
-            alt="Telescope live feed"
-            draggable={false}
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
-              transform: `scale(${zoom}) rotate(${rotation}deg) translate(${panPosition.x}px, ${panPosition.y}px)`,
-              transformOrigin: 'center center',
-              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-              userSelect: 'none'
-            }}
-            onError={(e) => {
-              console.error('[VideoFeed] Stream error:', e, 'URL:', streamUrl)
-              setError('Failed to load video stream')
-              setIsStreaming(false)
-            }}
-            onLoad={handleImageLoad}
-          />
+          {/* Video feed — poll-based snapshots keep last frame visible */}
+          {frameUrl && (
+            <img
+              ref={imgRef}
+              src={frameUrl}
+              alt="Telescope live feed"
+              draggable={false}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                transform: `scale(${zoom}) rotate(${rotation}deg) translate(${panPosition.x}px, ${panPosition.y}px)`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                userSelect: 'none'
+              }}
+              onLoad={handleImageLoad}
+            />
+          )}
+
+          {/* Loading state before first frame */}
+          {!frameUrl && (
+            <div className="text-center text-gray-400">
+              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-sm">Waiting for first frame...</p>
+            </div>
+          )}
 
           {/* Video Overlays - positioned over the image area */}
           {imageAspectRatio && dimensions.width > 0 && dimensions.height > 0 && (
@@ -346,6 +402,7 @@ export function VideoFeed({
         <span className="text-white text-sm font-medium">
           {isIdle ? 'IDLE' : isStreaming ? 'LIVE' : 'CONNECTING...'}
         </span>
+        {error && <span className="text-yellow-400 text-xs ml-1">({error})</span>}
       </div>
 
       {/* Telescope ID badge */}

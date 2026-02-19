@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -37,8 +38,11 @@ from .planning.planning_service import (
     get_tonight_targets,
     update_session,
 )
+from .networking.ssh_tunnel import SSHTunnelConfig, SSHTunnelManager
 from .telescope.discovery import discover_telescopes
 from .telescope.seestar_bridge import SeestarBridge
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -50,6 +54,8 @@ class TelescopeEntry:
     bridge: Optional[SeestarBridge] = None
     connected: bool = False
     op_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    ssh_tunnel: Optional[SSHTunnelManager] = None
+    imaging_port: int = 4800
 
 
 app = FastAPI()
@@ -61,6 +67,13 @@ _sessions_lock = asyncio.Lock()
 
 
 def _parse_host_port(value: str) -> tuple[str, int]:
+    import re
+
+    # Handle manual telescope IDs like "manual-10.0.0.1:4700-1735123456789"
+    m = re.match(r"^manual-(.+):(\d+)-\d+$", value)
+    if m:
+        return m.group(1), int(m.group(2))
+
     if ":" in value:
         host, port_str = value.rsplit(":", 1)
         try:
@@ -85,6 +98,14 @@ async def _get_or_create_entry(
     async with _telescopes_lock:
         entry = _telescopes.get(telescope_id)
         if entry is not None:
+            # Update host/port if caller provided them and they differ
+            # (e.g. connect_telescope sends the real host from the frontend).
+            if host and entry.host != host:
+                entry.host = host
+                entry.bridge = None  # force fresh bridge
+            if port and entry.port != port:
+                entry.port = port
+                entry.bridge = None
             return entry
 
         if host is None and telescope_id:
@@ -111,7 +132,7 @@ async def _get_or_create_entry(
 
 async def _get_bridge(entry: TelescopeEntry) -> SeestarBridge:
     if entry.bridge is None:
-        entry.bridge = SeestarBridge(entry.host, entry.port)
+        entry.bridge = SeestarBridge(entry.host, entry.port, imaging_port=entry.imaging_port)
     return entry.bridge
 
 
@@ -192,7 +213,39 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         telescope_id = _extract_telescope_id(payload)
         if not telescope_id:
             raise HTTPException(status_code=400, detail="Missing telescopeId")
-        entry = await _get_or_create_entry(telescope_id=telescope_id)
+        print(
+            f"connect_telescope: id={telescope_id} host={payload.get('host')} "
+            f"port={payload.get('port')} sshHost={payload.get('sshHost')}"
+        )
+        entry = await _get_or_create_entry(
+            telescope_id=telescope_id,
+            host=payload.get("host"),
+            port=payload.get("port"),
+        )
+
+        # If SSH tunnel config is provided, establish the tunnel first.
+        ssh_host = payload.get("sshHost")
+        if ssh_host:
+            tunnel_cfg = SSHTunnelConfig(
+                ssh_host=ssh_host,
+                ssh_port=int(payload.get("sshPort", 22)),
+                ssh_user=payload.get("sshUser", "pi"),
+                remote_host=payload.get("remoteHost", entry.host),
+                key_path=payload.get("sshKeyPath") or None,
+            )
+            tunnel = SSHTunnelManager(config=tunnel_cfg)
+            try:
+                local_ports = await tunnel.connect()
+            except Exception as exc:
+                return {"success": False, "error": f"SSH tunnel failed: {exc}"}
+            entry.ssh_tunnel = tunnel
+            # Redirect bridge to connect through the tunnel.
+            entry.host = "127.0.0.1"
+            entry.port = local_ports[4700]
+            entry.imaging_port = local_ports[4800]
+            # Force a fresh bridge so it picks up the new host/port.
+            entry.bridge = None
+
         bridge, connect_result = await _get_connected_bridge(entry)
         if connect_result:
             return connect_result
@@ -205,9 +258,15 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         entry = await _get_or_create_entry(telescope_id=telescope_id)
         if entry.bridge is None:
             entry.connected = False
+            if entry.ssh_tunnel:
+                await entry.ssh_tunnel.disconnect()
+                entry.ssh_tunnel = None
             return {"success": True, "message": "Already disconnected"}
         result = await entry.bridge.disconnect()
         entry.connected = False
+        if entry.ssh_tunnel:
+            await entry.ssh_tunnel.disconnect()
+            entry.ssh_tunnel = None
         return result
 
     if command == "get_telescope_status":
@@ -216,11 +275,11 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
             return {"connected": False}
         entry = await _get_or_create_entry(telescope_id=telescope_id)
         if entry.bridge is None or not entry.connected:
-            bridge, connect_result = await _get_connected_bridge(entry)
-            if connect_result:
-                return {"connected": False}
-        else:
-            bridge = entry.bridge
+            # Don't auto-connect from the status poller — let connect_telescope
+            # handle the initial connection (especially important for SSH tunnels
+            # where the poller doesn't have credentials).
+            return {"connected": False}
+        bridge = entry.bridge
 
         result = await bridge.get_status()
         if not result.get("success"):
@@ -572,6 +631,21 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    if command == "ssh_tunnel_status":
+        telescope_id = _extract_telescope_id(payload)
+        if not telescope_id:
+            raise HTTPException(status_code=400, detail="Missing telescopeId")
+        entry = await _get_or_create_entry(telescope_id=telescope_id)
+        if entry.ssh_tunnel is None:
+            return {"active": False}
+        alive = await entry.ssh_tunnel.is_alive()
+        return {
+            "active": True,
+            "alive": alive,
+            "localPorts": entry.ssh_tunnel.local_ports,
+            "sshHost": entry.ssh_tunnel.config.ssh_host,
+        }
+
     raise HTTPException(status_code=404, detail=f"Unknown command: {command}")
 
 
@@ -581,10 +655,10 @@ async def stream_video(telescope_id: str):
     if not _looks_like_host(telescope_id) and telescope_id not in _telescopes:
         raise HTTPException(status_code=404, detail="Unknown telescope id")
 
-    entry = await _get_or_create_entry(telescope_id=telescope_id)
-    bridge, connect_result = await _get_connected_bridge(entry)
-    if connect_result:
-        raise HTTPException(status_code=503, detail=connect_result.get("error", "Not connected"))
+    entry = _telescopes.get(telescope_id)
+    if entry is None or entry.bridge is None or not entry.connected:
+        raise HTTPException(status_code=503, detail="Not connected")
+    bridge = entry.bridge
 
     async def generate():
         boundary = b"--frame\r\n"
@@ -605,6 +679,33 @@ async def stream_video(telescope_id: str):
     )
 
 
+@app.get("/api/snapshot/{telescope_id}")
+async def snapshot(telescope_id: str):
+    """Return a single JPEG frame (for poll-based video feeds)."""
+    if not _looks_like_host(telescope_id) and telescope_id not in _telescopes:
+        raise HTTPException(status_code=404, detail="Unknown telescope id")
+
+    entry = _telescopes.get(telescope_id)
+    if entry is None or entry.bridge is None or not entry.connected:
+        raise HTTPException(status_code=503, detail="Not connected")
+    bridge = entry.bridge
+
+    # Try a few times to get a frame (imaging client may need a moment).
+    for _ in range(20):
+        frame = await bridge.get_next_frame(camera_id=0)
+        if frame:
+            from fastapi.responses import Response
+
+            return Response(
+                content=frame,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "no-store"},
+            )
+        await asyncio.sleep(0.1)
+
+    raise HTTPException(status_code=503, detail="No frame available")
+
+
 _dist_dir = Path(__file__).resolve().parent.parent / "dist-web"
 
 
@@ -620,7 +721,8 @@ async def serve_frontend(full_path: str):
 
     index = _dist_dir / "index.html"
     if index.is_file():
-        return FileResponse(index)
+        # No cache for index.html so browser always picks up new builds
+        return FileResponse(index, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
     raise HTTPException(status_code=404, detail="index.html not found")
 

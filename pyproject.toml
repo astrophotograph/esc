@@ -21,6 +21,8 @@ dependencies = [
     "aiosqlite>=0.21.0",
     "httpx>=0.28.1",
     "nest-asyncio>=1.6.0",
+    # SSH tunneling for remote telescopes
+    "asyncssh>=2.14.0",
 ]
 
 [dependency-groups]
