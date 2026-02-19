@@ -104,7 +104,7 @@ jobs:
       - name: Set up Python (for PyO3)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -126,6 +126,42 @@ jobs:
 
       - name: Build Tauri app
         run: pnpm tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Bundle libpython into Linux .deb
+        if: runner.os == 'Linux'
+        run: |
+          TARGET="${{ matrix.target }}"
+          BUNDLE_DIR="src-tauri/target/${TARGET}/release/bundle"
+
+          # Find the libpython that the binary was linked against
+          BINARY="src-tauri/target/${TARGET}/release/eesc"
+          LIBPYTHON=$(ldd "$BINARY" | grep libpython | awk '{print $3}')
+          LIBNAME=$(basename "$LIBPYTHON")
+          echo "Bundling $LIBPYTHON ($LIBNAME)"
+
+          # Patch the binary to look for libpython in its own directory
+          patchelf --set-rpath '$ORIGIN' "$BINARY"
+
+          # Rebuild each .deb with the patched binary + libpython
+          for deb in "$BUNDLE_DIR"/deb/*.deb; do
+            WORK=$(mktemp -d)
+            dpkg-deb -R "$deb" "$WORK"
+
+            # Replace binary with patched version and add libpython
+            BINDIR=$(dirname "$(find "$WORK" -name eesc -type f)")
+            cp "$BINARY" "$BINDIR/eesc"
+            cp "$LIBPYTHON" "$BINDIR/$LIBNAME"
+
+            # Add soname symlink if needed (e.g. libpython3.13.so.1 -> libpython3.13.so.1.0)
+            SONAME=$(objdump -p "$LIBPYTHON" | grep SONAME | awk '{print $2}')
+            if [ -n "$SONAME" ] && [ "$SONAME" != "$LIBNAME" ]; then
+              ln -sf "$LIBNAME" "$BINDIR/$SONAME"
+            fi
+
+            dpkg-deb --build --root-owner-group "$WORK" "$deb"
+            rm -rf "$WORK"
+            echo "Repacked $deb with $LIBNAME"
+          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
