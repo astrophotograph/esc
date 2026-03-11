@@ -133,14 +133,18 @@ class CatalogService:
         altitude = math.degrees(math.asin(sin_alt))
 
         # Calculate azimuth
-        cos_az = (math.sin(dec_rad) - math.sin(lat_rad) * sin_alt) / (
-            math.cos(lat_rad) * math.cos(math.radians(altitude))
-        )
-        cos_az = max(-1.0, min(1.0, cos_az))  # Clamp to [-1, 1]
+        if abs(math.cos(math.radians(altitude))) < 1e-10:
+            # At zenith (altitude ≈ ±90°), azimuth is undefined
+            azimuth = 0.0
+        else:
+            cos_az = (math.sin(dec_rad) - math.sin(lat_rad) * sin_alt) / (
+                math.cos(lat_rad) * math.cos(math.radians(altitude))
+            )
+            cos_az = max(-1.0, min(1.0, cos_az))  # Clamp to [-1, 1]
 
-        azimuth = math.degrees(math.acos(cos_az))
-        if math.sin(ha_rad) > 0:
-            azimuth = 360.0 - azimuth
+            azimuth = math.degrees(math.acos(cos_az))
+            if math.sin(ha_rad) > 0:
+                azimuth = 360.0 - azimuth
 
         return altitude, azimuth
 

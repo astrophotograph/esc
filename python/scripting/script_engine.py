@@ -77,7 +77,11 @@ class ScriptEngine:
         Returns:
             Variable value or None if not found
         """
-        return self.globals.get(name) or self.locals.get(name)
+        _sentinel = object()
+        val = self.globals.get(name, _sentinel)
+        if val is not _sentinel:
+            return val
+        return self.locals.get(name)
 
     def reset(self) -> None:
         """Reset the script environment"""

@@ -336,13 +336,14 @@ def get_target_visibility(
     longitude: float,
     elevation: float = 0,
     date: Optional[str] = None,
-    min_altitude: float = 20.0,
+    min_altitude: Optional[float] = None,
 ) -> dict[str, Any]:
     """Get visibility for a target (PyO3 wrapper)."""
     service = get_planning_service()
     target = TargetInfo(name=target_name, ra=ra, dec=dec)
     location = ObserverLocation(latitude=latitude, longitude=longitude, elevation=elevation)
-    return service.get_target_visibility(target, location, date, min_altitude)
+    effective_min_altitude = min_altitude if min_altitude is not None else 20.0
+    return service.get_target_visibility(target, location, date, effective_min_altitude)
 
 
 def get_tonight_targets(
