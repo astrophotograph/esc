@@ -1,5 +1,5 @@
 """
-Tests for ImagingService — mocks scopinator classes (SCOPINATOR_AVAILABLE=False in env).
+Tests for ImagingService — mocks FITSHandler and ImageUpscaler to avoid real file I/O.
 """
 import base64
 from pathlib import Path
@@ -49,40 +49,6 @@ def _make_png_file(tmp_path: Path, mode: str = "RGB") -> Path:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
-
-@pytest.fixture(autouse=True)
-def _inject_scopinator_mocks():
-    """
-    Since SCOPINATOR_AVAILABLE=False in this environment (EnhancementSettings missing),
-    inject mock class references so ImagingService can be instantiated.
-    """
-    mock_fh_instance = MagicMock()
-    mock_up_instance = MagicMock()
-
-    originals = {}
-    patches = {
-        "SCOPINATOR_AVAILABLE": True,
-        "FITSHandler": MagicMock(return_value=mock_fh_instance),
-        "ImageUpscaler": MagicMock(return_value=mock_up_instance),
-        "UpscaleMethod": MagicMock(),
-        "DenoiseMethod": MagicMock(),
-        "SharpenMethod": MagicMock(),
-    }
-    for k, v in patches.items():
-        originals[k] = getattr(imaging_module, k, None)
-        setattr(imaging_module, k, v)
-
-    yield patches
-
-    for k, v in originals.items():
-        if v is None:
-            try:
-                delattr(imaging_module, k)
-            except AttributeError:
-                pass
-        else:
-            setattr(imaging_module, k, v)
-
 
 @pytest.fixture(autouse=True)
 def reset_singleton():
