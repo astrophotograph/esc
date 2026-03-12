@@ -12,7 +12,7 @@ dependencies = [
     "numpy>=2.1.0",
     "pyerfa>=2.0.1.4",
     # Telescope control
-    "scopinator>=2025.9.13",
+    "scopinator>=2026.3.11",
     # Image processing
     "opencv-python>=4.11.0.86",
     "scikit-image>=0.25.2",
@@ -61,7 +61,7 @@ disallow_untyped_defs = true
 packages = ["src-tauri/python"]
 
 # [tool.uv.sources]
-# scopinator = { path = "../pyscopinator/dist/scopinator-2026.1.26.tar.gz" }
+# scopinator = { path = "../pyscopinator/dist/scopinator-2026.3.11.tar.gz" }
 
 [build-system]
 requires = ["hatchling"]
