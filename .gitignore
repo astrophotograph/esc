@@ -58,3 +58,8 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Telescope captures & sessions (large binary data)
+*.pcap
+*.pcapng
+sessions/
