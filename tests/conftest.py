@@ -2,7 +2,15 @@
 Pytest configuration and fixtures for telescope integration tests.
 """
 import os
+import pathlib
+import sys
+
 import pytest
+
+# Ensure the python/ source directory is on the path for all tests
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "python"))
+# Also add the repo root so web_api can be imported as part of the 'python' package
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 # Default telescope IP for integration tests
 TELESCOPE_HOST = os.environ.get("TELESCOPE_HOST", "192.168.42.41")

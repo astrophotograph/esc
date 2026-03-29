@@ -22,11 +22,10 @@ try:
     from scopinator.imaging.fits_handler import FITSHandler
     from scopinator.imaging.upscaler import (
         DenoiseMethod,
-        EnhancementSettings,
         ImageEnhancementProcessor,
         ImageUpscaler,
-        SharpenMethod,
-        UpscaleMethod,
+        SharpeningMethod,
+        UpscalingMethod,
     )
 
     SCOPINATOR_AVAILABLE = True
@@ -230,7 +229,7 @@ class ImagingService:
 
         # Apply upscaling
         if params.upscale_enabled and params.upscale_factor > 1.0:
-            method = getattr(UpscaleMethod, params.upscale_method, UpscaleMethod.LANCZOS)
+            method = getattr(UpscalingMethod, params.upscale_method, UpscalingMethod.LANCZOS)
             image_data = self.upscaler.upscale(
                 image_data, scale_factor=params.upscale_factor, method=method
             )
@@ -244,7 +243,7 @@ class ImagingService:
 
         # Apply sharpening
         if params.sharpen_enabled:
-            method = getattr(SharpenMethod, params.sharpen_method, SharpenMethod.UNSHARP_MASK)
+            method = getattr(SharpeningMethod, params.sharpen_method, SharpeningMethod.UNSHARP_MASK)
             image_data = self.upscaler.sharpen_image(
                 image_data, method=method, strength=params.sharpen_strength
             )
