@@ -1,4 +1,4 @@
-// Library exports for testing and PyO3 integration
+// Library exports for the telescope control application
 
 pub mod commands;
 pub mod database;
@@ -7,6 +7,7 @@ pub mod imaging;
 pub mod python;
 pub mod state;
 pub mod streaming;
+pub mod stretch;
 pub mod telescope;
 
 #[cfg(test)]

@@ -1,0 +1,185 @@
+//! Stretch pipeline for raw telescope frames → JPEG.
+//!
+//! Provides `stretch_raw_frame` for converting raw pixel data from the
+//! Seestar imaging port into stretched JPEG bytes suitable for streaming.
+
+use std::io::Cursor;
+
+use image::codecs::jpeg::JpegEncoder;
+use rayon::prelude::*;
+
+use super::autocrop;
+use super::gradient;
+use super::mtf;
+
+/// Parameters for the stretch pipeline.
+pub struct StretchParams {
+    pub bg_percent: f64,
+    pub sigma: f64,
+    pub gradient_removal: bool,
+    pub autocrop: bool,
+}
+
+impl Default for StretchParams {
+    fn default() -> Self {
+        Self {
+            bg_percent: 0.15,
+            sigma: 3.0,
+            gradient_removal: true,
+            autocrop: true,
+        }
+    }
+}
+
+/// Stretch raw frame data and encode to JPEG bytes.
+///
+/// `data` is raw pixel bytes from the Seestar imaging port.
+/// For color frames, data is expected as interleaved RGB (3 bytes per pixel).
+/// For mono frames, data is 1 byte per pixel.
+///
+/// Returns JPEG-encoded bytes.
+pub fn stretch_raw_frame(
+    data: &[u8],
+    width: u32,
+    height: u32,
+    is_color: bool,
+    params: &StretchParams,
+) -> Result<Vec<u8>, String> {
+    let w = width as usize;
+    let h = height as usize;
+    let channel_size = w * h;
+
+    // Convert raw bytes to f64 channels normalized to [0, 1]
+    let mut channels: Vec<Vec<f64>> = if is_color {
+        let expected = channel_size * 3;
+        if data.len() < expected {
+            return Err(format!(
+                "Color frame too small: got {} bytes, expected {}",
+                data.len(),
+                expected
+            ));
+        }
+        // Deinterleave RGB into separate channels
+        let mut r = Vec::with_capacity(channel_size);
+        let mut g = Vec::with_capacity(channel_size);
+        let mut b = Vec::with_capacity(channel_size);
+        for i in 0..channel_size {
+            r.push(data[i * 3] as f64 / 255.0);
+            g.push(data[i * 3 + 1] as f64 / 255.0);
+            b.push(data[i * 3 + 2] as f64 / 255.0);
+        }
+        vec![r, g, b]
+    } else {
+        if data.len() < channel_size {
+            return Err(format!(
+                "Mono frame too small: got {} bytes, expected {}",
+                data.len(),
+                channel_size
+            ));
+        }
+        vec![data[..channel_size]
+            .iter()
+            .map(|&v| v as f64 / 255.0)
+            .collect()]
+    };
+
+    // Autocrop — detect edges from averaged channels
+    let crop_bounds = if params.autocrop {
+        let mono: Vec<f64> = if is_color {
+            (0..channel_size)
+                .map(|i| (channels[0][i] + channels[1][i] + channels[2][i]) / 3.0)
+                .collect()
+        } else {
+            channels[0].clone()
+        };
+        autocrop::detect_edges(&mono, w, h)
+    } else {
+        (0, 0, 0, 0)
+    };
+
+    // Normalize — compute percentiles from interior, apply to full frame
+    let (top, bottom, left, right) = crop_bounds;
+    let interior_y0 = top;
+    let interior_y1 = h - bottom;
+    let interior_x0 = left;
+    let interior_x1 = w - right;
+
+    channels.par_iter_mut().for_each(|ch| {
+        let mut interior: Vec<f64> = if top > 0 || bottom > 0 || left > 0 || right > 0 {
+            let mut v = Vec::new();
+            for y in interior_y0..interior_y1 {
+                for x in interior_x0..interior_x1 {
+                    v.push(ch[y * w + x]);
+                }
+            }
+            v
+        } else {
+            ch.clone()
+        };
+
+        let (vmin, vmax) = percentiles_in_place(&mut interior, 0.001, 0.9999);
+        let range = vmax - vmin;
+        if range > 0.0 {
+            for v in ch.iter_mut() {
+                *v = ((*v - vmin) / range).clamp(0.0, 1.0);
+            }
+        }
+    });
+
+    // Gradient removal
+    if params.gradient_removal {
+        let order = 2;
+        channels.par_iter_mut().for_each(|ch| {
+            let corrected = gradient::remove_gradient(ch, w, h, order);
+            ch.copy_from_slice(&corrected);
+        });
+    }
+
+    // MTF stretch
+    mtf::stretch_mtf_rgb(&mut channels, params.bg_percent, params.sigma);
+
+    // Interleave channels → RGB bytes → JPEG
+    let mut rgb = vec![0u8; channel_size * 3];
+
+    if is_color {
+        for i in 0..channel_size {
+            rgb[i * 3] = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3 + 1] = (channels[1][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3 + 2] = (channels[2][i] * 255.0).clamp(0.0, 255.0) as u8;
+        }
+    } else {
+        for i in 0..channel_size {
+            let v = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3] = v;
+            rgb[i * 3 + 1] = v;
+            rgb[i * 3 + 2] = v;
+        }
+    }
+
+    let img = image::RgbImage::from_raw(width, height, rgb)
+        .ok_or("Failed to create image buffer")?;
+
+    let mut jpeg_buf = Cursor::new(Vec::new());
+    let encoder = JpegEncoder::new_with_quality(&mut jpeg_buf, 85);
+    img.write_with_encoder(encoder)
+        .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
+
+    Ok(jpeg_buf.into_inner())
+}
+
+/// Compute two percentiles using quickselect (O(n) each).
+fn percentiles_in_place(data: &mut [f64], lo_frac: f64, hi_frac: f64) -> (f64, f64) {
+    if data.is_empty() {
+        return (0.0, 1.0);
+    }
+    let cmp = |a: &f64, b: &f64| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal);
+    let lo_idx = ((data.len() as f64 * lo_frac) as usize).min(data.len() - 1);
+    data.select_nth_unstable_by(lo_idx, cmp);
+    let lo_val = data[lo_idx];
+
+    let hi_idx = ((data.len() as f64 * hi_frac) as usize).min(data.len() - 1);
+    data.select_nth_unstable_by(hi_idx, cmp);
+    let hi_val = data[hi_idx];
+
+    (lo_val, hi_val)
+}

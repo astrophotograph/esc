@@ -125,6 +125,7 @@ fn main() {
                                 name: t.name.unwrap_or_else(|| format!("{}:{}", t.host, t.port)),
                                 status: state::ConnectionStatus::Disconnected,
                                 bridge: std::sync::Arc::new(placeholder_bridge),
+                                client: None,
                             },
                         );
                         tracing::info!("Loaded telescope from database: {} ({}) ({}:{})", t.id, protocol, t.host, t.port);

@@ -199,6 +199,7 @@ pub async fn discover_telescopes(
                         name: telescope_name.clone(),
                         status: crate::state::ConnectionStatus::Disconnected,
                         bridge: Arc::new(placeholder_bridge),
+                        client: None,
                     },
                 );
                 tracing::info!(

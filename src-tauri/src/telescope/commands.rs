@@ -94,6 +94,7 @@ pub async fn add_telescope(
                 name: telescope_name,
                 status: crate::state::ConnectionStatus::Disconnected,
                 bridge: Arc::new(placeholder_bridge),
+                client: None,
             },
         );
     }
@@ -146,6 +147,7 @@ pub async fn connect_telescope(
                 name: format!("{} @ {}:{}", proto, h, p),
                 status: crate::state::ConnectionStatus::Connecting,
                 bridge: std::sync::Arc::new(pyo3::Python::with_gil(|py| py.None().into())),
+                client: None,
             };
             telescopes.insert(telescope_id.clone(), connection);
 

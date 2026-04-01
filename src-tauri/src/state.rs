@@ -1,5 +1,6 @@
 use parking_lot::RwLock;
 use pyo3::PyObject;
+use scopinator_seestar::SeestarClient;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -13,7 +14,6 @@ pub struct AppState {
 }
 
 /// Represents a connection to a telescope
-#[derive(Clone)]
 pub struct TelescopeConnection {
     pub id: String,
     pub host: String,
@@ -21,7 +21,11 @@ pub struct TelescopeConnection {
     pub protocol: String, // "seestar" or "alpaca"
     pub name: String,
     pub status: ConnectionStatus,
-    pub bridge: Arc<PyObject>, // Python bridge object
+    /// Legacy Python bridge object (will be removed once all commands use client)
+    pub bridge: Arc<PyObject>,
+    /// Native Rust client for Seestar protocol (None until Phase 1 migration)
+    #[allow(dead_code)]
+    pub client: Option<Arc<SeestarClient>>,
 }
 
 impl std::fmt::Debug for TelescopeConnection {
@@ -34,6 +38,7 @@ impl std::fmt::Debug for TelescopeConnection {
             .field("name", &self.name)
             .field("status", &self.status)
             .field("bridge", &"<PyObject>")
+            .field("client", &self.client.as_ref().map(|_| "<SeestarClient>"))
             .finish()
     }
 }
