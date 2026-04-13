@@ -167,6 +167,174 @@ pub fn stretch_raw_frame(
     Ok(jpeg_buf.into_inner())
 }
 
+/// Read a FITS file and extract pixel data as f64 channels.
+///
+/// Returns `(width, height, pixels, is_color)`.
+/// `pixels` is a flat array — mono has `w*h` elements, color has `3*w*h` (planes: R, G, B).
+pub fn read_fits_pixels(path: &std::path::Path) -> Result<(usize, usize, Vec<f64>, bool), String> {
+    use fitrs::Fits;
+    let fits = Fits::open(path).map_err(|e| format!("Failed to open FITS: {}", e))?;
+    let hdu = fits.into_iter().next().ok_or("No HDU in FITS file")?;
+    let (width, height, pixels) = match hdu.read_data() {
+        fitrs::FitsData::FloatingPoint32(data) => {
+            let (w, h) = extract_dims(&data.shape);
+            let pixels: Vec<f64> = data.data.iter().map(|&x| x as f64).collect();
+            (w, h, pixels)
+        }
+        fitrs::FitsData::FloatingPoint64(data) => {
+            let (w, h) = extract_dims(&data.shape);
+            (w, h, data.data.clone())
+        }
+        fitrs::FitsData::IntegersI32(data) => {
+            let (w, h) = extract_dims(&data.shape);
+            let pixels: Vec<f64> = data.data.iter().map(|x| x.unwrap_or(0) as f64).collect();
+            (w, h, pixels)
+        }
+        fitrs::FitsData::IntegersU32(data) => {
+            let (w, h) = extract_dims(&data.shape);
+            let pixels: Vec<f64> = data.data.iter().map(|x| x.unwrap_or(0) as f64).collect();
+            (w, h, pixels)
+        }
+        _ => return Err("Unsupported FITS pixel format".to_string()),
+    };
+    let channel_size = width * height;
+    let is_color = pixels.len() >= channel_size * 3;
+    Ok((width, height, pixels, is_color))
+}
+
+fn extract_dims(shape: &[usize]) -> (usize, usize) {
+    match shape.len() {
+        2 => (shape[0], shape[1]),
+        3 => (shape[0], shape[1]),
+        _ => (shape[0], shape.get(1).copied().unwrap_or(1)),
+    }
+}
+
+/// Process a FITS file: read → stretch → save as JPEG/PNG.
+/// Returns the output path on success.
+pub fn process_fits_file(
+    fits_path: &std::path::Path,
+    output_path: &std::path::Path,
+    params: &StretchParams,
+) -> Result<String, String> {
+    let (w, h, pixels, is_color) = read_fits_pixels(fits_path)?;
+    let channel_size = w * h;
+
+    // Split into channels (FITS color data is stored as planes: all R, then G, then B)
+    let mut channels: Vec<Vec<f64>> = if is_color {
+        vec![
+            pixels[..channel_size].to_vec(),
+            pixels[channel_size..channel_size * 2].to_vec(),
+            pixels[channel_size * 2..channel_size * 3].to_vec(),
+        ]
+    } else {
+        vec![pixels[..channel_size].to_vec()]
+    };
+
+    // Autocrop — detect edges from averaged channels
+    let crop_bounds = if params.autocrop {
+        let mono: Vec<f64> = if is_color {
+            (0..channel_size)
+                .map(|i| (channels[0][i] + channels[1][i] + channels[2][i]) / 3.0)
+                .collect()
+        } else {
+            channels[0].clone()
+        };
+        autocrop::detect_edges(&mono, w, h)
+    } else {
+        (0, 0, 0, 0)
+    };
+
+    // Normalize — compute percentiles from interior, apply to full frame
+    let (top, bottom, left, right) = crop_bounds;
+    let interior_y0 = top;
+    let interior_y1 = h - bottom;
+    let interior_x0 = left;
+    let interior_x1 = w - right;
+
+    channels.par_iter_mut().for_each(|ch| {
+        let mut interior: Vec<f64> = if top > 0 || bottom > 0 || left > 0 || right > 0 {
+            let mut v = Vec::new();
+            for y in interior_y0..interior_y1 {
+                for x in interior_x0..interior_x1 {
+                    v.push(ch[y * w + x]);
+                }
+            }
+            v
+        } else {
+            ch.clone()
+        };
+
+        let (vmin, vmax) = percentiles_in_place(&mut interior, 0.001, 0.9999);
+        let range = vmax - vmin;
+        if range > 0.0 {
+            for v in ch.iter_mut() {
+                *v = ((*v - vmin) / range).clamp(0.0, 1.0);
+            }
+        }
+    });
+
+    // Gradient removal
+    if params.gradient_removal {
+        let order = 2;
+        channels.par_iter_mut().for_each(|ch| {
+            let corrected = gradient::remove_gradient(ch, w, h, order);
+            ch.copy_from_slice(&corrected);
+        });
+    }
+
+    // MTF stretch
+    mtf::stretch_mtf_rgb(&mut channels, params.bg_percent, params.sigma);
+
+    // Interleave channels → RGB bytes
+    let width = w as u32;
+    let height = h as u32;
+    let mut rgb = vec![0u8; channel_size * 3];
+
+    if is_color {
+        for i in 0..channel_size {
+            rgb[i * 3] = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3 + 1] = (channels[1][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3 + 2] = (channels[2][i] * 255.0).clamp(0.0, 255.0) as u8;
+        }
+    } else {
+        for i in 0..channel_size {
+            let v = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3] = v;
+            rgb[i * 3 + 1] = v;
+            rgb[i * 3 + 2] = v;
+        }
+    }
+
+    let img = image::RgbImage::from_raw(width, height, rgb)
+        .ok_or("Failed to create image buffer")?;
+
+    // Save based on output extension
+    let ext = output_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("jpg")
+        .to_lowercase();
+
+    match ext.as_str() {
+        "png" => {
+            img.save(output_path)
+                .map_err(|e| format!("Failed to save PNG: {e}"))?;
+        }
+        _ => {
+            // Default to JPEG
+            let file = std::fs::File::create(output_path)
+                .map_err(|e| format!("Failed to create output file: {e}"))?;
+            let mut writer = std::io::BufWriter::new(file);
+            let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut writer, 90);
+            img.write_with_encoder(encoder)
+                .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
+        }
+    }
+
+    Ok(output_path.to_string_lossy().into_owned())
+}
+
 /// Compute two percentiles using quickselect (O(n) each).
 fn percentiles_in_place(data: &mut [f64], lo_frac: f64, hi_frac: f64) -> (f64, f64) {
     if data.is_empty() {

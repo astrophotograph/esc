@@ -85,7 +85,35 @@ pub struct PlateSolveParams {
 /// Process a FITS file with stretching
 #[tauri::command]
 pub async fn imaging_process_fits(params: ProcessFitsParams) -> Result<String, String> {
-    Err("FITS processing not yet available in Rust backend".to_string())
+    let fits_path = std::path::PathBuf::from(&params.fits_path);
+
+    // Generate output path (same dir, .jpg extension by default)
+    let output_path = fits_path.with_extension(
+        params.output_format.as_deref().unwrap_or("jpg"),
+    );
+
+    let stretch_params = crate::stretch::StretchParams::default();
+
+    // Run in blocking task since FITS processing is CPU-intensive
+    let result = tokio::task::spawn_blocking(move || {
+        crate::stretch::process_fits_file(&fits_path, &output_path, &stretch_params)
+    })
+    .await
+    .map_err(|e| format!("Task error: {e}"))?;
+
+    match result {
+        Ok(path) => Ok(serde_json::json!({
+            "success": true,
+            "output_path": path,
+            "format": params.output_format.as_deref().unwrap_or("jpg"),
+        })
+        .to_string()),
+        Err(e) => Ok(serde_json::json!({
+            "success": false,
+            "error": e,
+        })
+        .to_string()),
+    }
 }
 
 /// Enhance an image

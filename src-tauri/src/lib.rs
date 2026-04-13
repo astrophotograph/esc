@@ -4,6 +4,7 @@ pub mod commands;
 pub mod database;
 pub mod events;
 pub mod imaging;
+pub mod ssh_tunnel;
 pub mod state;
 pub mod streaming;
 pub mod stretch;

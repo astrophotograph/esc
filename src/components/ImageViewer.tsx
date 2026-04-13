@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react'
-import { ZoomIn, ZoomOut, RotateCcw, Download, Settings, Crosshair, Grid3x3 } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Download, Crosshair, Grid3x3 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Slider } from './ui/slider'
+// import { Slider } from './ui/slider'  // Enhancement UI disabled
 import { Switch } from './ui/switch'
 import { Label } from './ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'  // Enhancement UI disabled
 import { useImaging } from '../hooks'
 import type { ProcessedImage } from '../stores'
 
@@ -17,14 +17,15 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
   const {
     currentImage,
     stretchModes,
-    enhancementMethods,
-    enhancementSettings,
-    currentStretchMode,
-    isProcessing,
-    setStretchMode,
-    setEnhancementSettings,
+    // Enhancement-related bindings disabled — feature not ported to Rust backend
+    // enhancementMethods,
+    // enhancementSettings,
+    // currentStretchMode,
+    // isProcessing,
+    // setStretchMode,
+    // setEnhancementSettings,
     getStretchModes,
-    getEnhancementMethods,
+    // getEnhancementMethods,
   } = useImaging()
 
   const image = propImage || currentImage
@@ -32,12 +33,13 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
   const [zoom, setZoom] = useState(1)
   const [showCrosshair, setShowCrosshair] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
-  const [showEnhancement, setShowEnhancement] = useState(false)
+  // const [showEnhancement, setShowEnhancement] = useState(false)  // Enhancement UI disabled
 
   // Load stretch modes and enhancement methods if not loaded
   useState(() => {
     if (stretchModes.length === 0) getStretchModes()
-    if (!enhancementMethods) getEnhancementMethods()
+    // Enhancement methods loading disabled — feature not yet ported to Rust backend
+    // if (!enhancementMethods) getEnhancementMethods()
   })
 
   const handleZoomIn = useCallback(() => {
@@ -97,6 +99,7 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
             <Button variant="outline" size="icon" onClick={handleDownload}>
               <Download className="h-4 w-4" />
             </Button>
+            {/* Enhancement toggle disabled — feature not yet ported to Rust backend
             <Button
               variant={showEnhancement ? 'default' : 'outline'}
               size="icon"
@@ -104,6 +107,7 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
             >
               <Settings className="h-4 w-4" />
             </Button>
+            */}
           </div>
         </div>
       </CardHeader>
@@ -186,7 +190,7 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
             </div>
           </div>
 
-          {/* Enhancement Panel */}
+          {/* Enhancement controls disabled — feature not yet ported to Rust backend
           {showEnhancement && (
             <div className="w-64 space-y-4">
               <div>
@@ -207,7 +211,6 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
 
               {enhancementMethods && (
                 <>
-                  {/* Upscaling */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Upscaling</Label>
@@ -253,7 +256,6 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
                     )}
                   </div>
 
-                  {/* Denoising */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Denoising</Label>
@@ -301,7 +303,6 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
                     )}
                   </div>
 
-                  {/* Sharpening */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Sharpening</Label>
@@ -359,6 +360,7 @@ export function ImageViewer({ image: propImage }: ImageViewerProps) {
               )}
             </div>
           )}
+          */}
         </div>
 
         {/* Metadata */}
