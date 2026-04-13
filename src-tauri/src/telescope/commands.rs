@@ -1,6 +1,5 @@
 use crate::database::Database;
 use crate::events::{emit_event, event_names};
-use crate::python::TelescopeBridge;
 use crate::state::AppState;
 use scopinator_seestar::command::params::*;
 use scopinator_seestar::command::Command;
@@ -115,11 +114,6 @@ pub async fn add_telescope(
     db.save_telescope(&telescope)
         .map_err(|e| format!("Failed to save telescope: {}", e))?;
 
-    // Create a placeholder bridge object (will be replaced on connect)
-    use pyo3::prelude::*;
-    use std::sync::Arc;
-    let placeholder_bridge = Python::with_gil(|py| -> PyObject { py.None() });
-
     // Add to state
     let telescope_name = config
         .name
@@ -136,7 +130,6 @@ pub async fn add_telescope(
                 protocol: protocol.clone(),
                 name: telescope_name,
                 status: crate::state::ConnectionStatus::Disconnected,
-                bridge: Arc::new(placeholder_bridge),
                 client: None,
             },
         );
@@ -189,7 +182,6 @@ pub async fn connect_telescope(
                 protocol: proto.clone(),
                 name: format!("{} @ {}:{}", proto, h, p),
                 status: crate::state::ConnectionStatus::Connecting,
-                bridge: std::sync::Arc::new(pyo3::Python::with_gil(|py| py.None().into())),
                 client: None,
             };
             telescopes.insert(telescope_id.clone(), connection);
@@ -224,53 +216,9 @@ pub async fn connect_telescope(
         }
     };
 
-    // Create Python bridge object using the unified bridge with protocol support
-    tracing::info!("connect_telescope: creating bridge for {}:{} (protocol: {})", host, port, protocol);
-    let bridge_helper = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
-    let bridge_obj = bridge_helper.create_bridge_object()?;
-    tracing::info!("connect_telescope: bridge created, calling connect method");
+    tracing::info!("connect_telescope: connecting native client to {}:{} (protocol: {})", host, port, protocol);
 
-    // Clone the bridge object using Python GIL
-    use pyo3::prelude::*;
-    let bridge_clone = Python::with_gil(|py| bridge_obj.clone_ref(py));
-
-    // Connect using the bridge object (not a new instance!)
-    let result: serde_json::Value =
-        tokio::task::spawn_blocking(move || -> Result<serde_json::Value, String> {
-            Python::with_gil(|py| {
-                // Import the unified bridge module
-                let telescope_module = py
-                    .import("telescope.telescope_bridge")
-                    .map_err(|e| format!("Failed to import module: {}", e))?;
-                let run_method = telescope_module
-                    .getattr("run_bridge_method")
-                    .map_err(|e| format!("Failed to get run_bridge_method: {}", e))?;
-
-                // Call connect on the actual bridge object
-                let bridge_bound = bridge_obj.bind(py);
-                let result = run_method
-                    .call1((bridge_bound, "connect", py.None()))
-                    .map_err(|e| format!("Failed to call connect: {}", e))?;
-
-                // Convert to JSON
-                let json_module = py
-                    .import("json")
-                    .map_err(|e| format!("Failed to import json: {}", e))?;
-                let json_str: String = json_module
-                    .call_method1("dumps", (result,))
-                    .map_err(|e| format!("Failed to serialize: {}", e))?
-                    .extract()
-                    .map_err(|e| format!("Failed to extract string: {}", e))?;
-
-                serde_json::from_str(&json_str).map_err(|e| format!("JSON parse error: {}", e))
-            })
-        })
-        .await
-        .map_err(|e| format!("Task join error: {}", e))??;
-
-    tracing::info!("connect_telescope: connect result: {:?}", result);
-
-    // Also create the native Rust client (Phase 1: runs alongside Python bridge)
+    // Create the native Rust client
     let native_client = if protocol == "seestar" {
         use scopinator_seestar::SeestarClient;
         use std::net::Ipv4Addr;
@@ -278,77 +226,39 @@ pub async fn connect_telescope(
 
         let ip: Ipv4Addr = host
             .parse()
-            .map_err(|e| format!("Invalid IP for native client: {}", e))?;
+            .map_err(|e| format!("Invalid IP: {}", e))?;
 
-        match SeestarClient::connect(ip).await {
-            Ok(client) => {
-                match client.wait_for_connection(Duration::from_secs(10)).await {
-                    Ok(()) => {
-                        tracing::info!("connect_telescope: native Rust client connected");
-                        Some(Arc::new(client))
-                    }
-                    Err(e) => {
-                        tracing::error!(
-                            "connect_telescope: native client connection timeout: {}",
-                            e
-                        );
-                        None
-                    }
-                }
-            }
-            Err(e) => {
-                tracing::error!("connect_telescope: native client connect failed: {}", e);
-                None
-            }
-        }
+        let client = SeestarClient::connect(ip)
+            .await
+            .map_err(|e| format!("Connection failed: {}", e))?;
+
+        client
+            .wait_for_connection(Duration::from_secs(10))
+            .await
+            .map_err(|e| format!("Connection timeout: {}", e))?;
+
+        tracing::info!("connect_telescope: native Rust client connected");
+        Some(Arc::new(client))
     } else {
-        None
+        return Err(format!("Unsupported protocol: {}", protocol));
     };
 
-    // Update status and store bridge based on result
-    let connect_success = result
-        .get("success")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-
-    if connect_success {
-        {
-            let mut telescopes = state.telescopes.write();
-            if let Some(t) = telescopes.get_mut(&telescope_id) {
-                t.status = crate::state::ConnectionStatus::Connected;
-                t.bridge = Arc::new(bridge_clone);
-                t.client = native_client;
-            }
+    // Update status and store client
+    {
+        let mut telescopes = state.telescopes.write();
+        if let Some(t) = telescopes.get_mut(&telescope_id) {
+            t.status = crate::state::ConnectionStatus::Connected;
+            t.client = native_client;
         }
-        emit_event(
-            &app,
-            event_names::TELESCOPE_CONNECTED,
-            serde_json::json!({ "id": telescope_id }),
-        )?;
-    } else {
-        let error = result
-            .get("error")
-            .and_then(|v| v.as_str())
-            .unwrap_or("Unknown error")
-            .to_string();
-        {
-            let mut telescopes = state.telescopes.write();
-            if let Some(t) = telescopes.get_mut(&telescope_id) {
-                t.status = crate::state::ConnectionStatus::Error(error.clone());
-            }
-        }
-        // Shut down native client if bridge connect failed
-        if let Some(client) = native_client {
-            client.shutdown().await;
-        }
-        emit_event(
-            &app,
-            event_names::TELESCOPE_ERROR,
-            serde_json::json!({ "id": telescope_id, "error": error }),
-        )?;
     }
 
-    Ok(serde_json::to_string(&result).unwrap())
+    emit_event(
+        &app,
+        event_names::TELESCOPE_CONNECTED,
+        serde_json::json!({ "id": telescope_id }),
+    )?;
+
+    Ok(serde_json::to_string(&serde_json::json!({ "success": true })).unwrap())
 }
 
 /// Disconnect from a telescope
@@ -359,15 +269,6 @@ pub async fn disconnect_telescope(
     telescope_id: String,
 ) -> Result<String, String> {
     tracing::info!("Disconnecting from telescope: {}", telescope_id);
-
-    // Get telescope info
-    let (host, port, protocol) = {
-        let telescopes = state.telescopes.read();
-        let telescope = telescopes
-            .get(&telescope_id)
-            .ok_or_else(|| format!("Telescope {} not found", telescope_id))?;
-        (telescope.host.clone(), telescope.port, telescope.protocol.clone())
-    };
 
     // Shut down native Rust client if present
     let native_client = {
@@ -380,12 +281,6 @@ pub async fn disconnect_telescope(
         tracing::info!("disconnect_telescope: shutting down native Rust client");
         client.shutdown().await;
     }
-
-    // Disconnect via Python bridge
-    let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
-    let result = tokio::task::spawn_blocking(move || bridge.disconnect())
-        .await
-        .map_err(|e| format!("Task join error: {}", e))??;
 
     // Update status
     {
@@ -402,7 +297,7 @@ pub async fn disconnect_telescope(
         serde_json::json!({ "id": telescope_id }),
     )?;
 
-    Ok(serde_json::to_string(&result).unwrap())
+    Ok(serde_json::to_string(&serde_json::json!({ "success": true })).unwrap())
 }
 
 /// Send GOTO command to telescope

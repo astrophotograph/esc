@@ -4,7 +4,6 @@ pub mod commands;
 pub mod database;
 pub mod events;
 pub mod imaging;
-pub mod python;
 pub mod state;
 pub mod streaming;
 pub mod stretch;

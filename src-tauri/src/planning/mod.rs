@@ -3,8 +3,6 @@
 use crate::database::models::Session;
 use crate::database::Database;
 use chrono::Utc;
-use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyModule};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -42,53 +40,7 @@ pub async fn planning_get_visibility(
     date: Option<String>,
     min_altitude: Option<f64>,
 ) -> Result<String, String> {
-    tracing::info!("Getting visibility for target: {}", target.name);
-
-    let min_alt = min_altitude.unwrap_or(20.0);
-    let elevation = location.elevation.unwrap_or(0.0);
-
-    let result = tokio::task::spawn_blocking(move || {
-        Python::with_gil(|py| {
-            let planning_module = PyModule::import(py, "planning.planning_service")
-                .map_err(|e| format!("Failed to import planning module: {}", e))?;
-
-            let get_vis_fn = planning_module
-                .getattr("get_target_visibility")
-                .map_err(|e| format!("Failed to get get_target_visibility: {}", e))?;
-
-            let kwargs = PyDict::new(py);
-            kwargs.set_item("target_name", &target.name).unwrap();
-            kwargs.set_item("ra", target.ra).unwrap();
-            kwargs.set_item("dec", target.dec).unwrap();
-            kwargs.set_item("latitude", location.latitude).unwrap();
-            kwargs.set_item("longitude", location.longitude).unwrap();
-            kwargs.set_item("elevation", elevation).unwrap();
-            kwargs.set_item("min_altitude", min_alt).unwrap();
-
-            if let Some(ref d) = date {
-                kwargs.set_item("date", d).unwrap();
-            }
-
-            let result = get_vis_fn
-                .call((), Some(&kwargs))
-                .map_err(|e| format!("Failed to call get_target_visibility: {}", e))?;
-
-            let json_module = PyModule::import(py, "json")
-                .map_err(|e| format!("Failed to import json: {}", e))?;
-
-            let json_str: String = json_module
-                .call_method1("dumps", (result,))
-                .map_err(|e| format!("Failed to serialize: {}", e))?
-                .extract()
-                .map_err(|e| format!("Failed to extract: {}", e))?;
-
-            Ok::<String, String>(json_str)
-        })
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
-
-    Ok(result)
+    Err("Visibility calculation not yet available in Rust backend".to_string())
 }
 
 /// Get recommended targets for tonight
@@ -98,76 +50,7 @@ pub async fn planning_get_tonight_targets(
     limit: Option<i32>,
     min_altitude: Option<f64>,
 ) -> Result<String, String> {
-    tracing::info!(
-        "Getting tonight's targets for location: {}, {}",
-        location.latitude,
-        location.longitude
-    );
-
-    let limit_val = limit.unwrap_or(20);
-    let min_alt = min_altitude.unwrap_or(30.0);
-    let elevation = location.elevation.unwrap_or(0.0);
-
-    let result = tokio::task::spawn_blocking(move || {
-        Python::with_gil(|py| {
-            // First, get catalog objects from the catalog service
-            let catalog_module = PyModule::import(py, "catalog.catalog_service")
-                .map_err(|e| format!("Failed to import catalog module: {}", e))?;
-
-            let search_fn = catalog_module
-                .getattr("catalog_search")
-                .map_err(|e| format!("Failed to get catalog_search: {}", e))?;
-
-            // Get bright objects (mag <= 8)
-            let search_kwargs = PyDict::new(py);
-            search_kwargs.set_item("max_magnitude", 8.0).unwrap();
-            search_kwargs.set_item("above_horizon_only", false).unwrap();
-            search_kwargs.set_item("limit", 500).unwrap();
-
-            let catalog_result = search_fn
-                .call((), Some(&search_kwargs))
-                .map_err(|e| format!("Failed to search catalog: {}", e))?;
-
-            let catalog_objects = catalog_result
-                .get_item("objects")
-                .map_err(|e| format!("Failed to get objects: {}", e))?;
-
-            // Now get tonight's targets from planning service
-            let planning_module = PyModule::import(py, "planning.planning_service")
-                .map_err(|e| format!("Failed to import planning module: {}", e))?;
-
-            let get_targets_fn = planning_module
-                .getattr("get_tonight_targets")
-                .map_err(|e| format!("Failed to get get_tonight_targets: {}", e))?;
-
-            let kwargs = PyDict::new(py);
-            kwargs.set_item("catalog_objects", catalog_objects).unwrap();
-            kwargs.set_item("latitude", location.latitude).unwrap();
-            kwargs.set_item("longitude", location.longitude).unwrap();
-            kwargs.set_item("elevation", elevation).unwrap();
-            kwargs.set_item("limit", limit_val).unwrap();
-            kwargs.set_item("min_altitude", min_alt).unwrap();
-
-            let result = get_targets_fn
-                .call((), Some(&kwargs))
-                .map_err(|e| format!("Failed to call get_tonight_targets: {}", e))?;
-
-            let json_module = PyModule::import(py, "json")
-                .map_err(|e| format!("Failed to import json: {}", e))?;
-
-            let json_str: String = json_module
-                .call_method1("dumps", (result,))
-                .map_err(|e| format!("Failed to serialize: {}", e))?
-                .extract()
-                .map_err(|e| format!("Failed to extract: {}", e))?;
-
-            Ok::<String, String>(json_str)
-        })
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
-
-    Ok(result)
+    Err("Tonight's targets not yet available in Rust backend".to_string())
 }
 
 /// Create a new observation session

@@ -1,7 +1,6 @@
 use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
-use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
@@ -130,9 +129,6 @@ pub async fn discover_telescopes(
             if !already_exists {
                 drop(telescopes_state);
 
-                // Create placeholder bridge (legacy, needed until all commands migrated)
-                let placeholder_bridge = Python::with_gil(|py| py.None());
-
                 let mut telescopes_state = state.telescopes.write();
                 telescopes_state.insert(
                     telescope_id.clone(),
@@ -143,7 +139,6 @@ pub async fn discover_telescopes(
                         protocol: telescope.protocol.clone(),
                         name: telescope_name.clone(),
                         status: crate::state::ConnectionStatus::Disconnected,
-                        bridge: Arc::new(placeholder_bridge),
                         client: None,
                     },
                 );

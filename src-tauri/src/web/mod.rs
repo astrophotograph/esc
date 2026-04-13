@@ -215,8 +215,6 @@ async fn cmd_discover(state: &AppState) -> Result<serde_json::Value, String> {
         if !telescopes.contains_key(&id) {
             drop(telescopes);
             let mut telescopes = state.telescopes.write();
-            let placeholder_bridge =
-                pyo3::Python::with_gil(|py| -> pyo3::PyObject { py.None().into() });
             telescopes.insert(
                 id.clone(),
                 TelescopeConnection {
@@ -226,7 +224,6 @@ async fn cmd_discover(state: &AppState) -> Result<serde_json::Value, String> {
                     protocol: "seestar".to_string(),
                     name: format!("Seestar {}", sn),
                     status: ConnectionStatus::Disconnected,
-                    bridge: Arc::new(placeholder_bridge),
                     client: None,
                 },
             );

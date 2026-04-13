@@ -7,7 +7,6 @@ mod database;
 mod events;
 mod imaging;
 mod planning;
-mod python;
 mod state;
 mod streaming;
 mod stretch;
@@ -25,13 +24,6 @@ fn main() {
         .init();
 
     tracing::info!("Starting EESC telescope control application");
-
-    // Initialize Python interpreter
-    if let Err(e) = python::init_python() {
-        tracing::error!("Failed to initialize Python: {}", e);
-        std::process::exit(1);
-    }
-    tracing::info!("Python interpreter initialized");
 
     // Initialize app state
     let app_state = state::AppState::new();
@@ -112,10 +104,8 @@ fn main() {
             let app_state = app.state::<state::AppState>();
             match db.get_telescopes() {
                 Ok(telescopes) => {
-                    use pyo3::prelude::*;
                     let mut state_telescopes = app_state.telescopes.write();
                     for t in telescopes {
-                        let placeholder_bridge = Python::with_gil(|py| -> pyo3::PyObject { py.None() });
                         let protocol = t.protocol.clone().unwrap_or_else(|| "seestar".to_string());
                         state_telescopes.insert(
                             t.id.clone(),
@@ -126,7 +116,6 @@ fn main() {
                                 protocol: protocol.clone(),
                                 name: t.name.unwrap_or_else(|| format!("{}:{}", t.host, t.port)),
                                 status: state::ConnectionStatus::Disconnected,
-                                bridge: std::sync::Arc::new(placeholder_bridge),
                                 client: None,
                             },
                         );
