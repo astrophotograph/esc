@@ -10,7 +10,9 @@ mod planning;
 mod python;
 mod state;
 mod streaming;
+mod stretch;
 mod telescope;
+mod web;
 
 use tauri::Manager;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};

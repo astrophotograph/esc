@@ -9,6 +9,7 @@ pub mod state;
 pub mod streaming;
 pub mod stretch;
 pub mod telescope;
+pub mod web;
 
 #[cfg(test)]
 mod tests {
