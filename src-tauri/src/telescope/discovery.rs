@@ -2,9 +2,9 @@ use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, State};
 use tracing::info;
 
@@ -19,99 +19,44 @@ pub struct DiscoveredTelescope {
     pub discovery_method: String,
 }
 
-/// Discover telescopes on the network (both Seestar and Alpaca)
+/// Discover telescopes on the network using native Rust discovery
 #[tauri::command]
 pub async fn discover_telescopes(
     app: AppHandle,
     state: State<'_, AppState>,
     db: State<'_, Database>,
 ) -> Result<Vec<DiscoveredTelescope>, String> {
-    info!("Starting telescope discovery (Seestar and Alpaca)");
+    info!("Starting telescope discovery (native Rust)");
 
-    // Call Python discovery function
-    let telescopes = tokio::task::spawn_blocking(|| {
-        Python::with_gil(|py| -> Result<Vec<DiscoveredTelescope>, String> {
-            // Import discovery module
-            let discovery_module = py
-                .import("telescope.discovery")
-                .map_err(|e| format!("Failed to import discovery module: {}", e))?;
+    // Use native Rust discovery via scopinator-seestar
+    let devices = scopinator_seestar::protocol::discovery::discover(Duration::from_secs(3))
+        .await
+        .map_err(|e| format!("Discovery failed: {}", e))?;
 
-            // Call discover_telescopes_sync
-            let discover_fn = discovery_module
-                .getattr("discover_telescopes_sync")
-                .map_err(|e| format!("Failed to get discover function: {}", e))?;
+    // Map DiscoveredDevice to DiscoveredTelescope
+    let telescopes: Vec<DiscoveredTelescope> = devices
+        .into_iter()
+        .map(|device| {
+            // Try to extract SSID from raw_response.result.ssid
+            let ssid = device
+                .raw_response
+                .get("result")
+                .and_then(|r| r.get("ssid"))
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
 
-            // Call with 3 second timeout (discovers both protocols)
-            let result = discover_fn
-                .call1((3.0,))
-                .map_err(|e| format!("Discovery failed: {}", e))?;
-
-            // Convert Python list to Rust Vec
-            let py_list = result
-                .downcast::<PyList>()
-                .map_err(|e| format!("Result is not a list: {}", e))?;
-
-            let mut telescopes = Vec::new();
-
-            for item in py_list.iter() {
-                let host: String = item
-                    .get_item("host")
-                    .map_err(|e| format!("No host field: {}", e))?
-                    .extract()
-                    .map_err(|e| format!("Invalid host: {}", e))?;
-
-                let port: u16 = item
-                    .get_item("port")
-                    .map_err(|e| format!("No port field: {}", e))?
-                    .extract()
-                    .map_err(|e| format!("Invalid port: {}", e))?;
-
-                let protocol: String = item
-                    .get_item("protocol")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_else(|| "seestar".to_string());
-
-                let serial_number: String = item
-                    .get_item("serial_number")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_default();
-
-                let product_model: String = item
-                    .get_item("product_model")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_default();
-
-                let ssid: String = item
-                    .get_item("ssid")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_default();
-
-                let discovery_method: String = item
-                    .get_item("discovery_method")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_else(|| "auto_discovery".to_string());
-
-                telescopes.push(DiscoveredTelescope {
-                    host,
-                    port,
-                    protocol,
-                    serial_number,
-                    product_model,
-                    ssid,
-                    discovery_method,
-                });
+            DiscoveredTelescope {
+                host: device.address.to_string(),
+                port: 4700,
+                protocol: "seestar".to_string(),
+                serial_number: device.serial_number.unwrap_or_default(),
+                product_model: device.product_model.unwrap_or_default(),
+                ssid,
+                discovery_method: "auto_discovery".to_string(),
             }
-
-            Ok(telescopes)
         })
-    })
-    .await
-    .map_err(|e| format!("Task error: {}", e))??;
+        .collect();
 
     info!("Discovered {} telescopes", telescopes.len());
 
@@ -185,7 +130,7 @@ pub async fn discover_telescopes(
             if !already_exists {
                 drop(telescopes_state);
 
-                // Create placeholder bridge
+                // Create placeholder bridge (legacy, needed until all commands migrated)
                 let placeholder_bridge = Python::with_gil(|py| py.None());
 
                 let mut telescopes_state = state.telescopes.write();

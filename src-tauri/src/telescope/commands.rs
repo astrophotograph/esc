@@ -3,6 +3,7 @@ use crate::events::{emit_event, event_names};
 use crate::python::TelescopeBridge;
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tauri::{AppHandle, State};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -227,36 +228,82 @@ pub async fn connect_telescope(
 
     tracing::info!("connect_telescope: connect result: {:?}", result);
 
-    // Update status and store bridge based on result
-    {
-        use std::sync::Arc;
-        let mut telescopes = state.telescopes.write();
-        if let Some(t) = telescopes.get_mut(&telescope_id) {
-            if result
-                .get("success")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false)
-            {
-                t.status = crate::state::ConnectionStatus::Connected;
-                t.bridge = Arc::new(bridge_clone);
-                emit_event(
-                    &app,
-                    event_names::TELESCOPE_CONNECTED,
-                    serde_json::json!({ "id": telescope_id }),
-                )?;
-            } else {
-                let error = result
-                    .get("error")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Unknown error");
-                t.status = crate::state::ConnectionStatus::Error(error.to_string());
-                emit_event(
-                    &app,
-                    event_names::TELESCOPE_ERROR,
-                    serde_json::json!({ "id": telescope_id, "error": error }),
-                )?;
+    // Also create the native Rust client (Phase 1: runs alongside Python bridge)
+    let native_client = if protocol == "seestar" {
+        use scopinator_seestar::SeestarClient;
+        use std::net::Ipv4Addr;
+        use std::time::Duration;
+
+        let ip: Ipv4Addr = host
+            .parse()
+            .map_err(|e| format!("Invalid IP for native client: {}", e))?;
+
+        match SeestarClient::connect(ip).await {
+            Ok(client) => {
+                match client.wait_for_connection(Duration::from_secs(10)).await {
+                    Ok(()) => {
+                        tracing::info!("connect_telescope: native Rust client connected");
+                        Some(Arc::new(client))
+                    }
+                    Err(e) => {
+                        tracing::error!(
+                            "connect_telescope: native client connection timeout: {}",
+                            e
+                        );
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("connect_telescope: native client connect failed: {}", e);
+                None
             }
         }
+    } else {
+        None
+    };
+
+    // Update status and store bridge based on result
+    let connect_success = result
+        .get("success")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    if connect_success {
+        {
+            let mut telescopes = state.telescopes.write();
+            if let Some(t) = telescopes.get_mut(&telescope_id) {
+                t.status = crate::state::ConnectionStatus::Connected;
+                t.bridge = Arc::new(bridge_clone);
+                t.client = native_client;
+            }
+        }
+        emit_event(
+            &app,
+            event_names::TELESCOPE_CONNECTED,
+            serde_json::json!({ "id": telescope_id }),
+        )?;
+    } else {
+        let error = result
+            .get("error")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown error")
+            .to_string();
+        {
+            let mut telescopes = state.telescopes.write();
+            if let Some(t) = telescopes.get_mut(&telescope_id) {
+                t.status = crate::state::ConnectionStatus::Error(error.clone());
+            }
+        }
+        // Shut down native client if bridge connect failed
+        if let Some(client) = native_client {
+            client.shutdown().await;
+        }
+        emit_event(
+            &app,
+            event_names::TELESCOPE_ERROR,
+            serde_json::json!({ "id": telescope_id, "error": error }),
+        )?;
     }
 
     Ok(serde_json::to_string(&result).unwrap())
@@ -280,6 +327,18 @@ pub async fn disconnect_telescope(
         (telescope.host.clone(), telescope.port, telescope.protocol.clone())
     };
 
+    // Shut down native Rust client if present
+    let native_client = {
+        let telescopes = state.telescopes.read();
+        telescopes
+            .get(&telescope_id)
+            .and_then(|t| t.client.clone())
+    };
+    if let Some(client) = native_client {
+        tracing::info!("disconnect_telescope: shutting down native Rust client");
+        client.shutdown().await;
+    }
+
     // Disconnect via Python bridge
     let bridge = TelescopeBridge::new_with_protocol(&host, port, &protocol)?;
     let result = tokio::task::spawn_blocking(move || bridge.disconnect())
@@ -291,6 +350,7 @@ pub async fn disconnect_telescope(
         let mut telescopes = state.telescopes.write();
         if let Some(t) = telescopes.get_mut(&telescope_id) {
             t.status = crate::state::ConnectionStatus::Disconnected;
+            t.client = None;
         }
     }
 

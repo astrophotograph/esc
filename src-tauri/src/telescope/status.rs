@@ -1,5 +1,6 @@
 use crate::state::AppState;
-use pyo3::prelude::*;
+use scopinator_seestar::command::Command;
+use scopinator_seestar::response::DeviceStateResult;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use tracing::error;
@@ -41,8 +42,28 @@ pub async fn get_telescope_status(
     state: State<'_, AppState>,
     telescope_id: String,
 ) -> Result<TelescopeStatus, String> {
-    // Get the telescope's bridge
-    let bridge = {
+    let disconnected_status = TelescopeStatus {
+        connected: false,
+        battery_percent: None,
+        temperature_c: None,
+        humidity_percent: None,
+        dew_heater_power: None,
+        ra: None,
+        dec: None,
+        is_goto: None,
+        is_tracking: None,
+        view_state: None,
+        gain: None,
+        focus_position: None,
+        stacked_frame: None,
+        target_name: None,
+        free_mb: None,
+        total_mb: None,
+        balance_sensor: None,
+    };
+
+    // Get the native client from state
+    let client = {
         let telescopes = state.telescopes.read();
         let telescope = telescopes
             .get(&telescope_id)
@@ -50,185 +71,185 @@ pub async fn get_telescope_status(
 
         // Check if connected
         if !matches!(telescope.status, crate::state::ConnectionStatus::Connected) {
-            return Ok(TelescopeStatus {
-                connected: false,
-                battery_percent: None,
-                temperature_c: None,
-                humidity_percent: None,
-                dew_heater_power: None,
-                ra: None,
-                dec: None,
-                is_goto: None,
-                is_tracking: None,
-                view_state: None,
-                gain: None,
-                focus_position: None,
-                stacked_frame: None,
-                target_name: None,
-                free_mb: None,
-                total_mb: None,
-                balance_sensor: None,
-            });
+            return Ok(disconnected_status);
         }
 
-        telescope.bridge.clone()
+        match telescope.client.clone() {
+            Some(c) => c,
+            None => {
+                error!("Telescope {} connected but no native client available", telescope_id);
+                return Err("No native client available".to_string());
+            }
+        }
     };
 
-    // Call get_status on the bridge
-    let result = tokio::task::spawn_blocking(move || {
-        Python::with_gil(|py| -> Result<TelescopeStatus, String> {
-            // Import the helper function
-            let telescope_module = py
-                .import("telescope.telescope_bridge")
-                .map_err(|e| format!("Failed to import module: {}", e))?;
+    // Issue commands in parallel for efficiency
+    let (device_result, coord_result, view_result) = tokio::join!(
+        client.send_command(Command::GetDeviceState),
+        client.send_command(Command::ScopeGetEquCoord),
+        client.send_command(Command::GetViewState),
+    );
 
-            let run_async = telescope_module
-                .getattr("_run_async")
-                .map_err(|e| format!("Failed to get _run_async: {}", e))?;
+    let mut status = TelescopeStatus {
+        connected: true,
+        battery_percent: None,
+        temperature_c: None,
+        humidity_percent: None,
+        dew_heater_power: None,
+        ra: None,
+        dec: None,
+        is_goto: None,
+        is_tracking: None,
+        view_state: None,
+        gain: None,
+        focus_position: None,
+        stacked_frame: None,
+        target_name: None,
+        free_mb: None,
+        total_mb: None,
+        balance_sensor: None,
+    };
 
-            // Call get_status
-            let bridge_ref = bridge.as_ref();
-            let bridge_bound = bridge_ref.bind(py);
+    // Parse GetDeviceState response
+    match device_result {
+        Ok(resp) if resp.is_success() => {
+            if let Some(result_val) = resp.result {
+                match serde_json::from_value::<DeviceStateResult>(result_val.clone()) {
+                    Ok(device_state) => {
+                        // Pi status: battery, temperature
+                        if let Some(pi) = &device_state.pi_status {
+                            status.battery_percent =
+                                pi.battery_capacity.map(|v| v as f32);
+                            status.temperature_c =
+                                pi.temp.map(|v| v as f32);
+                        }
 
-            let result = run_async
-                .call1((bridge_bound, "get_status"))
-                .map_err(|e| format!("get_status call failed: {}", e))?;
+                        // Mount: tracking
+                        if let Some(mount) = &device_state.mount {
+                            status.is_tracking = mount.tracking;
+                        }
 
-            // Extract the result dict
-            let success: bool = result
-                .get_item("success")
-                .map_err(|e| format!("No success field: {}", e))?
-                .extract()
-                .map_err(|e| format!("Invalid success value: {}", e))?;
+                        // Focuser: position
+                        if let Some(focuser) = &device_state.focuser {
+                            status.focus_position = focuser.step;
+                        }
 
-            if !success {
-                let error: String = result
-                    .get_item("error")
-                    .ok()
-                    .and_then(|v| v.extract().ok())
-                    .unwrap_or_else(|| "Unknown error".to_string());
-                return Err(error);
-            }
+                        // Storage: free/total MB
+                        if let Some(storage) = &device_state.storage {
+                            status.free_mb = storage
+                                .get("free_mb")
+                                .and_then(|v| v.as_i64())
+                                .map(|v| v as i32);
+                            status.total_mb = storage
+                                .get("total_mb")
+                                .and_then(|v| v.as_i64())
+                                .map(|v| v as i32);
+                        }
 
-            // Extract state dict
-            let state_dict = result
-                .get_item("state")
-                .map_err(|e| format!("No state field: {}", e))?;
+                        // Balance sensor
+                        if let Some(balance) = &device_state.balance_sensor {
+                            let x = balance.get("x").and_then(|v| v.as_f64());
+                            let y = balance.get("y").and_then(|v| v.as_f64());
+                            let z = balance.get("z").and_then(|v| v.as_f64());
+                            let angle = balance.get("angle").and_then(|v| v.as_f64());
+                            if x.is_some() || y.is_some() || z.is_some() || angle.is_some() {
+                                status.balance_sensor =
+                                    Some(BalanceSensorData { x, y, z, angle });
+                            }
+                        }
 
-            // Parse all the status fields (with safe defaults)
-            let battery_percent = state_dict
-                .get_item("battery")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let temperature_c = state_dict
-                .get_item("cur_temp")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let humidity_percent = state_dict
-                .get_item("cur_hum")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let dew_heater_power = state_dict
-                .get_item("dew_heater_power")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let ra = state_dict
-                .get_item("ra")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let dec = state_dict
-                .get_item("dec")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let is_goto = state_dict
-                .get_item("is_goto")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let is_tracking = state_dict
-                .get_item("is_tracking")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let view_state = state_dict
-                .get_item("view")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let gain = state_dict
-                .get_item("gain")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let focus_position = state_dict
-                .get_item("focus_position")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let stacked_frame = state_dict
-                .get_item("stacked_frame")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let target_name = state_dict
-                .get_item("target_name")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let free_mb = state_dict
-                .get_item("free_mb")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            let total_mb = state_dict
-                .get_item("total_mb")
-                .ok()
-                .and_then(|v| v.extract().ok());
-
-            // Extract balance sensor data
-            let balance_sensor = state_dict
-                .get_item("balance_sensor")
-                .ok()
-                .and_then(|v| {
-                    if v.is_none() {
-                        return None;
+                        // Setting (embedded in device state): gain, exposure
+                        if let Some(setting) = &device_state.setting {
+                            status.gain = setting
+                                .get("gain")
+                                .and_then(|v| v.as_i64())
+                                .map(|v| v as i32);
+                        }
                     }
-                    let x: Option<f64> = v.get_item("x").ok().and_then(|x| x.extract().ok());
-                    let y: Option<f64> = v.get_item("y").ok().and_then(|y| y.extract().ok());
-                    let z: Option<f64> = v.get_item("z").ok().and_then(|z| z.extract().ok());
-                    let angle: Option<f64> = v.get_item("angle").ok().and_then(|a| a.extract().ok());
-                    Some(BalanceSensorData { x, y, z, angle })
-                });
+                    Err(e) => {
+                        error!("Failed to parse DeviceStateResult: {}", e);
+                    }
+                }
+            }
+        }
+        Ok(resp) => {
+            error!(
+                "GetDeviceState returned error code {}: {:?}",
+                resp.code, resp.error
+            );
+        }
+        Err(e) => {
+            error!("GetDeviceState command failed: {}", e);
+        }
+    }
 
-            Ok(TelescopeStatus {
-                connected: true,
-                battery_percent,
-                temperature_c,
-                humidity_percent,
-                dew_heater_power,
-                ra,
-                dec,
-                is_goto,
-                is_tracking,
-                view_state,
-                gain,
-                focus_position,
-                stacked_frame,
-                target_name,
-                free_mb,
-                total_mb,
-                balance_sensor,
-            })
-        })
-    })
-    .await
-    .map_err(|e| format!("Task error: {}", e))??;
+    // Parse ScopeGetEquCoord response (ra/dec in degrees)
+    match coord_result {
+        Ok(resp) if resp.is_success() => {
+            if let Some(result_val) = resp.result {
+                status.ra = result_val
+                    .get("ra")
+                    .and_then(|v| v.as_f64());
+                status.dec = result_val
+                    .get("dec")
+                    .and_then(|v| v.as_f64());
+            }
+        }
+        Ok(resp) => {
+            error!(
+                "ScopeGetEquCoord returned error code {}: {:?}",
+                resp.code, resp.error
+            );
+        }
+        Err(e) => {
+            error!("ScopeGetEquCoord command failed: {}", e);
+        }
+    }
 
-    Ok(result)
+    // Parse GetViewState response
+    match view_result {
+        Ok(resp) if resp.is_success() => {
+            if let Some(result_val) = resp.result {
+                // View state info
+                let view = result_val.get("View").or_else(|| result_val.get("view"));
+                if let Some(view_val) = view {
+                    status.view_state = view_val
+                        .get("state")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
+                    status.is_goto = view_val
+                        .get("state")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s == "SlewComplete" || s.contains("Goto"));
+                    status.target_name = view_val
+                        .get("target_name")
+                        .and_then(|v| v.as_str())
+                        .map(String::from);
+                    status.stacked_frame = view_val
+                        .get("stacked_frame")
+                        .and_then(|v| v.as_i64())
+                        .map(|v| v as i32);
+
+                    // Gain can also come from view state
+                    if status.gain.is_none() {
+                        status.gain = view_val
+                            .get("gain")
+                            .and_then(|v| v.as_i64())
+                            .map(|v| v as i32);
+                    }
+                }
+            }
+        }
+        Ok(resp) => {
+            error!(
+                "GetViewState returned error code {}: {:?}",
+                resp.code, resp.error
+            );
+        }
+        Err(e) => {
+            error!("GetViewState command failed: {}", e);
+        }
+    }
+
+    Ok(status)
 }

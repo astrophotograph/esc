@@ -23,8 +23,7 @@ pub struct TelescopeConnection {
     pub status: ConnectionStatus,
     /// Legacy Python bridge object (will be removed once all commands use client)
     pub bridge: Arc<PyObject>,
-    /// Native Rust client for Seestar protocol (None until Phase 1 migration)
-    #[allow(dead_code)]
+    /// Native Rust client for Seestar protocol
     pub client: Option<Arc<SeestarClient>>,
 }
 
