@@ -103,13 +103,42 @@ pub async fn imaging_reprocess_fits(params: ReprocessFitsParams) -> Result<Strin
 /// Get available stretch modes
 #[tauri::command]
 pub async fn imaging_get_stretch_modes() -> Result<String, String> {
-    Err("Stretch modes not yet available in Rust backend".to_string())
+    let modes = serde_json::json!([
+        {"id": "No Stretch", "name": "No Stretch", "description": "Simple min-max normalization"},
+        {"id": "10% Bg, 3 sigma", "name": "10% Background, 3\u{03c3}", "description": "Light stretch for bright objects"},
+        {"id": "15% Bg, 3 sigma", "name": "15% Background, 3\u{03c3}", "description": "Default stretch (recommended)"},
+        {"id": "20% Bg, 3 sigma", "name": "20% Background, 3\u{03c3}", "description": "Medium stretch for faint objects"},
+        {"id": "30% Bg, 2 sigma", "name": "30% Background, 2\u{03c3}", "description": "Strong stretch for very faint objects"}
+    ]);
+    Ok(modes.to_string())
 }
 
 /// Get available enhancement methods
 #[tauri::command]
 pub async fn imaging_get_enhancement_methods() -> Result<String, String> {
-    Err("Enhancement methods not yet available in Rust backend".to_string())
+    let methods = serde_json::json!({
+        "upscale": [
+            {"id": "BICUBIC", "name": "Bicubic", "description": "Standard bicubic interpolation"},
+            {"id": "LANCZOS", "name": "Lanczos", "description": "High-quality Lanczos resampling"},
+            {"id": "EDSR", "name": "EDSR", "description": "Enhanced Deep Super-Resolution (AI)"},
+            {"id": "FSRCNN", "name": "FSRCNN", "description": "Fast Super-Resolution CNN (AI)"},
+            {"id": "ESRGAN", "name": "ESRGAN", "description": "Enhanced Super-Resolution GAN (AI)"}
+        ],
+        "denoise": [
+            {"id": "TV_CHAMBOLLE", "name": "Total Variation", "description": "TV denoising (Chambolle)"},
+            {"id": "BILATERAL", "name": "Bilateral Filter", "description": "Edge-preserving bilateral filter"},
+            {"id": "NON_LOCAL_MEANS", "name": "Non-Local Means", "description": "NL-Means denoising"},
+            {"id": "WAVELET", "name": "Wavelet", "description": "Wavelet-based denoising"},
+            {"id": "GAUSSIAN", "name": "Gaussian", "description": "Gaussian blur denoising"},
+            {"id": "MEDIAN", "name": "Median", "description": "Median filter denoising"}
+        ],
+        "sharpen": [
+            {"id": "UNSHARP_MASK", "name": "Unsharp Mask", "description": "Classic unsharp mask sharpening"},
+            {"id": "LAPLACIAN", "name": "Laplacian", "description": "Laplacian edge sharpening"},
+            {"id": "HIGH_PASS", "name": "High Pass", "description": "High-pass filter sharpening"}
+        ]
+    });
+    Ok(methods.to_string())
 }
 
 /// Get a processed image by ID
