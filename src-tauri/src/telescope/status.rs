@@ -3,7 +3,7 @@ use scopinator_seestar::command::Command;
 use scopinator_seestar::response::DeviceStateResult;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::error;
+use tracing::{debug, error};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -167,7 +167,7 @@ pub async fn get_telescope_status(
                         }
                     }
                     Err(e) => {
-                        error!("Failed to parse DeviceStateResult: {}", e);
+                        error!("Failed to parse DeviceStateResult: {} | Raw JSON: {}", e, result_val);
                     }
                 }
             }

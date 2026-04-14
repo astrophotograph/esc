@@ -220,7 +220,7 @@ pub async fn connect_telescope(
 
     // Create the native Rust client
     let native_client = if protocol == "seestar" {
-        use scopinator_seestar::SeestarClient;
+        use scopinator_seestar::{SeestarClient, SeestarConfig, InteropKey};
         use std::net::Ipv4Addr;
         use std::time::Duration;
 
@@ -228,7 +228,36 @@ pub async fn connect_telescope(
             .parse()
             .map_err(|e| format!("Invalid IP: {}", e))?;
 
-        let client = SeestarClient::connect(ip)
+        // Load authentication key from environment
+        let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
+            match std::fs::read_to_string(&pem_path) {
+                Ok(pem_content) => {
+                    match InteropKey::from_pem(&pem_content) {
+                        Ok(key) => {
+                            tracing::info!("connect_telescope: loaded SEESTAR_INTEROP_PEM from {}", pem_path);
+                            Some(key)
+                        }
+                        Err(e) => {
+                            tracing::warn!("connect_telescope: failed to parse PEM: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("connect_telescope: failed to read SEESTAR_INTEROP_PEM from {}: {}", pem_path, e);
+                    None
+                }
+            }
+        } else {
+            tracing::debug!("connect_telescope: SEESTAR_INTEROP_PEM not set, connecting without authentication");
+            None
+        };
+
+        let config = SeestarConfig {
+            interop_key,
+        };
+
+        let client = SeestarClient::connect_with_config(ip, config)
             .await
             .map_err(|e| format!("Connection failed: {}", e))?;
 
