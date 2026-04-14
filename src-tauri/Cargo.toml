@@ -3,7 +3,7 @@ name = "eesc"
 version = "0.1.0"
 description = "Telescope control application"
 authors = ["erewhon"]
-license = ""
+license = "AGPL-3.0-or-later"
 repository = ""
 edition = "2021"
 
