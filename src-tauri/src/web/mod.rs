@@ -278,7 +278,36 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         .parse()
         .map_err(|e| format!("Invalid IP: {e}"))?;
 
-    let client = SeestarClient::connect(ip)
+    // Load authentication key from environment
+    let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
+        match std::fs::read_to_string(&pem_path) {
+            Ok(pem_content) => {
+                match scopinator_seestar::InteropKey::from_pem(&pem_content) {
+                    Ok(key) => {
+                        info!("Web API: loaded SEESTAR_INTEROP_PEM from {}", pem_path);
+                        Some(key)
+                    }
+                    Err(e) => {
+                        tracing::warn!("Web API: failed to parse PEM: {}", e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Web API: failed to read SEESTAR_INTEROP_PEM from {}: {}", pem_path, e);
+                None
+            }
+        }
+    } else {
+        tracing::debug!("Web API: SEESTAR_INTEROP_PEM not set, connecting without authentication");
+        None
+    };
+
+    let config = scopinator_seestar::SeestarConfig {
+        interop_key,
+    };
+
+    let client = SeestarClient::connect_with_config(ip, config)
         .await
         .map_err(|e| format!("Connection failed: {e}"))?;
 
