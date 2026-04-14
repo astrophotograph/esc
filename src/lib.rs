@@ -3,7 +3,6 @@
 pub mod commands;
 pub mod telescope;
 pub mod imaging;
-pub mod python;
 
 #[cfg(test)]
 mod tests {

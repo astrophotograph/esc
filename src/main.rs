@@ -4,7 +4,6 @@
 mod commands;
 mod telescope;
 mod imaging;
-mod python;
 
 use tauri::Manager;
 
