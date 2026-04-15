@@ -71,7 +71,7 @@ pub fn stretch_mtf_rgb(
     });
 }
 
-fn stretch_mtf_mono(data: &mut Vec<f64>, bg_percent: f64, sigma: f64) {
+fn stretch_mtf_mono(data: &mut [f64], bg_percent: f64, sigma: f64) {
     let (med, mad) = channel_stats(data);
     let shadow_clip = (med - sigma * mad * 1.4826).max(0.0);
     let highlight_clip = 1.0;

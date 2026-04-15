@@ -293,6 +293,7 @@ impl Database {
     // =========================================================================
 
     /// Save equipment
+    #[allow(dead_code)]
     pub fn save_equipment(&self, equipment: &Equipment) -> Result<()> {
         let conn = self.conn.lock();
         conn.execute(
@@ -312,6 +313,7 @@ impl Database {
     }
 
     /// Get all equipment
+    #[allow(dead_code)]
     pub fn get_equipment(&self) -> Result<Vec<Equipment>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
@@ -336,6 +338,7 @@ impl Database {
     }
 
     /// Delete equipment
+    #[allow(dead_code)]
     pub fn delete_equipment(&self, id: &str) -> Result<()> {
         let conn = self.conn.lock();
         conn.execute("DELETE FROM equipment WHERE id = ?1", params![id])?;
@@ -347,6 +350,7 @@ impl Database {
     // =========================================================================
 
     /// Save an observation log entry
+    #[allow(dead_code)]
     pub fn save_observation_log(&self, log: &ObservationLog) -> Result<()> {
         let conn = self.conn.lock();
         conn.execute(
@@ -368,6 +372,7 @@ impl Database {
     }
 
     /// Get observation logs for a session
+    #[allow(dead_code)]
     pub fn get_observation_logs(&self, session_id: Option<&str>) -> Result<Vec<ObservationLog>> {
         let conn = self.conn.lock();
         let sql = if session_id.is_some() {
@@ -413,6 +418,7 @@ impl Database {
     }
 
     /// Delete an observation log
+    #[allow(dead_code)]
     pub fn delete_observation_log(&self, id: &str) -> Result<()> {
         let conn = self.conn.lock();
         conn.execute("DELETE FROM observation_logs WHERE id = ?1", params![id])?;

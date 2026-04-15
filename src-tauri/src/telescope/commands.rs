@@ -78,6 +78,7 @@ pub struct MoveParams {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct FocusParams {
     pub position: Option<i32>,  // Absolute position
     pub increment: Option<i32>, // Relative increment

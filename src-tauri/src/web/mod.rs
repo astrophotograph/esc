@@ -3,6 +3,9 @@
 //! Provides the same `/api/{command}` POST interface that the frontend
 //! expects, plus MJPEG streaming and static file serving.
 
+// This module is not yet connected to main — allow dead code for future use.
+#![allow(dead_code)]
+
 use axum::{
     body::Body,
     extract::{Path, State as AxumState},
@@ -14,12 +17,11 @@ use axum::{
 use scopinator_seestar::command::params::*;
 use scopinator_seestar::command::Command;
 use scopinator_seestar::SeestarClient;
-use serde::Deserialize;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::CorsLayer;
-use tracing::{error, info};
+use tracing::info;
 
 use crate::state::{AppState, ConnectionStatus, TelescopeConnection};
 use crate::streaming;
@@ -256,7 +258,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
     let host = payload.get("host").and_then(|v| v.as_str());
     let port = payload.get("port").and_then(|v| v.as_u64()).map(|v| v as u16);
 
-    let (host, port) = if let (Some(h), Some(p)) = (host, port) {
+    let (host, _port) = if let (Some(h), Some(p)) = (host, port) {
         (h.to_string(), p)
     } else {
         let telescopes = state.telescopes.read();

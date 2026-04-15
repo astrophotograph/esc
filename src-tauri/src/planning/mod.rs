@@ -3,7 +3,7 @@
 use crate::catalog;
 use crate::database::models::Session;
 use crate::database::Database;
-use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 

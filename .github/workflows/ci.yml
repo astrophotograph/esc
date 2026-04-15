@@ -57,6 +57,8 @@ jobs:
         run: pnpm run build
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -68,7 +70,7 @@ jobs:
 
       - name: Cargo clippy
         working-directory: src-tauri
-        run: cargo clippy -- -D warnings || true
+        run: cargo clippy -- -D warnings
 
       - name: Cargo test
         working-directory: src-tauri

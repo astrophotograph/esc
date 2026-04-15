@@ -3,7 +3,7 @@ use scopinator_seestar::command::Command;
 use scopinator_seestar::response::DeviceStateResult;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::{debug, error};
+use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

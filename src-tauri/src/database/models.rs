@@ -20,6 +20,7 @@ pub struct Telescope {
 
 /// Observation log entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct Observation {
     pub id: String,
     pub telescope_id: String,

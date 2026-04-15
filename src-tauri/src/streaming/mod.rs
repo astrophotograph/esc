@@ -254,7 +254,7 @@ async fn stream_handler(
     let keep_alive_interval = Duration::from_millis(500);
     let frame_stream = stream::unfold(
         (jpeg_rx, true),
-        move |(mut rx, is_first)| async move {
+        move |(rx, is_first)| async move {
             let frame_bytes = rx.borrow().clone();
 
             if frame_bytes.is_empty() {

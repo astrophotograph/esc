@@ -118,13 +118,13 @@ pub async fn imaging_process_fits(params: ProcessFitsParams) -> Result<String, S
 
 /// Enhance an image
 #[tauri::command]
-pub async fn imaging_enhance(params: EnhanceParams) -> Result<String, String> {
+pub async fn imaging_enhance(_params: EnhanceParams) -> Result<String, String> {
     Err("Image enhancement not yet available in Rust backend".to_string())
 }
 
 /// Reprocess a FITS file with new parameters
 #[tauri::command]
-pub async fn imaging_reprocess_fits(params: ReprocessFitsParams) -> Result<String, String> {
+pub async fn imaging_reprocess_fits(_params: ReprocessFitsParams) -> Result<String, String> {
     Err("FITS reprocessing not yet available in Rust backend".to_string())
 }
 
@@ -172,26 +172,27 @@ pub async fn imaging_get_enhancement_methods() -> Result<String, String> {
 /// Get a processed image by ID
 #[tauri::command]
 pub async fn imaging_get_processed(
-    image_id: String,
-    format: Option<String>,
+    _image_id: String,
+    _format: Option<String>,
 ) -> Result<Option<String>, String> {
     Err("Processed image retrieval not yet available in Rust backend".to_string())
 }
 
 /// Delete a processed image
 #[tauri::command]
-pub async fn imaging_cleanup(image_id: String) -> Result<bool, String> {
+pub async fn imaging_cleanup(_image_id: String) -> Result<bool, String> {
     Err("Image cleanup not yet available in Rust backend".to_string())
 }
 
 /// Plate solve an image
 #[tauri::command]
-pub async fn imaging_plate_solve(params: PlateSolveParams) -> Result<String, String> {
+pub async fn imaging_plate_solve(_params: PlateSolveParams) -> Result<String, String> {
     Err("Plate solving not yet available in Rust backend".to_string())
 }
 
 /// Save image metadata to database
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn imaging_save_to_db(
     db: State<'_, Database>,
     session_id: Option<String>,

@@ -183,8 +183,8 @@ fn lstsq(columns: &[Vec<f64>], b: &[f64], n_rows: usize, n_cols: usize) -> Optio
     for i in 0..n_cols {
         for j in 0..n_cols {
             let mut sum = 0.0;
-            for k in 0..n_rows {
-                sum += columns[i][k] * columns[j][k];
+            for (a, b_val) in columns[i][..n_rows].iter().zip(columns[j][..n_rows].iter()) {
+                sum += a * b_val;
             }
             ata[i * n_cols + j] = sum;
         }
