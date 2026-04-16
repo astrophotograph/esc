@@ -236,7 +236,6 @@ export function TelescopeHeader() {
         return
       }
       updateTelescope(telescope.id, { status: 'connected' })
-      addActivity(telescope.id, 'success', 'Connected to telescope')
     } catch (error) {
       updateTelescope(telescope.id, { status: 'error', error: String(error) })
       addActivity(telescope.id, 'error', `Connection failed: ${error}`)
