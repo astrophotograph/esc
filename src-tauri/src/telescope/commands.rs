@@ -964,3 +964,313 @@ pub async fn telescope_save_image(
 
     Ok(result)
 }
+
+/// Full scope settings payload returned to the frontend.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScopeSettingsPayload {
+    // Imaging
+    pub stack_exposure_ms: Option<i64>,
+    pub continuous_exposure_ms: Option<i64>,
+    pub lp_filter_enabled: Option<bool>,
+    pub frame_calib: Option<bool>,
+    pub auto_3ppa_calib: Option<bool>,
+    pub stack_cont_capt: Option<bool>,
+    pub stack_drizzle2x: Option<bool>,
+    pub dark_mode: Option<bool>,
+    pub expert_mode: Option<bool>,
+    // Dithering
+    pub dither_enabled: Option<bool>,
+    pub dither_pixels: Option<i64>,
+    pub dither_frequency: Option<i64>,
+    // Frame saving
+    pub save_good_frames: Option<bool>,
+    pub save_all_frames: Option<bool>,
+    // Stack settings
+    pub light_duration_min: Option<i64>,
+    pub stack_capt_type: Option<String>,
+    pub stack_capt_num: Option<i64>,
+    pub stack_brightness: Option<f64>,
+    pub stack_contrast: Option<f64>,
+    pub stack_saturation: Option<f64>,
+    pub stack_dbe_enable: Option<bool>,
+    // Focus / environment
+    pub focal_pos: Option<i64>,
+    pub dew_heater_enabled: Option<bool>,
+    pub auto_power_off: Option<bool>,
+    // Plan settings
+    pub plan_target_af: Option<bool>,
+    pub viewplan_gohome: Option<bool>,
+}
+
+/// Scope settings the frontend wants to write back.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScopeSettingsUpdate {
+    pub stack_exposure_ms: Option<i64>,
+    pub continuous_exposure_ms: Option<i64>,
+    pub lp_filter_enabled: Option<bool>,
+    pub frame_calib: Option<bool>,
+    pub auto_3ppa_calib: Option<bool>,
+    pub stack_cont_capt: Option<bool>,
+    pub stack_drizzle2x: Option<bool>,
+    pub dark_mode: Option<bool>,
+    pub expert_mode: Option<bool>,
+    pub dither_enabled: Option<bool>,
+    pub dither_pixels: Option<i64>,
+    pub dither_frequency: Option<i64>,
+    pub save_good_frames: Option<bool>,
+    pub save_all_frames: Option<bool>,
+    pub light_duration_min: Option<i64>,
+    pub stack_capt_type: Option<String>,
+    pub stack_capt_num: Option<i64>,
+    pub stack_brightness: Option<f64>,
+    pub stack_contrast: Option<f64>,
+    pub stack_saturation: Option<f64>,
+    pub stack_dbe_enable: Option<bool>,
+    pub focal_pos: Option<i64>,
+    pub dew_heater_enabled: Option<bool>,
+    pub auto_power_off: Option<bool>,
+    pub plan_target_af: Option<bool>,
+    pub viewplan_gohome: Option<bool>,
+}
+
+/// Helper: extract a bool from a JSON value (handles 0/1 integers as well).
+fn as_bool(v: &serde_json::Value) -> Option<bool> {
+    if let Some(b) = v.as_bool() {
+        return Some(b);
+    }
+    if let Some(n) = v.as_i64() {
+        return Some(n != 0);
+    }
+    None
+}
+
+/// Read all live scope settings from the telescope.
+/// Calls both `get_setting` and `get_stack_setting` and merges the results.
+#[tauri::command]
+pub async fn get_scope_settings(
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<ScopeSettingsPayload, String> {
+    tracing::info!("Get scope settings for telescope {}", telescope_id);
+
+    let client = get_client(&state, &telescope_id)?;
+
+    // Fetch primary settings
+    let resp = client
+        .send_command(Command::GetSetting)
+        .await
+        .map_err(|e| format!("get_setting failed: {e}"))?;
+    if !resp.is_success() {
+        return Err(resp
+            .error
+            .unwrap_or_else(|| "get_setting command failed".to_string()));
+    }
+    let s = resp.result.unwrap_or_default();
+
+    // Fetch stack settings (may fail on older firmware — treat as empty)
+    let stack_resp = client
+        .send_command(Command::GetStackSetting)
+        .await
+        .ok()
+        .and_then(|r| if r.is_success() { r.result } else { None })
+        .unwrap_or_default();
+
+    // stack.{field} from get_setting merged with get_stack_setting (prefer stack_setting)
+    let stack_obj = s.get("stack").and_then(|v| v.as_object()).cloned().unwrap_or_default();
+
+    let get_stack_field = |key: &str| -> Option<&serde_json::Value> {
+        stack_resp.get(key).or_else(|| stack_obj.get(key).map(|v| v))
+    };
+
+    // Continuous capture: firmware stores it in multiple places
+    let stack_cont_capt = s.get("stack").and_then(|v| v.get("cont_capt"))
+        .or_else(|| s.get("stack_cont_capt"))
+        .or_else(|| s.get("cont_capt"))
+        .and_then(as_bool);
+
+    // plan_target_af: try both top-level and nested
+    let plan_target_af = s.get("plan_target_af")
+        .or_else(|| s.get("plan").and_then(|p| p.get("target_af")))
+        .and_then(as_bool);
+
+    // viewplan_gohome: try several variants
+    let viewplan_gohome = s.get("viewplan_gohome")
+        .or_else(|| s.get("viewplan_go_home"))
+        .or_else(|| s.get("viewplan").and_then(|p| p.get("go_home")))
+        .and_then(as_bool);
+
+    Ok(ScopeSettingsPayload {
+        // Imaging
+        stack_exposure_ms: s.get("exp_ms").and_then(|v| v.get("stack_l")).and_then(|v| v.as_i64()),
+        continuous_exposure_ms: s.get("exp_ms").and_then(|v| v.get("continuous")).and_then(|v| v.as_i64()),
+        lp_filter_enabled: s.get("stack_lenhance").and_then(as_bool),
+        frame_calib: s.get("frame_calib").and_then(as_bool),
+        auto_3ppa_calib: s.get("auto_3ppa_calib").and_then(as_bool),
+        stack_cont_capt,
+        stack_drizzle2x: s.get("stack").and_then(|v| v.get("drizzle2x")).and_then(as_bool),
+        dark_mode: s.get("dark_mode").and_then(as_bool),
+        expert_mode: s.get("expert_mode").and_then(as_bool),
+        // Dithering
+        dither_enabled: s.get("stack_dither").and_then(|v| v.get("enable")).and_then(as_bool),
+        dither_pixels: s.get("stack_dither").and_then(|v| v.get("pix")).and_then(|v| v.as_i64()),
+        dither_frequency: s.get("stack_dither").and_then(|v| v.get("interval")).and_then(|v| v.as_i64()),
+        // Frame saving — prefer get_stack_setting, fall back to stack.* in get_setting
+        save_good_frames: get_stack_field("save_discrete_ok_frame")
+            .or_else(|| s.get("save_discrete_ok_frame"))
+            .and_then(as_bool),
+        save_all_frames: get_stack_field("save_discrete_frame")
+            .or_else(|| s.get("save_discrete_frame"))
+            .and_then(as_bool),
+        // Stack settings
+        light_duration_min: get_stack_field("light_duration_min")
+            .or_else(|| s.get("stack").and_then(|v| v.get("light_duration_min")))
+            .and_then(|v| v.as_i64()),
+        stack_capt_type: get_stack_field("capt_type").and_then(|v| v.as_str()).map(|s| s.to_string()),
+        stack_capt_num: get_stack_field("capt_num").and_then(|v| v.as_i64()),
+        stack_brightness: get_stack_field("brightness").and_then(|v| v.as_f64()),
+        stack_contrast: get_stack_field("contrast").and_then(|v| v.as_f64()),
+        stack_saturation: get_stack_field("saturation").and_then(|v| v.as_f64()),
+        stack_dbe_enable: get_stack_field("dbe_enable").and_then(as_bool),
+        // Focus / environment
+        focal_pos: s.get("focal_pos").and_then(|v| v.as_i64()),
+        dew_heater_enabled: s.get("heater_enable").and_then(as_bool),
+        auto_power_off: s.get("auto_power_off").and_then(as_bool),
+        // Plan
+        plan_target_af,
+        viewplan_gohome,
+    })
+}
+
+/// Write scope settings back to the telescope.
+/// Sends multiple focused `set_setting` calls to match firmware expectations.
+#[tauri::command]
+pub async fn set_scope_settings(
+    state: State<'_, AppState>,
+    telescope_id: String,
+    settings: ScopeSettingsUpdate,
+) -> Result<serde_json::Value, String> {
+    tracing::info!("Set scope settings for telescope {}", telescope_id);
+
+    let client = get_client(&state, &telescope_id)?;
+
+    // ── Main set_setting call ─────────────────────────────────────────────────
+    let exp_ms = match (settings.stack_exposure_ms, settings.continuous_exposure_ms) {
+        (None, None) => None,
+        (stack, cont) => {
+            let mut m = serde_json::Map::new();
+            if let Some(v) = stack { m.insert("stack_l".into(), serde_json::json!(v)); }
+            if let Some(v) = cont  { m.insert("continuous".into(), serde_json::json!(v)); }
+            Some(serde_json::Value::Object(m))
+        }
+    };
+
+    let stack_dither = match (settings.dither_enabled, settings.dither_pixels, settings.dither_frequency) {
+        (None, None, None) => None,
+        (en, pix, freq) => {
+            let mut m = serde_json::Map::new();
+            if let Some(v) = en   { m.insert("enable".into(), serde_json::json!(v)); }
+            if let Some(v) = pix  { m.insert("pix".into(), serde_json::json!(v)); }
+            if let Some(v) = freq { m.insert("interval".into(), serde_json::json!(v)); }
+            Some(serde_json::Value::Object(m))
+        }
+    };
+
+    // Build nested `stack` object for cont_capt, drizzle2x
+    let stack_obj = {
+        let mut m = serde_json::Map::new();
+        if let Some(v) = settings.stack_cont_capt  { m.insert("cont_capt".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_drizzle2x  { m.insert("drizzle2x".into(), serde_json::json!(v)); }
+        if m.is_empty() { None } else { Some(serde_json::Value::Object(m)) }
+    };
+
+    // dark_mode must be sent as integer 0/1 per ZWO firmware quirk
+    let dark_mode = settings.dark_mode.map(|b| serde_json::json!(if b { 1 } else { 0 }));
+
+    let main_params = SettingParams {
+        exp_ms,
+        stack_dither,
+        stack_lenhance: settings.lp_filter_enabled,
+        auto_3ppa_calib: settings.auto_3ppa_calib,
+        frame_calib: settings.frame_calib,
+        focal_pos: settings.focal_pos,
+        auto_power_off: settings.auto_power_off,
+        dark_mode,
+        stack: stack_obj,
+        expert_mode: settings.expert_mode,
+        plan_target_af: settings.plan_target_af,
+        viewplan_gohome: settings.viewplan_gohome,
+        ..Default::default()
+    };
+
+    let result = response_to_json(client.send_command(Command::SetSetting(main_params)).await)?;
+
+    // ── Dew heater via pi_output_set2 ────────────────────────────────────────
+    if let Some(heater_on) = settings.dew_heater_enabled {
+        let heater_params = serde_json::json!({
+            "heater": { "state": heater_on, "value": if heater_on { 90 } else { 0 } }
+        });
+        if let Err(e) = client.send_command(Command::PiOutputSet2(heater_params)).await {
+            tracing::warn!("pi_output_set2 (heater) failed: {}", e);
+        }
+    }
+
+    // ── Stack settings via set_stack_setting ─────────────────────────────────
+    let has_stack_update = settings.save_good_frames.is_some()
+        || settings.save_all_frames.is_some()
+        || settings.light_duration_min.is_some()
+        || settings.stack_capt_type.is_some()
+        || settings.stack_capt_num.is_some()
+        || settings.stack_brightness.is_some()
+        || settings.stack_contrast.is_some()
+        || settings.stack_saturation.is_some()
+        || settings.stack_dbe_enable.is_some();
+
+    if has_stack_update {
+        let stack_params = SetStackSettingParams {
+            save_discrete_ok_frame: settings.save_good_frames,
+            save_discrete_frame: settings.save_all_frames,
+            light_duration_min: settings.light_duration_min,
+            capt_type: settings.stack_capt_type,
+            capt_num: settings.stack_capt_num,
+            brightness: settings.stack_brightness,
+            contrast: settings.stack_contrast,
+            saturation: settings.stack_saturation,
+            dbe_enable: settings.stack_dbe_enable,
+        };
+        if let Err(e) = client.send_command(Command::SetStackSetting(stack_params)).await {
+            tracing::warn!("set_stack_setting failed: {}", e);
+        }
+    }
+
+    Ok(result)
+}
+
+/// Set telescope location (lat/lon).
+#[tauri::command]
+pub async fn set_scope_location(
+    state: State<'_, AppState>,
+    telescope_id: String,
+    lat: f64,
+    lon: f64,
+) -> Result<serde_json::Value, String> {
+    tracing::info!(
+        "Set location for telescope {}: lat={}, lon={}",
+        telescope_id,
+        lat,
+        lon
+    );
+
+    let client = get_client(&state, &telescope_id)?;
+    let result = response_to_json(
+        client
+            .send_command(Command::SetUserLocation(SetUserLocationParams {
+                lat,
+                lon,
+                force: true,
+            }))
+            .await,
+    )?;
+    Ok(result)
+}

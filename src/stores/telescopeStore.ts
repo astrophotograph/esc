@@ -73,11 +73,53 @@ export interface TelescopeStatus {
 }
 
 export interface TelescopeSettings {
+  // Camera — basic
   exposure: number
   gain: number
-  brightness?: number
-  contrast?: number
   autoExposure: boolean
+
+  // Location
+  locationName?: string
+  latitude?: number
+  longitude?: number
+  tempUnit?: 'C' | 'F'
+
+  // Imaging / stacking
+  stackExposureMs?: number        // exposure for stacked frames (ms)
+  continuousExposureMs?: number   // exposure for continuous / live view (ms)
+  lpFilterEnabled?: boolean       // light-pollution filter
+  frameCalib?: boolean            // frame calibration (dark / flat)
+  auto3ppaCalib?: boolean         // 3-point polar alignment auto-calibration
+  stackContCapt?: boolean         // continuous capture mode
+  stackDrizzle2x?: boolean        // drizzle 2× upscaling
+  darkMode?: boolean              // dark-mode (sent as 0/1 to firmware)
+  expertMode?: boolean            // expert mode
+  saveGoodFrames?: boolean        // save quality-passed frames
+  saveAllFrames?: boolean         // save all frames including rejected
+
+  // Stack session settings
+  lightDurationMin?: number       // session light duration (minutes)
+  stackCaptType?: string          // capture type ("continuous", "fixed", …)
+  stackCaptNum?: number           // fixed capture count
+  stackBrightness?: number        // stacked image brightness
+  stackContrast?: number          // stacked image contrast
+  stackSaturation?: number        // stacked image saturation
+  stackDbeEnable?: boolean        // dynamic background extraction
+
+  // Dithering
+  ditherEnabled?: boolean
+  ditherPixels?: number           // dither distance in pixels
+  ditherFrequency?: number        // frames between dither moves
+
+  // Focus / environment
+  focalPos?: number               // current focuser position
+  dewHeaterEnabled?: boolean      // dew heater on/off
+  autoPowerOff?: boolean          // auto power-off when idle
+  batteryLowLimit?: number        // shutdown threshold (%)
+
+  // Plan settings
+  planTargetAf?: boolean          // auto-focus when slewing to plan target
+  viewplanGohome?: boolean        // go home after view plan completes
 }
 
 export interface ActivityLogEntry {
@@ -143,9 +185,43 @@ interface TelescopeStore {
 const DEFAULT_SETTINGS: TelescopeSettings = {
   exposure: 1000,
   gain: 80,
-  brightness: 50,
-  contrast: 50,
   autoExposure: false,
+
+  locationName: '',
+  latitude: 0,
+  longitude: 0,
+  tempUnit: 'C',
+
+  stackExposureMs: 10000,
+  continuousExposureMs: 500,
+  lpFilterEnabled: false,
+  frameCalib: false,
+  auto3ppaCalib: false,
+  stackContCapt: false,
+  stackDrizzle2x: false,
+  darkMode: false,
+  expertMode: false,
+  saveGoodFrames: true,
+  saveAllFrames: false,
+
+  lightDurationMin: 60,
+  stackCaptType: 'continuous',
+  stackCaptNum: 0,
+  stackBrightness: 50,
+  stackContrast: 50,
+  stackSaturation: 50,
+  stackDbeEnable: false,
+
+  ditherEnabled: false,
+  ditherPixels: 50,
+  ditherFrequency: 10,
+
+  dewHeaterEnabled: false,
+  autoPowerOff: false,
+  batteryLowLimit: 20,
+
+  planTargetAf: false,
+  viewplanGohome: false,
 }
 
 export const useTelescopeStore = create<TelescopeStore>()(
