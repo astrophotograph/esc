@@ -1247,6 +1247,18 @@ pub async fn set_scope_settings(
     Ok(result)
 }
 
+/// Move telescope to the horizon (stow position).
+#[tauri::command]
+pub async fn telescope_move_to_horizon(
+    state: State<'_, AppState>,
+    telescope_id: String,
+) -> Result<serde_json::Value, String> {
+    tracing::info!("Move to horizon for telescope {}", telescope_id);
+    let client = get_client(&state, &telescope_id)?;
+    let result = response_to_json(client.send_command(Command::ScopeMoveToHorizon).await)?;
+    Ok(result)
+}
+
 /// Switch mount between Equatorial and Alt-Az modes.
 /// Sends `scope_park` with `equ_mode` param — this parks the mount as a side-effect.
 #[tauri::command]

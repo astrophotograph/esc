@@ -16,6 +16,7 @@ import {
   Circle,
   Target,
   Power,
+  Mountain,
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
@@ -206,6 +207,15 @@ export function TelescopeControlsOverlay() {
       await invoke('park_telescope', { telescopeId: currentTelescopeId })
     } catch (error) {
       console.error('Park failed:', error)
+    }
+  }, [currentTelescopeId])
+
+  const handleMoveToHorizon = useCallback(async () => {
+    if (!currentTelescopeId) return
+    try {
+      await invoke('telescope_move_to_horizon', { telescopeId: currentTelescopeId })
+    } catch (error) {
+      console.error('Move to horizon failed:', error)
     }
   }, [currentTelescopeId])
 
@@ -528,17 +538,39 @@ export function TelescopeControlsOverlay() {
                   <div />
                 </div>
 
-                {/* Park Button */}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleTelescopePark}
-                  disabled={!isConnected}
-                  className="w-full"
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Park Telescope
-                </Button>
+                {/* Park / Horizon Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleTelescopePark}
+                        disabled={!isConnected}
+                        className="w-full"
+                      >
+                        <Home className="h-4 w-4 mr-2" />
+                        Park
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Park telescope (stow position)</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleMoveToHorizon}
+                        disabled={!isConnected}
+                        className="w-full"
+                      >
+                        <Mountain className="h-4 w-4 mr-2" />
+                        Horizon
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Move to horizon (storage position)</p></TooltipContent>
+                  </Tooltip>
+                </div>
 
                 {/* Mount Mode */}
                 <div className="flex items-center justify-between pt-1">
