@@ -65,6 +65,7 @@ fn main() {
             telescope::get_scope_settings,
             telescope::set_scope_settings,
             telescope::set_scope_location,
+            telescope::telescope_set_mount_mode,
             // Catalog commands
             catalog::catalog_search,
             catalog::catalog_quick_search,

@@ -1247,6 +1247,26 @@ pub async fn set_scope_settings(
     Ok(result)
 }
 
+/// Switch mount between Equatorial and Alt-Az modes.
+/// Sends `scope_park` with `equ_mode` param — this parks the mount as a side-effect.
+#[tauri::command]
+pub async fn telescope_set_mount_mode(
+    state: State<'_, AppState>,
+    telescope_id: String,
+    eq_mode: bool,
+) -> Result<serde_json::Value, String> {
+    tracing::info!(
+        "Set mount mode for telescope {}: eq_mode={}",
+        telescope_id,
+        eq_mode
+    );
+    let client = get_client(&state, &telescope_id)?;
+    let result = response_to_json(
+        client.send_command(Command::ScopeParkMode(eq_mode)).await,
+    )?;
+    Ok(result)
+}
+
 /// Set telescope location (lat/lon).
 #[tauri::command]
 pub async fn set_scope_location(

@@ -71,7 +71,8 @@ export function TelescopeControlsOverlay() {
     dec: storeStatus.dec,
     stage: storeStatus.stage,
     focusPosition: storeStatus.focuserPosition,
-  } : null, [storeStatus?.ra, storeStatus?.dec, storeStatus?.stage, storeStatus?.focuserPosition])
+    mountType: storeStatus.mountType,
+  } : null, [storeStatus?.ra, storeStatus?.dec, storeStatus?.stage, storeStatus?.focuserPosition, storeStatus?.mountType])
 
   // Track local focus position for UI, sync from status
   const [localFocusPosition, setLocalFocusPosition] = useState<number | null>(null)
@@ -86,6 +87,8 @@ export function TelescopeControlsOverlay() {
 
   // Reboot confirmation dialog state
   const [showRebootConfirm, setShowRebootConfirm] = useState(false)
+  // Mount mode confirmation: null = closed, true = switching to EQ, false = switching to Alt-Az
+  const [pendingMountMode, setPendingMountMode] = useState<boolean | null>(null)
   // Recording state
   const [isRecording, setIsRecording] = useState(false)
 
@@ -292,6 +295,20 @@ export function TelescopeControlsOverlay() {
       setShowRebootConfirm(false)
     }
   }, [currentTelescopeId])
+
+  const handleMountModeConfirm = useCallback(async () => {
+    if (!currentTelescopeId || pendingMountMode === null) return
+    try {
+      await invoke('telescope_set_mount_mode', {
+        telescopeId: currentTelescopeId,
+        eqMode: pendingMountMode,
+      })
+    } catch (error) {
+      console.error('Mount mode switch failed:', error)
+    } finally {
+      setPendingMountMode(null)
+    }
+  }, [currentTelescopeId, pendingMountMode])
 
   const startContinuousMove = useCallback(
     (direction: string) => {
@@ -522,6 +539,46 @@ export function TelescopeControlsOverlay() {
                   <Home className="h-4 w-4 mr-2" />
                   Park Telescope
                 </Button>
+
+                {/* Mount Mode */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    Mount:{' '}
+                    <span className="font-mono text-foreground">
+                      {streamStatus?.mountType ?? '—'}
+                    </span>
+                  </span>
+                  <div className="flex gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={streamStatus?.mountType === 'Equatorial' ? 'default' : 'outline'}
+                          onClick={() => setPendingMountMode(true)}
+                          disabled={!isConnected || streamStatus?.mountType === 'Equatorial'}
+                          className="h-7 text-xs px-2"
+                        >
+                          EQ
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Switch to Equatorial mode (parks mount)</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={streamStatus?.mountType === 'Alt-Az' ? 'default' : 'outline'}
+                          onClick={() => setPendingMountMode(false)}
+                          disabled={!isConnected || streamStatus?.mountType === 'Alt-Az'}
+                          className="h-7 text-xs px-2"
+                        >
+                          Alt-Az
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Switch to Alt-Az mode (parks mount)</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -677,6 +734,26 @@ export function TelescopeControlsOverlay() {
           </div>
         )}
       </div>
+
+      {/* Mount Mode Confirmation Dialog */}
+      <AlertDialog open={pendingMountMode !== null} onOpenChange={(open) => { if (!open) setPendingMountMode(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Switch to {pendingMountMode ? 'Equatorial' : 'Alt-Az'} Mode?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The telescope will park before switching mount modes. Any active imaging session will be interrupted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMountModeConfirm}>
+              Switch Mode
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Reboot Confirmation Dialog */}
       <AlertDialog open={showRebootConfirm} onOpenChange={setShowRebootConfirm}>

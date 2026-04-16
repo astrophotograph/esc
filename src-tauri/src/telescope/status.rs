@@ -26,6 +26,7 @@ pub struct TelescopeStatus {
     pub dec: Option<f64>,
     pub is_goto: Option<bool>,
     pub is_tracking: Option<bool>,
+    pub mount_type: Option<String>,
     pub view_state: Option<String>,
     pub gain: Option<i32>,
     pub focus_position: Option<i32>,
@@ -52,6 +53,7 @@ pub async fn get_telescope_status(
         dec: None,
         is_goto: None,
         is_tracking: None,
+        mount_type: None,
         view_state: None,
         gain: None,
         focus_position: None,
@@ -100,6 +102,7 @@ pub async fn get_telescope_status(
         dec: None,
         is_goto: None,
         is_tracking: None,
+        mount_type: None,
         view_state: None,
         gain: None,
         focus_position: None,
@@ -124,9 +127,12 @@ pub async fn get_telescope_status(
                                 pi.temp.map(|v| v as f32);
                         }
 
-                        // Mount: tracking
+                        // Mount: tracking + mode
                         if let Some(mount) = &device_state.mount {
                             status.is_tracking = mount.tracking;
+                            status.mount_type = mount.equ_mode.map(|eq| {
+                                if eq { "Equatorial".to_string() } else { "Alt-Az".to_string() }
+                            });
                         }
 
                         // Focuser: position
