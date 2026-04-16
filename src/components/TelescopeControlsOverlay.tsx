@@ -186,14 +186,20 @@ export function TelescopeControlsOverlay() {
     async (direction: string) => {
       if (!currentTelescopeId) return
       try {
-        await invoke('telescope_move', {
-          telescopeId: currentTelescopeId,
-          params: {
-            direction,
-            speed: 1.0,
-            duration_sec: 5.0,
-          },
-        })
+        if (direction === 'stop') {
+          await invoke('telescope_stop_move', { telescopeId: currentTelescopeId })
+        } else {
+          // Backend expects single-letter abbreviations: n/s/e/w
+          const dirMap: Record<string, string> = {
+            north: 'n', south: 's', east: 'e', west: 'w',
+            northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw',
+          }
+          const dir = dirMap[direction] ?? direction
+          await invoke('telescope_move', {
+            telescopeId: currentTelescopeId,
+            params: { direction: dir, speed: 1.0, duration_sec: 5.0 },
+          })
+        }
       } catch (error) {
         console.error('Move failed:', error)
       }
