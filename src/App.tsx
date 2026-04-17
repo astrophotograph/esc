@@ -23,6 +23,7 @@ function App() {
     theme,
     activeTab,
     setActiveTab,
+    isFullscreen,
   } = useUIStore()
 
   const uiHydrated = useUIStore((state) => state._hasHydrated)
@@ -129,35 +130,38 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-      {/* Header */}
-      <TelescopeHeader />
+      {/* Header — hidden in fullscreen */}
+      {!isFullscreen && <TelescopeHeader />}
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden flex flex-col">
-        <div className="px-4 py-2 border-b border-border bg-card/80">
-          <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as typeof activeTab)}>
-            <TabsList>
-              <TabsTrigger value="telescope">Telescope</TabsTrigger>
-              <TabsTrigger value="catalog">Catalog</TabsTrigger>
-              <TabsTrigger value="imaging">Imaging</TabsTrigger>
-              <TabsTrigger value="planning">Planning</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        {/* Tab bar — hidden in fullscreen */}
+        {!isFullscreen && (
+          <div className="px-4 py-2 border-b border-border bg-card/80">
+            <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as typeof activeTab)}>
+              <TabsList>
+                <TabsTrigger value="telescope">Telescope</TabsTrigger>
+                <TabsTrigger value="catalog">Catalog</TabsTrigger>
+                <TabsTrigger value="imaging">Imaging</TabsTrigger>
+                <TabsTrigger value="planning">Planning</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
 
         <div className="flex-1 overflow-hidden">
-          {activeTab === 'telescope' && <TelescopeView />}
-          {activeTab === 'catalog' && (
+          {(activeTab === 'telescope' || isFullscreen) && <TelescopeView />}
+          {activeTab === 'catalog' && !isFullscreen && (
             <div className="h-full overflow-auto p-4">
               <CatalogSearch />
             </div>
           )}
-          {activeTab === 'imaging' && (
+          {activeTab === 'imaging' && !isFullscreen && (
             <div className="h-full overflow-auto p-4">
               <ImageViewer />
             </div>
           )}
-          {activeTab === 'planning' && (
+          {activeTab === 'planning' && !isFullscreen && (
             <div className="h-full overflow-auto p-4">
               <SessionPlanning />
             </div>
@@ -165,8 +169,8 @@ function App() {
         </div>
       </main>
 
-      {/* Footer */}
-      <AppFooter />
+      {/* Footer — hidden in fullscreen */}
+      {!isFullscreen && <AppFooter />}
 
       {/* Keyboard Help Modal */}
       <KeyboardHelp />
