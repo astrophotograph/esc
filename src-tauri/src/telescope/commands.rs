@@ -1081,7 +1081,7 @@ pub async fn get_scope_settings(
     let stack_obj = s.get("stack").and_then(|v| v.as_object()).cloned().unwrap_or_default();
 
     let get_stack_field = |key: &str| -> Option<&serde_json::Value> {
-        stack_resp.get(key).or_else(|| stack_obj.get(key).map(|v| v))
+        stack_resp.get(key).or_else(|| stack_obj.get(key))
     };
 
     // Continuous capture: firmware stores it in multiple places
