@@ -103,9 +103,10 @@ export function useKeyboardShortcuts() {
       },
       {
         key: 'Escape',
-        description: 'Close modal / Cancel action',
+        description: 'Close modal / Cancel action / Exit fullscreen',
         category: 'ui',
         action: () => {
+          useUIStore.getState().setIsFullscreen(false)
           closeAllModals()
           if (telescopeId) {
             stopGoto(telescopeId)

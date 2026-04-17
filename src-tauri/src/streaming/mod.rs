@@ -202,35 +202,45 @@ async fn stream_handler(
                     let height = frame.header.height as u32;
                     let data = frame.data.clone();
 
-                    // Determine if color based on data size vs dimensions
-                    // RGB interleaved = w*h*3, mono = w*h
-                    let expected_rgb = (width * height * 3) as usize;
-                    let is_color = data.len() >= expected_rgb;
+                    // Seestar live preview frames are already JPEG-encoded.
+                    // Detect by JPEG SOI magic bytes (FF D8) and pass through directly.
+                    let is_jpeg = data.len() >= 2 && data[0] == 0xFF && data[1] == 0xD8;
 
-                    // Offload stretch + JPEG encode to a blocking task
-                    let params = StretchParams {
-                        gradient_removal: stretch_params.gradient_removal,
-                        autocrop: stretch_params.autocrop,
-                        ..Default::default()
-                    };
-                    let jpeg_tx = jpeg_tx.clone();
+                    if is_jpeg {
+                        debug!(
+                            "Frame processor: JPEG passthrough {}x{} ({} bytes)",
+                            width, height, data.len()
+                        );
+                        let _ = jpeg_tx.send(data.to_vec());
+                    } else {
+                        // Raw pixel data — apply stretch pipeline
+                        let expected_rgb = (width * height * 3) as usize;
+                        let is_color = data.len() >= expected_rgb;
 
-                    tokio::task::spawn_blocking(move || {
-                        match stretch_raw_frame(&data, width, height, is_color, &params) {
-                            Ok(jpeg_bytes) => {
-                                debug!(
-                                    "Frame processor: stretched {}x{} → {} byte JPEG",
-                                    width,
-                                    height,
-                                    jpeg_bytes.len()
-                                );
-                                let _ = jpeg_tx.send(jpeg_bytes);
+                        let params = StretchParams {
+                            gradient_removal: stretch_params.gradient_removal,
+                            autocrop: stretch_params.autocrop,
+                            ..Default::default()
+                        };
+                        let jpeg_tx = jpeg_tx.clone();
+
+                        tokio::task::spawn_blocking(move || {
+                            match stretch_raw_frame(&data, width, height, is_color, &params) {
+                                Ok(jpeg_bytes) => {
+                                    debug!(
+                                        "Frame processor: stretched {}x{} → {} byte JPEG",
+                                        width,
+                                        height,
+                                        jpeg_bytes.len()
+                                    );
+                                    let _ = jpeg_tx.send(jpeg_bytes);
+                                }
+                                Err(e) => {
+                                    warn!("Frame processor: stretch failed: {}", e);
+                                }
                             }
-                            Err(e) => {
-                                warn!("Frame processor: stretch failed: {}", e);
-                            }
-                        }
-                    });
+                        });
+                    }
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                     debug!("Frame processor: skipped {} frames (lagged)", n);
@@ -365,8 +375,8 @@ async fn snapshot_handler(
         ..Default::default()
     };
 
-    // Wait up to 300ms for the next image frame
-    let frame_result = tokio::time::timeout(Duration::from_millis(300), async {
+    // Wait up to 1s for the next image frame
+    let frame_result = tokio::time::timeout(Duration::from_millis(1000), async {
         loop {
             match frame_rx.recv().await {
                 Ok(frame) if frame.header.is_image() => return Some(frame),
@@ -382,14 +392,19 @@ async fn snapshot_handler(
             let width = frame.header.width as u32;
             let height = frame.header.height as u32;
             let data = frame.data.clone();
-            let is_color = data.len() >= (width * height * 3) as usize;
+            let is_jpeg = data.len() >= 2 && data[0] == 0xFF && data[1] == 0xD8;
 
-            tokio::task::spawn_blocking(move || {
-                stretch_raw_frame(&data, width, height, is_color, &stretch_params)
-                    .unwrap_or_else(|_| generate_placeholder_jpeg(width, height, 0))
-            })
-            .await
-            .unwrap_or_else(|_| generate_placeholder_jpeg(640, 480, 0))
+            if is_jpeg {
+                data.to_vec()
+            } else {
+                let is_color = data.len() >= (width * height * 3) as usize;
+                tokio::task::spawn_blocking(move || {
+                    stretch_raw_frame(&data, width, height, is_color, &stretch_params)
+                        .unwrap_or_else(|_| generate_placeholder_jpeg(width, height, 0))
+                })
+                .await
+                .unwrap_or_else(|_| generate_placeholder_jpeg(640, 480, 0))
+            }
         }
         _ => generate_placeholder_jpeg(640, 480, 0),
     };

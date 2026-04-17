@@ -33,55 +33,91 @@ impl Default for StretchParams {
 
 /// Stretch raw frame data and encode to JPEG bytes.
 ///
-/// `data` is raw pixel bytes from the Seestar imaging port.
-/// For color frames, data is expected as interleaved RGB (3 bytes per pixel).
-/// For mono frames, data is 1 byte per pixel.
+/// Auto-detects pixel format from data length:
+/// - `w*h*6` → uint16 LE interleaved RGB
+/// - `w*h*2` → uint16 LE Bayer GRBG (2×2 binned → half resolution)
+/// - `w*h*3` → uint8 interleaved RGB
+/// - `w*h`   → uint8 mono
 ///
 /// Returns JPEG-encoded bytes.
 pub fn stretch_raw_frame(
     data: &[u8],
     width: u32,
     height: u32,
-    is_color: bool,
+    _is_color: bool,
     params: &StretchParams,
 ) -> Result<Vec<u8>, String> {
     let w = width as usize;
     let h = height as usize;
-    let channel_size = w * h;
+    let pixels = w * h;
 
-    // Convert raw bytes to f64 channels normalized to [0, 1]
-    let mut channels: Vec<Vec<f64>> = if is_color {
-        let expected = channel_size * 3;
-        if data.len() < expected {
-            return Err(format!(
-                "Color frame too small: got {} bytes, expected {}",
-                data.len(),
-                expected
-            ));
+    // Auto-detect format from data length; derive output dimensions and f64 channels
+    let (out_w, out_h, mut channels): (usize, usize, Vec<Vec<f64>>) = match data.len() {
+        n if n == pixels * 6 => {
+            // 16-bit interleaved RGB (uint16 LE per component: R G B)
+            let mut r = Vec::with_capacity(pixels);
+            let mut g = Vec::with_capacity(pixels);
+            let mut b = Vec::with_capacity(pixels);
+            for i in 0..pixels {
+                let base = i * 6;
+                r.push(u16::from_le_bytes([data[base],     data[base + 1]]) as f64 / 65535.0);
+                g.push(u16::from_le_bytes([data[base + 2], data[base + 3]]) as f64 / 65535.0);
+                b.push(u16::from_le_bytes([data[base + 4], data[base + 5]]) as f64 / 65535.0);
+            }
+            (w, h, vec![r, g, b])
         }
-        // Deinterleave RGB into separate channels
-        let mut r = Vec::with_capacity(channel_size);
-        let mut g = Vec::with_capacity(channel_size);
-        let mut b = Vec::with_capacity(channel_size);
-        for i in 0..channel_size {
-            r.push(data[i * 3] as f64 / 255.0);
-            g.push(data[i * 3 + 1] as f64 / 255.0);
-            b.push(data[i * 3 + 2] as f64 / 255.0);
+        n if n == pixels * 2 => {
+            // 16-bit Bayer GRBG — 2×2 binning demosaic → half resolution color
+            // Pattern: (even row, even col)=G  (even row, odd col)=R
+            //          (odd  row, even col)=B  (odd  row, odd col)=G
+            let ow = w / 2;
+            let oh = h / 2;
+            let out_pixels = ow * oh;
+            let mut r = Vec::with_capacity(out_pixels);
+            let mut g = Vec::with_capacity(out_pixels);
+            let mut b = Vec::with_capacity(out_pixels);
+            for row in 0..oh {
+                for col in 0..ow {
+                    let sr = row * 2;
+                    let sc = col * 2;
+                    let ig0 = (sr * w + sc) * 2;
+                    let ir  = (sr * w + sc + 1) * 2;
+                    let ib  = ((sr + 1) * w + sc) * 2;
+                    let ig1 = ((sr + 1) * w + sc + 1) * 2;
+                    let g0 = u16::from_le_bytes([data[ig0], data[ig0 + 1]]) as f64;
+                    let rv = u16::from_le_bytes([data[ir],  data[ir  + 1]]) as f64;
+                    let bv = u16::from_le_bytes([data[ib],  data[ib  + 1]]) as f64;
+                    let g1 = u16::from_le_bytes([data[ig1], data[ig1 + 1]]) as f64;
+                    r.push(rv / 65535.0);
+                    g.push((g0 + g1) / 2.0 / 65535.0);
+                    b.push(bv / 65535.0);
+                }
+            }
+            (ow, oh, vec![r, g, b])
         }
-        vec![r, g, b]
-    } else {
-        if data.len() < channel_size {
-            return Err(format!(
-                "Mono frame too small: got {} bytes, expected {}",
-                data.len(),
-                channel_size
-            ));
+        n if n >= pixels * 3 => {
+            // 8-bit interleaved RGB
+            let mut r = Vec::with_capacity(pixels);
+            let mut g = Vec::with_capacity(pixels);
+            let mut b = Vec::with_capacity(pixels);
+            for i in 0..pixels {
+                r.push(data[i * 3]     as f64 / 255.0);
+                g.push(data[i * 3 + 1] as f64 / 255.0);
+                b.push(data[i * 3 + 2] as f64 / 255.0);
+            }
+            (w, h, vec![r, g, b])
         }
-        vec![data[..channel_size]
-            .iter()
-            .map(|&v| v as f64 / 255.0)
-            .collect()]
+        _ => {
+            // 8-bit mono (treat undersized as padded mono)
+            let count = pixels.min(data.len());
+            let mut ch: Vec<f64> = data[..count].iter().map(|&v| v as f64 / 255.0).collect();
+            ch.resize(pixels, 0.0);
+            (w, h, vec![ch])
+        }
     };
+
+    let is_color = channels.len() == 3;
+    let channel_size = out_w * out_h;
 
     // Autocrop — detect edges from averaged channels
     let crop_bounds = if params.autocrop {
@@ -92,7 +128,7 @@ pub fn stretch_raw_frame(
         } else {
             channels[0].clone()
         };
-        autocrop::detect_edges(&mono, w, h)
+        autocrop::detect_edges(&mono, out_w, out_h)
     } else {
         (0, 0, 0, 0)
     };
@@ -100,16 +136,16 @@ pub fn stretch_raw_frame(
     // Normalize — compute percentiles from interior, apply to full frame
     let (top, bottom, left, right) = crop_bounds;
     let interior_y0 = top;
-    let interior_y1 = h - bottom;
+    let interior_y1 = out_h - bottom;
     let interior_x0 = left;
-    let interior_x1 = w - right;
+    let interior_x1 = out_w - right;
 
     channels.par_iter_mut().for_each(|ch| {
         let mut interior: Vec<f64> = if top > 0 || bottom > 0 || left > 0 || right > 0 {
             let mut v = Vec::new();
             for y in interior_y0..interior_y1 {
                 for x in interior_x0..interior_x1 {
-                    v.push(ch[y * w + x]);
+                    v.push(ch[y * out_w + x]);
                 }
             }
             v
@@ -130,7 +166,7 @@ pub fn stretch_raw_frame(
     if params.gradient_removal {
         let order = 2;
         channels.par_iter_mut().for_each(|ch| {
-            let corrected = gradient::remove_gradient(ch, w, h, order);
+            let corrected = gradient::remove_gradient(ch, out_w, out_h, order);
             ch.copy_from_slice(&corrected);
         });
     }
@@ -143,20 +179,20 @@ pub fn stretch_raw_frame(
 
     if is_color {
         for i in 0..channel_size {
-            rgb[i * 3] = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
+            rgb[i * 3]     = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
             rgb[i * 3 + 1] = (channels[1][i] * 255.0).clamp(0.0, 255.0) as u8;
             rgb[i * 3 + 2] = (channels[2][i] * 255.0).clamp(0.0, 255.0) as u8;
         }
     } else {
         for i in 0..channel_size {
             let v = (channels[0][i] * 255.0).clamp(0.0, 255.0) as u8;
-            rgb[i * 3] = v;
+            rgb[i * 3]     = v;
             rgb[i * 3 + 1] = v;
             rgb[i * 3 + 2] = v;
         }
     }
 
-    let img = image::RgbImage::from_raw(width, height, rgb)
+    let img = image::RgbImage::from_raw(out_w as u32, out_h as u32, rgb)
         .ok_or("Failed to create image buffer")?;
 
     let mut jpeg_buf = Cursor::new(Vec::new());

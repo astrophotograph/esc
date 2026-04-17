@@ -268,7 +268,39 @@ pub async fn connect_telescope(
             .map_err(|e| format!("Connection timeout: {}", e))?;
 
         tracing::info!("connect_telescope: native Rust client connected");
-        Some(Arc::new(client))
+        let client = Arc::new(client);
+
+        // Auto-start live preview so port 4800 begins streaming immediately.
+        // Fire-and-forget; failure is non-fatal.
+        {
+            let preview_client = client.clone();
+            tokio::spawn(async move {
+                // Brief delay so the control connection is fully settled
+                tokio::time::sleep(tokio::time::Duration::from_millis(800)).await;
+                match preview_client.send_command(Command::IscopeStartView(StartViewParams {
+                    mode: Some(ViewMode::Star),
+                    target_name: None,
+                    target_ra_dec: None,
+                    target_type: None,
+                    lp_filter: None,
+                })).await {
+                    Ok(resp) => {
+                        tracing::info!("connect_telescope: iscope_start_view response: code={} result={:?}", resp.code, resp.result);
+                        // Send begin_streaming on the imaging port (4800) to trigger frame delivery
+                        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                        let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
+                        if let Err(e) = preview_client.send_imaging_command(msg).await {
+                            tracing::warn!("connect_telescope: begin_streaming failed: {}", e);
+                        } else {
+                            tracing::info!("connect_telescope: begin_streaming sent on imaging port");
+                        }
+                    }
+                    Err(e) => tracing::warn!("connect_telescope: auto-start preview failed: {}", e),
+                }
+            });
+        }
+
+        Some(client)
     } else {
         return Err(format!("Unsupported protocol: {}", protocol));
     };

@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
-import { ZoomIn, ZoomOut, Maximize2, Sparkles, Filter, RotateCw } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sparkles, Filter, RotateCw } from 'lucide-react'
 import { Button } from './ui/button'
 import { VideoFeed } from './VideoFeed'
 import { AllskyPanel } from './AllskyPanel'
 import { TelescopeStatusOverlay } from './TelescopeStatusOverlay'
 import { TelescopeControlsOverlay } from './TelescopeControlsOverlay'
 import { useTelescopeStore } from '../stores/telescopeStore'
+import { useUIStore } from '../stores/uiStore'
 
 type ViewMode = 'telescope' | 'allsky'
 
@@ -17,6 +18,7 @@ export function TelescopeView() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { currentTelescopeId } = useTelescopeStore()
+  const { isFullscreen, setIsFullscreen } = useUIStore()
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.25, 4))
@@ -39,15 +41,7 @@ export function TelescopeView() {
     setPanPosition(newPan)
   }, [])
 
-  const handleFullscreen = () => {
-    if (containerRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen()
-      } else {
-        containerRef.current.requestFullscreen()
-      }
-    }
-  }
+  const handleFullscreen = () => setIsFullscreen(!isFullscreen)
 
   return (
     <div ref={containerRef} className="relative h-full bg-black overflow-hidden">
@@ -109,9 +103,9 @@ export function TelescopeView() {
             size="icon"
             onClick={handleFullscreen}
             className="rounded-none h-9 w-9"
-            title="Fullscreen"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
-            <Maximize2 className="h-4 w-4" />
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
           <Button
             variant="ghost"
