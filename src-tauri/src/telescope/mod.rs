@@ -9,12 +9,15 @@ pub use commands::*;
 pub use discovery::*;
 pub use status::*;
 
+#[derive(Default)]
+#[allow(dead_code)]
 pub struct TelescopeController {
     // Telescope state will be managed here
 }
 
 impl TelescopeController {
+    #[allow(dead_code)]
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
 }

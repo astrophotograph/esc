@@ -62,6 +62,11 @@ fn main() {
             telescope::telescope_stop_stack,
             telescope::telescope_get_stacking_status,
             telescope::telescope_save_image,
+            telescope::get_scope_settings,
+            telescope::set_scope_settings,
+            telescope::set_scope_location,
+            telescope::telescope_set_mount_mode,
+            telescope::telescope_move_to_horizon,
             // Catalog commands
             catalog::catalog_search,
             catalog::catalog_quick_search,

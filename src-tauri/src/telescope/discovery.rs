@@ -2,7 +2,6 @@ use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, State};
 use tracing::info;

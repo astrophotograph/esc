@@ -1,3 +1,6 @@
+// Event structs and constants are defined ahead of use — allow dead code.
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 

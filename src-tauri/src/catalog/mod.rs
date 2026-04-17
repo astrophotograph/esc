@@ -35,6 +35,7 @@ pub(crate) struct CatalogObject {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
+#[allow(dead_code)]
 pub(crate) struct CatalogIds {
     pub(crate) messier: Option<String>,
     pub(crate) ngc: Option<String>,
@@ -666,7 +667,7 @@ fn matches_search_query(obj: &CatalogObject, query: &str) -> bool {
 
     // Alias partial match
     for alias in &aliases {
-        if alias.contains(&query_lower.as_str()) {
+        if alias.contains(query_lower.as_str()) {
             return true;
         }
     }
@@ -692,6 +693,7 @@ fn matches_search_query(obj: &CatalogObject, query: &str) -> bool {
 // Core search logic
 // ---------------------------------------------------------------------------
 
+#[allow(clippy::too_many_arguments)]
 fn do_search(
     query: Option<&str>,
     object_type: Option<&str>,
@@ -768,8 +770,8 @@ fn do_search(
         }
 
         // Filter: object_type
-        if let Some(ref ot) = object_type {
-            if obj_type_str != *ot {
+        if let Some(ot) = object_type {
+            if obj_type_str != ot {
                 continue;
             }
         }
@@ -789,7 +791,7 @@ fn do_search(
         }
 
         // Default display: only objects with magnitude <= 6.0
-        if query.map_or(true, |q| q.is_empty()) {
+        if query.is_none_or(|q| q.is_empty()) {
             match magnitude {
                 None => continue,
                 Some(mag) if mag > 6.0 => continue,
@@ -807,7 +809,7 @@ fn do_search(
                 // Filter by horizon
                 if above_horizon_only
                     && !above
-                    && query.map_or(true, |q| q.is_empty())
+                    && query.is_none_or(|q| q.is_empty())
                     && obj.id != "sun"
                 {
                     continue;

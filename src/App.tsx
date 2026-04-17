@@ -49,14 +49,12 @@ function App() {
   useEffect(() => {
     if (!runtime.isTauri) return
 
-    let unlisteners: Awaited<ReturnType<typeof initializeTauriEvents>> = []
-
-    initializeTauriEvents().then((listeners) => {
-      unlisteners = listeners
-    })
+    // Hold the promise so the cleanup closure can always await and unlisten,
+    // even when React StrictMode unmounts before the async init resolves.
+    const listenersPromise = initializeTauriEvents()
 
     return () => {
-      cleanupTauriEvents(unlisteners)
+      listenersPromise.then(cleanupTauriEvents)
     }
   }, [])
 

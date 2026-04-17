@@ -236,7 +236,6 @@ export function TelescopeHeader() {
         return
       }
       updateTelescope(telescope.id, { status: 'connected' })
-      addActivity(telescope.id, 'success', 'Connected to telescope')
     } catch (error) {
       updateTelescope(telescope.id, { status: 'error', error: String(error) })
       addActivity(telescope.id, 'error', `Connection failed: ${error}`)
@@ -285,10 +284,10 @@ export function TelescopeHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between px-2 sm:px-4 py-2 bg-card border-b border-border gap-2">
+    <header className="flex items-center px-2 sm:px-4 py-2 bg-card border-b border-border gap-2">
       {/* Left Section - Telescope Selector */}
       <TooltipProvider>
-        <div className="flex items-center gap-2 min-w-0 flex-shrink">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Telescope Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -412,9 +411,9 @@ export function TelescopeHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Connection Status - hidden on small screens */}
+          {/* Connection Status - hidden on small screens, also hidden at xl where center section takes over */}
           {currentTelescope && (
-            <div className="hidden md:flex items-center gap-2 text-xs">
+            <div className="hidden md:flex xl:hidden items-center gap-2 text-xs">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 cursor-default">
@@ -438,14 +437,21 @@ export function TelescopeHeader() {
         </div>
       </TooltipProvider>
 
-      {/* Center Section - Status Indicators (hidden on small/medium screens) */}
+      {/* Center Section - Status Indicators. flex-1 + min-w-0 means it fills the gap between
+          left and right without ever pushing into them. Items are revealed progressively. */}
       {isConnected && (
         <TooltipProvider>
-          <div className="hidden xl:flex items-center gap-4 text-sm flex-shrink-0">
-            {/* Battery */}
+          <div className="hidden xl:flex flex-1 min-w-0 items-center justify-center gap-3 text-sm">
+            {/* MJPEG live indicator — always shown at xl+ */}
+            <Badge variant="outline" className="gap-1 text-xs flex-shrink-0">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+              MJPEG
+            </Badge>
+
+            {/* Battery — always shown at xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Battery
                     className={`h-4 w-4 ${
                       (status?.batteryPercent ?? 0) > 50
@@ -461,10 +467,10 @@ export function TelescopeHeader() {
               <TooltipContent>Battery Level</TooltipContent>
             </Tooltip>
 
-            {/* Temperature */}
+            {/* Temperature — always shown at xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Thermometer className="h-4 w-4 text-orange-500" />
                   <span className="font-mono">{formatTemp(status?.temperatureC)}</span>
                 </div>
@@ -472,10 +478,10 @@ export function TelescopeHeader() {
               <TooltipContent>Temperature</TooltipContent>
             </Tooltip>
 
-            {/* Gain */}
+            {/* Gain — shown at 2xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="hidden 2xl:flex items-center gap-1 flex-shrink-0">
                   <Gauge className="h-4 w-4 text-purple-500" />
                   <span className="font-mono">
                     {status?.gain != null
@@ -489,10 +495,10 @@ export function TelescopeHeader() {
               <TooltipContent>Camera Gain</TooltipContent>
             </Tooltip>
 
-            {/* RA/Dec Position */}
+            {/* RA/Dec Position — shown at 2xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="hidden 2xl:flex items-center gap-1 flex-shrink-0">
                   <Compass className="h-4 w-4 text-cyan-500" />
                   <span className="font-mono text-xs">
                     {status?.ra != null ? `${(status.ra / 15).toFixed(2)}h` : '--'}
@@ -504,10 +510,10 @@ export function TelescopeHeader() {
               <TooltipContent>RA / Dec (J2000)</TooltipContent>
             </Tooltip>
 
-            {/* Tracking */}
+            {/* Tracking — shown at 2xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="hidden 2xl:flex items-center gap-1 flex-shrink-0">
                   <Navigation className="h-4 w-4" />
                   <span className={`font-mono ${status?.isTracking ? 'text-green-500' : 'text-muted-foreground'}`}>
                     {status?.isTracking ? 'TRK' : 'OFF'}
@@ -517,15 +523,15 @@ export function TelescopeHeader() {
               <TooltipContent>Tracking {status?.isTracking ? 'Enabled' : 'Disabled'}</TooltipContent>
             </Tooltip>
 
-            {/* View State / Mode */}
+            {/* Mount Type — shown at 2xl+ */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1">
+                <div className="hidden 2xl:flex items-center gap-1 flex-shrink-0">
                   <Compass className="h-4 w-4 text-cyan-500" />
                   <span className="font-mono">{status?.mountType ?? 'Alt-Az'}</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent>View State / Mode</TooltipContent>
+              <TooltipContent>Mount Type</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -533,7 +539,7 @@ export function TelescopeHeader() {
 
       {/* Right Section - Action Buttons */}
       <TooltipProvider>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
           {/* Search */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -576,7 +582,7 @@ export function TelescopeHeader() {
                 className="gap-2"
               >
                 <PictureInPicture className="h-4 w-4" />
-                PiP
+                <span className="hidden 2xl:inline">PiP</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Picture in Picture (Ctrl+P)</TooltipContent>
@@ -592,7 +598,7 @@ export function TelescopeHeader() {
                 className="gap-2"
               >
                 <Cpu className="h-4 w-4" />
-                Status
+                <span className="hidden 2xl:inline">Status</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Telescope Status Panel</TooltipContent>
@@ -608,7 +614,7 @@ export function TelescopeHeader() {
                 className="gap-2"
               >
                 <Move className="h-4 w-4" />
-                Controls
+                <span className="hidden 2xl:inline">Controls</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Telescope Controls Panel</TooltipContent>
@@ -625,7 +631,7 @@ export function TelescopeHeader() {
                 onClick={toggleSceneryMode}
               >
                 <Mountain className="h-4 w-4" />
-                Scenery
+                <span className="hidden 2xl:inline">Scenery</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -643,7 +649,7 @@ export function TelescopeHeader() {
                 className="gap-2"
               >
                 <HelpCircle className="h-4 w-4" />
-                Help
+                <span className="hidden 2xl:inline">Help</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>Help (?)</TooltipContent>

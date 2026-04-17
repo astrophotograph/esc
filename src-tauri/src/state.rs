@@ -49,6 +49,7 @@ pub enum ConnectionStatus {
 
 /// Represents an active imaging session
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ImagingSession {
     pub telescope_id: String,
     pub started_at: chrono::DateTime<chrono::Utc>,

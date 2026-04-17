@@ -20,6 +20,7 @@ use crate::stretch::{stretch_raw_frame, StretchParams};
 pub fn create_router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/stream/:telescope_id", get(stream_handler))
+        .route("/snapshot/:telescope_id", get(snapshot_handler))
         .route("/test-pattern", get(test_pattern_handler))
         .route("/test-mjpeg", get(test_mjpeg_stream))
         .route("/health", get(health_check))
@@ -254,7 +255,7 @@ async fn stream_handler(
     let keep_alive_interval = Duration::from_millis(500);
     let frame_stream = stream::unfold(
         (jpeg_rx, true),
-        move |(mut rx, is_first)| async move {
+        move |(rx, is_first)| async move {
             let frame_bytes = rx.borrow().clone();
 
             if frame_bytes.is_empty() {
@@ -309,6 +310,96 @@ async fn stream_handler(
         .header(header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS")
         .header(header::ACCESS_CONTROL_ALLOW_HEADERS, "*")
         .body(body)
+        .unwrap()
+}
+
+/// Snapshot endpoint — returns a single JPEG of the latest frame for a telescope.
+/// Subscribes to the telescope's frame channel and waits up to 300ms for the next
+/// image frame. Falls back to a placeholder if none arrives in time.
+async fn snapshot_handler(
+    State(state): State<Arc<AppState>>,
+    Path(telescope_id): Path<String>,
+) -> Response {
+    let client = {
+        let telescopes = state.telescopes.read();
+        let telescope = match telescopes.get(&telescope_id) {
+            Some(t) => t,
+            None => {
+                return (StatusCode::NOT_FOUND, format!("Telescope '{}' not found", telescope_id))
+                    .into_response();
+            }
+        };
+        match &telescope.status {
+            crate::state::ConnectionStatus::Connected => {}
+            _ => {
+                // Return placeholder while not connected so the frontend has something to display
+                let placeholder = generate_placeholder_jpeg(640, 480, 0);
+                return Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, "image/jpeg")
+                    .header(header::CACHE_CONTROL, "no-cache")
+                    .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .body(Body::from(placeholder))
+                    .unwrap();
+            }
+        }
+        match &telescope.client {
+            Some(c) => c.clone(),
+            None => {
+                let placeholder = generate_placeholder_jpeg(640, 480, 0);
+                return Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, "image/jpeg")
+                    .header(header::CACHE_CONTROL, "no-cache")
+                    .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .body(Body::from(placeholder))
+                    .unwrap();
+            }
+        }
+    };
+
+    let mut frame_rx = client.subscribe_frames();
+    let stretch_params = StretchParams {
+        gradient_removal: false,
+        autocrop: false,
+        ..Default::default()
+    };
+
+    // Wait up to 300ms for the next image frame
+    let frame_result = tokio::time::timeout(Duration::from_millis(300), async {
+        loop {
+            match frame_rx.recv().await {
+                Ok(frame) if frame.header.is_image() => return Some(frame),
+                Ok(_) => continue,
+                Err(_) => return None,
+            }
+        }
+    })
+    .await;
+
+    let jpeg = match frame_result {
+        Ok(Some(frame)) => {
+            let width = frame.header.width as u32;
+            let height = frame.header.height as u32;
+            let data = frame.data.clone();
+            let is_color = data.len() >= (width * height * 3) as usize;
+
+            tokio::task::spawn_blocking(move || {
+                stretch_raw_frame(&data, width, height, is_color, &stretch_params)
+                    .unwrap_or_else(|_| generate_placeholder_jpeg(width, height, 0))
+            })
+            .await
+            .unwrap_or_else(|_| generate_placeholder_jpeg(640, 480, 0))
+        }
+        _ => generate_placeholder_jpeg(640, 480, 0),
+    };
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "image/jpeg")
+        .header(header::CACHE_CONTROL, "no-cache, no-store")
+        .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+        .body(Body::from(jpeg))
         .unwrap()
 }
 

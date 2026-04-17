@@ -28,6 +28,7 @@ tokio = { version = "1", features = ["full"] }
 scopinator-seestar = "0.1"
 scopinator-types = "0.1"
 
+
 # Image processing (stretch pipeline)
 image = "0.25"
 rayon = "1"
@@ -62,5 +63,5 @@ chrono = { version = "0.4", features = ["serde"] }
 # UUID generation
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
-# SSH tunneling
-russh = "0.60"
+# SSH tunneling (TODO: re-add when russh RC crypto deps stabilize)
+# russh = "0.60"
