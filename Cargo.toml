@@ -1,8 +1,3 @@
 [workspace]
 members = ["src-tauri"]
 resolver = "2"
-
-# Override published crates with local development versions
-[patch.crates-io]
-scopinator-seestar = { path = "../scopinator-rs/crates/scopinator-seestar" }
-scopinator-types   = { path = "../scopinator-rs/crates/scopinator-types" }
