@@ -63,7 +63,7 @@ export const useSchedulerStore = create<SchedulerStore>()(
             nextId: id + 1,
             schedule: {
               ...state.schedule,
-              targets: [...state.schedule.targets, { ...t, id }],
+              targets: [...state.schedule.targets, { ...t, id }].sort((a, b) => a.startMin - b.startMin),
               updatedAt: new Date().toISOString(),
             },
           }
@@ -75,7 +75,7 @@ export const useSchedulerStore = create<SchedulerStore>()(
             ...state.schedule,
             targets: state.schedule.targets.map((t) =>
               t.id === id ? { ...t, ...patch } : t
-            ),
+            ).sort((a, b) => a.startMin - b.startMin),
             updatedAt: new Date().toISOString(),
           },
         })),
