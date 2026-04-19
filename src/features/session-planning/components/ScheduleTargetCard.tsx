@@ -91,6 +91,7 @@ export function ScheduleTargetCard({ target }: ScheduleTargetCardProps) {
               <Input
                 type="number"
                 min={1}
+                max={1440}
                 value={target.durationMin}
                 onChange={handleDurationChange}
                 className="h-8 text-sm w-20"

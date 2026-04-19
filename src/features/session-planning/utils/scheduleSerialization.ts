@@ -35,7 +35,7 @@ export interface ExportFile {
 // ─── Zod validation schemas ───────────────────────────────────────────────────
 
 const mosaicSchema = z.object({
-  scale: z.number().min(1).max(2),
+  scale: z.number().min(1).max(3),
   angle: z.number().min(-90).max(90),
   star_map_angle: z.number(),
 })
@@ -47,7 +47,7 @@ const targetSchema = z.object({
   alias_name: z.string(),
   lp_filter: z.boolean(),
   start_min: z.number().min(0).max(1440),
-  duration_min: z.number().min(1),
+  duration_min: z.number().min(1).max(1440),
   mosaic: mosaicSchema.nullable().optional(),
 })
 

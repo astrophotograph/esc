@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, Loader2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -29,6 +29,12 @@ export function ScheduleBuilder() {
     connectedTelescopes[0]?.id ?? ''
   )
   const [sending, setSending] = useState(false)
+
+  useEffect(() => {
+    if (!connectedTelescopes.find((t) => t.id === selectedTelescopeId) && connectedTelescopes.length > 0) {
+      setSelectedTelescopeId(connectedTelescopes[0].id)
+    }
+  }, [connectedTelescopes, selectedTelescopeId])
 
   const handleSend = async () => {
     if (!selectedTelescopeId) {
