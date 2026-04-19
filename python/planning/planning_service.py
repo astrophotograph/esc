@@ -302,6 +302,8 @@ class PlanningService:
                             "altitude": altitude,
                             "azimuth": azimuth,
                             "constellation": obj.get("constellation"),
+                            "ra": ra_decimal,
+                            "dec": dec_decimal,
                         }
                     )
 

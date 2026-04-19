@@ -36,6 +36,8 @@ interface TonightTargetsResult {
     altitude: number
     azimuth: number
     constellation?: string
+    ra?: number
+    dec?: number
   }>
 }
 
@@ -255,6 +257,8 @@ export function useSession() {
         altitude: r.altitude,
         azimuth: r.azimuth,
         constellation: r.constellation,
+        ra: r.ra,
+        dec: r.dec,
       }))
 
       setTonightTargets(targets)

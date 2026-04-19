@@ -45,6 +45,8 @@ export interface TonightTarget {
   altitude: number
   azimuth: number
   constellation?: string
+  ra?: number
+  dec?: number
 }
 
 export interface ObserverLocation {
