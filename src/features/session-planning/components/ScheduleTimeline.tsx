@@ -32,7 +32,7 @@ import { NightTimeline } from './NightTimeline'
 
 export function ScheduleTimeline() {
   const { schedule, reorderTargets, clearSchedule } = useSchedulerStore()
-  const targets = schedule.targets
+  const targets = [...schedule.targets].sort((a, b) => a.startMin - b.startMin)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
