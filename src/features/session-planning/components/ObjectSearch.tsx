@@ -6,6 +6,7 @@ import { Badge } from '../../../components/ui/badge'
 import { invoke } from '../../../services/api'
 import { useSchedulerStore } from '../../../stores/schedulerStore'
 import { useSession } from '../../../hooks'
+import { defaultLpFilter } from '../utils/timeConversion'
 import { VisibilityChart } from './VisibilityChart'
 import type { VisibilityCurveData } from '../utils/visibilityHelpers'
 
@@ -106,7 +107,7 @@ export function ObjectSearch() {
         raDec: [obj.ra_decimal, obj.dec_decimal],
         startMin: 0,
         durationMin: 60,
-        lpFilter: false,
+        lpFilter: defaultLpFilter(obj.object_type),
         mosaic: null,
       })
     },

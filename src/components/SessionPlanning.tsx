@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useSession, useTelescope } from '../hooks'
 import { useUIStore } from '../stores/uiStore'
 import { useSchedulerStore } from '../stores/schedulerStore'
+import { defaultLpFilter } from '../features/session-planning/utils/timeConversion'
 import type { TonightTarget } from '../stores'
 
 interface SessionPlanningProps {
@@ -121,7 +122,7 @@ export function SessionPlanning({ compact = false }: SessionPlanningProps) {
       raDec: [target.ra, target.dec],
       startMin: 0,
       durationMin: 60,
-      lpFilter: false,
+      lpFilter: defaultLpFilter(target.objectType),
       mosaic: null,
     })
     setActiveTab('schedule')

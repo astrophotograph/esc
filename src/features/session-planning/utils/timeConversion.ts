@@ -29,3 +29,10 @@ export function isValidStartMin(startMin: number): boolean {
 export function targetsOverlap(a: WindowTarget, b: WindowTarget): boolean {
   return a.startMin < b.startMin + b.durationMin && b.startMin < a.startMin + a.durationMin
 }
+
+// Emission/HII nebulae benefit from LP filters; galaxies, clusters, stars do not.
+const LP_FILTER_TYPES = new Set(['EmN', 'HII', 'PN', 'SNR', 'BrtN', 'RfN', 'Neb', 'DrkN'])
+
+export function defaultLpFilter(objectType: string | null | undefined): boolean {
+  return LP_FILTER_TYPES.has(objectType ?? '')
+}
