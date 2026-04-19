@@ -127,9 +127,8 @@ export function useTelescopeStatusPoller() {
         clearTimeout(timerRef.current)
         timerRef.current = null
       }
-      clearTelescopeStatus(telescopeId)
     }
-  }, [currentTelescopeId, updateTelescopeStatus, clearTelescopeStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentTelescopeId, updateTelescopeStatus]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep moving ref in sync without restarting the poll loop
   useEffect(() => {

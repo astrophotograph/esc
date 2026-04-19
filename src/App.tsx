@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { TelescopeHeader } from './components/TelescopeHeader'
 import { TelescopeView } from './components/TelescopeView'
 import { CatalogSearch } from './components/CatalogSearch'
@@ -46,6 +47,18 @@ function App() {
 
   // Centralized telescope status polling (single poller for all components)
   useTelescopeStatusPoller()
+
+  // Forward uncaught JS errors to stdout so they appear in Tauri logs
+  useEffect(() => {
+    const onError = (e: ErrorEvent) => console.error('[window.onerror]', e.message, e.filename, e.lineno)
+    const onUnhandled = (e: PromiseRejectionEvent) => console.error('[unhandledrejection]', e.reason)
+    window.addEventListener('error', onError)
+    window.addEventListener('unhandledrejection', onUnhandled)
+    return () => {
+      window.removeEventListener('error', onError)
+      window.removeEventListener('unhandledrejection', onUnhandled)
+    }
+  }, [])
 
   // Initialize Tauri event listeners
   useEffect(() => {
@@ -164,14 +177,18 @@ function App() {
             </div>
           )}
           {activeTab === 'planning' && !isFullscreen && (
-            <div className="h-full overflow-auto p-4">
-              <SessionPlanning />
-            </div>
+            <ErrorBoundary label="Planning">
+              <div className="h-full overflow-auto p-4">
+                <SessionPlanning />
+              </div>
+            </ErrorBoundary>
           )}
           {activeTab === 'schedule' && !isFullscreen && (
-            <div className="h-full overflow-hidden">
-              <ScheduleBuilder />
-            </div>
+            <ErrorBoundary label="Schedule">
+              <div className="h-full overflow-hidden">
+                <ScheduleBuilder />
+              </div>
+            </ErrorBoundary>
           )}
         </div>
       </main>

@@ -280,7 +280,7 @@ export function SessionPlanning({ compact = false }: SessionPlanningProps) {
                     <p className="text-xs text-muted-foreground">
                       {target.objectType}
                       {target.constellation && ` • ${target.constellation}`}
-                      {target.magnitude !== undefined && ` • Mag ${target.magnitude.toFixed(1)}`}
+                      {target.magnitude != null && ` • Mag ${target.magnitude.toFixed(1)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

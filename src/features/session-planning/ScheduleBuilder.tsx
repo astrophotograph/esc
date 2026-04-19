@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Send, Loader2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -23,7 +23,10 @@ import { ScheduleImportExport } from './components/ScheduleImportExport'
 export function ScheduleBuilder() {
   const { schedule, setPlanName } = useSchedulerStore()
   const { telescopes } = useTelescopeStore()
-  const connectedTelescopes = telescopes.filter((t) => t.status === 'connected')
+  const connectedTelescopes = useMemo(
+    () => telescopes.filter((t) => t.status === 'connected'),
+    [telescopes]
+  )
 
   const [selectedTelescopeId, setSelectedTelescopeId] = useState<string>(
     connectedTelescopes[0]?.id ?? ''
