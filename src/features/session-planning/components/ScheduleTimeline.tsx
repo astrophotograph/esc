@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -33,6 +34,7 @@ import { NightTimeline } from './NightTimeline'
 export function ScheduleTimeline() {
   const { schedule, reorderTargets, clearSchedule } = useSchedulerStore()
   const targets = [...schedule.targets].sort((a, b) => a.startMin - b.startMin)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -66,7 +68,7 @@ export function ScheduleTimeline() {
   return (
     <div className="flex flex-col gap-3 h-full">
       {/* Night timeline */}
-      {targets.length > 0 && <NightTimeline targets={targets} />}
+      {targets.length > 0 && <NightTimeline targets={targets} selectedId={selectedId} onSelect={setSelectedId} />}
 
       {/* Overlap warning */}
       {hasOverlaps && (
@@ -103,7 +105,7 @@ export function ScheduleTimeline() {
             >
               <div className="space-y-2">
                 {targets.map((target) => (
-                  <ScheduleTargetCard key={target.id} target={target} />
+                  <ScheduleTargetCard key={target.id} target={target} isSelected={selectedId === target.id} />
                 ))}
               </div>
             </SortableContext>

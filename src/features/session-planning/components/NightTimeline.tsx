@@ -4,6 +4,8 @@ import { targetsOverlap } from '../utils/timeConversion'
 
 interface NightTimelineProps {
   targets: ScheduleTarget[]
+  selectedId?: number | null
+  onSelect?: (id: number) => void
 }
 
 const VIEW_START = 18 * 60  // 1080 — 18:00
@@ -17,9 +19,14 @@ function snap(min: number) {
   return Math.round(min / SNAP) * SNAP
 }
 
-function toViewPct(startMin: number): number {
+// Convert actual startMin to view-space minutes (0 = 18:00, 720 = 06:00)
+function toViewMin(startMin: number): number {
   const adjusted = startMin < VIEW_START - 60 ? startMin + 1440 : startMin
-  return Math.max(0, Math.min(100, ((adjusted - VIEW_START) / VIEW_SPAN) * 100))
+  return adjusted - VIEW_START
+}
+
+function toViewPct(startMin: number): number {
+  return Math.max(0, Math.min(100, (toViewMin(startMin) / VIEW_SPAN) * 100))
 }
 
 function widthPct(startMin: number, durationMin: number): number {
@@ -36,15 +43,16 @@ function formatTime(min: number) {
 }
 
 type DragState =
-  | { kind: 'move';   id: number; startX: number; origStart: number; origDuration: number }
+  | { kind: 'move';   id: number; startX: number; origViewStart: number; origDuration: number }
   | { kind: 'resize'; id: number; startX: number; origDuration: number }
 
-export function NightTimeline({ targets }: NightTimelineProps) {
+export function NightTimeline({ targets, selectedId, onSelect }: NightTimelineProps) {
   const updateTarget = useSchedulerStore((s) => s.updateTarget)
   const containerRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
-  // Local overrides while dragging so the UI is immediate
   const [localOverride, setLocalOverride] = useState<{ id: number; startMin?: number; durationMin?: number } | null>(null)
+  // Track whether the pointer moved during a drag (to distinguish click from drag)
+  const hasMoved = useRef(false)
 
   const pxToMin = useCallback((dx: number): number => {
     const w = containerRef.current?.clientWidth ?? 1
@@ -53,28 +61,35 @@ export function NightTimeline({ targets }: NightTimelineProps) {
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!drag) return
+    hasMoved.current = true
     const delta = pxToMin(e.clientX - drag.startX)
 
     if (drag.kind === 'move') {
-      const rawStart = drag.origStart + delta
-      const newStart = Math.max(0, Math.min(1440 - drag.origDuration, snap(rawStart)))
+      const rawViewMin = drag.origViewStart + delta
+      const newViewMin = Math.max(0, Math.min(VIEW_SPAN - drag.origDuration, snap(rawViewMin)))
+      const newStart = (newViewMin + VIEW_START) % 1440
       setLocalOverride({ id: drag.id, startMin: newStart })
     } else {
       const newDur = Math.max(MIN_DURATION, snap(drag.origDuration + delta))
       const t = targets.find(t => t.id === drag.id)
-      const maxDur = t ? 1440 - t.startMin : 1440
+      const maxDur = t ? VIEW_SPAN - toViewMin(t.startMin) : VIEW_SPAN
       setLocalOverride({ id: drag.id, durationMin: Math.min(maxDur, newDur) })
     }
   }, [drag, pxToMin, targets])
 
   const onMouseUp = useCallback(() => {
-    if (!drag || !localOverride) { setDrag(null); return }
-    updateTarget(drag.id, localOverride.startMin != null
-      ? { startMin: localOverride.startMin }
-      : { durationMin: localOverride.durationMin })
+    if (!drag) return
+    if (!hasMoved.current) {
+      // Treat as a click — select the block
+      onSelect?.(drag.id)
+    } else if (localOverride) {
+      updateTarget(drag.id, localOverride.startMin != null
+        ? { startMin: localOverride.startMin }
+        : { durationMin: localOverride.durationMin })
+    }
     setDrag(null)
     setLocalOverride(null)
-  }, [drag, localOverride, updateTarget])
+  }, [drag, localOverride, updateTarget, onSelect])
 
   useEffect(() => {
     if (!drag) return
@@ -88,7 +103,6 @@ export function NightTimeline({ targets }: NightTimelineProps) {
 
   if (targets.length === 0) return null
 
-  // Merge local overrides into display targets
   const displayTargets = targets.map(t =>
     localOverride?.id === t.id ? { ...t, ...localOverride } : t
   )
@@ -118,10 +132,13 @@ export function NightTimeline({ targets }: NightTimelineProps) {
           const width = widthPct(t.startMin, t.durationMin)
           const overlaps = overlappingIds.has(t.id)
           const isActive = drag?.id === t.id
+          const isSelected = selectedId === t.id && !drag
           const bg = overlaps
             ? 'rgb(245 158 11 / 0.75)'
             : isActive
             ? 'rgb(129 140 248 / 0.9)'
+            : isSelected
+            ? 'rgb(167 139 250 / 0.95)'
             : 'rgb(99 102 241 / 0.7)'
 
           const tooltip = `${t.aliasName}  ${formatTime(t.startMin)} · ${t.durationMin}m`
@@ -130,7 +147,13 @@ export function NightTimeline({ targets }: NightTimelineProps) {
             <div
               key={t.id}
               className="absolute top-1 bottom-1 rounded-sm flex items-center overflow-hidden group"
-              style={{ left: `${left}%`, width: `${width}%`, backgroundColor: bg, transition: drag ? 'none' : 'left 0.1s, width 0.1s' }}
+              style={{
+                left: `${left}%`,
+                width: `${width}%`,
+                backgroundColor: bg,
+                transition: drag ? 'none' : 'left 0.1s, width 0.1s',
+                outline: isSelected ? '2px solid rgb(167 139 250)' : undefined,
+              }}
               title={tooltip}
             >
               {/* Move handle — whole block except resize strip */}
@@ -139,7 +162,8 @@ export function NightTimeline({ targets }: NightTimelineProps) {
                 style={{ right: '6px' }}
                 onMouseDown={(e) => {
                   e.preventDefault()
-                  setDrag({ kind: 'move', id: t.id, startX: e.clientX, origStart: t.startMin, origDuration: t.durationMin })
+                  hasMoved.current = false
+                  setDrag({ kind: 'move', id: t.id, startX: e.clientX, origViewStart: toViewMin(t.startMin), origDuration: t.durationMin })
                 }}
               />
               <span className="pointer-events-none px-1 text-[10px] text-white font-medium truncate leading-none">
@@ -152,6 +176,7 @@ export function NightTimeline({ targets }: NightTimelineProps) {
                 onMouseDown={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
+                  hasMoved.current = false
                   setDrag({ kind: 'resize', id: t.id, startX: e.clientX, origDuration: t.durationMin })
                 }}
               />

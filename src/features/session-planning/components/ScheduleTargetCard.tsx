@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { GripVertical, Trash2, Grid3x3 } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -13,16 +13,24 @@ import type { ScheduleTarget } from '../../../stores/schedulerStore'
 
 interface ScheduleTargetCardProps {
   target: ScheduleTarget
+  isSelected?: boolean
 }
 
-export function ScheduleTargetCard({ target }: ScheduleTargetCardProps) {
+export function ScheduleTargetCard({ target, isSelected }: ScheduleTargetCardProps) {
   const updateTarget = useSchedulerStore((s) => s.updateTarget)
   const removeTarget = useSchedulerStore((s) => s.removeTarget)
   const [mosaicOpen, setMosaicOpen] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: target.id,
   })
+
+  useEffect(() => {
+    if (isSelected) {
+      cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [isSelected])
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -49,7 +57,7 @@ export function ScheduleTargetCard({ target }: ScheduleTargetCardProps) {
     : 'None'
 
   return (
-    <div ref={setNodeRef} style={style} className="border rounded-lg bg-card p-3">
+    <div ref={(el) => { setNodeRef(el); (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = el }} style={style} className={`border rounded-lg bg-card p-3 transition-colors ${isSelected ? 'border-violet-400/70 ring-1 ring-violet-400/40' : ''}`}>
       <div className="flex items-start gap-2">
         {/* Drag handle */}
         <button
