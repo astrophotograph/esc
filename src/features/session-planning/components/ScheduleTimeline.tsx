@@ -28,6 +28,7 @@ import {
 import { useSchedulerStore } from '../../../stores/schedulerStore'
 import { targetsOverlap } from '../utils/timeConversion'
 import { ScheduleTargetCard } from './ScheduleTargetCard'
+import { NightTimeline } from './NightTimeline'
 
 export function ScheduleTimeline() {
   const { schedule, reorderTargets, clearSchedule } = useSchedulerStore()
@@ -64,6 +65,9 @@ export function ScheduleTimeline() {
 
   return (
     <div className="flex flex-col gap-3 h-full">
+      {/* Night timeline */}
+      {targets.length > 0 && <NightTimeline targets={targets} />}
+
       {/* Overlap warning */}
       {hasOverlaps && (
         <div
