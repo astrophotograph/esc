@@ -50,8 +50,7 @@ interface RawTelescopeStatus {
 export function useTelescopeStatusPoller() {
   const currentTelescopeId = useTelescopeStore((s) => s.currentTelescopeId)
   const updateTelescopeStatus = useTelescopeStore((s) => s.updateTelescopeStatus)
-  const clearTelescopeStatus = useTelescopeStore((s) => s.clearTelescopeStatus)
-  const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
+const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeRef = useRef(false)
