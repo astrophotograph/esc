@@ -4,6 +4,7 @@ import { TelescopeView } from './components/TelescopeView'
 import { CatalogSearch } from './components/CatalogSearch'
 import { ImageViewer } from './components/ImageViewer'
 import { SessionPlanning } from './components/SessionPlanning'
+import { ScheduleBuilder } from './features/session-planning/ScheduleBuilder'
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs'
 import { AppFooter } from './components/AppFooter'
 import { KeyboardHelp } from './components/KeyboardHelp'
@@ -144,6 +145,7 @@ function App() {
                 <TabsTrigger value="catalog">Catalog</TabsTrigger>
                 <TabsTrigger value="imaging">Imaging</TabsTrigger>
                 <TabsTrigger value="planning">Planning</TabsTrigger>
+                <TabsTrigger value="schedule">Schedule</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -164,6 +166,11 @@ function App() {
           {activeTab === 'planning' && !isFullscreen && (
             <div className="h-full overflow-auto p-4">
               <SessionPlanning />
+            </div>
+          )}
+          {activeTab === 'schedule' && !isFullscreen && (
+            <div className="h-full overflow-hidden">
+              <ScheduleBuilder />
             </div>
           )}
         </div>

@@ -36,6 +36,7 @@ from .planning.planning_service import (
     create_session,
     get_target_visibility,
     get_tonight_targets,
+    get_visibility_curve,
     update_session,
 )
 from .networking.ssh_tunnel import SSHTunnelConfig, SSHTunnelManager
@@ -605,6 +606,45 @@ async def handle_command(command: str, payload: dict[str, Any] = Body(default_fa
         async with _sessions_lock:
             _sessions.pop(session_id, None)
         return {"success": True}
+
+    if command == "planning_get_visibility_curve":
+        ra = payload.get("ra")
+        dec = payload.get("dec")
+        lat = payload.get("lat")
+        lon = payload.get("lon")
+        if ra is None or dec is None or lat is None or lon is None:
+            raise HTTPException(status_code=400, detail="Missing required params: ra, dec, lat, lon")
+        result = await asyncio.to_thread(
+            get_visibility_curve,
+            float(ra),
+            float(dec),
+            float(lat),
+            float(lon),
+            float(payload.get("elevation", 0)),
+            payload.get("date"),
+            payload.get("tz", "UTC"),
+            float(payload.get("min_altitude", 30.0)),
+        )
+        return _json_string_response(result)
+
+    if command == "schedule_set_view_plan":
+        telescope_id = _extract_telescope_id(payload) or _pick_default_telescope_id()
+        if not telescope_id:
+            raise HTTPException(status_code=400, detail="No telescope connected")
+        plan = payload.get("plan") or {}
+        plan_name = plan.get("plan_name", "ESC Plan")
+        update_time = plan.get("update_time_seestar", "")
+        targets = plan.get("list", [])
+        if not targets:
+            raise HTTPException(status_code=400, detail="Plan has no targets")
+
+        entry = await _get_or_create_entry(telescope_id=telescope_id)
+        bridge, err = await _get_connected_bridge(entry)
+        if err:
+            return _json_string_response({"success": False, "code": -1, "message": "Not connected"})
+
+        result = await bridge.set_view_plan(plan_name, update_time, targets)
+        return _json_string_response(result)
 
     if command == "get_ip_location":
         try:

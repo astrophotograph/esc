@@ -52,6 +52,8 @@ export interface ObserverLocation {
   longitude: number
   elevation: number
   name?: string
+  timezone?: string   // IANA tz string, e.g. "America/New_York"
+  minAltitudeDeg?: number // visibility threshold (default 30)
 }
 
 interface SessionStore {

@@ -229,6 +229,27 @@ pub async fn connect_telescope(
             .parse()
             .map_err(|e| format!("Invalid IP: {}", e))?;
 
+        // Send UDP scan_iscope to port 4720 before TCP connect.
+        // seestar_alp does this "to satisfy seestar's guest mode to gain
+        // control properly" — without it the telescope may accept the TCP
+        // connection but silently ignore all control commands.
+        {
+            use tokio::net::UdpSocket;
+            match UdpSocket::bind("0.0.0.0:0").await {
+                Ok(sock) => {
+                    let udp_addr = format!("{}:4720", host);
+                    let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
+                    match sock.send_to(msg, &udp_addr).await {
+                        Ok(_) => tracing::info!("connect_telescope: sent UDP scan_iscope to {}", udp_addr),
+                        Err(e) => tracing::warn!("connect_telescope: UDP scan_iscope send failed: {}", e),
+                    }
+                    // Brief wait for the telescope to process the intro
+                    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                }
+                Err(e) => tracing::warn!("connect_telescope: UDP socket bind failed: {}", e),
+            }
+        }
+
         // Load authentication key from environment
         let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
             match std::fs::read_to_string(&pem_path) {
@@ -270,32 +291,17 @@ pub async fn connect_telescope(
         tracing::info!("connect_telescope: native Rust client connected");
         let client = Arc::new(client);
 
-        // Auto-start live preview so port 4800 begins streaming immediately.
-        // Fire-and-forget; failure is non-fatal.
+        // Start MJPEG streaming on the imaging port (4800).
+        // begin_streaming goes to port 4800 — it does not touch the control
+        // port (4700) and cannot interfere with control commands.
         {
             let preview_client = client.clone();
             tokio::spawn(async move {
-                // Brief delay so the control connection is fully settled
-                tokio::time::sleep(tokio::time::Duration::from_millis(800)).await;
-                match preview_client.send_command(Command::IscopeStartView(StartViewParams {
-                    mode: Some(ViewMode::Star),
-                    target_name: None,
-                    target_ra_dec: None,
-                    target_type: None,
-                    lp_filter: None,
-                })).await {
-                    Ok(resp) => {
-                        tracing::info!("connect_telescope: iscope_start_view response: code={} result={:?}", resp.code, resp.result);
-                        // Send begin_streaming on the imaging port (4800) to trigger frame delivery
-                        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-                        let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
-                        if let Err(e) = preview_client.send_imaging_command(msg).await {
-                            tracing::warn!("connect_telescope: begin_streaming failed: {}", e);
-                        } else {
-                            tracing::info!("connect_telescope: begin_streaming sent on imaging port");
-                        }
-                    }
-                    Err(e) => tracing::warn!("connect_telescope: auto-start preview failed: {}", e),
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
+                match preview_client.send_imaging_command(msg).await {
+                    Ok(_) => tracing::info!("connect_telescope: begin_streaming sent on imaging port"),
+                    Err(e) => tracing::warn!("connect_telescope: begin_streaming failed: {}", e),
                 }
             });
         }
@@ -681,6 +687,25 @@ pub async fn imaging_start(
     );
 
     let client = get_client(&state, &telescope_id)?;
+
+    // Refuse to start imaging if the mount is parked — IscopeStartView on a
+    // parked scope either errors or starts slewing unexpectedly.
+    let view_state = client
+        .send_command(Command::GetViewState)
+        .await
+        .ok()
+        .and_then(|r| r.result)
+        .and_then(|v| {
+            v.get("View")
+                .or_else(|| v.get("view"))
+                .and_then(|view| view.get("state"))
+                .and_then(|s| s.as_str())
+                .map(str::to_owned)
+        });
+    if matches!(view_state.as_deref(), Some("Parked") | Some("Parking")) {
+        return Err("Cannot start imaging: telescope is parked".to_string());
+    }
+
     let result = response_to_json(
         client
             .send_command(Command::IscopeStartView(StartViewParams {
@@ -1337,4 +1362,42 @@ pub async fn set_scope_location(
             .await,
     )?;
     Ok(result)
+}
+
+/// Send a view plan (schedule) to the telescope.
+#[tauri::command]
+pub async fn schedule_set_view_plan(
+    state: State<'_, AppState>,
+    telescope_id: String,
+    plan: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    tracing::info!("schedule_set_view_plan for telescope {}", telescope_id);
+
+    if plan
+        .get("list")
+        .and_then(|l| l.as_array())
+        .map(|a| a.is_empty())
+        .unwrap_or(true)
+    {
+        return Err("Plan has no targets".to_string());
+    }
+
+    let client = get_client(&state, &telescope_id)?;
+    let resp = client
+        .send_command(Command::SetViewPlan(plan))
+        .await
+        .map_err(|e| format!("Command failed: {e}"))?;
+
+    let code = resp.code;
+    let message = match code {
+        0 => "Plan sent successfully".to_string(),
+        536 => "Telescope is busy — another operation is in progress".to_string(),
+        _ => format!("Device returned error code {code}"),
+    };
+
+    Ok(serde_json::json!({
+        "success": code == 0,
+        "code": code,
+        "message": message,
+    }))
 }

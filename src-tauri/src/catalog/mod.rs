@@ -1,7 +1,27 @@
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::sync::OnceLock;
+
+/// Deserialize a field that may be either a bare string or a JSON array of strings.
+/// Returns the first string element, or None if the value is null/missing/empty.
+fn deserialize_string_or_vec<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum StringOrVec {
+        Str(String),
+        Vec(Vec<String>),
+    }
+
+    Ok(match Option::<StringOrVec>::deserialize(deserializer)? {
+        None => None,
+        Some(StringOrVec::Str(s)) => Some(s),
+        Some(StringOrVec::Vec(v)) => v.into_iter().find(|s| !s.is_empty()),
+    })
+}
 
 // ---------------------------------------------------------------------------
 // JSON deserialization structs (matching astronomical_objects_full.json)
@@ -19,7 +39,7 @@ pub(crate) struct CatalogObject {
     pub(crate) catalog_ids: CatalogIds,
     #[serde(default)]
     pub(crate) names: ObjectNames,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_string_or_vec")]
     pub(crate) object_type: Option<String>,
     #[serde(default)]
     pub(crate) coordinates: Coordinates,
@@ -42,7 +62,7 @@ pub(crate) struct CatalogIds {
     pub(crate) ic: Option<String>,
     #[serde(default)]
     sharpless: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_string_or_vec")]
     barnard: Option<String>,
     #[serde(default)]
     ldn: Option<String>,
@@ -74,7 +94,7 @@ pub(crate) struct Coordinates {
     pub(crate) ra_j2000: Option<CoordValue>,
     #[serde(default)]
     pub(crate) dec_j2000: Option<CoordValue>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_string_or_vec")]
     pub(crate) constellation: Option<String>,
 }
 

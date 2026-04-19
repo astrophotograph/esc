@@ -5,7 +5,8 @@ that can be easily called from Rust via PyO3.
 """
 
 import asyncio
-from typing import Any, Optional
+from datetime import date as _date
+from typing import Any, Literal, Optional
 from pydantic import BaseModel
 
 from scopinator.seestar.client import SeestarClient, EventBus
@@ -845,6 +846,100 @@ class SeestarBridge:
                 "success": False,
                 "error": str(e)
             }
+
+    async def set_view_plan(
+        self,
+        plan_name: str,
+        update_time: str,
+        targets: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Send a view plan to the telescope.
+
+        Targets should be sorted by start_min ascending before calling.
+        The mosaic key is omitted from the wire payload when it is None.
+
+        Args:
+            plan_name: Human-readable plan name.
+            update_time: Date string in Seestar format "YYYY.MM.DD".
+            targets: List of target dicts matching the set_view_plan wire format.
+
+        Returns:
+            dict with keys ``success``, ``code``, and ``message``.
+        """
+        if not self.client:
+            return {"success": False, "code": -1, "message": "Not connected"}
+
+        # Build command using custom Pydantic models so exclude_none omits mosaic
+        # when trivial (scale=1.0, angle=0.0, star_map_angle=0.0).
+        class _Mosaic(BaseModel):
+            scale: float
+            angle: float
+            star_map_angle: float = 0.0
+
+        class _Target(BaseModel):
+            target_id: int
+            target_name: str
+            target_ra_dec: list[float]
+            alias_name: str
+            lp_filter: bool
+            start_min: int
+            duration_min: int
+            mosaic: Optional[_Mosaic] = None
+
+        class _Params(BaseModel):
+            plan_name: str
+            update_time_seestar: str
+            list: list[_Target]
+
+        class _Cmd(BaseModel):
+            id: Optional[int] = None
+            method: Literal["set_view_plan"] = "set_view_plan"
+            params: _Params
+
+        items: list[_Target] = []
+        for t in targets:
+            m = t.get("mosaic")
+            mosaic = (
+                _Mosaic(
+                    scale=m["scale"],
+                    angle=m["angle"],
+                    star_map_angle=m.get("star_map_angle", 0.0),
+                )
+                if m
+                else None
+            )
+            items.append(
+                _Target(
+                    target_id=t["target_id"],
+                    target_name=t["target_name"],
+                    target_ra_dec=t["target_ra_dec"],
+                    alias_name=t.get("alias_name", t["target_name"]),
+                    lp_filter=bool(t.get("lp_filter", False)),
+                    start_min=int(t["start_min"]),
+                    duration_min=int(t["duration_min"]),
+                    mosaic=mosaic,
+                )
+            )
+
+        if not update_time:
+            update_time = _date.today().strftime("%Y.%m.%d")
+
+        cmd = _Cmd(params=_Params(plan_name=plan_name, update_time_seestar=update_time, list=items))
+
+        try:
+            response = await self.client.send_and_recv(cmd)
+            if response is None:
+                return {"success": False, "code": -1, "message": "No response from device"}
+            code = response.code
+            if code == 0:
+                message = "Plan sent successfully"
+            elif code == 536:
+                message = "Telescope is busy — another operation is in progress"
+            else:
+                message = f"Device returned error code {code}"
+            return {"success": code == 0, "code": code, "message": message}
+        except Exception as e:
+            return {"success": False, "code": -1, "message": str(e)}
 
 
 # Synchronous wrapper for PyO3
