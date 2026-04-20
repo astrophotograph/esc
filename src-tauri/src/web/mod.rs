@@ -7,11 +7,10 @@
 #![allow(dead_code)]
 
 use axum::{
-    body::Body,
     extract::{Path, State as AxumState},
-    http::{header, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::post,
     Json, Router,
 };
 use scopinator_seestar::command::params::*;
@@ -31,20 +30,23 @@ pub type WebState = Arc<AppState>;
 
 /// Create the web API router
 pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) -> Router {
-    let api = Router::new()
+    // Merge the streaming router at the root so /stream/:id and /snapshot/:id
+    // are served on the same port as the API. This lets remote devices (e.g.
+    // iPhone on LAN) reach everything through a single port via the Vite proxy.
+    let router = Router::new()
         .route("/api/:command", post(command_handler))
-        .route("/api/snapshot/:telescope_id", get(snapshot_handler))
-        .with_state(state.clone());
+        .merge(crate::streaming::create_router())
+        .with_state(state);
 
-    let app = if let Some(dir) = static_dir {
+    let router = if let Some(dir) = static_dir {
         let serve_dir = tower_http::services::ServeDir::new(dir)
             .append_index_html_on_directories(true);
-        api.fallback_service(serve_dir)
+        router.fallback_service(serve_dir)
     } else {
-        api
+        router
     };
 
-    app.layer(CorsLayer::permissive())
+    router.layer(CorsLayer::permissive())
 }
 
 // ---------------------------------------------------------------------------
@@ -803,71 +805,6 @@ async fn cmd_catalog_get_solar_system(payload: &serde_json::Value) -> Result<ser
     let longitude = payload.get("longitude").and_then(|v| v.as_f64());
     let json_str = catalog_get_solar_system(latitude, longitude).await?;
     serde_json::from_str(&json_str).map_err(|e| format!("Solar system parse error: {e}"))
-}
-
-// ---------------------------------------------------------------------------
-// Streaming endpoints (delegate to streaming module's shared logic)
-// ---------------------------------------------------------------------------
-
-async fn snapshot_handler(
-    AxumState(state): AxumState<WebState>,
-    Path(telescope_id): Path<String>,
-) -> Response {
-    // Get a single frame from the native client
-    let client = {
-        let telescopes = state.telescopes.read();
-        match telescopes.get(&telescope_id) {
-            Some(t) if matches!(t.status, ConnectionStatus::Connected) => t.client.clone(),
-            _ => return (StatusCode::SERVICE_UNAVAILABLE, "Telescope not connected").into_response(),
-        }
-    };
-
-    let client = match client {
-        Some(c) => c,
-        None => return (StatusCode::SERVICE_UNAVAILABLE, "No native client").into_response(),
-    };
-
-    // Subscribe and wait for one frame
-    let mut frame_rx = client.subscribe_frames();
-    let timeout = Duration::from_secs(5);
-
-    match tokio::time::timeout(timeout, async {
-        loop {
-            match frame_rx.recv().await {
-                Ok(frame) if frame.header.is_image() => return Ok(frame),
-                Ok(_) => continue,
-                Err(e) => return Err(format!("Frame receive error: {e}")),
-            }
-        }
-    })
-    .await
-    {
-        Ok(Ok(frame)) => {
-            let width = frame.header.width as u32;
-            let height = frame.header.height as u32;
-            let data = frame.data.clone();
-            let expected_rgb = (width * height * 3) as usize;
-            let is_color = data.len() >= expected_rgb;
-
-            let params = crate::stretch::StretchParams {
-                gradient_removal: false,
-                autocrop: false,
-                ..Default::default()
-            };
-
-            match crate::stretch::stretch_raw_frame(&data, width, height, is_color, &params) {
-                Ok(jpeg) => Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, "image/jpeg")
-                    .header(header::CACHE_CONTROL, "no-cache")
-                    .body(Body::from(jpeg))
-                    .unwrap(),
-                Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Stretch failed: {e}")).into_response(),
-            }
-        }
-        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
-        Err(_) => (StatusCode::GATEWAY_TIMEOUT, "No frame within timeout").into_response(),
-    }
 }
 
 // ---------------------------------------------------------------------------
