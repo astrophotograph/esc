@@ -30,13 +30,14 @@ pub type WebState = Arc<AppState>;
 
 /// Create the web API router
 pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) -> Router {
-    // Nest the streaming router under /api/ so /api/stream/{id} works
-    let streaming_router = streaming::create_router().with_state(state.clone());
+    // Stream routes live under /stream/ to avoid shadowing /api/{command}
+    let streaming_router = streaming::create_router()
+        .with_state(state.clone());
 
     let api = Router::new()
         .route("/api/{command}", post(command_handler))
         .route("/api/snapshot/{telescope_id}", get(snapshot_handler))
-        .nest("/api", streaming_router)
+        .nest("/stream", streaming_router)
         .with_state(state.clone());
 
     let app = if let Some(dir) = static_dir {
