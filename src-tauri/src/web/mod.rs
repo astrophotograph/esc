@@ -292,6 +292,18 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         .parse()
         .map_err(|e| format!("Invalid IP: {e}"))?;
 
+    // Send UDP scan_iscope to port 4720 before TCP connect — satisfies the
+    // Seestar's guest mode so it accepts control commands (mirrors Tauri flow).
+    {
+        use tokio::net::UdpSocket;
+        if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
+            let udp_addr = format!("{}:4720", host);
+            let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
+            let _ = sock.send_to(msg, &udp_addr).await;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+    }
+
     // Load authentication key from env var or DB-backed setting
     let interop_key = if let Some(pem_path) = state.interop_pem.read().clone() {
         match std::fs::read_to_string(&pem_path) {
@@ -332,11 +344,27 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
 
     info!("Web API: native client connected to {}", host);
 
+    let client = Arc::new(client);
+
+    // Start MJPEG streaming on the imaging port (4800) — same as Tauri flow.
+    // Without this the Seestar won't push preview frames to subscribe_frames().
+    {
+        let preview_client = client.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
+            match preview_client.send_imaging_command(msg).await {
+                Ok(_) => info!("Web API: begin_streaming sent on imaging port"),
+                Err(e) => tracing::warn!("Web API: begin_streaming failed: {}", e),
+            }
+        });
+    }
+
     {
         let mut telescopes = state.telescopes.write();
         if let Some(t) = telescopes.get_mut(&telescope_id) {
             t.status = ConnectionStatus::Connected;
-            t.client = Some(Arc::new(client));
+            t.client = Some(client);
         }
     }
 
