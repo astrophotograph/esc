@@ -57,6 +57,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # State management
 parking_lot = "0.12"
 
+# Config file
+toml = "0.8"
+
 # Date/time
 chrono = { version = "0.4", features = ["serde"] }
 

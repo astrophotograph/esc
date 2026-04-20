@@ -1,3 +1,4 @@
+use crate::config::ConfigState;
 use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
@@ -157,6 +158,7 @@ pub async fn add_telescope(
 pub async fn connect_telescope(
     app: AppHandle,
     state: State<'_, AppState>,
+    config: State<'_, ConfigState>,
     telescope_id: String,
     host: Option<String>,
     port: Option<u16>,
@@ -250,28 +252,28 @@ pub async fn connect_telescope(
             }
         }
 
-        // Load authentication key from environment
-        let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
+        // Load authentication key from env var or config file
+        let interop_key = if let Some(pem_path) = config.resolve_interop_pem() {
             match std::fs::read_to_string(&pem_path) {
                 Ok(pem_content) => {
                     match InteropKey::from_pem(&pem_content) {
                         Ok(key) => {
-                            tracing::info!("connect_telescope: loaded SEESTAR_INTEROP_PEM from {}", pem_path);
+                            tracing::info!("connect_telescope: loaded interop PEM from {}", pem_path);
                             Some(key)
                         }
                         Err(e) => {
-                            tracing::warn!("connect_telescope: failed to parse PEM: {}", e);
+                            tracing::warn!("connect_telescope: failed to parse PEM at {}: {}", pem_path, e);
                             None
                         }
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("connect_telescope: failed to read SEESTAR_INTEROP_PEM from {}: {}", pem_path, e);
+                    tracing::warn!("connect_telescope: failed to read PEM at {}: {}", pem_path, e);
                     None
                 }
             }
         } else {
-            tracing::warn!("connect_telescope: SEESTAR_INTEROP_PEM not set — commands will fail on firmware 7.18+; set the env var to a PEM key file path");
+            tracing::warn!("connect_telescope: no interop PEM configured — commands will fail on firmware 7.18+");
             None
         };
 

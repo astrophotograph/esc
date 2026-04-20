@@ -1,5 +1,7 @@
 // Library exports for the telescope control application
 
+pub mod catalog;
+pub mod config;
 pub mod commands;
 pub mod database;
 pub mod events;

@@ -23,16 +23,28 @@ use std::time::Duration;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
+use crate::config::ConfigState;
 use crate::state::{AppState, ConnectionStatus, TelescopeConnection};
 use crate::streaming;
 
-/// Shared state for the web server
-pub type WebState = Arc<AppState>;
+/// Shared state for the web server — carries both app state and config.
+/// Derefs to AppState so existing handlers need no changes.
+pub struct WebStateInner {
+    pub app: Arc<AppState>,
+    pub config: Arc<ConfigState>,
+}
+
+impl std::ops::Deref for WebStateInner {
+    type Target = AppState;
+    fn deref(&self) -> &AppState { &self.app }
+}
+
+pub type WebState = Arc<WebStateInner>;
 
 /// Create the web API router
 pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) -> Router {
     // Nest the streaming router under /api/ so /api/stream/{id} works
-    let streaming_router = streaming::create_router().with_state(state.clone());
+    let streaming_router = streaming::create_router().with_state(state.app.clone());
 
     let api = Router::new()
         .route("/api/{command}", post(command_handler))
@@ -117,7 +129,7 @@ async fn command_handler(
 }
 
 async fn dispatch_command(
-    state: &AppState,
+    state: &WebStateInner,
     command: &str,
     payload: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
@@ -256,7 +268,7 @@ fn cmd_get_telescopes(state: &AppState) -> Result<serde_json::Value, String> {
     Ok(serde_json::json!(list))
 }
 
-async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+async fn cmd_connect(state: &WebStateInner, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let telescope_id = tid(payload)?;
     let host = payload.get("host").and_then(|v| v.as_str());
     let port = payload.get("port").and_then(|v| v.as_u64()).map(|v| v as u16);
@@ -283,28 +295,28 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         .parse()
         .map_err(|e| format!("Invalid IP: {e}"))?;
 
-    // Load authentication key from environment
-    let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
+    // Load authentication key from env var or config file
+    let interop_key = if let Some(pem_path) = state.config.resolve_interop_pem() {
         match std::fs::read_to_string(&pem_path) {
             Ok(pem_content) => {
                 match scopinator_seestar::InteropKey::from_pem(&pem_content) {
                     Ok(key) => {
-                        info!("Web API: loaded SEESTAR_INTEROP_PEM from {}", pem_path);
+                        info!("Web API: loaded interop PEM from {}", pem_path);
                         Some(key)
                     }
                     Err(e) => {
-                        tracing::warn!("Web API: failed to parse PEM: {}", e);
+                        tracing::warn!("Web API: failed to parse PEM at {}: {}", pem_path, e);
                         None
                     }
                 }
             }
             Err(e) => {
-                tracing::warn!("Web API: failed to read SEESTAR_INTEROP_PEM from {}: {}", pem_path, e);
+                tracing::warn!("Web API: failed to read PEM at {}: {}", pem_path, e);
                 None
             }
         }
     } else {
-        tracing::warn!("Web API: SEESTAR_INTEROP_PEM not set — commands will fail on firmware 7.18+; set the env var to a PEM key file path");
+        tracing::warn!("Web API: no interop PEM configured — commands will fail on firmware 7.18+");
         None
     };
 

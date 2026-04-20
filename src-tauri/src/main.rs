@@ -3,6 +3,7 @@
 
 mod catalog;
 mod commands;
+mod config;
 mod database;
 mod events;
 mod imaging;
@@ -81,6 +82,9 @@ fn main() {
             planning::planning_end_session,
             planning::planning_delete_session,
             planning::planning_save_file,
+            // Config commands
+            config::config_get,
+            config::config_set,
             // Imaging commands
             imaging::imaging_process_fits,
             imaging::imaging_enhance,
@@ -95,14 +99,26 @@ fn main() {
             imaging::imaging_delete_from_db,
         ])
         .setup(|app| {
-            // Warn early if auth key is missing — firmware 7.18+ requires it
-            if std::env::var("SEESTAR_INTEROP_PEM").is_err() {
+            // Load persistent config from <app_config_dir>/config.toml
+            let config_dir = app
+                .path()
+                .app_config_dir()
+                .expect("Failed to get app config directory");
+            std::fs::create_dir_all(&config_dir).expect("Failed to create app config directory");
+            tracing::info!("Config directory: {:?}", config_dir);
+
+            let app_config = config::AppConfig::load(&config_dir);
+            let config_state = config::ConfigState::new(config_dir, app_config);
+
+            // Warn early if PEM key is missing from both env var and config file
+            if config_state.resolve_interop_pem().is_none() {
                 tracing::warn!(
-                    "SEESTAR_INTEROP_PEM is not set. \
-                     Telescope commands will fail on Seestar firmware 7.18+. \
-                     Set this env var to the path of your interop PEM key file."
+                    "Seestar interop PEM key not configured. \
+                     Telescope commands will fail on firmware 7.18+. \
+                     Set SEESTAR_INTEROP_PEM env var or configure the path in Settings."
                 );
             }
+            app.manage(config_state);
 
             // Initialize database
             let app_dir = app
