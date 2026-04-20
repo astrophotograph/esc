@@ -68,7 +68,7 @@ export function VideoFeed({
 
   // Poll-based frame fetcher — keeps last frame visible while loading next
   const fetchFrame = useCallback(async (tid: string) => {
-    const url = `http://localhost:9847/snapshot/${encodeURIComponent(tid)}`
+    const url = `http://${window.location.hostname}:9847/snapshot/${encodeURIComponent(tid)}`
     try {
       const res = await fetch(url)
       if (!res.ok) {
