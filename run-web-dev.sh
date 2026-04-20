@@ -21,6 +21,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Kill any stale web_server process holding port 9846
+lsof -ti tcp:9846 | xargs kill -9 2>/dev/null || true
+
 echo "Starting Rust web API server..."
 ./target/debug/web_server 2>&1 | tee backend.log &
 BACKEND_PID=$!
