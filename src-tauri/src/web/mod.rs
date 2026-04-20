@@ -24,20 +24,14 @@ use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use crate::state::{AppState, ConnectionStatus, TelescopeConnection};
-use crate::streaming;
 
 pub type WebState = Arc<AppState>;
 
 /// Create the web API router
 pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) -> Router {
-    // Stream routes live under /stream/ to avoid shadowing /api/{command}
-    let streaming_router = streaming::create_router()
-        .with_state(state.clone());
-
     let api = Router::new()
-        .route("/api/{command}", post(command_handler))
-        .route("/api/snapshot/{telescope_id}", get(snapshot_handler))
-        .nest("/stream", streaming_router)
+        .route("/api/:command", post(command_handler))
+        .route("/api/snapshot/:telescope_id", get(snapshot_handler))
         .with_state(state.clone());
 
     let app = if let Some(dir) = static_dir {
