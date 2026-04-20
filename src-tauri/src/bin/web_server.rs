@@ -4,7 +4,7 @@
 /// The DB and settings live in the same location as the desktop app
 /// (~/.local/share/eesc/ on Linux, ~/Library/Application Support/com.erewhon.esc/ on macOS).
 
-use eesc_lib::{database::Database, settings, state::AppState, web};
+use eesc_lib::{database::Database, settings, state::AppState, streaming, web};
 use std::sync::Arc;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
@@ -67,6 +67,15 @@ async fn main() {
     }
 
     let state = Arc::new(app_state);
+
+    // Start streaming server on port 9847 (same as Tauri desktop mode)
+    let streaming_state = state.clone();
+    tokio::spawn(async move {
+        if let Err(e) = streaming::start_streaming_server(streaming_state, 9847).await {
+            tracing::error!("Streaming server error: {}", e);
+        }
+    });
+    tracing::info!("Streaming server starting on port 9847");
 
     web::start_web_server(state, PORT, None)
         .await

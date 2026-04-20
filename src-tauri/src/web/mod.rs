@@ -23,6 +23,8 @@ use std::time::Duration;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
+use crate::catalog::{catalog_get_object_types, catalog_get_solar_system, catalog_quick_search, catalog_search, CatalogSearchParams};
+use crate::planning;
 use crate::state::{AppState, ConnectionStatus, TelescopeConnection};
 
 pub type WebState = Arc<AppState>;
@@ -154,6 +156,19 @@ async fn dispatch_command(
 
         // --- Scheduling ---
         "schedule_set_view_plan" => cmd_set_view_plan(state, &payload).await,
+
+        // --- Catalog ---
+        "catalog_search" => cmd_catalog_search(&payload).await,
+        "catalog_quick_search" => cmd_catalog_quick_search(&payload).await,
+        "catalog_get_object_types" => cmd_catalog_get_object_types().await,
+        "catalog_get_solar_system" => cmd_catalog_get_solar_system(&payload).await,
+
+        // --- Location ---
+        "get_ip_location" => Ok(serde_json::json!({ "success": false, "error": "IP location not available in web mode — use browser geolocation" })),
+
+        // --- Planning ---
+        "planning_get_visibility" => cmd_planning_get_visibility(&payload).await,
+        "planning_get_tonight_targets" => cmd_planning_get_tonight_targets(&payload).await,
 
         _ => Err(format!("Unknown command: {command}")),
     }
@@ -558,54 +573,75 @@ async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result
         client.send_command(Command::GetViewState),
     );
 
-    let mut status = serde_json::json!({ "connected": true });
+    // Build response in camelCase to match Tauri TelescopeStatus struct
+    let mut battery_percent: Option<f64> = None;
+    let mut temperature_c: Option<f64> = None;
+    let mut is_tracking: Option<bool> = None;
+    let mut focus_position: Option<i64> = None;
+    let mut gain: Option<i64> = None;
+    let mut ra: Option<f64> = None;
+    let mut dec: Option<f64> = None;
+    let mut view_state: Option<String> = None;
+    let mut target_name: Option<String> = None;
+    let mut stacked_frame: Option<i64> = None;
+    let mut is_goto: Option<bool> = None;
 
-    // Parse device state
     if let Ok(resp) = device_result {
-        if resp.is_success() {
-            if let Some(result) = resp.result {
-                if let Some(pi) = result.get("pi_status") {
-                    status["battery_percent"] = pi.get("battery_capacity").cloned().unwrap_or_default();
-                    status["temperature_c"] = pi.get("temp").cloned().unwrap_or_default();
-                }
-                if let Some(mount) = result.get("mount") {
-                    status["is_tracking"] = mount.get("tracking").cloned().unwrap_or_default();
-                }
-                if let Some(focuser) = result.get("focuser") {
-                    status["focus_position"] = focuser.get("step").cloned().unwrap_or_default();
-                }
-                if let Some(setting) = result.get("setting") {
-                    status["gain"] = setting.get("gain").cloned().unwrap_or_default();
-                }
+        if let Some(result) = resp.result {
+            if let Some(pi) = result.get("pi_status") {
+                battery_percent = pi.get("battery_capacity").and_then(|v| v.as_f64());
+                temperature_c = pi.get("temp").and_then(|v| v.as_f64());
+            }
+            if let Some(mount) = result.get("mount") {
+                is_tracking = mount.get("tracking").and_then(|v| v.as_bool());
+            }
+            if let Some(focuser) = result.get("focuser") {
+                focus_position = focuser.get("step").and_then(|v| v.as_i64());
+            }
+            if let Some(setting) = result.get("setting") {
+                gain = setting.get("gain").and_then(|v| v.as_i64());
             }
         }
     }
 
-    // Parse coordinates
     if let Ok(resp) = coord_result {
-        if resp.is_success() {
-            if let Some(result) = resp.result {
-                status["ra"] = result.get("ra").cloned().unwrap_or_default();
-                status["dec"] = result.get("dec").cloned().unwrap_or_default();
-            }
+        if let Some(result) = resp.result {
+            ra = result.get("ra").and_then(|v| v.as_f64());
+            dec = result.get("dec").and_then(|v| v.as_f64());
         }
     }
 
-    // Parse view state
     if let Ok(resp) = view_result {
         if resp.is_success() {
             if let Some(result) = resp.result {
                 let view = result.get("View").or_else(|| result.get("view"));
                 if let Some(v) = view {
-                    status["view_state"] = v.get("state").cloned().unwrap_or_default();
-                    status["target_name"] = v.get("target_name").cloned().unwrap_or_default();
-                    status["stacked_frame"] = v.get("stacked_frame").cloned().unwrap_or_default();
+                    view_state = v.get("state").and_then(|s| s.as_str()).map(String::from);
+                    is_goto = view_state.as_deref().map(|s| s == "SlewComplete" || s.contains("Goto"));
+                    target_name = v.get("target_name").and_then(|s| s.as_str()).map(String::from);
+                    stacked_frame = v.get("stacked_frame").and_then(|v| v.as_i64());
+                    if gain.is_none() {
+                        gain = v.get("gain").and_then(|v| v.as_i64());
+                    }
                 }
             }
         }
     }
 
-    Ok(serde_json::json!({ "success": true, "state": status }))
+    Ok(serde_json::json!({
+        "connected": true,
+        "batteryPercent": battery_percent,
+        "temperatureC": temperature_c,
+        "isTracking": is_tracking,
+        "focusPosition": focus_position,
+        "gain": gain,
+        "ra": ra,
+        "dec": dec,
+        "viewState": view_state,
+        "targetName": target_name,
+        "stackedFrame": stacked_frame,
+        "isGoto": is_goto,
+    }))
 }
 
 async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -642,6 +678,59 @@ async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Res
         "code": code,
         "message": message,
     }))
+}
+
+async fn cmd_planning_get_visibility(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let target: planning::VisibilityTarget = serde_json::from_value(
+        payload.get("target").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid target: {e}"))?;
+    let location: planning::VisibilityLocation = serde_json::from_value(
+        payload.get("location").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid location: {e}"))?;
+    let date = payload.get("date").and_then(|v| v.as_str()).map(String::from);
+    let min_altitude = payload.get("minAltitude").and_then(|v| v.as_f64());
+
+    let json_str = planning::planning_get_visibility(target, location, date, min_altitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Parse error: {e}"))
+}
+
+async fn cmd_planning_get_tonight_targets(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let location: planning::VisibilityLocation = serde_json::from_value(
+        payload.get("location").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid location: {e}"))?;
+    let limit = payload.get("limit").and_then(|v| v.as_i64()).map(|v| v as i32);
+    let min_altitude = payload.get("minAltitude").and_then(|v| v.as_f64());
+
+    let json_str = planning::planning_get_tonight_targets(location, limit, min_altitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Parse error: {e}"))
+}
+
+async fn cmd_catalog_search(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    // Frontend sends { params: {...} } wrapping the actual CatalogSearchParams
+    let inner = payload.get("params").unwrap_or(payload);
+    let params: CatalogSearchParams = serde_json::from_value(inner.clone())
+        .map_err(|e| format!("Invalid catalog search params: {e}"))?;
+    let json_str = catalog_search(params).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Catalog search parse error: {e}"))
+}
+
+async fn cmd_catalog_quick_search(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = payload.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let limit = payload.get("limit").and_then(|v| v.as_i64()).map(|v| v as i32);
+    let json_str = catalog_quick_search(query, limit).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Quick search parse error: {e}"))
+}
+
+async fn cmd_catalog_get_object_types() -> Result<serde_json::Value, String> {
+    let json_str = catalog_get_object_types().await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Object types parse error: {e}"))
+}
+
+async fn cmd_catalog_get_solar_system(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let latitude = payload.get("latitude").and_then(|v| v.as_f64());
+    let longitude = payload.get("longitude").and_then(|v| v.as_f64());
+    let json_str = catalog_get_solar_system(latitude, longitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Solar system parse error: {e}"))
 }
 
 // ---------------------------------------------------------------------------
