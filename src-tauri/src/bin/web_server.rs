@@ -43,6 +43,29 @@ async fn main() {
     }
     *app_state.interop_pem.write() = pem;
 
+    // Load saved telescopes from DB into state
+    match db.get_telescopes() {
+        Ok(telescopes) => {
+            let mut state_telescopes = app_state.telescopes.write();
+            for t in telescopes {
+                let protocol = t.protocol.clone().unwrap_or_else(|| "seestar".to_string());
+                let name = t.name.clone().unwrap_or_else(|| format!("{}:{}", t.host, t.port));
+                tracing::info!("Loaded telescope: {} ({}) ({}:{})", t.id, protocol, t.host, t.port);
+                state_telescopes.insert(t.id.clone(), eesc_lib::state::TelescopeConnection {
+                    id: t.id,
+                    host: t.host,
+                    port: t.port,
+                    protocol,
+                    name,
+                    status: eesc_lib::state::ConnectionStatus::Disconnected,
+                    client: None,
+                });
+            }
+            tracing::info!("Loaded {} telescope(s) from database", state_telescopes.len());
+        }
+        Err(e) => tracing::warn!("Failed to load telescopes: {}", e),
+    }
+
     let state = Arc::new(app_state);
 
     web::start_web_server(state, PORT, None)
