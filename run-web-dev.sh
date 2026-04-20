@@ -22,7 +22,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Starting Rust web API server..."
-./src-tauri/target/debug/web_server 2>&1 | tee backend.log &
+./target/debug/web_server 2>&1 | tee backend.log &
 BACKEND_PID=$!
 
 echo "Starting frontend (TAURI_DEV_HOST=$HOST)..."
