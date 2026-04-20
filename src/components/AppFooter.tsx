@@ -30,7 +30,7 @@ export function AppFooter({ version = 'v25.09.15', buildNumber = '#1' }: AppFoot
   }
 
   return (
-    <footer className="flex items-center justify-between px-4 py-2 bg-card border-t border-border text-sm text-muted-foreground">
+    <footer className="hidden sm:flex items-center justify-between px-4 py-2 bg-card border-t border-border text-sm text-muted-foreground">
       {/* Left Section - Version Info */}
       <div className="flex items-center gap-3">
         <span className="font-medium">ESC {version}</span>

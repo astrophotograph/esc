@@ -20,7 +20,9 @@ const SIZE_CONFIG = {
 
 export function AllskyPanel() {
   const { showAllskyPanel: show, setShowAllskyPanel: setShow } = useUIStore()
-  const [size, setSize] = useState<PanelSize>('M')
+  const [size, setSize] = useState<PanelSize>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 640 ? 'S' : 'M'
+  )
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null) // Initialized on first show
@@ -30,7 +32,12 @@ export function AllskyPanel() {
 
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const currentSize = SIZE_CONFIG[size]
+  const nominalSize = SIZE_CONFIG[size]
+  const maxWidth = typeof window !== 'undefined' ? window.innerWidth - 16 : nominalSize.width
+  const currentSize = {
+    width: Math.min(nominalSize.width, maxWidth),
+    height: nominalSize.height,
+  }
 
   // Initialize position on first show
   useEffect(() => {
@@ -53,45 +60,55 @@ export function AllskyPanel() {
   }, [autoRefresh])
 
   // Dragging handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const startDrag = useCallback((clientX: number, clientY: number) => {
     setIsDragging(true)
     const rect = panelRef.current?.getBoundingClientRect()
     if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      })
+      setDragOffset({ x: clientX - rect.left, y: clientY - rect.top })
     }
   }, [])
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const moveDrag = useCallback((clientX: number, clientY: number) => {
     if (!isDragging) return
-
     const panelWidth = minimized ? 140 : currentSize.width
-    const panelHeight = minimized ? 40 : currentSize.height + 80 // header + footer
+    const panelHeight = minimized ? 40 : currentSize.height + 80
     const maxX = window.innerWidth - panelWidth - 16
     const maxY = window.innerHeight - panelHeight - 16
-
     setPosition({
-      x: Math.max(16, Math.min(maxX, e.clientX - dragOffset.x)),
-      y: Math.max(60, Math.min(maxY, e.clientY - dragOffset.y)),
+      x: Math.max(0, Math.min(maxX, clientX - dragOffset.x)),
+      y: Math.max(60, Math.min(maxY, clientY - dragOffset.y)),
     })
   }, [isDragging, dragOffset, currentSize, minimized])
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+  const handleMouseDown = useCallback((e: React.MouseEvent) => startDrag(e.clientX, e.clientY), [startDrag])
+  const handleMouseMove = useCallback((e: MouseEvent) => moveDrag(e.clientX, e.clientY), [moveDrag])
+  const handleMouseUp = useCallback(() => setIsDragging(false), [])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return
+    startDrag(e.touches[0].clientX, e.touches[0].clientY)
+  }, [startDrag])
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (e.touches.length !== 1) return
+    e.preventDefault()
+    moveDrag(e.touches[0].clientX, e.touches[0].clientY)
+  }, [moveDrag])
+  const handleTouchEnd = useCallback(() => setIsDragging(false), [])
 
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
+      document.addEventListener('touchmove', handleTouchMove, { passive: false })
+      document.addEventListener('touchend', handleTouchEnd)
       return () => {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
+        document.removeEventListener('touchmove', handleTouchMove)
+        document.removeEventListener('touchend', handleTouchEnd)
       }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
 
   if (!show || position === null) {
     return (
@@ -131,6 +148,7 @@ export function AllskyPanel() {
       <div
         className="flex items-center justify-between px-2 py-1.5 bg-muted cursor-grab"
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">📷</span>
