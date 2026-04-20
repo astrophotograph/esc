@@ -7,6 +7,9 @@ import { Badge } from './ui/badge'
 import { Label } from './ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { useSession, useTelescope } from '../hooks'
+import { useUIStore } from '../stores/uiStore'
+import { useSchedulerStore } from '../stores/schedulerStore'
+import { defaultLpFilter } from '../features/session-planning/utils/timeConversion'
 import type { TonightTarget } from '../stores'
 
 interface SessionPlanningProps {
@@ -31,6 +34,8 @@ export function SessionPlanning({ compact = false }: SessionPlanningProps) {
   } = useSession()
 
   const { currentTelescopeId, gotoTarget } = useTelescope()
+  const setActiveTab = useUIStore((s) => s.setActiveTab)
+  const addScheduleTarget = useSchedulerStore((s) => s.addTarget)
 
   const [newSessionName, setNewSessionName] = useState('')
   const [newSessionNotes, setNewSessionNotes] = useState('')
@@ -109,11 +114,23 @@ export function SessionPlanning({ compact = false }: SessionPlanningProps) {
     }
   }, [getLocationFromBrowser])
 
+  const handleAddToSchedule = useCallback((target: TonightTarget) => {
+    if (target.ra == null || target.dec == null) return
+    addScheduleTarget({
+      targetName: target.name,
+      aliasName: target.name,
+      raDec: [target.ra, target.dec],
+      startMin: 0,
+      durationMin: 60,
+      lpFilter: defaultLpFilter(target.objectType),
+      mosaic: null,
+    })
+    setActiveTab('schedule')
+  }, [addScheduleTarget, setActiveTab])
+
   const handleGotoTarget = useCallback(async (target: TonightTarget) => {
     if (!currentTelescopeId) return
 
-    // We need to get the RA/Dec from the target - for now use placeholder
-    // In real implementation, this would come from the target data
     console.log('GOTO target:', target)
   }, [currentTelescopeId, gotoTarget])
 
@@ -280,13 +297,21 @@ export function SessionPlanning({ compact = false }: SessionPlanningProps) {
                     <p className="text-xs text-muted-foreground">
                       {target.objectType}
                       {target.constellation && ` • ${target.constellation}`}
-                      {target.magnitude !== undefined && ` • Mag ${target.magnitude.toFixed(1)}`}
+                      {target.magnitude != null && ` • Mag ${target.magnitude.toFixed(1)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       {target.altitude.toFixed(0)}° alt
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddToSchedule(target)}
+                      disabled={target.ra == null}
+                    >
+                      Schedule
+                    </Button>
                     {currentTelescopeId && (
                       <Button
                         size="sm"

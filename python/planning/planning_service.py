@@ -4,7 +4,8 @@ This module provides planning features for telescope observation sessions.
 """
 
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -301,6 +302,8 @@ class PlanningService:
                             "altitude": altitude,
                             "azimuth": azimuth,
                             "constellation": obj.get("constellation"),
+                            "ra": ra_decimal,
+                            "dec": dec_decimal,
                         }
                     )
 
@@ -405,3 +408,124 @@ def update_session(
     if notes is not None:
         updates["notes"] = notes
     return updates
+
+
+def get_visibility_curve(
+    ra: float,
+    dec: float,
+    latitude: float,
+    longitude: float,
+    elevation: float = 0,
+    date: Optional[str] = None,
+    tz: str = "UTC",
+    min_altitude: float = 30.0,
+) -> dict[str, Any]:
+    """Get a 24-hour altitude/azimuth curve for a celestial object.
+
+    Samples every 10 minutes starting from local noon of the given date
+    (12 hours before local midnight), producing 145 data points that span
+    one full local day centred on midnight.
+
+    Args:
+        ra: Right ascension in degrees (J2000).
+        dec: Declination in degrees (J2000).
+        latitude: Observer latitude in degrees (positive north).
+        longitude: Observer longitude in degrees (positive east).
+        elevation: Observer elevation in metres above sea level.
+        date: Local calendar date "YYYY-MM-DD". Defaults to today in *tz*.
+        tz: IANA timezone string (e.g. "America/New_York"). Defaults to "UTC".
+        min_altitude: Visibility threshold in degrees. Used only to classify
+            curve points for the caller; all altitudes are returned regardless.
+
+    Returns:
+        dict with keys ``curve``, ``events``, and ``twilight``.
+    """
+    try:
+        local_tz = ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, KeyError):
+        local_tz = ZoneInfo("UTC")
+
+    if date:
+        try:
+            parts = date.split("-")
+            year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+        except (ValueError, AttributeError, IndexError):
+            now_local = datetime.now(local_tz)
+            year, month, day = now_local.year, now_local.month, now_local.day
+    else:
+        now_local = datetime.now(local_tz)
+        year, month, day = now_local.year, now_local.month, now_local.day
+
+    # Sample from local noon of *date* through local noon of the next day
+    # (24-hour window centred on local midnight).
+    local_midnight = datetime(year, month, day, 0, 0, 0, tzinfo=local_tz)
+    start_local = local_midnight - timedelta(hours=12)
+    start_utc = start_local.astimezone(dt_timezone.utc)
+
+    ra_hours = ra / 15.0
+
+    curve: list[dict[str, Any]] = []
+    rise_time: Optional[str] = None
+    set_time: Optional[str] = None
+    transit_time: Optional[str] = None
+    max_alt: float = -90.0
+    astro_dark_start: Optional[str] = None
+    astro_dark_end: Optional[str] = None
+
+    prev_alt: Optional[float] = None
+    prev_sun_alt: Optional[float] = None
+
+    for i in range(145):  # noon → noon inclusive at 10-min intervals
+        utc_dt = start_utc + timedelta(minutes=10 * i)
+        utc_naive = utc_dt.replace(tzinfo=None)
+        local_dt = utc_dt.astimezone(local_tz)
+
+        lst = PlanningService.calculate_local_sidereal_time(longitude, utc_naive)
+        alt, az = PlanningService.calculate_altitude_azimuth(ra_hours, dec, latitude, lst)
+        sun_alt = PlanningService.get_sun_altitude(latitude, longitude, utc_naive)
+
+        # Horizon crossings (0°)
+        if prev_alt is not None:
+            if prev_alt < 0 <= alt and rise_time is None:
+                rise_time = local_dt.isoformat()
+            if prev_alt >= 0 > alt and rise_time is not None and set_time is None:
+                set_time = local_dt.isoformat()
+
+        # Transit = highest altitude point
+        if alt > max_alt:
+            max_alt = alt
+            transit_time = local_dt.isoformat()
+
+        # Astronomical twilight boundaries (sun crosses −18°)
+        if prev_sun_alt is not None:
+            if prev_sun_alt >= -18 > sun_alt and astro_dark_start is None:
+                astro_dark_start = local_dt.isoformat()
+            if prev_sun_alt < -18 <= sun_alt and astro_dark_start is not None and astro_dark_end is None:
+                astro_dark_end = local_dt.isoformat()
+
+        curve.append(
+            {
+                "time_local": local_dt.isoformat(),
+                "time_label": local_dt.strftime("%H:%M"),
+                "altitude_deg": round(alt, 2),
+                "azimuth_deg": round(az, 2),
+                "sun_altitude_deg": round(sun_alt, 2),
+            }
+        )
+
+        prev_alt = alt
+        prev_sun_alt = sun_alt
+
+    return {
+        "curve": curve,
+        "events": {
+            "rise_time_local": rise_time,
+            "set_time_local": set_time,
+            "transit_time_local": transit_time,
+            "max_altitude_deg": round(max_alt, 2) if max_alt > -90 else None,
+        },
+        "twilight": {
+            "astro_dark_start": astro_dark_start,
+            "astro_dark_end": astro_dark_end,
+        },
+    }

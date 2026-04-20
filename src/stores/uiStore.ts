@@ -7,7 +7,7 @@ export interface PipPosition {
   y: number
 }
 
-export type ActiveTab = 'telescope' | 'catalog' | 'imaging' | 'planning'
+export type ActiveTab = 'telescope' | 'catalog' | 'imaging' | 'planning' | 'schedule'
 export type SidebarPanel = 'controls' | 'info' | 'settings' | 'activity' | null
 
 interface UIStore {

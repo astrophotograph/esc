@@ -3,8 +3,13 @@ import { invoke } from '../services/api'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { useUIStore } from '../stores/uiStore'
 
+// When connected and active, poll this fast; when moving, use FAST interval.
+// These are the *minimum* gaps between polls — the next poll doesn't fire until
+// the previous one returns, so a slow/broken connection won't pile up requests.
 const NORMAL_POLL_INTERVAL = 2000
 const FAST_POLL_INTERVAL = 500
+// When disconnected, back off significantly — the telescope may be reconnecting
+const DISCONNECTED_POLL_INTERVAL = 5000
 
 interface RawTelescopeStatus {
   connected?: boolean
@@ -37,35 +42,39 @@ interface RawTelescopeStatus {
 /**
  * Single centralized poller for telescope status.
  * Call once in App.tsx. Writes results to the Zustand store.
- * All components read from the store instead of polling independently.
+ *
+ * Uses a sequential setTimeout chain rather than setInterval so that only one
+ * request is ever in-flight at a time. This prevents a storm of concurrent
+ * commands from piling up when the telescope connection is slow or broken.
  */
 export function useTelescopeStatusPoller() {
   const currentTelescopeId = useTelescopeStore((s) => s.currentTelescopeId)
   const updateTelescopeStatus = useTelescopeStore((s) => s.updateTelescopeStatus)
-  const clearTelescopeStatus = useTelescopeStore((s) => s.clearTelescopeStatus)
-  const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
+const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeRef = useRef(false)
   const isMovingRef = useRef(false)
 
   useEffect(() => {
-    if (!currentTelescopeId) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
+    if (!currentTelescopeId) return
 
     const telescopeId = currentTelescopeId
+    activeRef.current = true
+    isMovingRef.current = isManuallyMoving
 
-    const fetchStatus = async () => {
+    const scheduleNext = (delayMs: number) => {
+      if (!activeRef.current) return
+      timerRef.current = setTimeout(poll, delayMs)
+    }
+
+    const poll = async () => {
+      if (!activeRef.current) return
       try {
-        const result = await invoke<RawTelescopeStatus>('get_telescope_status', {
-          telescopeId,
-        })
+        const result = await invoke<RawTelescopeStatus>('get_telescope_status', { telescopeId })
 
-        // Normalize focusPosition -> focuserPosition for the store
+        if (!activeRef.current) return
+
         updateTelescopeStatus(telescopeId, {
           connected: result.connected,
           ra: result.ra,
@@ -94,37 +103,34 @@ export function useTelescopeStatusPoller() {
           balanceSensor: result.balanceSensor,
         })
 
-        // Adjust polling rate based on movement state
-        const isCurrentlyMoving = result.isGoto === true || isManuallyMoving
-        if (isCurrentlyMoving !== isMovingRef.current) {
-          isMovingRef.current = isCurrentlyMoving
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
-          }
-          const interval = isCurrentlyMoving ? FAST_POLL_INTERVAL : NORMAL_POLL_INTERVAL
-          intervalRef.current = setInterval(fetchStatus, interval)
-        }
+        const moving = result.isGoto === true || isMovingRef.current
+        const nextDelay = !result.connected
+          ? DISCONNECTED_POLL_INTERVAL
+          : moving
+          ? FAST_POLL_INTERVAL
+          : NORMAL_POLL_INTERVAL
+        scheduleNext(nextDelay)
       } catch {
-        // Silently ignore - telescope may not be in backend state yet
+        // Tauri command error — back off and retry
+        scheduleNext(DISCONNECTED_POLL_INTERVAL)
       }
     }
 
-    // Reset movement tracking for new telescope
-    isMovingRef.current = false
-
-    // Fetch immediately
-    fetchStatus()
-
-    // Start polling at rate based on current movement state
-    const initialInterval = isManuallyMoving ? FAST_POLL_INTERVAL : NORMAL_POLL_INTERVAL
-    intervalRef.current = setInterval(fetchStatus, initialInterval)
+    // Brief delay on first poll so the connection settles before we
+    // send the first batch of status commands.
+    scheduleNext(3000)
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+      activeRef.current = false
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
       }
-      clearTelescopeStatus(telescopeId)
     }
-  }, [currentTelescopeId, isManuallyMoving, updateTelescopeStatus, clearTelescopeStatus])
+  }, [currentTelescopeId, updateTelescopeStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep moving ref in sync without restarting the poll loop
+  useEffect(() => {
+    isMovingRef.current = isManuallyMoving
+  }, [isManuallyMoving])
 }

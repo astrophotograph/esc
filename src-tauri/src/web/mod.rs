@@ -158,6 +158,9 @@ async fn dispatch_command(
         // --- Status ---
         "get_telescope_status" => cmd_get_status(state, &payload).await,
 
+        // --- Scheduling ---
+        "schedule_set_view_plan" => cmd_set_view_plan(state, &payload).await,
+
         _ => Err(format!("Unknown command: {command}")),
     }
 }
@@ -609,6 +612,42 @@ async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result
     }
 
     Ok(serde_json::json!({ "success": true, "state": status }))
+}
+
+async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let client = get_client(state, &tid(payload)?)?;
+
+    let plan = payload
+        .get("plan")
+        .cloned()
+        .ok_or_else(|| "Missing plan".to_string())?;
+
+    if plan
+        .get("list")
+        .and_then(|l| l.as_array())
+        .map(|a| a.is_empty())
+        .unwrap_or(true)
+    {
+        return Err("Plan has no targets".to_string());
+    }
+
+    let resp = client
+        .send_command(Command::SetViewPlan(plan))
+        .await
+        .map_err(|e| format!("Command failed: {e}"))?;
+
+    let code = resp.code;
+    let message = match code {
+        0 => "Plan sent successfully".to_string(),
+        536 => "Telescope is busy — another operation is in progress".to_string(),
+        _ => format!("Device returned error code {code}"),
+    };
+
+    Ok(serde_json::json!({
+        "success": code == 0,
+        "code": code,
+        "message": message,
+    }))
 }
 
 // ---------------------------------------------------------------------------

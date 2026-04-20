@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { invoke, runtime } from '../services/api'
+import { invoke } from '../services/api'
 import { useSessionStore, ObservationSession, TonightTarget, VisibilityInfo } from '../stores'
 
 // API response types
@@ -36,6 +36,8 @@ interface TonightTargetsResult {
     altitude: number
     azimuth: number
     constellation?: string
+    ra?: number
+    dec?: number
   }>
 }
 
@@ -255,6 +257,8 @@ export function useSession() {
         altitude: r.altitude,
         azimuth: r.azimuth,
         constellation: r.constellation,
+        ra: r.ra,
+        dec: r.dec,
       }))
 
       setTonightTargets(targets)
@@ -288,11 +292,32 @@ export function useSession() {
    * Get location from browser
    */
   const getLocationFromBrowser = useCallback(async () => {
-    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-      if (!window.isSecureContext) {
-        reject(new Error('Failed to get location: Geolocation requires HTTPS (or localhost).'))
-        return
+    const { useSessionStore } = await import('../stores/sessionStore')
+    const existing = useSessionStore.getState().location
+
+    const mergeAndSet = (latitude: number, longitude: number, name: string) => {
+      setLocation({
+        latitude,
+        longitude,
+        elevation: existing?.elevation ?? 0,
+        name,
+        timezone: existing?.timezone,
+        minAltitudeDeg: existing?.minAltitudeDeg,
+      })
+    }
+
+    const tryIpFallback = async (originalError: Error): Promise<{ latitude: number; longitude: number }> => {
+      const fallback = await invoke<{ success?: boolean; latitude?: number; longitude?: number; name?: string; error?: string }>(
+        'get_ip_location'
+      )
+      if (fallback?.success && typeof fallback.latitude === 'number' && typeof fallback.longitude === 'number') {
+        mergeAndSet(fallback.latitude, fallback.longitude, fallback.name || 'Approximate (IP)')
+        return { latitude: fallback.latitude, longitude: fallback.longitude }
       }
+      throw originalError
+    }
+
+    return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'))
         return
@@ -301,41 +326,15 @@ export function useSession() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
-          setLocation({
-            latitude,
-            longitude,
-            elevation: 0,
-            name: 'Current Location',
-          })
+          mergeAndSet(latitude, longitude, 'Current Location')
           resolve({ latitude, longitude })
         },
-        (error) => {
-          reject(new Error(`Failed to get location: ${error.message}`))
+        (err) => {
+          reject(new Error(`Failed to get location: ${err.message}`))
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        }
+        { enableHighAccuracy: true, timeout: 10000 }
       )
-    })
-      .catch(async (error) => {
-        // In web mode only, fall back to IP-based location.
-        if (!runtime.isTauri) {
-          const fallback = await invoke<{ success?: boolean; latitude?: number; longitude?: number; name?: string; error?: string }>(
-            'get_ip_location'
-          )
-          if (fallback?.success && typeof fallback.latitude === 'number' && typeof fallback.longitude === 'number') {
-            setLocation({
-              latitude: fallback.latitude,
-              longitude: fallback.longitude,
-              elevation: 0,
-              name: fallback.name || 'Approximate (IP)',
-            })
-            return { latitude: fallback.latitude, longitude: fallback.longitude }
-          }
-        }
-        throw error
-      })
+    }).catch((err: Error) => tryIpFallback(err))
   }, [setLocation])
 
   return {

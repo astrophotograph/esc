@@ -57,6 +57,8 @@ struct TonightTarget {
     altitude: f64,
     azimuth: f64,
     constellation: Option<String>,
+    ra: f64,
+    dec: f64,
 }
 
 /// Get visibility information for a target
@@ -195,6 +197,8 @@ pub async fn planning_get_tonight_targets(
                 altitude,
                 azimuth,
                 constellation,
+                ra: ra_decimal,
+                dec: dec_decimal,
             });
         }
     }

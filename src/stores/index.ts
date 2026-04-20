@@ -42,3 +42,10 @@ export type {
   ActiveTab,
   SidebarPanel,
 } from './uiStore'
+
+export { useSchedulerStore, EMPTY_SCHEDULE } from './schedulerStore'
+export type {
+  MosaicConfig,
+  ScheduleTarget,
+  Schedule,
+} from './schedulerStore'

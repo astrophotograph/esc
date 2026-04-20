@@ -67,6 +67,7 @@ fn main() {
             telescope::set_scope_location,
             telescope::telescope_set_mount_mode,
             telescope::telescope_move_to_horizon,
+            telescope::schedule_set_view_plan,
             // Catalog commands
             catalog::catalog_search,
             catalog::catalog_quick_search,
