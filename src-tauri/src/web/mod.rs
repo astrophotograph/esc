@@ -229,7 +229,7 @@ async fn cmd_discover(state: &AppState) -> Result<serde_json::Value, String> {
         }
     }
 
-    Ok(serde_json::json!({ "success": true, "telescopes": results }))
+    Ok(serde_json::json!(results))
 }
 
 fn cmd_get_telescopes(state: &AppState) -> Result<serde_json::Value, String> {
