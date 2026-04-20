@@ -271,7 +271,7 @@ pub async fn connect_telescope(
                 }
             }
         } else {
-            tracing::debug!("connect_telescope: SEESTAR_INTEROP_PEM not set, connecting without authentication");
+            tracing::warn!("connect_telescope: SEESTAR_INTEROP_PEM not set — commands will fail on firmware 7.18+; set the env var to a PEM key file path");
             None
         };
 

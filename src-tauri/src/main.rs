@@ -95,6 +95,15 @@ fn main() {
             imaging::imaging_delete_from_db,
         ])
         .setup(|app| {
+            // Warn early if auth key is missing — firmware 7.18+ requires it
+            if std::env::var("SEESTAR_INTEROP_PEM").is_err() {
+                tracing::warn!(
+                    "SEESTAR_INTEROP_PEM is not set. \
+                     Telescope commands will fail on Seestar firmware 7.18+. \
+                     Set this env var to the path of your interop PEM key file."
+                );
+            }
+
             // Initialize database
             let app_dir = app
                 .path()

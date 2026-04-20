@@ -304,7 +304,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
             }
         }
     } else {
-        tracing::debug!("Web API: SEESTAR_INTEROP_PEM not set, connecting without authentication");
+        tracing::warn!("Web API: SEESTAR_INTEROP_PEM not set — commands will fail on firmware 7.18+; set the env var to a PEM key file path");
         None
     };
 
