@@ -662,7 +662,9 @@ export function SettingsPanel() {
                 <Label htmlFor="pem-path">Seestar Interop PEM Path</Label>
                 <p className="text-xs text-muted-foreground">
                   Path to the interop key file required for Seestar firmware 7.18+.
-                  Saved to <code className="text-xs">config.toml</code> in the app config directory.
+                  Used for interoperability under 17 U.S.C. § 1201(f) (the DMCA interoperability
+                  exemption). The legality of key use varies by jurisdiction — you are solely
+                  responsible for ensuring compliance with the laws of your region.
                   The <code className="text-xs">SEESTAR_INTEROP_PEM</code> env var takes precedence if set.
                 </p>
                 <div className="flex gap-2">
