@@ -6,6 +6,7 @@ authors = ["erewhon"]
 license = "AGPL-3.0-or-later"
 repository = ""
 edition = "2021"
+default-run = "eesc"
 
 [lib]
 name = "eesc_lib"
