@@ -3,11 +3,11 @@
 
 mod catalog;
 mod commands;
-mod config;
 mod database;
 mod events;
 mod imaging;
 mod planning;
+mod settings;
 mod state;
 mod streaming;
 mod stretch;
@@ -82,9 +82,9 @@ fn main() {
             planning::planning_end_session,
             planning::planning_delete_session,
             planning::planning_save_file,
-            // Config commands
-            config::config_get,
-            config::config_set,
+            // Settings commands
+            settings::config_get,
+            settings::config_set,
             // Imaging commands
             imaging::imaging_process_fits,
             imaging::imaging_enhance,
@@ -99,27 +99,6 @@ fn main() {
             imaging::imaging_delete_from_db,
         ])
         .setup(|app| {
-            // Load persistent config from <app_config_dir>/config.toml
-            let config_dir = app
-                .path()
-                .app_config_dir()
-                .expect("Failed to get app config directory");
-            std::fs::create_dir_all(&config_dir).expect("Failed to create app config directory");
-            tracing::info!("Config directory: {:?}", config_dir);
-
-            let app_config = config::AppConfig::load(&config_dir);
-            let config_state = config::ConfigState::new(config_dir, app_config);
-
-            // Warn early if PEM key is missing from both env var and config file
-            if config_state.resolve_interop_pem().is_none() {
-                tracing::warn!(
-                    "Seestar interop PEM key not configured. \
-                     Telescope commands will fail on firmware 7.18+. \
-                     Set SEESTAR_INTEROP_PEM env var or configure the path in Settings."
-                );
-            }
-            app.manage(config_state);
-
             // Initialize database
             let app_dir = app
                 .path()
@@ -132,8 +111,19 @@ fn main() {
 
             let db = database::Database::new(db_path).expect("Failed to initialize database");
 
-            // Load existing telescopes from database into state
+            // Resolve interop PEM from env var or DB, warn if missing
             let app_state = app.state::<state::AppState>();
+            let pem = settings::resolve_interop_pem(&db);
+            if pem.is_none() {
+                tracing::warn!(
+                    "Seestar interop PEM key not configured. \
+                     Telescope commands will fail on firmware 7.18+. \
+                     Set SEESTAR_INTEROP_PEM or configure the path in Settings."
+                );
+            }
+            *app_state.interop_pem.write() = pem;
+
+            // Load existing telescopes from database into state
             match db.get_telescopes() {
                 Ok(telescopes) => {
                     let mut state_telescopes = app_state.telescopes.write();

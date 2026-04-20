@@ -1,4 +1,3 @@
-use crate::config::ConfigState;
 use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
@@ -158,7 +157,6 @@ pub async fn add_telescope(
 pub async fn connect_telescope(
     app: AppHandle,
     state: State<'_, AppState>,
-    config: State<'_, ConfigState>,
     telescope_id: String,
     host: Option<String>,
     port: Option<u16>,
@@ -252,8 +250,8 @@ pub async fn connect_telescope(
             }
         }
 
-        // Load authentication key from env var or config file
-        let interop_key = if let Some(pem_path) = config.resolve_interop_pem() {
+        // Load authentication key from env var or DB-backed setting
+        let interop_key = if let Some(pem_path) = state.interop_pem.read().clone() {
             match std::fs::read_to_string(&pem_path) {
                 Ok(pem_content) => {
                     match InteropKey::from_pem(&pem_content) {

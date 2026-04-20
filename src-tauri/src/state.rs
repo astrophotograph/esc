@@ -10,6 +10,8 @@ pub struct AppState {
     pub telescopes: Arc<RwLock<HashMap<String, TelescopeConnection>>>,
     /// Active imaging sessions
     pub imaging_sessions: Arc<RwLock<HashMap<String, ImagingSession>>>,
+    /// Resolved interop PEM path (env var takes precedence over DB setting)
+    pub interop_pem: Arc<RwLock<Option<String>>>,
 }
 
 /// Represents a connection to a telescope
@@ -67,6 +69,7 @@ impl Clone for AppState {
         Self {
             telescopes: Arc::clone(&self.telescopes),
             imaging_sessions: Arc::clone(&self.imaging_sessions),
+            interop_pem: Arc::clone(&self.interop_pem),
         }
     }
 }
