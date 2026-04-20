@@ -5,7 +5,7 @@ use crate::database::models::Session;
 use crate::database::Database;
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 
 /// Target for visibility calculation
 #[derive(Debug, Serialize, Deserialize)]
@@ -303,4 +303,23 @@ pub async fn planning_delete_session(
         .map_err(|e| format!("Failed to delete session: {}", e))?;
 
     Ok(())
+}
+
+/// Save a text file to the user's Downloads folder
+#[tauri::command]
+pub async fn planning_save_file(
+    app: tauri::AppHandle,
+    filename: String,
+    content: String,
+) -> Result<String, String> {
+    let download_dir = app
+        .path()
+        .download_dir()
+        .map_err(|e| format!("Failed to get Downloads directory: {}", e))?;
+
+    let path = download_dir.join(&filename);
+    std::fs::write(&path, content)
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+
+    Ok(path.to_string_lossy().to_string())
 }

@@ -80,6 +80,7 @@ fn main() {
             planning::planning_get_sessions,
             planning::planning_end_session,
             planning::planning_delete_session,
+            planning::planning_save_file,
             // Imaging commands
             imaging::imaging_process_fits,
             imaging::imaging_enhance,
