@@ -1,8 +1,8 @@
-/// Standalone web API server — runs the Rust backend without Tauri.
-/// Used for the browser-based dev workflow: `./run-web-dev.sh`
-///
-/// The DB and settings live in the same location as the desktop app
-/// (~/.local/share/eesc/ on Linux, ~/Library/Application Support/com.erewhon.esc/ on macOS).
+//! Standalone web API server — runs the Rust backend without Tauri.
+//! Used for the browser-based dev workflow: `./run-dev.sh --web`
+//!
+//! The DB and settings live in the same location as the desktop app
+//! (~/.local/share/eesc/ on Linux, ~/Library/Application Support/com.erewhon.esc/ on macOS).
 
 use eesc_lib::{database::Database, settings, state::AppState, streaming, web};
 use std::sync::Arc;
