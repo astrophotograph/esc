@@ -164,7 +164,7 @@ async fn dispatch_command(
         "catalog_get_solar_system" => cmd_catalog_get_solar_system(&payload).await,
 
         // --- Location ---
-        "get_ip_location" => Ok(serde_json::json!({ "success": false, "error": "IP location not available in web mode — use browser geolocation" })),
+        "get_ip_location" => cmd_get_ip_location().await,
 
         // --- Planning ---
         "planning_get_visibility" => cmd_planning_get_visibility(&payload).await,
@@ -706,6 +706,50 @@ async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Res
         "code": code,
         "message": message,
     }))
+}
+
+async fn cmd_get_ip_location() -> Result<serde_json::Value, String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpStream;
+
+    let mut stream = TcpStream::connect("ip-api.com:80")
+        .await
+        .map_err(|e| format!("ip-api.com connect failed: {e}"))?;
+
+    let request = "GET /json/?fields=status,lat,lon,city,country,timezone HTTP/1.1\r\nHost: ip-api.com\r\nConnection: close\r\n\r\n";
+    stream.write_all(request.as_bytes()).await
+        .map_err(|e| format!("Request write failed: {e}"))?;
+
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).await
+        .map_err(|e| format!("Response read failed: {e}"))?;
+
+    let text = String::from_utf8_lossy(&response);
+    let body = text.split("\r\n\r\n").nth(1).unwrap_or("").trim();
+    let data: serde_json::Value = serde_json::from_str(body)
+        .map_err(|e| format!("ip-api.com parse failed: {e}"))?;
+
+    if data.get("status").and_then(|s| s.as_str()) != Some("success") {
+        return Err("ip-api.com returned non-success status".to_string());
+    }
+
+    let lat = data.get("lat").and_then(|v| v.as_f64()).ok_or("Missing lat")?;
+    let lon = data.get("lon").and_then(|v| v.as_f64()).ok_or("Missing lon")?;
+    let city = data.get("city").and_then(|v| v.as_str()).unwrap_or("Unknown");
+    let country = data.get("country").and_then(|v| v.as_str()).unwrap_or("");
+    let timezone = data.get("timezone").and_then(|v| v.as_str());
+    let name = if country.is_empty() { city.to_string() } else { format!("{city}, {country}") };
+
+    let mut result = serde_json::json!({
+        "success": true,
+        "latitude": lat,
+        "longitude": lon,
+        "name": name,
+    });
+    if let Some(tz) = timezone {
+        result["timezone"] = serde_json::Value::String(tz.to_string());
+    }
+    Ok(result)
 }
 
 async fn cmd_planning_get_visibility(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
