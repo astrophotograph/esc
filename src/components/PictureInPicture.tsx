@@ -4,6 +4,7 @@ import { Button } from './ui/button'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
 import { VideoOverlayControls } from './VideoOverlayControls'
 import { useTelescopeStore } from '@/stores/telescopeStore'
+import { runtime } from '../services/api'
 import {
   Select,
   SelectContent,
@@ -152,7 +153,9 @@ export function PictureInPicture({ show, onClose, telescopeId }: PictureInPictur
         if (!isConnected) {
           return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=Not%20Connected`
         }
-        return `http://localhost:9847/stream/${encodeURIComponent(telescopeId)}`
+        return runtime.isTauri
+          ? `http://localhost:9847/stream/${encodeURIComponent(telescopeId)}`
+          : `/stream/${encodeURIComponent(telescopeId)}`
       case 'allsky':
         return `/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=All-Sky`
       case 'guide':

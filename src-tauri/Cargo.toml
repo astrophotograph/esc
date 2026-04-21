@@ -6,6 +6,7 @@ authors = ["erewhon"]
 license = "AGPL-3.0-or-later"
 repository = ""
 edition = "2021"
+default-run = "eesc"
 
 [lib]
 name = "eesc_lib"
@@ -56,6 +57,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # State management
 parking_lot = "0.12"
+
+# Platform directories (used by standalone web_server binary)
+dirs = "5"
 
 # Date/time
 chrono = { version = "0.4", features = ["serde"] }

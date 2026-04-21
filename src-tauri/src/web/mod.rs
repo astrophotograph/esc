@@ -7,11 +7,10 @@
 #![allow(dead_code)]
 
 use axum::{
-    body::Body,
     extract::{Path, State as AxumState},
-    http::{header, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::post,
     Json, Router,
 };
 use scopinator_seestar::command::params::*;
@@ -23,32 +22,31 @@ use std::time::Duration;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
+use crate::catalog::{catalog_get_object_types, catalog_get_solar_system, catalog_quick_search, catalog_search, CatalogSearchParams};
+use crate::planning;
 use crate::state::{AppState, ConnectionStatus, TelescopeConnection};
-use crate::streaming;
 
-/// Shared state for the web server
 pub type WebState = Arc<AppState>;
 
 /// Create the web API router
 pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) -> Router {
-    // Nest the streaming router under /api/ so /api/stream/{id} works
-    let streaming_router = streaming::create_router().with_state(state.clone());
+    // Merge the streaming router at the root so /stream/:id and /snapshot/:id
+    // are served on the same port as the API. This lets remote devices (e.g.
+    // iPhone on LAN) reach everything through a single port via the Vite proxy.
+    let router = Router::new()
+        .route("/api/:command", post(command_handler))
+        .merge(crate::streaming::create_router())
+        .with_state(state);
 
-    let api = Router::new()
-        .route("/api/{command}", post(command_handler))
-        .route("/api/snapshot/{telescope_id}", get(snapshot_handler))
-        .nest("/api", streaming_router)
-        .with_state(state.clone());
-
-    let app = if let Some(dir) = static_dir {
+    let router = if let Some(dir) = static_dir {
         let serve_dir = tower_http::services::ServeDir::new(dir)
             .append_index_html_on_directories(true);
-        api.fallback_service(serve_dir)
+        router.fallback_service(serve_dir)
     } else {
-        api
+        router
     };
 
-    app.layer(CorsLayer::permissive())
+    router.layer(CorsLayer::permissive())
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +159,19 @@ async fn dispatch_command(
         // --- Scheduling ---
         "schedule_set_view_plan" => cmd_set_view_plan(state, &payload).await,
 
+        // --- Catalog ---
+        "catalog_search" => cmd_catalog_search(&payload).await,
+        "catalog_quick_search" => cmd_catalog_quick_search(&payload).await,
+        "catalog_get_object_types" => cmd_catalog_get_object_types().await,
+        "catalog_get_solar_system" => cmd_catalog_get_solar_system(&payload).await,
+
+        // --- Location ---
+        "get_ip_location" => cmd_get_ip_location().await,
+
+        // --- Planning ---
+        "planning_get_visibility" => cmd_planning_get_visibility(&payload).await,
+        "planning_get_tonight_targets" => cmd_planning_get_tonight_targets(&payload).await,
+
         _ => Err(format!("Unknown command: {command}")),
     }
 }
@@ -235,7 +246,7 @@ async fn cmd_discover(state: &AppState) -> Result<serde_json::Value, String> {
         }
     }
 
-    Ok(serde_json::json!({ "success": true, "telescopes": results }))
+    Ok(serde_json::json!(results))
 }
 
 fn cmd_get_telescopes(state: &AppState) -> Result<serde_json::Value, String> {
@@ -283,28 +294,40 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         .parse()
         .map_err(|e| format!("Invalid IP: {e}"))?;
 
-    // Load authentication key from environment
-    let interop_key = if let Ok(pem_path) = std::env::var("SEESTAR_INTEROP_PEM") {
+    // Send UDP scan_iscope to port 4720 before TCP connect — satisfies the
+    // Seestar's guest mode so it accepts control commands (mirrors Tauri flow).
+    {
+        use tokio::net::UdpSocket;
+        if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
+            let udp_addr = format!("{}:4720", host);
+            let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
+            let _ = sock.send_to(msg, &udp_addr).await;
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+    }
+
+    // Load authentication key from env var or DB-backed setting
+    let interop_key = if let Some(pem_path) = state.interop_pem.read().clone() {
         match std::fs::read_to_string(&pem_path) {
             Ok(pem_content) => {
                 match scopinator_seestar::InteropKey::from_pem(&pem_content) {
                     Ok(key) => {
-                        info!("Web API: loaded SEESTAR_INTEROP_PEM from {}", pem_path);
+                        info!("Web API: loaded interop PEM from {}", pem_path);
                         Some(key)
                     }
                     Err(e) => {
-                        tracing::warn!("Web API: failed to parse PEM: {}", e);
+                        tracing::warn!("Web API: failed to parse PEM at {}: {}", pem_path, e);
                         None
                     }
                 }
             }
             Err(e) => {
-                tracing::warn!("Web API: failed to read SEESTAR_INTEROP_PEM from {}: {}", pem_path, e);
+                tracing::warn!("Web API: failed to read PEM at {}: {}", pem_path, e);
                 None
             }
         }
     } else {
-        tracing::debug!("Web API: SEESTAR_INTEROP_PEM not set, connecting without authentication");
+        tracing::warn!("Web API: no interop PEM configured — commands will fail on firmware 7.18+");
         None
     };
 
@@ -323,11 +346,27 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
 
     info!("Web API: native client connected to {}", host);
 
+    let client = Arc::new(client);
+
+    // Start MJPEG streaming on the imaging port (4800) — same as Tauri flow.
+    // Without this the Seestar won't push preview frames to subscribe_frames().
+    {
+        let preview_client = client.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
+            match preview_client.send_imaging_command(msg).await {
+                Ok(_) => info!("Web API: begin_streaming sent on imaging port"),
+                Err(e) => tracing::warn!("Web API: begin_streaming failed: {}", e),
+            }
+        });
+    }
+
     {
         let mut telescopes = state.telescopes.write();
         if let Some(t) = telescopes.get_mut(&telescope_id) {
             t.status = ConnectionStatus::Connected;
-            t.client = Some(Arc::new(client));
+            t.client = Some(client);
         }
     }
 
@@ -564,54 +603,75 @@ async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result
         client.send_command(Command::GetViewState),
     );
 
-    let mut status = serde_json::json!({ "connected": true });
+    // Build response in camelCase to match Tauri TelescopeStatus struct
+    let mut battery_percent: Option<f64> = None;
+    let mut temperature_c: Option<f64> = None;
+    let mut is_tracking: Option<bool> = None;
+    let mut focus_position: Option<i64> = None;
+    let mut gain: Option<i64> = None;
+    let mut ra: Option<f64> = None;
+    let mut dec: Option<f64> = None;
+    let mut view_state: Option<String> = None;
+    let mut target_name: Option<String> = None;
+    let mut stacked_frame: Option<i64> = None;
+    let mut is_goto: Option<bool> = None;
 
-    // Parse device state
     if let Ok(resp) = device_result {
-        if resp.is_success() {
-            if let Some(result) = resp.result {
-                if let Some(pi) = result.get("pi_status") {
-                    status["battery_percent"] = pi.get("battery_capacity").cloned().unwrap_or_default();
-                    status["temperature_c"] = pi.get("temp").cloned().unwrap_or_default();
-                }
-                if let Some(mount) = result.get("mount") {
-                    status["is_tracking"] = mount.get("tracking").cloned().unwrap_or_default();
-                }
-                if let Some(focuser) = result.get("focuser") {
-                    status["focus_position"] = focuser.get("step").cloned().unwrap_or_default();
-                }
-                if let Some(setting) = result.get("setting") {
-                    status["gain"] = setting.get("gain").cloned().unwrap_or_default();
-                }
+        if let Some(result) = resp.result {
+            if let Some(pi) = result.get("pi_status") {
+                battery_percent = pi.get("battery_capacity").and_then(|v| v.as_f64());
+                temperature_c = pi.get("temp").and_then(|v| v.as_f64());
+            }
+            if let Some(mount) = result.get("mount") {
+                is_tracking = mount.get("tracking").and_then(|v| v.as_bool());
+            }
+            if let Some(focuser) = result.get("focuser") {
+                focus_position = focuser.get("step").and_then(|v| v.as_i64());
+            }
+            if let Some(setting) = result.get("setting") {
+                gain = setting.get("gain").and_then(|v| v.as_i64());
             }
         }
     }
 
-    // Parse coordinates
     if let Ok(resp) = coord_result {
-        if resp.is_success() {
-            if let Some(result) = resp.result {
-                status["ra"] = result.get("ra").cloned().unwrap_or_default();
-                status["dec"] = result.get("dec").cloned().unwrap_or_default();
-            }
+        if let Some(result) = resp.result {
+            ra = result.get("ra").and_then(|v| v.as_f64());
+            dec = result.get("dec").and_then(|v| v.as_f64());
         }
     }
 
-    // Parse view state
     if let Ok(resp) = view_result {
         if resp.is_success() {
             if let Some(result) = resp.result {
                 let view = result.get("View").or_else(|| result.get("view"));
                 if let Some(v) = view {
-                    status["view_state"] = v.get("state").cloned().unwrap_or_default();
-                    status["target_name"] = v.get("target_name").cloned().unwrap_or_default();
-                    status["stacked_frame"] = v.get("stacked_frame").cloned().unwrap_or_default();
+                    view_state = v.get("state").and_then(|s| s.as_str()).map(String::from);
+                    is_goto = view_state.as_deref().map(|s| s == "SlewComplete" || s.contains("Goto"));
+                    target_name = v.get("target_name").and_then(|s| s.as_str()).map(String::from);
+                    stacked_frame = v.get("stacked_frame").and_then(|v| v.as_i64());
+                    if gain.is_none() {
+                        gain = v.get("gain").and_then(|v| v.as_i64());
+                    }
                 }
             }
         }
     }
 
-    Ok(serde_json::json!({ "success": true, "state": status }))
+    Ok(serde_json::json!({
+        "connected": true,
+        "batteryPercent": battery_percent,
+        "temperatureC": temperature_c,
+        "isTracking": is_tracking,
+        "focusPosition": focus_position,
+        "gain": gain,
+        "ra": ra,
+        "dec": dec,
+        "viewState": view_state,
+        "targetName": target_name,
+        "stackedFrame": stacked_frame,
+        "isGoto": is_goto,
+    }))
 }
 
 async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -650,69 +710,101 @@ async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Res
     }))
 }
 
-// ---------------------------------------------------------------------------
-// Streaming endpoints (delegate to streaming module's shared logic)
-// ---------------------------------------------------------------------------
+async fn cmd_get_ip_location() -> Result<serde_json::Value, String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpStream;
 
-async fn snapshot_handler(
-    AxumState(state): AxumState<WebState>,
-    Path(telescope_id): Path<String>,
-) -> Response {
-    // Get a single frame from the native client
-    let client = {
-        let telescopes = state.telescopes.read();
-        match telescopes.get(&telescope_id) {
-            Some(t) if matches!(t.status, ConnectionStatus::Connected) => t.client.clone(),
-            _ => return (StatusCode::SERVICE_UNAVAILABLE, "Telescope not connected").into_response(),
-        }
-    };
+    let mut stream = TcpStream::connect("ip-api.com:80")
+        .await
+        .map_err(|e| format!("ip-api.com connect failed: {e}"))?;
 
-    let client = match client {
-        Some(c) => c,
-        None => return (StatusCode::SERVICE_UNAVAILABLE, "No native client").into_response(),
-    };
+    let request = "GET /json/?fields=status,lat,lon,city,country,timezone HTTP/1.1\r\nHost: ip-api.com\r\nConnection: close\r\n\r\n";
+    stream.write_all(request.as_bytes()).await
+        .map_err(|e| format!("Request write failed: {e}"))?;
 
-    // Subscribe and wait for one frame
-    let mut frame_rx = client.subscribe_frames();
-    let timeout = Duration::from_secs(5);
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).await
+        .map_err(|e| format!("Response read failed: {e}"))?;
 
-    match tokio::time::timeout(timeout, async {
-        loop {
-            match frame_rx.recv().await {
-                Ok(frame) if frame.header.is_image() => return Ok(frame),
-                Ok(_) => continue,
-                Err(e) => return Err(format!("Frame receive error: {e}")),
-            }
-        }
-    })
-    .await
-    {
-        Ok(Ok(frame)) => {
-            let width = frame.header.width as u32;
-            let height = frame.header.height as u32;
-            let data = frame.data.clone();
-            let expected_rgb = (width * height * 3) as usize;
-            let is_color = data.len() >= expected_rgb;
+    let text = String::from_utf8_lossy(&response);
+    let body = text.split("\r\n\r\n").nth(1).unwrap_or("").trim();
+    let data: serde_json::Value = serde_json::from_str(body)
+        .map_err(|e| format!("ip-api.com parse failed: {e}"))?;
 
-            let params = crate::stretch::StretchParams {
-                gradient_removal: false,
-                autocrop: false,
-                ..Default::default()
-            };
-
-            match crate::stretch::stretch_raw_frame(&data, width, height, is_color, &params) {
-                Ok(jpeg) => Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, "image/jpeg")
-                    .header(header::CACHE_CONTROL, "no-cache")
-                    .body(Body::from(jpeg))
-                    .unwrap(),
-                Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Stretch failed: {e}")).into_response(),
-            }
-        }
-        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
-        Err(_) => (StatusCode::GATEWAY_TIMEOUT, "No frame within timeout").into_response(),
+    if data.get("status").and_then(|s| s.as_str()) != Some("success") {
+        return Err("ip-api.com returned non-success status".to_string());
     }
+
+    let lat = data.get("lat").and_then(|v| v.as_f64()).ok_or("Missing lat")?;
+    let lon = data.get("lon").and_then(|v| v.as_f64()).ok_or("Missing lon")?;
+    let city = data.get("city").and_then(|v| v.as_str()).unwrap_or("Unknown");
+    let country = data.get("country").and_then(|v| v.as_str()).unwrap_or("");
+    let timezone = data.get("timezone").and_then(|v| v.as_str());
+    let name = if country.is_empty() { city.to_string() } else { format!("{city}, {country}") };
+
+    let mut result = serde_json::json!({
+        "success": true,
+        "latitude": lat,
+        "longitude": lon,
+        "name": name,
+    });
+    if let Some(tz) = timezone {
+        result["timezone"] = serde_json::Value::String(tz.to_string());
+    }
+    Ok(result)
+}
+
+async fn cmd_planning_get_visibility(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let target: planning::VisibilityTarget = serde_json::from_value(
+        payload.get("target").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid target: {e}"))?;
+    let location: planning::VisibilityLocation = serde_json::from_value(
+        payload.get("location").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid location: {e}"))?;
+    let date = payload.get("date").and_then(|v| v.as_str()).map(String::from);
+    let min_altitude = payload.get("minAltitude").and_then(|v| v.as_f64());
+
+    let json_str = planning::planning_get_visibility(target, location, date, min_altitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Parse error: {e}"))
+}
+
+async fn cmd_planning_get_tonight_targets(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let location: planning::VisibilityLocation = serde_json::from_value(
+        payload.get("location").cloned().unwrap_or_default()
+    ).map_err(|e| format!("Invalid location: {e}"))?;
+    let limit = payload.get("limit").and_then(|v| v.as_i64()).map(|v| v as i32);
+    let min_altitude = payload.get("minAltitude").and_then(|v| v.as_f64());
+
+    let json_str = planning::planning_get_tonight_targets(location, limit, min_altitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Parse error: {e}"))
+}
+
+async fn cmd_catalog_search(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    // Frontend sends { params: {...} } wrapping the actual CatalogSearchParams
+    let inner = payload.get("params").unwrap_or(payload);
+    let params: CatalogSearchParams = serde_json::from_value(inner.clone())
+        .map_err(|e| format!("Invalid catalog search params: {e}"))?;
+    let json_str = catalog_search(params).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Catalog search parse error: {e}"))
+}
+
+async fn cmd_catalog_quick_search(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let query = payload.get("query").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let limit = payload.get("limit").and_then(|v| v.as_i64()).map(|v| v as i32);
+    let json_str = catalog_quick_search(query, limit).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Quick search parse error: {e}"))
+}
+
+async fn cmd_catalog_get_object_types() -> Result<serde_json::Value, String> {
+    let json_str = catalog_get_object_types().await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Object types parse error: {e}"))
+}
+
+async fn cmd_catalog_get_solar_system(payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let latitude = payload.get("latitude").and_then(|v| v.as_f64());
+    let longitude = payload.get("longitude").and_then(|v| v.as_f64());
+    let json_str = catalog_get_solar_system(latitude, longitude).await?;
+    serde_json::from_str(&json_str).map_err(|e| format!("Solar system parse error: {e}"))
 }
 
 // ---------------------------------------------------------------------------

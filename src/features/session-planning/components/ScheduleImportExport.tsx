@@ -4,6 +4,7 @@ import { Button } from '../../../components/ui/button'
 import { useSchedulerStore } from '../../../stores/schedulerStore'
 import { exportScheduleToJson, importScheduleFromJson } from '../utils/scheduleSerialization'
 import { toast } from '../../../hooks/useToast'
+import { invoke } from '../../../services/api'
 
 export function ScheduleImportExport() {
   const { schedule, importSchedule } = useSchedulerStore()
@@ -15,17 +16,16 @@ export function ScheduleImportExport() {
     const today = new Date().toISOString().slice(0, 10)
     const filename = `${safeName}-${today}.json`
 
-    // Web / Tauri fallback: create a download link
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    toast({ title: `Exported "${schedule.planName}"` })
+    try {
+      const savedPath = await invoke<string>('planning_save_file', { filename, content: json })
+      toast({ title: `Exported "${schedule.planName}"`, description: savedPath })
+    } catch (err) {
+      toast({
+        title: 'Export failed',
+        description: err instanceof Error ? err.message : String(err),
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleImport = () => {

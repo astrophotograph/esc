@@ -202,6 +202,7 @@ fn catalog_data_path() -> std::path::PathBuf {
             exe_dir.join("../data/catalogs/astronomical_objects_full.json"),
             exe_dir.join("../Resources/data/catalogs/astronomical_objects_full.json"),
             std::path::PathBuf::from("data/catalogs/astronomical_objects_full.json"),
+            std::path::PathBuf::from("src-tauri/data/catalogs/astronomical_objects_full.json"),
         ];
         candidates
             .into_iter()

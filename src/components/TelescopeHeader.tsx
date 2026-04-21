@@ -113,6 +113,7 @@ export function TelescopeHeader() {
   const {
     setShowKeyboardHelp,
     setShowSettings,
+    setActiveTab,
     showTelescopeStatus,
     setShowTelescopeStatus,
     showTelescopeControls,
@@ -540,6 +541,8 @@ export function TelescopeHeader() {
       {/* Right Section - Action Buttons */}
       <TooltipProvider>
         <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
+          {/* Action buttons — hidden on small screens; hamburger handles them */}
+          <div className="hidden lg:flex items-center gap-1">
           {/* Search */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -563,7 +566,7 @@ export function TelescopeHeader() {
           {/* Fullscreen */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => document.documentElement.requestFullscreen?.()}>
                 <Maximize2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -669,6 +672,7 @@ export function TelescopeHeader() {
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
           </Tooltip>
+          </div>{/* end hidden lg:flex */}
 
           {/* Hamburger Menu - visible on small screens */}
           <DropdownMenu>
@@ -686,12 +690,12 @@ export function TelescopeHeader() {
                 Refresh Telescopes
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab('catalog')}>
                 <Search className="h-4 w-4 mr-2" />
-                Search
+                Search Catalog
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => document.documentElement.requestFullscreen?.()}>
                 <Maximize2 className="h-4 w-4 mr-2" />
                 Fullscreen
               </DropdownMenuItem>
@@ -709,9 +713,21 @@ export function TelescopeHeader() {
                 {showTelescopeControls ? '✓ ' : ''}Telescope Controls
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleSceneryMode} disabled={!isConnected}>
                 <Mountain className="h-4 w-4 mr-2" />
-                Scenery Mode
+                {isSceneryMode ? '✓ ' : ''}Scenery Mode
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={togglePiP}>
+                <PictureInPicture className="h-4 w-4 mr-2" />
+                {showPiP ? '✓ ' : ''}Picture in Picture
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={() => setShowSettings(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />

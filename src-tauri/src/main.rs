@@ -7,6 +7,7 @@ mod database;
 mod events;
 mod imaging;
 mod planning;
+mod settings;
 mod state;
 mod streaming;
 mod stretch;
@@ -80,6 +81,10 @@ fn main() {
             planning::planning_get_sessions,
             planning::planning_end_session,
             planning::planning_delete_session,
+            planning::planning_save_file,
+            // Settings commands
+            settings::config_get,
+            settings::config_set,
             // Imaging commands
             imaging::imaging_process_fits,
             imaging::imaging_enhance,
@@ -106,8 +111,19 @@ fn main() {
 
             let db = database::Database::new(db_path).expect("Failed to initialize database");
 
-            // Load existing telescopes from database into state
+            // Resolve interop PEM from env var or DB, warn if missing
             let app_state = app.state::<state::AppState>();
+            let pem = settings::resolve_interop_pem(&db);
+            if pem.is_none() {
+                tracing::warn!(
+                    "Seestar interop PEM key not configured. \
+                     Telescope commands will fail on firmware 7.18+. \
+                     Set SEESTAR_INTEROP_PEM or configure the path in Settings."
+                );
+            }
+            *app_state.interop_pem.write() = pem;
+
+            // Load existing telescopes from database into state
             match db.get_telescopes() {
                 Ok(telescopes) => {
                     let mut state_telescopes = app_state.telescopes.write();

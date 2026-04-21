@@ -1,0 +1,83 @@
+//! Standalone web API server — runs the Rust backend without Tauri.
+//! Used for the browser-based dev workflow: `./run-dev.sh --web`
+//!
+//! The DB and settings live in the same location as the desktop app
+//! (~/.local/share/eesc/ on Linux, ~/Library/Application Support/com.erewhon.esc/ on macOS).
+
+use eesc_lib::{database::Database, settings, state::AppState, streaming, web};
+use std::sync::Arc;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+
+const PORT: u16 = 9846;
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
+        .init();
+
+    tracing::info!("Starting EESC web API server on port {}", PORT);
+
+    // Resolve DB path the same way main.rs does via Tauri's app_data_dir.
+    // On macOS: ~/Library/Application Support/com.erewhon.esc/
+    let data_dir = dirs::data_dir()
+        .expect("Could not determine data directory")
+        .join("com.erewhon.esc");
+    std::fs::create_dir_all(&data_dir).expect("Failed to create data directory");
+
+    let db_path = data_dir.join("eesc.db");
+    tracing::info!("Database: {:?}", db_path);
+
+    let db = Database::new(db_path).expect("Failed to open database");
+
+    let app_state = AppState::default();
+
+    let pem = settings::resolve_interop_pem(&db);
+    if pem.is_none() {
+        tracing::warn!(
+            "Seestar interop PEM key not configured. \
+             Telescope commands will fail on firmware 7.18+. \
+             Set SEESTAR_INTEROP_PEM or configure the path in Settings."
+        );
+    }
+    *app_state.interop_pem.write() = pem;
+
+    // Load saved telescopes from DB into state
+    match db.get_telescopes() {
+        Ok(telescopes) => {
+            let mut state_telescopes = app_state.telescopes.write();
+            for t in telescopes {
+                let protocol = t.protocol.clone().unwrap_or_else(|| "seestar".to_string());
+                let name = t.name.clone().unwrap_or_else(|| format!("{}:{}", t.host, t.port));
+                tracing::info!("Loaded telescope: {} ({}) ({}:{})", t.id, protocol, t.host, t.port);
+                state_telescopes.insert(t.id.clone(), eesc_lib::state::TelescopeConnection {
+                    id: t.id,
+                    host: t.host,
+                    port: t.port,
+                    protocol,
+                    name,
+                    status: eesc_lib::state::ConnectionStatus::Disconnected,
+                    client: None,
+                });
+            }
+            tracing::info!("Loaded {} telescope(s) from database", state_telescopes.len());
+        }
+        Err(e) => tracing::warn!("Failed to load telescopes: {}", e),
+    }
+
+    let state = Arc::new(app_state);
+
+    // Start streaming server on port 9847 (same as Tauri desktop mode)
+    let streaming_state = state.clone();
+    tokio::spawn(async move {
+        if let Err(e) = streaming::start_streaming_server(streaming_state, 9847).await {
+            tracing::error!("Streaming server error: {}", e);
+        }
+    });
+    tracing::info!("Streaming server starting on port 9847");
+
+    web::start_web_server(state, PORT, None)
+        .await
+        .expect("Web server error");
+}

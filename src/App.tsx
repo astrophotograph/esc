@@ -151,14 +151,14 @@ function App() {
       <main className="flex-1 overflow-hidden flex flex-col">
         {/* Tab bar — hidden in fullscreen */}
         {!isFullscreen && (
-          <div className="px-4 py-2 border-b border-border bg-card/80">
+          <div className="px-2 sm:px-4 py-1.5 border-b border-border bg-card/80 overflow-x-auto">
             <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as typeof activeTab)}>
-              <TabsList>
-                <TabsTrigger value="telescope">Telescope</TabsTrigger>
-                <TabsTrigger value="catalog">Catalog</TabsTrigger>
-                <TabsTrigger value="imaging">Imaging</TabsTrigger>
-                <TabsTrigger value="planning">Planning</TabsTrigger>
-                <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsList className="flex-nowrap">
+                <TabsTrigger value="telescope" className="flex-shrink-0">Telescope</TabsTrigger>
+                <TabsTrigger value="catalog" className="flex-shrink-0">Catalog</TabsTrigger>
+                <TabsTrigger value="imaging" className="flex-shrink-0">Imaging</TabsTrigger>
+                <TabsTrigger value="planning" className="flex-shrink-0">Planning</TabsTrigger>
+                <TabsTrigger value="schedule" className="flex-shrink-0">Schedule</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

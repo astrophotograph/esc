@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTelescopeStore } from '@/stores/telescopeStore'
 import { VideoOverlays, defaultOverlaySettings, type OverlaySettings } from './VideoOverlays'
 import { RandomTestPattern } from './RandomTestPattern'
+import { runtime } from '../services/api'
 
 const SNAPSHOT_POLL_MS = 500
 
@@ -68,7 +69,9 @@ export function VideoFeed({
 
   // Poll-based frame fetcher — keeps last frame visible while loading next
   const fetchFrame = useCallback(async (tid: string) => {
-    const url = `http://localhost:9847/snapshot/${encodeURIComponent(tid)}`
+    const url = runtime.isTauri
+      ? `http://localhost:9847/snapshot/${encodeURIComponent(tid)}`
+      : `/snapshot/${encodeURIComponent(tid)}`
     try {
       const res = await fetch(url)
       if (!res.ok) {

@@ -233,6 +233,25 @@ export function SettingsPanel() {
     minimizedByDefault: true,
   })
 
+  // App config (persisted to config.toml via Rust)
+  const [seestarInteropPem, setSeestarInteropPem] = useState('')
+  const [pemSaving, setPemSaving] = useState(false)
+  useEffect(() => {
+    invoke<{ seestar_interop_pem?: string }>('config_get')
+      .then(c => setSeestarInteropPem(c.seestar_interop_pem ?? ''))
+      .catch(() => {})
+  }, [])
+  const handleSavePemPath = useCallback(async (path: string) => {
+    setPemSaving(true)
+    try {
+      await invoke('config_set', { config: { seestar_interop_pem: path || null } })
+    } catch (e) {
+      console.error('Failed to save config:', e)
+    } finally {
+      setPemSaving(false)
+    }
+  }, [])
+
   // Plate solving / Astrometry settings
   const [plateSolveSettings, setPlateSolveSettings] = useState({
     enabled: false,
@@ -638,6 +657,33 @@ export function SettingsPanel() {
                   </Select>
                 </div>
               )}
+
+              <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                <Label htmlFor="pem-path">Seestar Interop PEM Path</Label>
+                <p className="text-xs text-muted-foreground">
+                  Path to the interop key file required for Seestar firmware 7.18+.
+                  Used for interoperability under 17 U.S.C. § 1201(f) (the DMCA interoperability
+                  exemption). The legality of key use varies by jurisdiction — you are solely
+                  responsible for ensuring compliance with the laws of your region.
+                  The <code className="text-xs">SEESTAR_INTEROP_PEM</code> env var takes precedence if set.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    id="pem-path"
+                    placeholder="/path/to/interop.pem"
+                    value={seestarInteropPem}
+                    onChange={e => setSeestarInteropPem(e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={pemSaving}
+                    onClick={() => handleSavePemPath(seestarInteropPem)}
+                  >
+                    {pemSaving ? 'Saving…' : 'Save'}
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Telescope Settings */}

@@ -1,12 +1,15 @@
 // Library exports for the telescope control application
 
+pub mod catalog;
 pub mod commands;
 pub mod database;
 pub mod events;
 pub mod imaging;
+pub mod planning;
 pub mod state;
 pub mod streaming;
 pub mod stretch;
+pub mod settings;
 pub mod telescope;
 pub mod web;
 

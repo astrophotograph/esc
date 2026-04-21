@@ -31,10 +31,9 @@ export default defineConfig(({ mode }) => ({
     proxy:
       mode === 'web'
         ? {
-            '/api': {
-              target: webApiTarget,
-              changeOrigin: true,
-            },
+            '/api': { target: webApiTarget, changeOrigin: true },
+            '/stream': { target: webApiTarget, changeOrigin: true },
+            '/snapshot': { target: webApiTarget, changeOrigin: true },
           }
         : undefined,
   },
