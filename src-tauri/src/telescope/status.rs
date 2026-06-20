@@ -109,7 +109,11 @@ pub async fn get_telescope_status(
     // If all three commands failed (likely a dead connection), mark disconnected
     let all_failed = device_result.is_err() && coord_result.is_err() && view_result.is_err();
     if all_failed {
-        let first_err = device_result.as_ref().unwrap_err().to_string();
+        let first_err = device_result
+            .as_ref()
+            .err()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "unknown error".to_string());
         error!(
             "All status commands failed for telescope {} ({}), marking disconnected",
             telescope_id, first_err
@@ -123,8 +127,80 @@ pub async fn get_telescope_status(
         return Ok(disconnected_status);
     }
 
+    // Extract the raw `result` payload from each response (logging diagnostics),
+    // then map them with the pure `parse_status_from_results` helper. Keeping the
+    // mapping pure makes it unit-testable and lets the session-replay E2E suite
+    // exercise it against recorded telescope traffic.
+    let device_val = match &device_result {
+        Ok(resp) => {
+            if !resp.is_success() {
+                tracing::debug!(
+                    "GetDeviceState non-zero code {} for {}: {:?}",
+                    resp.code, telescope_id, resp.error
+                );
+            }
+            resp.result.clone()
+        }
+        Err(e) => {
+            tracing::debug!("GetDeviceState failed for {}: {}", telescope_id, e);
+            None
+        }
+    };
+
+    let coord_val = match &coord_result {
+        Ok(resp) => {
+            if resp.result.is_none() && !resp.is_success() {
+                tracing::debug!("ScopeGetEquCoord code {} for {}", resp.code, telescope_id);
+            }
+            resp.result.clone()
+        }
+        Err(e) => {
+            tracing::debug!("ScopeGetEquCoord failed for {}: {}", telescope_id, e);
+            None
+        }
+    };
+
+    let view_val = match &view_result {
+        Ok(resp) if resp.is_success() => resp.result.clone(),
+        Ok(resp) => {
+            tracing::debug!(
+                "GetViewState code {} for {}: {:?}",
+                resp.code, telescope_id, resp.error
+            );
+            None
+        }
+        Err(e) => {
+            tracing::debug!("GetViewState failed for {}: {}", telescope_id, e);
+            None
+        }
+    };
+
+    Ok(parse_status_from_results(
+        true,
+        device_val.as_ref(),
+        coord_val.as_ref(),
+        view_val.as_ref(),
+    ))
+}
+
+/// Build a [`TelescopeStatus`] from the raw `result` payloads of the three
+/// status commands (`GetDeviceState`, `ScopeGetEquCoord`, `GetViewState`).
+///
+/// Pure and side-effect free: this is the single source of truth for how
+/// telescope wire data maps to the frontend status model, so it can be
+/// unit-tested directly and replayed against the recorded session corpus.
+///
+/// The Seestar sometimes returns a usable `result` payload even with a non-zero
+/// code, so callers pass through whatever payload was present regardless of the
+/// success flag; a `None` payload simply leaves the corresponding fields unset.
+pub fn parse_status_from_results(
+    connected: bool,
+    device_result: Option<&serde_json::Value>,
+    coord_result: Option<&serde_json::Value>,
+    view_result: Option<&serde_json::Value>,
+) -> TelescopeStatus {
     let mut status = TelescopeStatus {
-        connected: true,
+        connected,
         battery_percent: None,
         temperature_c: None,
         humidity_percent: None,
@@ -144,112 +220,173 @@ pub async fn get_telescope_status(
         balance_sensor: None,
     };
 
-    // Parse GetDeviceState response.
-    // The Seestar sometimes returns data even with a non-zero code, so we
-    // attempt to parse any result payload regardless of success flag.
-    match device_result {
-        Ok(resp) => {
-            if !resp.is_success() {
-                tracing::debug!(
-                    "GetDeviceState non-zero code {} for {}: {:?}",
-                    resp.code, telescope_id, resp.error
-                );
-            }
-            if let Some(result_val) = resp.result {
-                tracing::debug!("GetDeviceState raw result: {}", result_val);
-                match serde_json::from_value::<DeviceStateResult>(result_val.clone()) {
-                    Ok(device_state) => {
-                        if let Some(pi) = &device_state.pi_status {
-                            status.battery_percent = pi.battery_capacity.map(|v| v as f32);
-                            status.temperature_c = pi.temp.map(|v| v as f32);
-                        }
-                        if let Some(mount) = &device_state.mount {
-                            status.is_tracking = mount.tracking;
-                            status.mount_type = mount.equ_mode.map(|eq| {
-                                if eq { "Equatorial".to_string() } else { "Alt-Az".to_string() }
-                            });
-                        }
-                        if let Some(focuser) = &device_state.focuser {
-                            status.focus_position = focuser.step;
-                        }
-                        if let Some(storage) = &device_state.storage {
-                            status.free_mb = storage.get("free_mb").and_then(|v| v.as_i64()).map(|v| v as i32);
-                            status.total_mb = storage.get("total_mb").and_then(|v| v.as_i64()).map(|v| v as i32);
-                        }
-                        if let Some(balance) = &device_state.balance_sensor {
-                            let x = balance.get("x").and_then(|v| v.as_f64());
-                            let y = balance.get("y").and_then(|v| v.as_f64());
-                            let z = balance.get("z").and_then(|v| v.as_f64());
-                            let angle = balance.get("angle").and_then(|v| v.as_f64());
-                            if x.is_some() || y.is_some() || z.is_some() || angle.is_some() {
-                                status.balance_sensor = Some(BalanceSensorData { x, y, z, angle });
-                            }
-                        }
-                        if let Some(setting) = &device_state.setting {
-                            status.gain = setting.get("gain").and_then(|v| v.as_i64()).map(|v| v as i32);
-                        }
-                    }
-                    Err(e) => {
-                        tracing::debug!("Failed to parse DeviceStateResult: {} | raw: {}", e, result_val);
+    // GetDeviceState
+    if let Some(result_val) = device_result {
+        match serde_json::from_value::<DeviceStateResult>(result_val.clone()) {
+            Ok(device_state) => {
+                if let Some(pi) = &device_state.pi_status {
+                    status.battery_percent = pi.battery_capacity.map(|v| v as f32);
+                    status.temperature_c = pi.temp.map(|v| v as f32);
+                }
+                if let Some(mount) = &device_state.mount {
+                    status.is_tracking = mount.tracking;
+                    status.mount_type = mount.equ_mode.map(|eq| {
+                        if eq { "Equatorial".to_string() } else { "Alt-Az".to_string() }
+                    });
+                }
+                if let Some(focuser) = &device_state.focuser {
+                    status.focus_position = focuser.step;
+                }
+                if let Some(storage) = &device_state.storage {
+                    status.free_mb = storage.get("free_mb").and_then(|v| v.as_i64()).map(|v| v as i32);
+                    status.total_mb = storage.get("total_mb").and_then(|v| v.as_i64()).map(|v| v as i32);
+                }
+                if let Some(balance) = &device_state.balance_sensor {
+                    let x = balance.get("x").and_then(|v| v.as_f64());
+                    let y = balance.get("y").and_then(|v| v.as_f64());
+                    let z = balance.get("z").and_then(|v| v.as_f64());
+                    let angle = balance.get("angle").and_then(|v| v.as_f64());
+                    if x.is_some() || y.is_some() || z.is_some() || angle.is_some() {
+                        status.balance_sensor = Some(BalanceSensorData { x, y, z, angle });
                     }
                 }
-            }
-        }
-        Err(e) => tracing::debug!("GetDeviceState failed for {}: {}", telescope_id, e),
-    }
-
-    // Parse ScopeGetEquCoord — fails normally when no goto has been done yet.
-    match coord_result {
-        Ok(resp) => {
-            if let Some(result_val) = resp.result {
-                status.ra = result_val.get("ra").and_then(|v| v.as_f64());
-                status.dec = result_val.get("dec").and_then(|v| v.as_f64());
-            } else if !resp.is_success() {
-                tracing::debug!("ScopeGetEquCoord code {} for {}", resp.code, telescope_id);
-            }
-        }
-        Err(e) => tracing::debug!("ScopeGetEquCoord failed for {}: {}", telescope_id, e),
-    }
-
-    // Parse GetViewState response
-    match view_result {
-        Ok(resp) if resp.is_success() => {
-            if let Some(result_val) = resp.result {
-                // View state info
-                let view = result_val.get("View").or_else(|| result_val.get("view"));
-                if let Some(view_val) = view {
-                    status.view_state = view_val
-                        .get("state")
-                        .and_then(|v| v.as_str())
-                        .map(String::from);
-                    status.is_goto = view_val
-                        .get("state")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s == "SlewComplete" || s.contains("Goto"));
-                    status.target_name = view_val
-                        .get("target_name")
-                        .and_then(|v| v.as_str())
-                        .map(String::from);
-                    status.stacked_frame = view_val
-                        .get("stacked_frame")
-                        .and_then(|v| v.as_i64())
-                        .map(|v| v as i32);
-
-                    // Gain can also come from view state
-                    if status.gain.is_none() {
-                        status.gain = view_val
-                            .get("gain")
-                            .and_then(|v| v.as_i64())
-                            .map(|v| v as i32);
-                    }
+                if let Some(setting) = &device_state.setting {
+                    status.gain = setting.get("gain").and_then(|v| v.as_i64()).map(|v| v as i32);
                 }
             }
+            Err(e) => {
+                tracing::debug!("Failed to parse DeviceStateResult: {} | raw: {}", e, result_val);
+            }
         }
-        Ok(resp) => {
-            tracing::debug!("GetViewState code {} for {}: {:?}", resp.code, telescope_id, resp.error);
-        }
-        Err(e) => tracing::debug!("GetViewState failed for {}: {}", telescope_id, e),
     }
 
-    Ok(status)
+    // ScopeGetEquCoord — absent until a goto has been performed.
+    if let Some(result_val) = coord_result {
+        status.ra = result_val.get("ra").and_then(|v| v.as_f64());
+        status.dec = result_val.get("dec").and_then(|v| v.as_f64());
+    }
+
+    // GetViewState
+    if let Some(result_val) = view_result {
+        let view = result_val.get("View").or_else(|| result_val.get("view"));
+        if let Some(view_val) = view {
+            status.view_state = view_val
+                .get("state")
+                .and_then(|v| v.as_str())
+                .map(String::from);
+            status.is_goto = view_val
+                .get("state")
+                .and_then(|v| v.as_str())
+                .map(|s| s == "SlewComplete" || s.contains("Goto"));
+            status.target_name = view_val
+                .get("target_name")
+                .and_then(|v| v.as_str())
+                .map(String::from);
+            status.stacked_frame = view_val
+                .get("stacked_frame")
+                .and_then(|v| v.as_i64())
+                .map(|v| v as i32);
+
+            // Gain can also come from view state
+            if status.gain.is_none() {
+                status.gain = view_val
+                    .get("gain")
+                    .and_then(|v| v.as_i64())
+                    .map(|v| v as i32);
+            }
+        }
+    }
+
+    status
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn empty_inputs_yield_connected_but_unset() {
+        let status = parse_status_from_results(true, None, None, None);
+        assert!(status.connected);
+        assert!(status.ra.is_none());
+        assert!(status.dec.is_none());
+        assert!(status.mount_type.is_none());
+        assert!(status.focus_position.is_none());
+    }
+
+    #[test]
+    fn maps_device_state_fields() {
+        let device = json!({
+            "pi_status": { "battery_capacity": 70, "temp": 41.5 },
+            "mount": { "tracking": true, "equ_mode": false },
+            "focuser": { "step": 1517 },
+            "storage": { "free_mb": 12000, "total_mb": 64000 },
+            "balance_sensor": { "x": 0.1, "y": -0.2, "z": 0.9, "angle": 3.0 },
+            "setting": { "gain": 80 }
+        });
+        let status = parse_status_from_results(true, Some(&device), None, None);
+
+        assert_eq!(status.battery_percent, Some(70.0));
+        assert_eq!(status.temperature_c, Some(41.5));
+        assert_eq!(status.is_tracking, Some(true));
+        assert_eq!(status.mount_type.as_deref(), Some("Alt-Az"));
+        assert_eq!(status.focus_position, Some(1517));
+        assert_eq!(status.free_mb, Some(12000));
+        assert_eq!(status.total_mb, Some(64000));
+        assert_eq!(status.gain, Some(80));
+        let bal = status.balance_sensor.expect("balance sensor");
+        assert_eq!(bal.x, Some(0.1));
+        assert_eq!(bal.angle, Some(3.0));
+    }
+
+    #[test]
+    fn equ_mode_true_maps_to_equatorial() {
+        let device = json!({ "mount": { "equ_mode": true } });
+        let status = parse_status_from_results(true, Some(&device), None, None);
+        assert_eq!(status.mount_type.as_deref(), Some("Equatorial"));
+    }
+
+    #[test]
+    fn maps_coordinates() {
+        let coord = json!({ "ra": 5.5, "dec": -12.25 });
+        let status = parse_status_from_results(true, None, Some(&coord), None);
+        assert_eq!(status.ra, Some(5.5));
+        assert_eq!(status.dec, Some(-12.25));
+    }
+
+    #[test]
+    fn maps_view_state_with_capital_and_lowercase_key() {
+        for key in ["View", "view"] {
+            let view = json!({ key: {
+                "state": "SlewComplete",
+                "target_name": "M31",
+                "stacked_frame": 42,
+                "gain": 90
+            }});
+            let status = parse_status_from_results(true, None, None, Some(&view));
+            assert_eq!(status.view_state.as_deref(), Some("SlewComplete"));
+            assert_eq!(status.is_goto, Some(true));
+            assert_eq!(status.target_name.as_deref(), Some("M31"));
+            assert_eq!(status.stacked_frame, Some(42));
+            assert_eq!(status.gain, Some(90));
+        }
+    }
+
+    #[test]
+    fn device_state_gain_takes_priority_over_view_gain() {
+        let device = json!({ "setting": { "gain": 80 } });
+        let view = json!({ "View": { "gain": 999 } });
+        let status = parse_status_from_results(true, Some(&device), None, Some(&view));
+        assert_eq!(status.gain, Some(80), "device gain should win over view gain");
+    }
+
+    #[test]
+    fn malformed_device_state_does_not_panic() {
+        // A non-object payload must be tolerated (logged, fields left unset).
+        let device = json!("not an object");
+        let status = parse_status_from_results(true, Some(&device), None, None);
+        assert!(status.connected);
+        assert!(status.mount_type.is_none());
+    }
 }

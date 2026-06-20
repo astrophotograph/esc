@@ -1,0 +1,10 @@
+{
+  "source_session": "session_20260331-215705",
+  "telescope_model": "Seestar S50",
+  "firmware_version": "6.70",
+  "firmware_ver_int": 2670,
+  "client_message_count": 394,
+  "telescope_message_count": 383,
+  "sanitized": true,
+  "note": "Secrets redacted by tools/sanitize_session.py. Do not restore raw values."
+}

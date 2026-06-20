@@ -5,6 +5,7 @@ import { Progress } from './ui/progress'
 import { cn } from '../lib/utils'
 import { useTelescope } from '../hooks'
 import { useTelescopeStore } from '../stores'
+import { formatCoordinate } from '../lib/coordinates'
 
 interface GotoProgressOverlayProps {
   targetName?: string
@@ -97,26 +98,6 @@ export function GotoProgressOverlay({
     }
   }, [currentTelescopeId, stopGoto, targetName, addActivity, onCancel])
 
-  const formatCoordinate = (value: number | undefined, type: 'ra' | 'dec'): string => {
-    if (value === undefined) return '---'
-
-    if (type === 'ra') {
-      // Convert degrees to hours
-      const hours = value / 15
-      const h = Math.floor(hours)
-      const m = Math.floor((hours - h) * 60)
-      const s = ((hours - h) * 60 - m) * 60
-      return `${h}h ${m}m ${s.toFixed(1)}s`
-    } else {
-      // Declination in degrees
-      const sign = value >= 0 ? '+' : '-'
-      const absVal = Math.abs(value)
-      const d = Math.floor(absVal)
-      const m = Math.floor((absVal - d) * 60)
-      const s = ((absVal - d) * 60 - m) * 60
-      return `${sign}${d}° ${m}' ${s.toFixed(0)}"`
-    }
-  }
 
   if (status === 'cancelled') {
     return null

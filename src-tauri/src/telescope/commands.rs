@@ -250,9 +250,12 @@ pub async fn connect_telescope(
             }
         }
 
-        // Load authentication key from env var or DB-backed setting
-        let interop_key = if let Some(pem_path) = state.interop_pem.read().clone() {
-            match std::fs::read_to_string(&pem_path) {
+        // Load authentication key from env var or DB-backed setting.
+        // Clone the path out in its own statement so the parking_lot read guard is
+        // released before the `.await` below (a guard held across await is `!Send`).
+        let pem_path = state.interop_pem.read().clone();
+        let interop_key = if let Some(pem_path) = pem_path {
+            match tokio::fs::read_to_string(&pem_path).await {
                 Ok(pem_content) => {
                     match InteropKey::from_pem(&pem_content) {
                         Ok(key) => {
@@ -277,6 +280,8 @@ pub async fn connect_telescope(
 
         let config = SeestarConfig {
             interop_key,
+            // Use the library default response timeout (scopinator 0.2.0+).
+            response_timeout: None,
         };
 
         let client = SeestarClient::connect_with_config(ip, config)
@@ -743,9 +748,9 @@ pub async fn imaging_stop(
     let client = get_client(&state, &telescope_id)?;
     let result = response_to_json(
         client
-            .send_command(Command::IscopeStopView(StopViewParams {
+            .send_command(Command::IscopeStopView(Some(StopViewParams {
                 stage: StopStage::Stack,
-            }))
+            })))
             .await,
     )?;
 
@@ -842,9 +847,9 @@ pub async fn telescope_stop_goto(
     let client = get_client(&state, &telescope_id)?;
     let result = response_to_json(
         client
-            .send_command(Command::IscopeStopView(StopViewParams {
+            .send_command(Command::IscopeStopView(Some(StopViewParams {
                 stage: StopStage::AutoGoto,
-            }))
+            })))
             .await,
     )?;
 
@@ -975,9 +980,9 @@ pub async fn telescope_stop_stack(
     let client = get_client(&state, &telescope_id)?;
     let result = response_to_json(
         client
-            .send_command(Command::IscopeStopView(StopViewParams {
+            .send_command(Command::IscopeStopView(Some(StopViewParams {
                 stage: StopStage::Stack,
-            }))
+            })))
             .await,
     )?;
 

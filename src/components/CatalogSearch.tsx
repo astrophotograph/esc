@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from './ui/label'
 import { Switch } from './ui/switch'
 import { useCatalog, useTelescope, useSession } from '../hooks'
+import { formatRA, formatDec } from '../lib/coordinates'
 import type { CelestialObject, SolarSystemObject } from '../stores'
 
 interface CatalogSearchProps {
@@ -102,22 +103,6 @@ export function CatalogSearch({ onSelectTarget, compact = false }: CatalogSearch
       console.error('GOTO failed:', error)
     }
   }, [currentTelescopeId, gotoTarget])
-
-  const formatRA = (ra: number) => {
-    const hours = Math.floor(ra / 15)
-    const minutes = Math.floor((ra / 15 - hours) * 60)
-    const seconds = ((ra / 15 - hours) * 60 - minutes) * 60
-    return `${hours}h ${minutes}m ${seconds.toFixed(1)}s`
-  }
-
-  const formatDec = (dec: number) => {
-    const sign = dec >= 0 ? '+' : '-'
-    const absDec = Math.abs(dec)
-    const degrees = Math.floor(absDec)
-    const minutes = Math.floor((absDec - degrees) * 60)
-    const seconds = ((absDec - degrees) * 60 - minutes) * 60
-    return `${sign}${degrees}° ${minutes}' ${seconds.toFixed(1)}"`
-  }
 
   const getObjectIcon = (type: string) => {
     const lowerType = type.toLowerCase()

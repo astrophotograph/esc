@@ -318,7 +318,8 @@ pub async fn planning_save_file(
         .map_err(|e| format!("Failed to get Downloads directory: {}", e))?;
 
     let path = download_dir.join(&filename);
-    std::fs::write(&path, content)
+    tokio::fs::write(&path, content)
+        .await
         .map_err(|e| format!("Failed to write file: {}", e))?;
 
     Ok(path.to_string_lossy().to_string())

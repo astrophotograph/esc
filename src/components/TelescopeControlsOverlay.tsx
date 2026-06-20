@@ -35,27 +35,7 @@ import {
 import { useUIStore } from '../stores/uiStore'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { invoke } from '../services/api'
-
-// Helper function to convert RA degrees to HMS format
-function raToHMS(raDegrees: number): string {
-  const raHours = raDegrees / 15
-  const hours = Math.floor(raHours)
-  const minutesDecimal = (raHours - hours) * 60
-  const minutes = Math.floor(minutesDecimal)
-  const seconds = ((minutesDecimal - minutes) * 60).toFixed(1)
-  return `${hours}h ${minutes}m ${seconds}s`
-}
-
-// Helper function to convert Dec degrees to DMS format
-function decToDMS(decDegrees: number): string {
-  const sign = decDegrees < 0 ? '-' : '+'
-  const absDec = Math.abs(decDegrees)
-  const degrees = Math.floor(absDec)
-  const minutesDecimal = (absDec - degrees) * 60
-  const minutes = Math.floor(minutesDecimal)
-  const seconds = ((minutesDecimal - minutes) * 60).toFixed(1)
-  return `${sign}${degrees}° ${minutes}' ${seconds}"`
-}
+import { raToHMS, decToDMS } from '../lib/coordinates'
 
 export function TelescopeControlsOverlay() {
   const { showTelescopeControls, setShowTelescopeControls, setIsManuallyMoving } = useUIStore()
