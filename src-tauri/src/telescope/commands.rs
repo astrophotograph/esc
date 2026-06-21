@@ -222,12 +222,19 @@ pub async fn connect_telescope(
     // Create the native Rust client
     let native_client = if protocol == "seestar" {
         use scopinator_seestar::{SeestarClient, SeestarConfig, InteropKey};
-        use std::net::Ipv4Addr;
+        use std::net::{SocketAddr, SocketAddrV4};
         use std::time::Duration;
 
-        let ip: Ipv4Addr = host
-            .parse()
-            .map_err(|e| format!("Invalid IP: {}", e))?;
+        // Accept hostnames as well as IPv4 literals (e.g. point a direct
+        // connection at a remote seestar-proxy by name). IPv4 only.
+        let ip = crate::telescope::resolve_ipv4(&host).await?;
+
+        // Seestar / seestar-proxy port layout, relative to the control port:
+        //   control = port, imaging = port + 100, discovery (UDP) = port + 20.
+        // For the default control port 4700 this yields 4700 / 4800 / 4720.
+        let control_port = port;
+        let imaging_port = port.saturating_add(100);
+        let discovery_port = port.saturating_add(20);
 
         // Send UDP scan_iscope to port 4720 before TCP connect.
         // seestar_alp does this "to satisfy seestar's guest mode to gain
@@ -237,7 +244,7 @@ pub async fn connect_telescope(
             use tokio::net::UdpSocket;
             match UdpSocket::bind("0.0.0.0:0").await {
                 Ok(sock) => {
-                    let udp_addr = format!("{}:4720", host);
+                    let udp_addr = format!("{}:{}", ip, discovery_port);
                     let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
                     match sock.send_to(msg, &udp_addr).await {
                         Ok(_) => tracing::info!("connect_telescope: sent UDP scan_iscope to {}", udp_addr),
@@ -284,9 +291,12 @@ pub async fn connect_telescope(
             response_timeout: None,
         };
 
-        let client = SeestarClient::connect_with_config(ip, config)
-            .await
-            .map_err(|e| format!("Connection failed: {}", e))?;
+        let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
+        let imaging_addr = SocketAddr::V4(SocketAddrV4::new(ip, imaging_port));
+        let client =
+            SeestarClient::connect_with_ports_and_config(ip, control_addr, imaging_addr, config)
+                .await
+                .map_err(|e| format!("Connection failed: {}", e))?;
 
         client
             .wait_for_connection(Duration::from_secs(10))

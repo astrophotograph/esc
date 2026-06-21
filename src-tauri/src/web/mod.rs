@@ -16,7 +16,7 @@ use axum::{
 use scopinator_seestar::command::params::*;
 use scopinator_seestar::command::Command;
 use scopinator_seestar::SeestarClient;
-use std::net::Ipv4Addr;
+use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::CorsLayer;
@@ -272,7 +272,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
     let host = payload.get("host").and_then(|v| v.as_str());
     let port = payload.get("port").and_then(|v| v.as_u64()).map(|v| v as u16);
 
-    let (host, _port) = if let (Some(h), Some(p)) = (host, port) {
+    let (host, port) = if let (Some(h), Some(p)) = (host, port) {
         (h.to_string(), p)
     } else {
         let telescopes = state.telescopes.read();
@@ -290,16 +290,21 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         }
     }
 
-    let ip: Ipv4Addr = host
-        .parse()
-        .map_err(|e| format!("Invalid IP: {e}"))?;
+    // Accept hostnames as well as IPv4 literals (e.g. a remote seestar-proxy).
+    let ip = crate::telescope::resolve_ipv4(&host).await?;
 
-    // Send UDP scan_iscope to port 4720 before TCP connect — satisfies the
-    // Seestar's guest mode so it accepts control commands (mirrors Tauri flow).
+    // Port layout relative to the control port: control = port,
+    // imaging = port + 100, discovery (UDP) = port + 20 (4700/4800/4720 default).
+    let control_port = port;
+    let imaging_port = port.saturating_add(100);
+    let discovery_port = port.saturating_add(20);
+
+    // Send UDP scan_iscope before TCP connect — satisfies the Seestar's guest
+    // mode so it accepts control commands (mirrors Tauri flow).
     {
         use tokio::net::UdpSocket;
         if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
-            let udp_addr = format!("{}:4720", host);
+            let udp_addr = format!("{}:{}", ip, discovery_port);
             let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
             if let Err(e) = sock.send_to(msg, &udp_addr).await {
                 tracing::warn!("Web API: UDP scan_iscope send to {} failed: {}", udp_addr, e);
@@ -342,9 +347,12 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         response_timeout: None,
     };
 
-    let client = SeestarClient::connect_with_config(ip, config)
-        .await
-        .map_err(|e| format!("Connection failed: {e}"))?;
+    let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
+    let imaging_addr = SocketAddr::V4(SocketAddrV4::new(ip, imaging_port));
+    let client =
+        SeestarClient::connect_with_ports_and_config(ip, control_addr, imaging_addr, config)
+            .await
+            .map_err(|e| format!("Connection failed: {e}"))?;
 
     client
         .wait_for_connection(Duration::from_secs(10))
