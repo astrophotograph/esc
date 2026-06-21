@@ -116,9 +116,12 @@ const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
       }
     }
 
-    // Brief delay on first poll so the connection settles before we
-    // send the first batch of status commands.
-    scheduleNext(3000)
+    // Small delay on the first poll so a just-established connection can settle,
+    // but short enough that status (including the live-view stage) lands quickly
+    // on load rather than leaving the UI in an unknown state for seconds. In web
+    // mode the backend already holds the connection, and get_telescope_status
+    // tolerates a not-yet-ready link, so a short delay is safe.
+    scheduleNext(500)
 
     return () => {
       activeRef.current = false

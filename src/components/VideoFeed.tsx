@@ -67,10 +67,12 @@ export function VideoFeed({
   const isConnected = activeTelescope?.status === 'connected'
   const isConnecting = activeTelescope?.status === 'connecting'
 
-  // Idle = connected but no active imaging/view session (backend reports
-  // stage: "Idle"). We show a test pattern instead of the live feed and skip
-  // frame polling so we don't hammer the link fetching placeholder frames.
-  const isIdle = streamStatus?.stage === 'Idle'
+  // Idle = connected but not actively imaging. The backend reports stage:
+  // "Idle" in that case; we also treat "status not loaded yet" (stage
+  // undefined) as idle so a fresh page load goes straight to the test pattern
+  // instead of briefly polling and flashing the placeholder JPEG before the
+  // first status poll lands. We show the test pattern and skip frame polling.
+  const isIdle = streamStatus?.stage == null || streamStatus.stage === 'Idle'
 
   // Poll-based frame fetcher — keeps last frame visible while loading next
   const fetchFrame = useCallback(async (tid: string) => {
