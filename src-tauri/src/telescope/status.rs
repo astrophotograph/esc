@@ -312,12 +312,14 @@ pub fn parse_status_from_results(
         }
     }
 
-    // When connected and the view query returned successfully but reported no
-    // active stage, the scope is idle. Synthesize "Idle" so the frontend can
-    // distinguish "connected but not imaging" (→ live-view test pattern + Start
-    // Live View CTA) from "no data". The Python backend did this; it was lost in
-    // the Rust migration, which left the frontend's idle handling stranded.
-    if connected && view_result.is_some() && status.stage.is_none() {
+    // The scope is idle whenever the view isn't actively "working". Crucially,
+    // the Seestar leaves a *stale* `stage` set after a view is cancelled (e.g.
+    // state="cancel" but stage still "ContinuousExposure"), so the presence of
+    // `stage` is NOT an "active" signal — `view.state == "working"` is. Override
+    // to "Idle" so the frontend shows the test pattern + Start Live View CTA
+    // when nothing is running. The Python backend synthesized this; it was lost
+    // in the Rust migration, leaving the frontend's idle handling stranded.
+    if connected && view_result.is_some() && status.view_state.as_deref() != Some("working") {
         status.stage = Some("Idle".to_string());
     }
 
@@ -399,16 +401,26 @@ mod tests {
 
     #[test]
     fn maps_active_stage_from_view() {
-        // A running session reports its operation in View.stage.
+        // A running session reports its operation in View.stage while working.
         let view = json!({ "View": { "state": "working", "stage": "ContinuousExposure" }});
         let status = parse_status_from_results(true, None, None, Some(&view));
         assert_eq!(status.stage.as_deref(), Some("ContinuousExposure"));
     }
 
     #[test]
-    fn synthesizes_idle_when_view_present_without_stage() {
-        // The Seestar omits `stage` when nothing is running; a successful view
-        // query with no stage means the scope is idle.
+    fn stale_stage_on_cancelled_view_is_idle() {
+        // Real-world case: the Seestar leaves `stage` set to its last operation
+        // even after the view is cancelled. Since state != "working", we must
+        // treat it as idle rather than reporting the stale "ContinuousExposure".
+        let view = json!({ "View": { "state": "cancel", "stage": "ContinuousExposure" }});
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.view_state.as_deref(), Some("cancel"));
+        assert_eq!(status.stage.as_deref(), Some("Idle"));
+    }
+
+    #[test]
+    fn synthesizes_idle_when_view_not_working() {
+        // A view with no stage and a non-working state is idle.
         let view = json!({ "View": { "state": "cancel", "mode": "none" }});
         let status = parse_status_from_results(true, None, None, Some(&view));
         assert_eq!(status.stage.as_deref(), Some("Idle"));
