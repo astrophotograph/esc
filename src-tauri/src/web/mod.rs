@@ -641,75 +641,25 @@ async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result
         client.send_command(Command::GetViewState),
     );
 
-    // Build response in camelCase to match Tauri TelescopeStatus struct
-    let mut battery_percent: Option<f64> = None;
-    let mut temperature_c: Option<f64> = None;
-    let mut is_tracking: Option<bool> = None;
-    let mut focus_position: Option<i64> = None;
-    let mut gain: Option<i64> = None;
-    let mut ra: Option<f64> = None;
-    let mut dec: Option<f64> = None;
-    let mut view_state: Option<String> = None;
-    let mut target_name: Option<String> = None;
-    let mut stacked_frame: Option<i64> = None;
-    let mut is_goto: Option<bool> = None;
+    // Delegate to the shared mapper so the web and desktop status paths can't
+    // drift apart. (This previously had its own partial copy that omitted
+    // `stage`, `mountType`, storage, etc.) The view payload is only trusted on a
+    // success code, matching the Tauri path.
+    let device_val = device_result.ok().and_then(|resp| resp.result);
+    let coord_val = coord_result.ok().and_then(|resp| resp.result);
+    let view_val = view_result
+        .ok()
+        .filter(|resp| resp.is_success())
+        .and_then(|resp| resp.result);
 
-    if let Ok(resp) = device_result {
-        if let Some(result) = resp.result {
-            if let Some(pi) = result.get("pi_status") {
-                battery_percent = pi.get("battery_capacity").and_then(|v| v.as_f64());
-                temperature_c = pi.get("temp").and_then(|v| v.as_f64());
-            }
-            if let Some(mount) = result.get("mount") {
-                is_tracking = mount.get("tracking").and_then(|v| v.as_bool());
-            }
-            if let Some(focuser) = result.get("focuser") {
-                focus_position = focuser.get("step").and_then(|v| v.as_i64());
-            }
-            if let Some(setting) = result.get("setting") {
-                gain = setting.get("gain").and_then(|v| v.as_i64());
-            }
-        }
-    }
+    let status = crate::telescope::status::parse_status_from_results(
+        true,
+        device_val.as_ref(),
+        coord_val.as_ref(),
+        view_val.as_ref(),
+    );
 
-    if let Ok(resp) = coord_result {
-        if let Some(result) = resp.result {
-            ra = result.get("ra").and_then(|v| v.as_f64());
-            dec = result.get("dec").and_then(|v| v.as_f64());
-        }
-    }
-
-    if let Ok(resp) = view_result {
-        if resp.is_success() {
-            if let Some(result) = resp.result {
-                let view = result.get("View").or_else(|| result.get("view"));
-                if let Some(v) = view {
-                    view_state = v.get("state").and_then(|s| s.as_str()).map(String::from);
-                    is_goto = view_state.as_deref().map(|s| s == "SlewComplete" || s.contains("Goto"));
-                    target_name = v.get("target_name").and_then(|s| s.as_str()).map(String::from);
-                    stacked_frame = v.get("stacked_frame").and_then(|v| v.as_i64());
-                    if gain.is_none() {
-                        gain = v.get("gain").and_then(|v| v.as_i64());
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(serde_json::json!({
-        "connected": true,
-        "batteryPercent": battery_percent,
-        "temperatureC": temperature_c,
-        "isTracking": is_tracking,
-        "focusPosition": focus_position,
-        "gain": gain,
-        "ra": ra,
-        "dec": dec,
-        "viewState": view_state,
-        "targetName": target_name,
-        "stackedFrame": stacked_frame,
-        "isGoto": is_goto,
-    }))
+    serde_json::to_value(status).map_err(|e| e.to_string())
 }
 
 async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {

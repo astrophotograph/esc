@@ -28,6 +28,12 @@ pub struct TelescopeStatus {
     pub is_tracking: Option<bool>,
     pub mount_type: Option<String>,
     pub view_state: Option<String>,
+    /// The telescope's current operation, e.g. "ContinuousExposure", "Stack",
+    /// "AutoGoto", "AutoFocus" — or "Idle" when connected but doing nothing.
+    /// Mirrors the Seestar `View.stage` field; synthesized to "Idle" when the
+    /// view query succeeds but reports no active stage. The frontend keys the
+    /// live-view test pattern and "Start Live View" CTA off this.
+    pub stage: Option<String>,
     pub gain: Option<i32>,
     pub focus_position: Option<i32>,
     pub stacked_frame: Option<i32>,
@@ -55,6 +61,7 @@ pub async fn get_telescope_status(
         is_tracking: None,
         mount_type: None,
         view_state: None,
+        stage: None,
         gain: None,
         focus_position: None,
         stacked_frame: None,
@@ -211,6 +218,7 @@ pub fn parse_status_from_results(
         is_tracking: None,
         mount_type: None,
         view_state: None,
+        stage: None,
         gain: None,
         focus_position: None,
         stacked_frame: None,
@@ -274,6 +282,13 @@ pub fn parse_status_from_results(
                 .get("state")
                 .and_then(|v| v.as_str())
                 .map(String::from);
+            // The active operation: "ContinuousExposure", "Stack", "AutoGoto",
+            // "AutoFocus", etc. The Seestar only includes this while something
+            // is running, so its absence means the scope is idle.
+            status.stage = view_val
+                .get("stage")
+                .and_then(|v| v.as_str())
+                .map(String::from);
             status.is_goto = view_val
                 .get("state")
                 .and_then(|v| v.as_str())
@@ -295,6 +310,15 @@ pub fn parse_status_from_results(
                     .map(|v| v as i32);
             }
         }
+    }
+
+    // When connected and the view query returned successfully but reported no
+    // active stage, the scope is idle. Synthesize "Idle" so the frontend can
+    // distinguish "connected but not imaging" (→ live-view test pattern + Start
+    // Live View CTA) from "no data". The Python backend did this; it was lost in
+    // the Rust migration, which left the frontend's idle handling stranded.
+    if connected && view_result.is_some() && status.stage.is_none() {
+        status.stage = Some("Idle".to_string());
     }
 
     status
@@ -371,6 +395,41 @@ mod tests {
             assert_eq!(status.stacked_frame, Some(42));
             assert_eq!(status.gain, Some(90));
         }
+    }
+
+    #[test]
+    fn maps_active_stage_from_view() {
+        // A running session reports its operation in View.stage.
+        let view = json!({ "View": { "state": "working", "stage": "ContinuousExposure" }});
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.stage.as_deref(), Some("ContinuousExposure"));
+    }
+
+    #[test]
+    fn synthesizes_idle_when_view_present_without_stage() {
+        // The Seestar omits `stage` when nothing is running; a successful view
+        // query with no stage means the scope is idle.
+        let view = json!({ "View": { "state": "cancel", "mode": "none" }});
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.stage.as_deref(), Some("Idle"));
+
+        // Even an empty/absent View object (but a successful query) is idle.
+        let empty = json!({});
+        let status = parse_status_from_results(true, None, None, Some(&empty));
+        assert_eq!(status.stage.as_deref(), Some("Idle"));
+    }
+
+    #[test]
+    fn no_idle_synthesis_when_view_query_absent() {
+        // If we never got a view response, we don't know the state — leave it
+        // unset rather than falsely claiming idle.
+        let status = parse_status_from_results(true, None, None, None);
+        assert!(status.stage.is_none());
+
+        // And never synthesize idle while disconnected.
+        let view = json!({ "View": { "state": "cancel" }});
+        let status = parse_status_from_results(false, None, None, Some(&view));
+        assert!(status.stage.is_none());
     }
 
     #[test]

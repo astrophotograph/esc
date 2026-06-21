@@ -67,6 +67,11 @@ export function VideoFeed({
   const isConnected = activeTelescope?.status === 'connected'
   const isConnecting = activeTelescope?.status === 'connecting'
 
+  // Idle = connected but no active imaging/view session (backend reports
+  // stage: "Idle"). We show a test pattern instead of the live feed and skip
+  // frame polling so we don't hammer the link fetching placeholder frames.
+  const isIdle = streamStatus?.stage === 'Idle'
+
   // Poll-based frame fetcher — keeps last frame visible while loading next
   const fetchFrame = useCallback(async (tid: string) => {
     const url = runtime.isTauri
@@ -101,7 +106,7 @@ export function VideoFeed({
   }, [])
 
   useEffect(() => {
-    if (!activeTelescopeId || !isConnected) {
+    if (!activeTelescopeId || !isConnected || isIdle) {
       pollActiveRef.current = false
       setIsStreaming(false)
       if (isConnecting) {
@@ -137,7 +142,7 @@ export function VideoFeed({
       pollActiveRef.current = false
       clearTimeout(timeoutId)
     }
-  }, [activeTelescopeId, isConnected, isConnecting, fetchFrame])
+  }, [activeTelescopeId, isConnected, isConnecting, isIdle, fetchFrame])
 
   // Clean up blob URL on unmount
   useEffect(() => {
@@ -203,9 +208,6 @@ export function VideoFeed({
       </div>
     )
   }
-
-  // Check if telescope is in Idle state (or similar non-imaging states) - show test pattern
-  const isIdle = streamStatus?.stage === 'Idle'
 
   // Get status text for test pattern
   const getStatusText = () => {
