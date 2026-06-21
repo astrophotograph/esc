@@ -3,6 +3,7 @@ import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sparkles, Filter, RotateCw, Chev
 import { Button } from './ui/button'
 import { VideoFeed } from './VideoFeed'
 import { AllskyPanel } from './AllskyPanel'
+import { AllskyImage } from './AllskyImage'
 import { TelescopeStatusOverlay } from './TelescopeStatusOverlay'
 import { TelescopeControlsOverlay } from './TelescopeControlsOverlay'
 import { useTelescopeStore } from '../stores/telescopeStore'
@@ -165,9 +166,7 @@ export function TelescopeView() {
             onPanChange={handlePanChange}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <p>All-Sky View</p>
-          </div>
+          <AllskyImage className="w-full h-full" fit="contain" />
         )}
       </div>
 

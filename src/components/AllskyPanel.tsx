@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { useUIStore } from '../stores/uiStore'
-import { allskyImageUrl, withCacheBust } from '../lib/allsky'
+import { AllskyImage } from './AllskyImage'
 
 type PanelSize = 'S' | 'M' | 'L'
 
@@ -21,19 +21,20 @@ const SIZE_CONFIG = {
 
 export function AllskyPanel() {
   const { showAllskyPanel: show, setShowAllskyPanel: setShow, allsky } = useUIStore()
-  const allskyUrl = allskyImageUrl(allsky)
-  const [imgError, setImgError] = useState(false)
-  const [size, setSize] = useState<PanelSize>(() =>
-    typeof window !== 'undefined' && window.innerWidth < 640 ? 'S' : 'M'
-  )
+  const [size, setSize] = useState<PanelSize>(() => {
+    // Narrow screens force the smallest panel; otherwise honor the configured default.
+    if (typeof window !== 'undefined' && window.innerWidth < 640) return 'S'
+    return allsky.defaultSize === 'small' ? 'S' : allsky.defaultSize === 'large' ? 'L' : 'M'
+  })
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null) // Initialized on first show
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [minimized, setMinimized] = useState(false)
+  const [minimized, setMinimized] = useState(allsky.minimizedByDefault)
 
   const panelRef = useRef<HTMLDivElement>(null)
+  const autoShownRef = useRef(false)
 
   const nominalSize = SIZE_CONFIG[size]
   const maxWidth = typeof window !== 'undefined' ? window.innerWidth - 16 : nominalSize.width
@@ -50,6 +51,15 @@ export function AllskyPanel() {
       setPosition({ x: 16, y: Math.max(60, initialY) })
     }
   }, [show, position, currentSize.height])
+
+  // Auto-show on startup when configured. Runs once per mount and respects a
+  // later manual close (the ref prevents it from re-opening within the session).
+  useEffect(() => {
+    if (allsky.autoShow && !autoShownRef.current && !show) {
+      autoShownRef.current = true
+      setShow(true)
+    }
+  }, [allsky.autoShow, show, setShow])
 
   // Auto-refresh timer
   useEffect(() => {
@@ -251,31 +261,8 @@ export function AllskyPanel() {
               height: currentSize.height,
             }}
           >
-            {/* Allsky camera feed. The image is loaded directly by the browser
-                (cross-origin <img> is allowed), with a cache-busting token so
-                each auto-refresh tick re-fetches the latest frame. */}
-            {allskyUrl ? (
-              <img
-                src={withCacheBust(allskyUrl, lastUpdate.getTime())}
-                alt="Allsky camera feed"
-                className="w-full h-full object-contain"
-                onLoad={() => setImgError(false)}
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-center text-xs text-muted-foreground p-4">
-                No allsky camera URL configured.
-                <br />
-                Set one in Settings → Allsky.
-              </div>
-            )}
-
-            {allskyUrl && imgError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/75 p-4 text-center text-xs text-red-400">
-                <span>Couldn&apos;t load the allsky image from:</span>
-                <span className="font-mono break-all">{allskyUrl}</span>
-              </div>
-            )}
+            {/* Allsky camera feed (shared with the main All-Sky view). */}
+            <AllskyImage className="w-full h-full" fit="contain" autoRefresh={autoRefresh} />
 
             {/* Visibility indicator */}
             <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
