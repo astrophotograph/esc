@@ -1,5 +1,17 @@
 import { useState, useRef, useCallback } from 'react'
-import { ZoomIn, ZoomOut, Maximize2, Minimize2, Sparkles, Filter, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  Filter,
+  RotateCw,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Loader2,
+} from 'lucide-react'
 import { Button } from './ui/button'
 import { VideoFeed } from './VideoFeed'
 import { AllskyPanel } from './AllskyPanel'
@@ -8,6 +20,7 @@ import { TelescopeStatusOverlay } from './TelescopeStatusOverlay'
 import { TelescopeControlsOverlay } from './TelescopeControlsOverlay'
 import { useTelescopeStore } from '../stores/telescopeStore'
 import { useUIStore } from '../stores/uiStore'
+import { useImaging } from '../hooks'
 
 type ViewMode = 'telescope' | 'allsky'
 
@@ -19,11 +32,37 @@ export function TelescopeView() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [sidebarOpen, setSidebarOpen] = useState(
-    () => typeof window === 'undefined' || window.innerWidth >= 640
+    () => typeof window === 'undefined' || window.innerWidth >= 640,
   )
 
   const { currentTelescopeId } = useTelescopeStore()
   const { isFullscreen, setIsFullscreen } = useUIStore()
+  const { startImaging } = useImaging()
+
+  // Whether the scope is connected and whether a live view / imaging session is
+  // already running. When connected but idle, the video feed only shows the dark
+  // placeholder, so we surface a "Start Live View" call-to-action.
+  const isConnected = useTelescopeStore(
+    (s) => s.telescopes.find((t) => t.id === s.currentTelescopeId)?.status === 'connected',
+  )
+  const stage = useTelescopeStore((s) =>
+    s.currentTelescopeId ? s.telescopeStatus[s.currentTelescopeId]?.stage : undefined,
+  )
+  const hasActiveView = !!stage && stage !== 'Idle'
+  const [startingView, setStartingView] = useState(false)
+
+  const handleStartView = useCallback(async () => {
+    if (!currentTelescopeId) return
+    setStartingView(true)
+    try {
+      const settings = useTelescopeStore.getState().telescopeSettings[currentTelescopeId]
+      await startImaging(currentTelescopeId, settings?.exposure ?? 1000, settings?.gain ?? 80)
+    } catch {
+      // startImaging already records the failure in the activity log
+    } finally {
+      setStartingView(false)
+    }
+  }, [currentTelescopeId, startImaging])
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.25, 4))
@@ -113,7 +152,11 @@ export function TelescopeView() {
                 className="rounded-none h-9 w-9"
                 title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -124,12 +167,7 @@ export function TelescopeView() {
               >
                 <RotateCw className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-none h-9 w-9"
-                title="Enhance"
-              >
+              <Button variant="ghost" size="icon" className="rounded-none h-9 w-9" title="Enhance">
                 <Sparkles className="h-4 w-4" />
               </Button>
               <Button
@@ -146,7 +184,7 @@ export function TelescopeView() {
 
         {/* Toggle tab — always visible */}
         <button
-          onClick={() => setSidebarOpen(o => !o)}
+          onClick={() => setSidebarOpen((o) => !o)}
           className="ml-1 flex items-center justify-center w-5 h-12 bg-card/80 backdrop-blur border border-border rounded-r-md text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
           title={sidebarOpen ? 'Hide controls' : 'Show controls'}
         >
@@ -167,6 +205,24 @@ export function TelescopeView() {
           />
         ) : (
           <AllskyImage className="w-full h-full" fit="contain" />
+        )}
+
+        {/* Start Live View call-to-action: shown over the (dark) feed when the
+            scope is connected but no imaging session is running. */}
+        {viewMode === 'telescope' && isConnected && !hasActiveView && (
+          <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3 pointer-events-none">
+            <div className="flex flex-col items-center gap-3 rounded-xl bg-card/80 backdrop-blur px-6 py-5 border border-border shadow-xl pointer-events-auto">
+              <p className="text-sm text-muted-foreground">No live view running</p>
+              <Button onClick={handleStartView} disabled={startingView} className="gap-2">
+                {startingView ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                {startingView ? 'Starting…' : 'Start Live View'}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
