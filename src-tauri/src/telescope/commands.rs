@@ -306,21 +306,13 @@ pub async fn connect_telescope(
         tracing::info!("connect_telescope: native Rust client connected");
         let client = Arc::new(client);
 
-        // Start MJPEG streaming on the imaging port (4800).
-        // begin_streaming goes to port 4800 — it does not touch the control
-        // port (4700) and cannot interfere with control commands.
-        {
-            let preview_client = client.clone();
-            tokio::spawn(async move {
-                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                let msg = b"{\"id\":21,\"method\":\"begin_streaming\"}\r\n".to_vec();
-                match preview_client.send_imaging_command(msg).await {
-                    Ok(_) => tracing::info!("connect_telescope: begin_streaming sent on imaging port"),
-                    Err(e) => tracing::warn!("connect_telescope: begin_streaming failed: {}", e),
-                }
-            });
-        }
-
+        // NOTE: We do NOT send `begin_streaming`. Preview frames flow on the
+        // imaging port (4800) automatically once the scope is placed into a view
+        // via `iscope_start_view` on the control port (4700) — which happens when
+        // the user starts the live view (`imaging_start`). `begin_streaming` is an
+        // unverified Seestar command that does not start a view (it appears in no
+        // real capture and likely relates to the separate RTSP/H.264 stream);
+        // sending it produced no frames and may interfere with the 4800 feed.
         Some(client)
     } else {
         return Err(format!("Unsupported protocol: {}", protocol));
