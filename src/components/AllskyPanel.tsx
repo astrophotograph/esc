@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from './ui/select'
 import { useUIStore } from '../stores/uiStore'
+import { allskyImageUrl, withCacheBust } from '../lib/allsky'
 
 type PanelSize = 'S' | 'M' | 'L'
 
@@ -19,7 +20,9 @@ const SIZE_CONFIG = {
 }
 
 export function AllskyPanel() {
-  const { showAllskyPanel: show, setShowAllskyPanel: setShow } = useUIStore()
+  const { showAllskyPanel: show, setShowAllskyPanel: setShow, allsky } = useUIStore()
+  const allskyUrl = allskyImageUrl(allsky)
+  const [imgError, setImgError] = useState(false)
   const [size, setSize] = useState<PanelSize>(() =>
     typeof window !== 'undefined' && window.innerWidth < 640 ? 'S' : 'M'
   )
@@ -248,14 +251,31 @@ export function AllskyPanel() {
               height: currentSize.height,
             }}
           >
-            {/* Placeholder for allsky camera feed */}
-            <div className="w-full h-full flex items-center justify-center">
+            {/* Allsky camera feed. The image is loaded directly by the browser
+                (cross-origin <img> is allowed), with a cache-busting token so
+                each auto-refresh tick re-fetches the latest frame. */}
+            {allskyUrl ? (
               <img
-                src={`/placeholder.svg?height=${currentSize.height}&width=${currentSize.width}&text=Allsky`}
+                src={withCacheBust(allskyUrl, lastUpdate.getTime())}
                 alt="Allsky camera feed"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
+                onLoad={() => setImgError(false)}
+                onError={() => setImgError(true)}
               />
-            </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-center text-xs text-muted-foreground p-4">
+                No allsky camera URL configured.
+                <br />
+                Set one in Settings → Allsky.
+              </div>
+            )}
+
+            {allskyUrl && imgError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/75 p-4 text-center text-xs text-red-400">
+                <span>Couldn&apos;t load the allsky image from:</span>
+                <span className="font-mono break-all">{allskyUrl}</span>
+              </div>
+            )}
 
             {/* Visibility indicator */}
             <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">

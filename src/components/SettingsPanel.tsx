@@ -24,6 +24,7 @@ import { useUIStore } from '../stores/uiStore'
 import { useTheme } from '../contexts/ThemeContext'
 import { themes } from '../themes'
 import { useTelescopeStore } from '../stores/telescopeStore'
+import { allskyImageUrl } from '../lib/allsky'
 import { type OverlaySettings, defaultOverlaySettings } from './VideoOverlays'
 import { TelescopeEditor } from './TelescopeEditor'
 import {
@@ -55,6 +56,8 @@ export function SettingsPanel() {
     setStreamingEnabled,
     streamingQuality,
     setStreamingQuality,
+    allsky: allskySettings,
+    setAllsky: setAllskySettings,
   } = useUIStore()
   const { theme, setTheme } = useTheme()
   const { currentTelescopeId, telescopeSettings, updateTelescopeSettings, telescopes } = useTelescopeStore()
@@ -221,17 +224,6 @@ export function SettingsPanel() {
   // TODO: Move to a store for persistence
   const [overlaySettings, setOverlaySettings] = useState<OverlaySettings>(defaultOverlaySettings)
 
-  // Allsky settings
-  const [allskySettings, setAllskySettings] = useState({
-    cameraType: 'custom' as 'teamallsky' | 'indi' | 'custom',
-    hostname: '',
-    customUrl: '',
-    defaultCamera: 'allsky' as 'allsky' | 'guide' | 'finder',
-    defaultSize: 'medium' as 'small' | 'medium' | 'large',
-    autoShow: false,
-    showStatusByDefault: false,
-    minimizedByDefault: true,
-  })
 
   // App config (persisted to config.toml via Rust)
   const [seestarInteropPem, setSeestarInteropPem] = useState('')
@@ -260,22 +252,8 @@ export function SettingsPanel() {
   })
   const [showApiKey, setShowApiKey] = useState(false)
 
-  // Generate URL based on camera type and hostname
-  const generateCameraUrl = (type: typeof allskySettings.cameraType, host: string): string => {
-    switch (type) {
-      case 'teamallsky':
-        return host ? `http://${host}/current/tmp/image.jpg` : ''
-      case 'indi':
-        return host ? `http://${host}/indi-allsky/latestimage` : ''
-      case 'custom':
-        return allskySettings.customUrl
-      default:
-        return ''
-    }
-  }
-
-  // Get the current effective URL
-  const effectiveAllskyUrl = generateCameraUrl(allskySettings.cameraType, allskySettings.hostname)
+  // Effective preview URL (shared with the AllskyPanel display).
+  const effectiveAllskyUrl = allskyImageUrl(allskySettings)
 
   const updateOverlaySetting = <K extends keyof OverlaySettings>(
     category: K,

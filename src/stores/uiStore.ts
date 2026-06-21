@@ -10,6 +10,28 @@ export interface PipPosition {
 export type ActiveTab = 'telescope' | 'catalog' | 'imaging' | 'planning' | 'schedule'
 export type SidebarPanel = 'controls' | 'info' | 'settings' | 'activity' | null
 
+export type AllskyCameraType = 'teamallsky' | 'indi' | 'custom'
+
+export interface AllskySettings {
+  cameraType: AllskyCameraType
+  hostname: string
+  customUrl: string
+  defaultSize: 'small' | 'medium' | 'large'
+  autoShow: boolean
+  showStatusByDefault: boolean
+  minimizedByDefault: boolean
+}
+
+export const defaultAllskySettings: AllskySettings = {
+  cameraType: 'custom',
+  hostname: '',
+  customUrl: '',
+  defaultSize: 'medium',
+  autoShow: false,
+  showStatusByDefault: false,
+  minimizedByDefault: true,
+}
+
 interface UIStore {
   // Hydration state
   _hasHydrated: boolean
@@ -41,6 +63,10 @@ interface UIStore {
   // Allsky Panel
   showAllskyPanel: boolean
   setShowAllskyPanel: (show: boolean) => void
+
+  // Allsky camera config (persisted)
+  allsky: AllskySettings
+  setAllsky: (partial: Partial<AllskySettings>) => void
 
   // Telescope Status Overlay
   showTelescopeStatus: boolean
@@ -135,6 +161,10 @@ export const useUIStore = create<UIStore>()(
       showAllskyPanel: false,
       setShowAllskyPanel: (showAllskyPanel) => set({ showAllskyPanel }),
 
+      // Allsky camera config
+      allsky: defaultAllskySettings,
+      setAllsky: (partial) => set((state) => ({ allsky: { ...state.allsky, ...partial } })),
+
       // Telescope Status Overlay
       showTelescopeStatus: true,
       setShowTelescopeStatus: (showTelescopeStatus) => set({ showTelescopeStatus }),
@@ -222,6 +252,8 @@ export const useUIStore = create<UIStore>()(
         showTelescopeStatus: state.showTelescopeStatus,
         showTelescopeControls: state.showTelescopeControls,
         showAllskyPanel: state.showAllskyPanel,
+        // Allsky camera config
+        allsky: state.allsky,
         // Plate solve settings
         plateSolveApiKey: state.plateSolveApiKey,
       }),
