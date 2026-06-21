@@ -62,4 +62,6 @@ Thumbs.db
 # Telescope captures & sessions (large binary data)
 *.pcap
 *.pcapng
-sessions/
+# Anchored to the repo root so it does not also match the vendored, sanitized
+# replay corpus under src-tauri/tests/fixtures/sessions/ (needed by E2E tests).
+/sessions/

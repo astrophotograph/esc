@@ -301,14 +301,19 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
             let udp_addr = format!("{}:4720", host);
             let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
-            let _ = sock.send_to(msg, &udp_addr).await;
+            if let Err(e) = sock.send_to(msg, &udp_addr).await {
+                tracing::warn!("Web API: UDP scan_iscope send to {} failed: {}", udp_addr, e);
+            }
             tokio::time::sleep(Duration::from_millis(200)).await;
         }
     }
 
-    // Load authentication key from env var or DB-backed setting
-    let interop_key = if let Some(pem_path) = state.interop_pem.read().clone() {
-        match std::fs::read_to_string(&pem_path) {
+    // Load authentication key from env var or DB-backed setting.
+    // Clone the path out in its own statement so the parking_lot read guard is
+    // released before the `.await` below (a guard held across await is `!Send`).
+    let pem_path = state.interop_pem.read().clone();
+    let interop_key = if let Some(pem_path) = pem_path {
+        match tokio::fs::read_to_string(&pem_path).await {
             Ok(pem_content) => {
                 match scopinator_seestar::InteropKey::from_pem(&pem_content) {
                     Ok(key) => {
@@ -333,6 +338,8 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
 
     let config = scopinator_seestar::SeestarConfig {
         interop_key,
+        // Use the library default response timeout (scopinator 0.2.0+).
+        response_timeout: None,
     };
 
     let client = SeestarClient::connect_with_config(ip, config)
@@ -454,9 +461,9 @@ async fn cmd_stop_move(state: &AppState, payload: &serde_json::Value) -> Result<
 async fn cmd_stop_goto(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
     response_to_json(
-        client.send_command(Command::IscopeStopView(StopViewParams {
+        client.send_command(Command::IscopeStopView(Some(StopViewParams {
             stage: StopStage::AutoGoto,
-        })).await,
+        }))).await,
     )
 }
 
@@ -519,9 +526,9 @@ async fn cmd_imaging_start(state: &AppState, payload: &serde_json::Value) -> Res
 async fn cmd_imaging_stop(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
     response_to_json(
-        client.send_command(Command::IscopeStopView(StopViewParams {
+        client.send_command(Command::IscopeStopView(Some(StopViewParams {
             stage: StopStage::Stack,
-        })).await,
+        }))).await,
     )
 }
 
@@ -577,9 +584,9 @@ async fn cmd_start_stack(state: &AppState, payload: &serde_json::Value) -> Resul
 async fn cmd_stop_stack(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
     response_to_json(
-        client.send_command(Command::IscopeStopView(StopViewParams {
+        client.send_command(Command::IscopeStopView(Some(StopViewParams {
             stage: StopStage::Stack,
-        })).await,
+        }))).await,
     )
 }
 

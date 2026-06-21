@@ -31,6 +31,7 @@ import { Badge } from './ui/badge'
 import { useImaging } from '../hooks'
 import { useTelescopeStore, useImagingStore, PlateSolveResult } from '../stores'
 import { useUIStore } from '../stores/uiStore'
+import { formatCoordinate } from '../lib/coordinates'
 
 interface PlateSolveDialogProps {
   open: boolean
@@ -127,25 +128,6 @@ export function PlateSolveDialog({
         `Mount synced to RA ${plateSolveResult.ra.toFixed(4)}°, Dec ${plateSolveResult.dec.toFixed(4)}°`)
     }
   }, [plateSolveResult, currentTelescopeId, addActivity, onSyncMount])
-
-  const formatCoordinate = (value: number | undefined, type: 'ra' | 'dec'): string => {
-    if (value === undefined) return '---'
-
-    if (type === 'ra') {
-      const hours = value / 15
-      const h = Math.floor(hours)
-      const m = Math.floor((hours - h) * 60)
-      const s = ((hours - h) * 60 - m) * 60
-      return `${h}h ${m}m ${s.toFixed(2)}s`
-    } else {
-      const sign = value >= 0 ? '+' : '-'
-      const absVal = Math.abs(value)
-      const d = Math.floor(absVal)
-      const m = Math.floor((absVal - d) * 60)
-      const s = ((absVal - d) * 60 - m) * 60
-      return `${sign}${d}° ${m}' ${s.toFixed(1)}"`
-    }
-  }
 
   const getStatusIcon = () => {
     switch (plateSolveResult?.status) {
