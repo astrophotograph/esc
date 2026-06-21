@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Maximize2, Minimize2, RefreshCw, Clock, Eye } from 'lucide-react'
+import { X, Maximize2, Minimize2, RefreshCw, Clock, Eye, Info } from 'lucide-react'
 import { Button } from './ui/button'
 import {
   Select,
@@ -32,6 +32,7 @@ export function AllskyPanel() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [minimized, setMinimized] = useState(allsky.minimizedByDefault)
+  const [showStatus, setShowStatus] = useState(allsky.showStatusByDefault)
 
   const panelRef = useRef<HTMLDivElement>(null)
   const autoShownRef = useRef(false)
@@ -198,6 +199,19 @@ export function AllskyPanel() {
             </>
           )}
 
+          {/* Status overlay toggle */}
+          {!minimized && (
+            <Button
+              variant={showStatus ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setShowStatus((s) => !s)}
+              className="h-6 w-6 p-0"
+              title={showStatus ? 'Hide status overlay' : 'Show status overlay'}
+            >
+              <Info className="h-3 w-3" />
+            </Button>
+          )}
+
           {/* Expand/Minimize */}
           <Button
             variant="ghost"
@@ -236,22 +250,24 @@ export function AllskyPanel() {
       {/* Camera View */}
       {!minimized && (
         <>
-          {/* Time and Auto-refresh indicator */}
-          <div className="flex items-center justify-between px-2 py-1 bg-muted/50 text-xs">
-            <div className="flex items-center gap-2">
-              <Clock className="h-3 w-3" />
-              <span className="font-mono">{formatTime(lastUpdate)}</span>
+          {/* Time and Auto-refresh indicator (status overlay) */}
+          {showStatus && (
+            <div className="flex items-center justify-between px-2 py-1 bg-muted/50 text-xs">
+              <div className="flex items-center gap-2">
+                <Clock className="h-3 w-3" />
+                <span className="font-mono">{formatTime(lastUpdate)}</span>
+              </div>
+              <Button
+                variant={autoRefresh ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className="h-5 px-2 text-xs gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${autoRefresh ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                Auto-refresh
+              </Button>
             </div>
-            <Button
-              variant={autoRefresh ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className="h-5 px-2 text-xs gap-1"
-            >
-              <RefreshCw className={`h-3 w-3 ${autoRefresh ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-              Auto-refresh
-            </Button>
-          </div>
+          )}
 
           {/* Image Area */}
           <div
@@ -264,18 +280,22 @@ export function AllskyPanel() {
             {/* Allsky camera feed (shared with the main All-Sky view). */}
             <AllskyImage className="w-full h-full" fit="contain" autoRefresh={autoRefresh} />
 
-            {/* Visibility indicator */}
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
-              <Eye className="h-3 w-3" />
-              <span>1</span>
-            </div>
+            {/* Visibility indicator (status overlay) */}
+            {showStatus && (
+              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 px-2 py-1 rounded text-xs">
+                <Eye className="h-3 w-3" />
+                <span>1</span>
+              </div>
+            )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-2 py-1 bg-muted/50 text-xs text-muted-foreground">
-            <span className="font-mono">{currentSize.width}×{currentSize.height}</span>
-            <span>• Allsky</span>
-          </div>
+          {/* Footer (status overlay) */}
+          {showStatus && (
+            <div className="flex items-center justify-between px-2 py-1 bg-muted/50 text-xs text-muted-foreground">
+              <span className="font-mono">{currentSize.width}×{currentSize.height}</span>
+              <span>• Allsky</span>
+            </div>
+          )}
         </>
       )}
     </div>

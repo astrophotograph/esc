@@ -106,6 +106,38 @@ fn generate_placeholder_jpeg(width: u32, height: u32, frame_num: u32) -> Vec<u8>
     jpeg_buf.into_inner()
 }
 
+/// Parse a JPEG's pixel dimensions from its SOF marker without a full decode.
+/// Returns `(width, height)`. Used for diagnostics: comparing the frame header's
+/// reported dimensions against the actual encoded image reveals whether an
+/// aspect-ratio problem originates in the telescope/Scopinator data or here.
+fn jpeg_dimensions(data: &[u8]) -> Option<(u16, u16)> {
+    if data.len() < 4 || data[0] != 0xFF || data[1] != 0xD8 {
+        return None;
+    }
+    let mut i = 2;
+    while i + 9 < data.len() {
+        if data[i] != 0xFF {
+            i += 1;
+            continue;
+        }
+        let marker = data[i + 1];
+        // SOFn markers carry the dimensions (height then width, big-endian).
+        if matches!(marker, 0xC0..=0xC3 | 0xC5..=0xC7 | 0xC9..=0xCB | 0xCD..=0xCF) {
+            let height = u16::from_be_bytes([data[i + 5], data[i + 6]]);
+            let width = u16::from_be_bytes([data[i + 7], data[i + 8]]);
+            return Some((width, height));
+        }
+        // Standalone markers (RSTn, TEM) have no length payload.
+        if matches!(marker, 0xD0..=0xD9 | 0x01) {
+            i += 2;
+            continue;
+        }
+        let seg_len = u16::from_be_bytes([data[i + 2], data[i + 3]]) as usize;
+        i += 2 + seg_len;
+    }
+    None
+}
+
 /// Health check endpoint
 async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "Streaming server is running")
@@ -393,6 +425,22 @@ async fn snapshot_handler(
             let height = frame.header.height as u32;
             let data = frame.data.clone();
             let is_jpeg = data.len() >= 2 && data[0] == 0xFF && data[1] == 0xD8;
+
+            // Aspect-ratio diagnostics: header dims vs the actual encoded image.
+            // Run the web_server with `RUST_LOG=eesc_lib::streaming=debug` to see it.
+            debug!(
+                "snapshot {}: header {}x{} (aspect {:.3}), {}, {} bytes{}",
+                telescope_id,
+                width,
+                height,
+                if height > 0 { width as f64 / height as f64 } else { 0.0 },
+                if is_jpeg { "JPEG passthrough" } else { "raw → stretch" },
+                data.len(),
+                match jpeg_dimensions(&data) {
+                    Some((w, h)) => format!(", encoded JPEG {}x{} (aspect {:.3})", w, h, w as f64 / h as f64),
+                    None => String::new(),
+                }
+            );
 
             if is_jpeg {
                 data.to_vec()
