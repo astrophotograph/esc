@@ -5,6 +5,13 @@ import { resolve } from 'path'
 const host = process.env.TAURI_DEV_HOST
 const webApiTarget = process.env.VITE_WEB_API_TARGET || 'http://127.0.0.1:9846'
 
+// Only pin the HMR websocket to an *explicit, routable* host. When the dev
+// server binds 0.0.0.0 (e.g. `run-dev.sh --web` with the default host) a remote
+// browser must not be told to dial ws://0.0.0.0:9283 — leaving this undefined
+// makes Vite infer the host from the browser's location and serve HMR over the
+// dev-server port instead, which works for both local and remote clients.
+const hmrHost = host && host !== '0.0.0.0' ? host : undefined
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
@@ -18,13 +25,15 @@ export default defineConfig(({ mode }) => ({
   // Configuration for Tauri mode
   clearScreen: false,
   server: {
-    host: host || false,
+    // Bind all interfaces when a dev host is given, or in web mode, so the app
+    // is reachable from other devices on the network.
+    host: host || mode === 'web',
     port: 9273,
     strictPort: true,
-    hmr: host
+    hmr: hmrHost
       ? {
           protocol: 'ws',
-          host: host,
+          host: hmrHost,
           port: 9283,
         }
       : undefined,
