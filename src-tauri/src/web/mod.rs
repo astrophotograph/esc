@@ -282,12 +282,35 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         (t.host.clone(), t.port)
     };
 
-    // Update status to connecting
+    let protocol = payload
+        .get("protocol")
+        .and_then(|v| v.as_str())
+        .unwrap_or("seestar")
+        .to_string();
+
+    // Ensure the telescope exists in the server's in-memory map and mark it
+    // connecting. Manually-added telescopes live in the browser only, so they
+    // are NOT pre-loaded here — without this insert, the connect would succeed
+    // but the client would be dropped, making every later command (status,
+    // goto, …) fail with "Telescope not found".
     {
         let mut telescopes = state.telescopes.write();
-        if let Some(t) = telescopes.get_mut(&telescope_id) {
-            t.status = ConnectionStatus::Connecting;
-        }
+        telescopes
+            .entry(telescope_id.clone())
+            .and_modify(|t| {
+                t.status = ConnectionStatus::Connecting;
+                t.host = host.clone();
+                t.port = port;
+            })
+            .or_insert_with(|| TelescopeConnection {
+                id: telescope_id.clone(),
+                host: host.clone(),
+                port,
+                protocol: protocol.clone(),
+                name: format!("{} @ {}:{}", protocol, host, port),
+                status: ConnectionStatus::Connecting,
+                client: None,
+            });
     }
 
     // Accept hostnames as well as IPv4 literals (e.g. a remote seestar-proxy).
