@@ -496,31 +496,39 @@ pub async fn telescope_move(
         params.speed
     );
 
-    let angle = match params.direction.as_str() {
-        "n" => 0,
-        "ne" => 45,
-        "e" => 90,
-        "se" => 135,
-        "s" => 180,
-        "sw" => 225,
-        "w" => 270,
-        "nw" => 315,
-        _ => return Err(format!("Unknown direction: {}", params.direction)),
-    };
     let speed = params.speed.unwrap_or(1.0);
     let duration = params.duration_sec.unwrap_or(5.0);
+    let percent = (speed * 100.0) as i32;
+    let dur_sec = duration as i32;
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(
-        client
-            .send_command(Command::ScopeSpeedMove(SpeedMoveParams {
-                angle,
-                level: 1,
-                dur_sec: duration as i32,
-                percent: (speed * 100.0) as i32,
-            }))
-            .await,
-    )?;
+    // Cardinal jogs use scopinator's verified EQ-mode Direction→angle mapping
+    // (W=0, N=90, E=180, S=270). Diagonals — which the current UI doesn't emit —
+    // fall back to the interpolated heading consistent with that mapping.
+    let resp = match params.direction.as_str() {
+        "n" => client.jog(Direction::North, 1, percent, dur_sec).await,
+        "s" => client.jog(Direction::South, 1, percent, dur_sec).await,
+        "e" => client.jog(Direction::East, 1, percent, dur_sec).await,
+        "w" => client.jog(Direction::West, 1, percent, dur_sec).await,
+        diag => {
+            let angle = match diag {
+                "nw" => 45,
+                "ne" => 135,
+                "se" => 225,
+                "sw" => 315,
+                _ => return Err(format!("Unknown direction: {}", params.direction)),
+            };
+            client
+                .send_command(Command::ScopeSpeedMove(SpeedMoveParams {
+                    angle,
+                    level: 1,
+                    dur_sec,
+                    percent,
+                }))
+                .await
+        }
+    };
+    let result = response_to_json(resp)?;
 
     emit_event(
         &app,
@@ -546,16 +554,7 @@ pub async fn telescope_stop_move(
     tracing::info!("Stop move command for telescope {}", telescope_id);
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(
-        client
-            .send_command(Command::ScopeSpeedMove(SpeedMoveParams {
-                angle: 0,
-                level: 0,
-                dur_sec: 0,
-                percent: 0,
-            }))
-            .await,
-    )?;
+    let result = response_to_json(client.stop_jog().await)?;
 
     emit_event(
         &app,
