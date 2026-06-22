@@ -49,6 +49,7 @@ fn main() {
             telescope::telescope_focus,
             telescope::telescope_focus_increment,
             telescope::telescope_auto_focus,
+            telescope::telescope_startup,
             telescope::imaging_start,
             telescope::imaging_stop,
             telescope::telescope_set_gain,

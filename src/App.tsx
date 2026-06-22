@@ -38,6 +38,9 @@ function App() {
   const telescopeHydrated = useTelescopeStore((state) => state._hasHydrated)
 
   const autoConnectAttempted = useRef(false)
+  // Telescopes we've already sent the startup (time + location) sequence to since
+  // they last connected; cleared on disconnect so a reconnect re-sends it.
+  const startedUp = useRef<Set<string>>(new Set())
 
   // Initialize keyboard shortcuts
   useKeyboardShortcuts()
@@ -141,6 +144,31 @@ function App() {
       autoConnectAttempted.current = true
     }
   }, [telescopeHydrated, uiHydrated, telescopes, currentTelescopeId, updateTelescope])
+
+  // Send the startup sequence (scope clock + observing location) once whenever a
+  // telescope connects, using its configured location. Runs from one place so it
+  // covers every connect path (header button, auto-connect, hooks). Skips the
+  // unset 0,0 default; re-sends after a disconnect/reconnect.
+  useEffect(() => {
+    for (const t of telescopes) {
+      if (t.status === 'connected') {
+        if (startedUp.current.has(t.id)) continue
+        startedUp.current.add(t.id)
+        const s = useTelescopeStore.getState().telescopeSettings[t.id]
+        const lat = s?.latitude
+        const lon = s?.longitude
+        if (lat != null && lon != null && (lat !== 0 || lon !== 0)) {
+          invoke('telescope_startup', { telescopeId: t.id, lat, lon })
+            .then((r) => console.log(`Startup sent to ${t.id}:`, r))
+            .catch((e) => console.error(`Startup failed for ${t.id}:`, e))
+        } else {
+          console.warn(`Startup skipped for ${t.id}: no location set (Settings → Location)`)
+        }
+      } else if (t.status === 'disconnected' || t.status === 'error') {
+        startedUp.current.delete(t.id)
+      }
+    }
+  }, [telescopes])
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">

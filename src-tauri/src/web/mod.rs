@@ -137,6 +137,7 @@ async fn dispatch_command(
         "telescope_focus" | "set_focus" => cmd_focus(state, &payload).await,
         "telescope_focus_increment" => cmd_focus_increment(state, &payload).await,
         "telescope_auto_focus" => cmd_auto_focus(state, &payload).await,
+        "telescope_startup" => cmd_startup(state, &payload).await,
         "telescope_get_focuser_position" => cmd_get_focuser_position(state, &payload).await,
 
         // --- Imaging ---
@@ -542,7 +543,19 @@ async fn cmd_focus_increment(state: &AppState, payload: &serde_json::Value) -> R
 
 async fn cmd_auto_focus(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    response_to_json(client.send_command(Command::StartAutoFocus).await)
+    response_to_json(client.start_auto_focus().await)
+}
+
+/// Send the startup sequence: set the scope clock (UTC) and observing location.
+/// Returns the scope's `pi_is_verified` status.
+async fn cmd_startup(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let client = get_client(state, &tid(payload)?)?;
+    let lat = payload.get("lat").or_else(|| payload.get("latitude"))
+        .and_then(|v| v.as_f64()).ok_or("Missing lat")?;
+    let lon = payload.get("lon").or_else(|| payload.get("longitude"))
+        .and_then(|v| v.as_f64()).ok_or("Missing lon")?;
+    let verified = client.startup(lat, lon).await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true, "verified": verified }))
 }
 
 async fn cmd_get_focuser_position(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {

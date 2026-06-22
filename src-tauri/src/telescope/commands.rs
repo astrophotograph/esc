@@ -669,7 +669,7 @@ pub async fn telescope_auto_focus(
     tracing::info!("Auto-focus command for telescope {}", telescope_id);
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(client.send_command(Command::StartAutoFocus).await)?;
+    let result = response_to_json(client.start_auto_focus().await)?;
 
     emit_event(
         &app,
@@ -682,6 +682,24 @@ pub async fn telescope_auto_focus(
     )?;
 
     Ok(serde_json::to_string(&result).unwrap())
+}
+
+/// Send the startup sequence: set the scope clock (UTC, from system time) and
+/// observing location. Returns the scope's `pi_is_verified` status.
+#[tauri::command]
+pub async fn telescope_startup(
+    state: State<'_, AppState>,
+    telescope_id: String,
+    lat: f64,
+    lon: f64,
+) -> Result<serde_json::Value, String> {
+    tracing::info!(
+        "Startup (time+location) for telescope {}: lat={}, lon={}",
+        telescope_id, lat, lon
+    );
+    let client = get_client(&state, &telescope_id)?;
+    let verified = client.startup(lat, lon).await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true, "verified": verified }))
 }
 
 /// Start imaging session

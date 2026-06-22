@@ -26,8 +26,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 # Telescope protocol
-scopinator-seestar = "0.4.0"
-scopinator-types = "0.4"
+scopinator-seestar = "0.5.0"
+scopinator-types = "0.5"
 
 
 # Image processing (stretch pipeline)
