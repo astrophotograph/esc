@@ -7,14 +7,25 @@ use axum::{
     Router,
 };
 use futures::stream::{self, StreamExt};
+use parking_lot::Mutex;
+use std::collections::HashMap;
 use std::io::Cursor;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use tokio::sync::watch;
 use tokio::time::Duration;
 use tracing::{debug, error, info, warn};
 
 use crate::state::AppState;
 use crate::stretch::{stretch_raw_frame, StretchParams};
+
+/// Per-telescope cache of the last successfully decoded snapshot JPEG. The live
+/// feed delivers only ~0.4 fps over a remote proxy while the UI polls ~2 Hz, so
+/// we reuse the last good frame between real frames instead of flickering to the
+/// placeholder when no new frame arrives within the snapshot wait window.
+fn last_frames() -> &'static Mutex<HashMap<String, Vec<u8>>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, Vec<u8>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
 
 /// Create the streaming router
 pub fn create_router() -> Router<Arc<AppState>> {
@@ -442,7 +453,7 @@ async fn snapshot_handler(
                 }
             );
 
-            if is_jpeg {
+            let frame_jpeg = if is_jpeg {
                 data.to_vec()
             } else {
                 let is_color = data.len() >= (width * height * 3) as usize;
@@ -452,9 +463,18 @@ async fn snapshot_handler(
                 })
                 .await
                 .unwrap_or_else(|_| generate_placeholder_jpeg(640, 480, 0))
-            }
+            };
+            // Cache this fresh frame so polls that fall between frames reuse it.
+            last_frames().lock().insert(telescope_id.clone(), frame_jpeg.clone());
+            frame_jpeg
         }
-        _ => generate_placeholder_jpeg(640, 480, 0),
+        // No new frame within the wait window — reuse the last good frame if we
+        // have one; only show the placeholder before the first frame arrives.
+        _ => last_frames()
+            .lock()
+            .get(&telescope_id)
+            .cloned()
+            .unwrap_or_else(|| generate_placeholder_jpeg(640, 480, 0)),
     };
 
     Response::builder()

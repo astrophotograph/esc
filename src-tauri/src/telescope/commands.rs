@@ -2,7 +2,7 @@ use crate::database::Database;
 use crate::events::{emit_event, event_names};
 use crate::state::AppState;
 use scopinator_seestar::command::params::*;
-use scopinator_seestar::command::Command;
+use scopinator_seestar::command::{Command, ImagingCommand};
 use scopinator_seestar::SeestarClient;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -306,13 +306,20 @@ pub async fn connect_telescope(
         tracing::info!("connect_telescope: native Rust client connected");
         let client = Arc::new(client);
 
-        // NOTE: We do NOT send `begin_streaming`. Preview frames flow on the
-        // imaging port (4800) automatically once the scope is placed into a view
-        // via `iscope_start_view` on the control port (4700) — which happens when
-        // the user starts the live view (`imaging_start`). `begin_streaming` is an
-        // unverified Seestar command that does not start a view (it appears in no
-        // real capture and likely relates to the separate RTSP/H.264 stream);
-        // sending it produced no frames and may interfere with the 4800 feed.
+        // Live view = `iscope_start_view` (control, 4700) THEN `begin_streaming`
+        // (imaging, 4800); the fresh-start case is handled by `imaging_start`.
+        // Re-arm streaming on connect so that if the scope is already in a star
+        // view (reconnect, or a view started elsewhere) preview frames resume
+        // without re-clicking Start. No-op when no view is active.
+        {
+            let preview_client = client.clone();
+            tokio::spawn(async move {
+                if let Err(e) = preview_client.begin_streaming().await {
+                    tracing::warn!("connect_telescope: begin_streaming failed: {}", e);
+                }
+            });
+        }
+
         Some(client)
     } else {
         return Err(format!("Unsupported protocol: {}", protocol));
@@ -725,6 +732,12 @@ pub async fn imaging_start(
             .await,
     )?;
 
+    // Arm the live frame stream on the imaging port (4800). In star mode the
+    // scope only pushes preview frames once begin_streaming has been sent.
+    if let Err(e) = client.begin_streaming().await {
+        tracing::warn!("imaging_start: begin_streaming failed after start view: {}", e);
+    }
+
     emit_event(
         &app,
         event_names::IMAGING_STARTED,
@@ -891,9 +904,9 @@ pub async fn telescope_start_recording(
     tracing::info!("Start recording for telescope {}", telescope_id);
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(client.send_command(Command::BeginStreaming).await)?;
+    client.begin_streaming().await.map_err(|e| e.to_string())?;
 
-    Ok(result)
+    Ok(serde_json::json!({ "success": true }))
 }
 
 /// Stop recording video
@@ -905,9 +918,9 @@ pub async fn telescope_stop_recording(
     tracing::info!("Stop recording for telescope {}", telescope_id);
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(client.send_command(Command::StopStreaming).await)?;
+    client.send_imaging(ImagingCommand::StopStreaming).await.map_err(|e| e.to_string())?;
 
-    Ok(result)
+    Ok(serde_json::json!({ "success": true }))
 }
 
 /// Run plate solving on current image

@@ -14,7 +14,7 @@ use axum::{
     Json, Router,
 };
 use scopinator_seestar::command::params::*;
-use scopinator_seestar::command::Command;
+use scopinator_seestar::command::{Command, ImagingCommand};
 use scopinator_seestar::SeestarClient;
 use std::net::{SocketAddr, SocketAddrV4};
 use std::sync::Arc;
@@ -386,15 +386,21 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
 
     let client = Arc::new(client);
 
-    // NOTE: We do NOT send `begin_streaming` here. Preview frames flow on the
-    // imaging port (4800) automatically once the scope is placed into a view via
-    // `iscope_start_view` on the control port (4700) — which happens when the
-    // user starts the live view (`imaging_start`). `begin_streaming` is an
-    // unverified Seestar command that does not start a view (it appears in no
-    // real capture and likely relates to the separate RTSP/H.264 stream);
-    // sending it produced no frames and may interfere with the 4800 feed.
-    // scopinator's imaging connection auto-connects and reads frames; we just
-    // `subscribe_frames()`.
+    // Live view = `iscope_start_view` on the control port (4700) THEN
+    // `begin_streaming` on the imaging port (4800); the fresh-start case is
+    // handled by `imaging_start`. Here we re-arm streaming on connect so that if
+    // the scope is *already* in a star view (a reconnect, or a view started
+    // elsewhere) preview frames resume without the user re-clicking Start. It's
+    // a no-op when no view is active. Uses scopinator's typed `begin_streaming()`
+    // (was a raw 4800 byte hack before).
+    {
+        let preview_client = client.clone();
+        tokio::spawn(async move {
+            if let Err(e) = preview_client.begin_streaming().await {
+                tracing::warn!("Web API: connect-time begin_streaming failed: {}", e);
+            }
+        });
+    }
 
     {
         let mut telescopes = state.telescopes.write();
@@ -539,7 +545,8 @@ async fn cmd_imaging_start(state: &AppState, payload: &serde_json::Value) -> Res
     let client = get_client(state, &tid(payload)?)?;
     let target_name = payload.get("targetName").or_else(|| payload.get("target_name"))
         .and_then(|v| v.as_str()).map(String::from);
-    response_to_json(
+    // Start the view on the control port (4700)...
+    let result = response_to_json(
         client.send_command(Command::IscopeStartView(StartViewParams {
             mode: Some(ViewMode::Star),
             target_name,
@@ -547,7 +554,13 @@ async fn cmd_imaging_start(state: &AppState, payload: &serde_json::Value) -> Res
             target_type: None,
             lp_filter: None,
         })).await,
-    )
+    )?;
+    // ...then arm the live frame stream on the imaging port (4800). In star mode
+    // the scope only pushes preview frames once begin_streaming has been sent.
+    if let Err(e) = client.begin_streaming().await {
+        tracing::warn!("Web API: begin_streaming failed after start view: {}", e);
+    }
+    Ok(result)
 }
 
 async fn cmd_imaging_stop(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -580,12 +593,14 @@ async fn cmd_set_exposure(state: &AppState, payload: &serde_json::Value) -> Resu
 
 async fn cmd_start_recording(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    response_to_json(client.send_command(Command::BeginStreaming).await)
+    client.begin_streaming().await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true }))
 }
 
 async fn cmd_stop_recording(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    response_to_json(client.send_command(Command::StopStreaming).await)
+    client.send_imaging(ImagingCommand::StopStreaming).await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true }))
 }
 
 async fn cmd_plate_solve(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
