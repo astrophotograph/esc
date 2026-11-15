@@ -329,7 +329,10 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         use tokio::net::UdpSocket;
         if let Ok(sock) = UdpSocket::bind("0.0.0.0:0").await {
             let udp_addr = format!("{}:{}", ip, discovery_port);
-            let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
+            // The scope reads this socket line by line: without the terminator the
+            // probe stays in its buffer and corrupts the next discovery request
+            // (it answers that one with 101 "Second root").
+            let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}\r\n";
             if let Err(e) = sock.send_to(msg, &udp_addr).await {
                 tracing::warn!("Web API: UDP scan_iscope send to {} failed: {}", udp_addr, e);
             }

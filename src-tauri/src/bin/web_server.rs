@@ -77,7 +77,19 @@ async fn main() {
     });
     tracing::info!("Streaming server starting on port 9847");
 
-    web::start_web_server(state, PORT, None)
+    // In a deployment there is no Vite dev server: point ESC_STATIC_DIR at the
+    // built frontend (`pnpm web:build` -> dist-web/) and this process serves it
+    // alongside /api, /stream and /snapshot on the one port.
+    let static_dir = std::env::var_os("ESC_STATIC_DIR").map(std::path::PathBuf::from);
+    match &static_dir {
+        Some(dir) if dir.join("index.html").is_file() => {
+            tracing::info!("Serving frontend from {:?}", dir)
+        }
+        Some(dir) => tracing::warn!("ESC_STATIC_DIR {:?} has no index.html", dir),
+        None => tracing::info!("ESC_STATIC_DIR not set: API only, no frontend"),
+    }
+
+    web::start_web_server(state, PORT, static_dir)
         .await
         .expect("Web server error");
 }

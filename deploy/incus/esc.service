@@ -1,0 +1,40 @@
+# ESC web server (Rust `web_server` binary) for the `esc` Incus VM.
+# Installed as /etc/systemd/system/esc.service by homeops config/esc/provision.sh.
+# The older deploy/esc.service packages the Python backend for the .deb release.
+[Unit]
+Description=ESC telescope controller (web)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=esc
+Group=esc
+# One port serves the frontend, /api, /stream and /snapshot (9846); the
+# stand-alone streaming listener is 9847.
+ExecStart=/opt/esc/bin/web_server
+Environment=ESC_STATIC_DIR=/opt/esc/web
+# eesc.db lives in $XDG_DATA_HOME/com.erewhon.esc/
+Environment=XDG_DATA_HOME=/var/lib/esc
+Environment=HOME=/var/lib/esc
+# Interop key for the Seestar verification handshake; a missing file only
+# disables the handshake, it does not stop the service.
+Environment=SEESTAR_INTEROP_PEM=/etc/esc/interop.pem
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+StateDirectory=esc
+ReadWritePaths=/var/lib/esc
+
+[Install]
+WantedBy=multi-user.target

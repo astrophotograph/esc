@@ -266,7 +266,10 @@ pub async fn connect_telescope(
             match UdpSocket::bind("0.0.0.0:0").await {
                 Ok(sock) => {
                     let udp_addr = format!("{}:{}", ip, discovery_port);
-                    let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}";
+                    // The scope reads this socket line by line: without the terminator the
+                    // probe stays in its buffer and corrupts the next discovery request
+                    // (it answers that one with 101 "Second root").
+                    let msg = b"{\"id\":1,\"method\":\"scan_iscope\",\"params\":\"\"}\r\n";
                     match sock.send_to(msg, &udp_addr).await {
                         Ok(_) => tracing::info!("connect_telescope: sent UDP scan_iscope to {}", udp_addr),
                         Err(e) => tracing::warn!("connect_telescope: UDP scan_iscope send failed: {}", e),
