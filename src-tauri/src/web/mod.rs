@@ -369,6 +369,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         interop_key,
         // Use the library default response timeout (scopinator 0.2.0+).
         response_timeout: None,
+        ..Default::default()
     };
 
     let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -446,14 +447,8 @@ async fn cmd_goto_target(state: &AppState, payload: &serde_json::Value) -> Resul
     let ra = payload.get("ra").and_then(|v| v.as_f64()).unwrap_or(0.0);
     let dec = payload.get("dec").and_then(|v| v.as_f64()).unwrap_or(0.0);
 
-    response_to_json(
-        client.send_command(Command::GotoTarget(GotoTargetParams {
-            target_name,
-            is_j2000: true,
-            ra,
-            dec,
-        })).await,
-    )
+    // scopinator 0.6.0: a goto is `iscope_start_view` in star mode; RA is in hours.
+    response_to_json(client.goto(&target_name, ra, dec).await)
 }
 
 async fn cmd_park(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -661,7 +656,7 @@ async fn cmd_get_stacking_status(state: &AppState, payload: &serde_json::Value) 
 
 async fn cmd_save_image(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    response_to_json(client.send_command(Command::GetStackedImage).await)
+    Ok(crate::telescope::commands::stacked_image_json(&client).await)
 }
 
 async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -712,8 +707,11 @@ async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Res
         return Err("Plan has no targets".to_string());
     }
 
+    let plan: ViewPlan =
+        serde_json::from_value(plan).map_err(|e| format!("Invalid plan: {e}"))?;
+
     let resp = client
-        .send_command(Command::SetViewPlan(plan))
+        .send_command(Command::SetViewPlan(Box::new(plan)))
         .await
         .map_err(|e| format!("Command failed: {e}"))?;
 

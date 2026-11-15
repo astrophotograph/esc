@@ -26,6 +26,7 @@ async fn connect(server: &ReplayServer) -> SeestarClient {
     let config = SeestarConfig {
         interop_key: None,
         response_timeout: Some(Duration::from_secs(2)),
+        ..Default::default()
     };
     let client = SeestarClient::connect_with_ports_and_config(
         LOCALHOST,
@@ -111,6 +112,7 @@ async fn recorded_events_replay_to_subscribers() {
         let config = SeestarConfig {
             interop_key: None,
             response_timeout: Some(Duration::from_secs(2)),
+        ..Default::default()
         };
         let client = SeestarClient::connect_with_ports_and_config(
             LOCALHOST,

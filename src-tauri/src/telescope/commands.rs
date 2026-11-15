@@ -47,6 +47,27 @@ fn response_to_json(
     }
 }
 
+/// Fetch the stacked image over the imaging port (scopinator 0.6.0 moved
+/// `get_stacked_img` there) and describe it as a success/failure JSON value.
+pub(crate) async fn stacked_image_json(client: &SeestarClient) -> serde_json::Value {
+    let frame = match client.get_stacked_image().await {
+        Ok(frame) => frame,
+        Err(e) => return serde_json::json!({ "success": false, "error": e.to_string() }),
+    };
+    match frame.image_bytes() {
+        Ok(bytes) => serde_json::json!({
+            "success": true,
+            "response": {
+                "width": frame.header.width,
+                "height": frame.header.height,
+                "bytes": bytes.len(),
+                "payload_kind": format!("{:?}", frame.payload_kind()),
+            },
+        }),
+        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TelescopeConfig {
     pub id: String,
@@ -289,6 +310,7 @@ pub async fn connect_telescope(
             interop_key,
             // Use the library default response timeout (scopinator 0.2.0+).
             response_timeout: None,
+            ..Default::default()
         };
 
         let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -391,7 +413,7 @@ pub async fn goto_target(
     params: GotoParams,
 ) -> Result<String, String> {
     tracing::info!(
-        "GOTO command for telescope {}: {} (RA: {}, Dec: {})",
+        "GOTO command for telescope {}: {} (RA: {}h, Dec: {}°)",
         telescope_id,
         params.target_name,
         params.ra,
@@ -399,14 +421,10 @@ pub async fn goto_target(
     );
 
     let client = get_client(&state, &telescope_id)?;
+    // scopinator 0.6.0: a goto is `iscope_start_view` in star mode; RA is in hours.
     let result = response_to_json(
         client
-            .send_command(Command::GotoTarget(GotoTargetParams {
-                target_name: params.target_name.clone(),
-                is_j2000: true,
-                ra: params.ra,
-                dec: params.dec,
-            }))
+            .goto(&params.target_name, params.ra, params.dec)
             .await,
     )?;
 
@@ -1054,9 +1072,7 @@ pub async fn telescope_save_image(
     tracing::info!("Save image for telescope {} to {}", telescope_id, _file_path);
 
     let client = get_client(&state, &telescope_id)?;
-    let result = response_to_json(client.send_command(Command::GetStackedImage).await)?;
-
-    Ok(result)
+    Ok(stacked_image_json(&client).await)
 }
 
 /// Full scope settings payload returned to the frontend.
@@ -1163,19 +1179,13 @@ pub async fn get_scope_settings(
     }
     let s = resp.result.unwrap_or_default();
 
-    // Fetch stack settings (may fail on older firmware — treat as empty)
-    let stack_resp = client
-        .send_command(Command::GetStackSetting)
-        .await
-        .ok()
-        .and_then(|r| if r.is_success() { r.result } else { None })
-        .unwrap_or_default();
-
-    // stack.{field} from get_setting merged with get_stack_setting (prefer stack_setting)
+    // Stack settings live under `stack` in `get_setting`. There is no
+    // `get_stack_setting` method: an S50 (fw 6.70) and an S30 (fw 9.75) both
+    // answer it with 103 "method not found".
     let stack_obj = s.get("stack").and_then(|v| v.as_object()).cloned().unwrap_or_default();
 
     let get_stack_field = |key: &str| -> Option<&serde_json::Value> {
-        stack_resp.get(key).or_else(|| stack_obj.get(key))
+        stack_obj.get(key)
     };
 
     // Continuous capture: firmware stores it in multiple places
@@ -1210,7 +1220,7 @@ pub async fn get_scope_settings(
         dither_enabled: s.get("stack_dither").and_then(|v| v.get("enable")).and_then(as_bool),
         dither_pixels: s.get("stack_dither").and_then(|v| v.get("pix")).and_then(|v| v.as_i64()),
         dither_frequency: s.get("stack_dither").and_then(|v| v.get("interval")).and_then(|v| v.as_i64()),
-        // Frame saving — prefer get_stack_setting, fall back to stack.* in get_setting
+        // Frame saving — from stack.* in get_setting
         save_good_frames: get_stack_field("save_discrete_ok_frame")
             .or_else(|| s.get("save_discrete_ok_frame"))
             .and_then(as_bool),
@@ -1271,11 +1281,22 @@ pub async fn set_scope_settings(
         }
     };
 
-    // Build nested `stack` object for cont_capt, drizzle2x
+    // Build the nested `stack` object. Every stack setting goes through
+    // `set_setting {"stack": {...}}`; the firmware has no `set_stack_setting`
+    // (103 on an S50 fw 6.70 and an S30 fw 9.75).
     let stack_obj = {
         let mut m = serde_json::Map::new();
         if let Some(v) = settings.stack_cont_capt  { m.insert("cont_capt".into(), serde_json::json!(v)); }
         if let Some(v) = settings.stack_drizzle2x  { m.insert("drizzle2x".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.save_good_frames { m.insert("save_discrete_ok_frame".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.save_all_frames  { m.insert("save_discrete_frame".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.light_duration_min { m.insert("light_duration_min".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_capt_type  { m.insert("capt_type".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_capt_num   { m.insert("capt_num".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_brightness { m.insert("brightness".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_contrast   { m.insert("contrast".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_saturation { m.insert("saturation".into(), serde_json::json!(v)); }
+        if let Some(v) = settings.stack_dbe_enable { m.insert("dbe_enable".into(), serde_json::json!(v)); }
         if m.is_empty() { None } else { Some(serde_json::Value::Object(m)) }
     };
 
@@ -1307,34 +1328,6 @@ pub async fn set_scope_settings(
         });
         if let Err(e) = client.send_command(Command::PiOutputSet2(heater_params)).await {
             tracing::warn!("pi_output_set2 (heater) failed: {}", e);
-        }
-    }
-
-    // ── Stack settings via set_stack_setting ─────────────────────────────────
-    let has_stack_update = settings.save_good_frames.is_some()
-        || settings.save_all_frames.is_some()
-        || settings.light_duration_min.is_some()
-        || settings.stack_capt_type.is_some()
-        || settings.stack_capt_num.is_some()
-        || settings.stack_brightness.is_some()
-        || settings.stack_contrast.is_some()
-        || settings.stack_saturation.is_some()
-        || settings.stack_dbe_enable.is_some();
-
-    if has_stack_update {
-        let stack_params = SetStackSettingParams {
-            save_discrete_ok_frame: settings.save_good_frames,
-            save_discrete_frame: settings.save_all_frames,
-            light_duration_min: settings.light_duration_min,
-            capt_type: settings.stack_capt_type,
-            capt_num: settings.stack_capt_num,
-            brightness: settings.stack_brightness,
-            contrast: settings.stack_contrast,
-            saturation: settings.stack_saturation,
-            dbe_enable: settings.stack_dbe_enable,
-        };
-        if let Err(e) = client.send_command(Command::SetStackSetting(stack_params)).await {
-            tracing::warn!("set_stack_setting failed: {}", e);
         }
     }
 
@@ -1419,9 +1412,12 @@ pub async fn schedule_set_view_plan(
         return Err("Plan has no targets".to_string());
     }
 
+    let plan: ViewPlan =
+        serde_json::from_value(plan).map_err(|e| format!("Invalid plan: {e}"))?;
+
     let client = get_client(&state, &telescope_id)?;
     let resp = client
-        .send_command(Command::SetViewPlan(plan))
+        .send_command(Command::SetViewPlan(Box::new(plan)))
         .await
         .map_err(|e| format!("Command failed: {e}"))?;
 
