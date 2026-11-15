@@ -227,23 +227,25 @@ export function useTelescope() {
   }, [updateTelescopeStatus, addActivity])
 
   /**
-   * Go to a target
+   * Go to a target.
+   * @param raHours right ascension in hours (0..24)
+   * @param dec declination in degrees
    */
   const gotoTarget = useCallback(async (
     telescopeId: string,
     targetName: string,
-    ra: number,
+    raHours: number,
     dec: number
   ) => {
     addActivity(telescopeId, 'info', `Slewing to ${targetName}...`)
 
     try {
-      const result = await invoke<ApiResponse>('goto_target', {
+      // The desktop command returns a JSON string, the web API an object.
+      const resp = await invoke<ApiResponse | string>('goto_target', {
         telescopeId,
-        targetName,
-        ra,
-        dec,
+        params: { target_name: targetName, ra: raHours, dec },
       })
+      const result: ApiResponse = typeof resp === 'string' ? JSON.parse(resp) : resp
 
       if (result.success) {
         updateTelescopeStatus(telescopeId, { slewing: true })

@@ -13,7 +13,7 @@ import {
 import { useSchedulerStore } from '../../stores/schedulerStore'
 import { useTelescopeStore } from '../../stores'
 import { invoke } from '../../services/api'
-import { scheduleToWireFormat } from './utils/scheduleSerialization'
+import { scheduleToDevicePlan } from './utils/scheduleSerialization'
 import { toast } from '../../hooks/useToast'
 import { LocationPicker } from './components/LocationPicker'
 import { ObjectSearch } from './components/ObjectSearch'
@@ -51,7 +51,7 @@ export function ScheduleBuilder() {
 
     setSending(true)
     try {
-      const wire = scheduleToWireFormat(schedule)
+      const wire = scheduleToDevicePlan(schedule)
       const resp = await invoke<string>('schedule_set_view_plan', {
         telescopeId: selectedTelescopeId,
         plan: wire,

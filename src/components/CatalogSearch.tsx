@@ -96,7 +96,8 @@ export function CatalogSearch({ onSelectTarget, compact = false }: CatalogSearch
       await gotoTarget(
         currentTelescopeId,
         object.name,
-        object.ra_decimal,
+        // Catalog RA is in degrees; the telescope takes hours.
+        object.ra_decimal / 15,
         object.dec_decimal
       )
     } catch (error) {

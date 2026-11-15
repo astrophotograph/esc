@@ -442,10 +442,16 @@ async fn cmd_disconnect(state: &AppState, payload: &serde_json::Value) -> Result
 
 async fn cmd_goto_target(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let target_name = payload.get("targetName").or_else(|| payload.get("target_name"))
+    // The frontend sends the Tauri shape `{telescopeId, params: {target_name, ra, dec}}`;
+    // a flat `{telescopeId, targetName, ra, dec}` is accepted too.
+    let args = payload.get("params").unwrap_or(payload);
+    let target_name = args.get("target_name").or_else(|| args.get("targetName"))
         .and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
-    let ra = payload.get("ra").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let dec = payload.get("dec").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    // Never default a missing coordinate: that would slew to RA 0h / Dec 0°.
+    let ra = args.get("ra").and_then(|v| v.as_f64())
+        .ok_or_else(|| "Missing ra (hours)".to_string())?;
+    let dec = args.get("dec").and_then(|v| v.as_f64())
+        .ok_or_else(|| "Missing dec (degrees)".to_string())?;
 
     // scopinator 0.6.0: a goto is `iscope_start_view` in star mode; RA is in hours.
     response_to_json(client.goto(&target_name, ra, dec).await)

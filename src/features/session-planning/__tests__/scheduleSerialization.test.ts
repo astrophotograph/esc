@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   scheduleToWireFormat,
+  scheduleToDevicePlan,
   exportScheduleToJson,
   importScheduleFromJson,
 } from '../utils/scheduleSerialization'
@@ -143,5 +144,20 @@ describe('importScheduleFromJson', () => {
     const obj = JSON.parse(exportScheduleToJson(makeSchedule()))
     obj.plan.list[0].target_ra_dec = 'bad'
     expect(() => importScheduleFromJson(JSON.stringify(obj))).toThrow()
+  })
+})
+
+describe('scheduleToDevicePlan', () => {
+  it('sends right ascension in hours and leaves declination in degrees', () => {
+    const plan = scheduleToDevicePlan(makeSchedule())
+    const m31 = plan.list.find((t) => t.target_name === 'M31')!
+    expect(m31.target_ra_dec[0]).toBeCloseTo(10.68 / 15, 10)
+    expect(m31.target_ra_dec[1]).toBe(41.27)
+  })
+
+  it('leaves the export wire format in degrees', () => {
+    const wire = scheduleToWireFormat(makeSchedule())
+    const m31 = wire.list.find((t) => t.target_name === 'M31')!
+    expect(m31.target_ra_dec).toEqual([10.68, 41.27])
   })
 })

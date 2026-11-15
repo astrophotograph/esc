@@ -124,6 +124,22 @@ export function scheduleToWireFormat(s: Schedule): WirePlan {
   }
 }
 
+/**
+ * Serialize a Schedule to the plan a Seestar accepts. Same as the wire format,
+ * except that the device takes right ascension in hours where a Schedule (and
+ * an exported file) holds degrees.
+ */
+export function scheduleToDevicePlan(s: Schedule): WirePlan {
+  const wire = scheduleToWireFormat(s)
+  return {
+    ...wire,
+    list: wire.list.map((t) => ({
+      ...t,
+      target_ra_dec: [t.target_ra_dec[0] / 15, t.target_ra_dec[1]],
+    })),
+  }
+}
+
 /** Serialize a Schedule to a JSON string for file export. */
 export function exportScheduleToJson(s: Schedule): string {
   const file: ExportFile = {
