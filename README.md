@@ -6,33 +6,35 @@ Also available as a native desktop app for Linux and macOS.
 
 ## Quick Start
 
-### Raspberry Pi / Linux Server
+### Linux Server
 
-Download and install the `.deb` — it sets up everything automatically:
-
-```bash
-curl -LO https://github.com/astrophotograph/esc/releases/latest/download/esc-web_2026.2.0_all.deb
-sudo dpkg -i esc-web_2026.2.0_all.deb
-```
-
-This installs ESC to `/opt/esc`, downloads Python and dependencies via [uv](https://docs.astral.sh/uv/), and starts a systemd service. First install takes a few minutes while dependencies are pulled.
-
-Once installed, open **http://\<pi-ip\>:9846** from any device on the same network.
+The web version is one Rust binary, `web_server`, which serves the frontend and
+the API on port 9846. Build it on the target's distribution (it links
+WebKitGTK, so the build host needs the Tauri prerequisites listed below):
 
 ```bash
-# Manage the service
-sudo systemctl status esc
-sudo systemctl restart esc
-journalctl -u esc -f
+pnpm install --frozen-lockfile && pnpm web:build      # frontend -> dist-web/
+PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig \
+  cargo build --release --manifest-path src-tauri/Cargo.toml --bin web_server
 
-# Upgrade
-curl -LO https://github.com/astrophotograph/esc/releases/latest/download/esc-web_2026.2.0_all.deb
-sudo dpkg -i esc-web_2026.2.0_all.deb
-
-# Uninstall
-sudo dpkg -r esc-web        # remove
-sudo dpkg -P esc-web        # purge (also removes venv and service user)
+ESC_STATIC_DIR=$PWD/dist-web ./target/release/web_server
 ```
+
+Then open **http://\<server-ip\>:9846** from any device on the same network.
+The server must be on the same subnet as the telescope for discovery to find it.
+
+| Variable | Purpose |
+|---|---|
+| `ESC_STATIC_DIR` | Directory of the built frontend. Unset, only the API is served. |
+| `SEESTAR_INTEROP_PEM` | Path to the interop key for the Seestar verification handshake. |
+| `XDG_DATA_HOME` | Where `com.erewhon.esc/eesc.db` (saved telescopes, settings) is kept. |
+
+`deploy/incus/esc.service` is a systemd unit for running it as a service. The
+server has no authentication of its own: put it behind a proxy that does if
+the network is not trusted.
+
+The `esc-web` `.deb` of earlier releases packaged the previous Python backend
+and is no longer built.
 
 ### Linux Desktop
 
@@ -84,7 +86,7 @@ API Abstraction Layer
 - **Node.js** 18+ and **pnpm** 8+
 - **Rust** (latest stable) — only needed for desktop builds
 - **uv** (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- **Tauri prerequisites** (desktop only): see [Tauri docs](https://v2.tauri.app/start/prerequisites/)
+- **Tauri prerequisites** (desktop app and the web server binary): see [Tauri docs](https://v2.tauri.app/start/prerequisites/)
 
 ### Setup
 
@@ -121,8 +123,8 @@ pnpm web:build
 # Desktop app
 pnpm tauri:build
 
-# Web .deb package
-pnpm web:build && ./deploy/build-deb.sh
+# Web server (see Quick Start)
+cargo build --release --manifest-path src-tauri/Cargo.toml --bin web_server
 ```
 
 ### Testing
@@ -164,7 +166,7 @@ esc/
 │   ├── imaging/            # FITS processing, plate solving
 │   ├── planning/           # Session planning
 │   └── web_api.py          # FastAPI server
-├── deploy/                 # Packaging (systemd, .deb build)
+├── deploy/                 # systemd unit for the web server
 ├── run-dev.sh              # Desktop dev launcher
 ├── pyproject.toml          # Python dependencies
 └── package.json            # Node dependencies

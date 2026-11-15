@@ -205,16 +205,12 @@ jobs:
       - name: Package web tarball
         run: tar -czf esc-web-${{ needs.determine-version.outputs.version }}.tar.gz -C dist-web .
 
-      - name: Build web .deb
-        run: ./deploy/build-deb.sh "${{ needs.determine-version.outputs.version }}"
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: artifacts-web
           path: |
             esc-web-*.tar.gz
-            esc-web_*.deb
 
   publish-release:
     name: Create GitHub Release

@@ -1,6 +1,5 @@
 # ESC web server (Rust `web_server` binary) for the `esc` Incus VM.
 # Installed as /etc/systemd/system/esc.service by homeops config/esc/provision.sh.
-# The older deploy/esc.service packages the Python backend for the .deb release.
 [Unit]
 Description=ESC telescope controller (web)
 After=network-online.target time-sync.target
