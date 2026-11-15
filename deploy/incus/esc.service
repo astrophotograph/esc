@@ -1,5 +1,7 @@
 # ESC web server (Rust `web_server` binary) for the `esc` Incus VM.
-# Installed as /etc/systemd/system/esc.service by homeops config/esc/provision.sh.
+# Installed as /etc/systemd/system/esc.service by homeops config/esc/provision.sh,
+# and re-shipped with every deploy (homeops config/deployer/recipes/astrophotograph/esc.toml):
+# a push to main on code-mesh builds and deploys after CI passes.
 [Unit]
 Description=ESC telescope controller (web)
 After=network-online.target time-sync.target
