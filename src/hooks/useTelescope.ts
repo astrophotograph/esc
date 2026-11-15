@@ -390,7 +390,7 @@ export function useTelescope() {
     try {
       const result = await invoke<ApiResponse>('telescope_focus_increment', {
         telescopeId,
-        steps
+        increment: steps
       })
 
       if (result.success) {

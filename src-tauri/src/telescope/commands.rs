@@ -875,7 +875,9 @@ pub async fn telescope_set_exposure(
     let result = response_to_json(
         client
             .send_command(Command::SetSetting(SettingParams {
-                exp_ms: Some(serde_json::json!(exposure_ms)),
+                // `exp_ms` is an object on the wire; a bare number is refused
+                // ("expected object param"). This is the stacking sub-exposure.
+                exp_ms: Some(serde_json::json!({ "stack_l": exposure_ms })),
                 ..Default::default()
             }))
             .await,

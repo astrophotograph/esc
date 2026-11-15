@@ -114,11 +114,87 @@ async fn command_handler(
     }
 }
 
+/// Make a request body look the way the handlers below read it.
+///
+/// The frontend calls every command with the argument shape of the Tauri
+/// command of the same name, and Tauri is forgiving in two ways these handlers
+/// are not: a struct argument arrives nested (`{telescopeId, params: {direction,
+/// ...}}`), and top-level names are camelCase on the wire but snake_case in
+/// Rust (`exposureMs` / `exposure_ms`). A handler that read the other spelling
+/// used to fall back to a default silently — every jog button sent "n", and
+/// set-focus sent position 0.
+///
+/// So: the members of an object-valued `params` are also made available at the
+/// top level, and every top-level member is reachable under both spellings.
+/// A member that is already present is never overwritten.
+fn normalize_payload(payload: serde_json::Value) -> serde_json::Value {
+    let serde_json::Value::Object(mut map) = payload else {
+        return payload;
+    };
+    if let Some(serde_json::Value::Object(inner)) = map.get("params").cloned() {
+        for (key, value) in inner {
+            map.entry(key).or_insert(value);
+        }
+    }
+    let aliases: Vec<(String, serde_json::Value)> = map
+        .iter()
+        .flat_map(|(key, value)| {
+            [to_snake_case(key), to_camel_case(key)]
+                .into_iter()
+                .filter(move |alias| alias != key)
+                .map(move |alias| (alias, value.clone()))
+        })
+        .collect();
+    for (alias, value) in aliases {
+        map.entry(alias).or_insert(value);
+    }
+    serde_json::Value::Object(map)
+}
+
+fn to_snake_case(name: &str) -> String {
+    let mut out = String::with_capacity(name.len() + 4);
+    for c in name.chars() {
+        if c.is_ascii_uppercase() {
+            out.push('_');
+            out.push(c.to_ascii_lowercase());
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+fn to_camel_case(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut upper = false;
+    for c in name.chars() {
+        if c == '_' {
+            upper = true;
+        } else if upper {
+            out.push(c.to_ascii_uppercase());
+            upper = false;
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// A required numeric argument; never substitute a default for a value that
+/// moves hardware.
+fn required_f64(payload: &serde_json::Value, name: &str) -> Result<f64, String> {
+    payload
+        .get(name)
+        .and_then(|v| v.as_f64())
+        .ok_or_else(|| format!("Missing {name}"))
+}
+
 async fn dispatch_command(
     state: &AppState,
     command: &str,
     payload: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    let payload = normalize_payload(payload);
     match command {
         // --- Telescope management ---
         "discover_telescopes" => cmd_discover(state).await,
@@ -470,7 +546,10 @@ async fn cmd_park(state: &AppState, payload: &serde_json::Value) -> Result<serde
 
 async fn cmd_move(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let direction = payload.get("direction").and_then(|v| v.as_str()).unwrap_or("n");
+    let direction = payload
+        .get("direction")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Missing direction".to_string())?;
     let speed = payload.get("speed").and_then(|v| v.as_f64()).unwrap_or(1.0);
     let duration = payload.get("duration_sec").and_then(|v| v.as_f64()).unwrap_or(5.0);
 
@@ -519,7 +598,7 @@ async fn cmd_stop_goto(state: &AppState, payload: &serde_json::Value) -> Result<
 
 async fn cmd_focus(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let position = payload.get("position").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let position = required_f64(payload, "position")? as i32;
     response_to_json(
         client.send_command(Command::MoveFocuser(MoveFocuserParams {
             step: position,
@@ -530,7 +609,7 @@ async fn cmd_focus(state: &AppState, payload: &serde_json::Value) -> Result<serd
 
 async fn cmd_focus_increment(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let increment = payload.get("increment").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let increment = required_f64(payload, "increment")? as i32;
 
     let current_resp = client.send_command(Command::GetFocuserPosition).await
         .map_err(|e| format!("Failed to get focuser position: {e}"))?;
@@ -538,7 +617,7 @@ async fn cmd_focus_increment(state: &AppState, payload: &serde_json::Value) -> R
         .as_ref()
         .and_then(|v| v.get("step"))
         .and_then(|v| v.as_i64())
-        .unwrap_or(0) as i32;
+        .ok_or_else(|| "Focuser position unknown; not moving".to_string())? as i32;
 
     response_to_json(
         client.send_command(Command::MoveFocuser(MoveFocuserParams {
@@ -603,7 +682,7 @@ async fn cmd_imaging_stop(state: &AppState, payload: &serde_json::Value) -> Resu
 
 async fn cmd_set_gain(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let gain = payload.get("gain").and_then(|v| v.as_i64()).unwrap_or(80) as i32;
+    let gain = required_f64(payload, "gain")? as i32;
     response_to_json(
         client.send_command(Command::SetControlValue("gain".to_string(), gain)).await,
     )
@@ -611,10 +690,12 @@ async fn cmd_set_gain(state: &AppState, payload: &serde_json::Value) -> Result<s
 
 async fn cmd_set_exposure(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    let exposure_ms = payload.get("exposure_ms").and_then(|v| v.as_i64()).unwrap_or(10000);
+    let exposure_ms = required_f64(payload, "exposure_ms")? as i64;
     response_to_json(
         client.send_command(Command::SetSetting(SettingParams {
-            exp_ms: Some(serde_json::json!(exposure_ms)),
+            // `exp_ms` is an object on the wire; a bare number is refused
+            // ("expected object param"). This is the stacking sub-exposure.
+            exp_ms: Some(serde_json::json!({ "stack_l": exposure_ms })),
             ..Default::default()
         })).await,
     )
@@ -856,4 +937,70 @@ pub async fn start_web_server(
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn nested_params_are_readable_at_the_top_level() {
+        // What the jog buttons send (TelescopeControlsOverlay).
+        let p = normalize_payload(json!({
+            "telescopeId": "t1",
+            "params": { "direction": "w", "speed": 1.0, "duration_sec": 5.0 }
+        }));
+        assert_eq!(p["direction"], "w");
+        assert_eq!(p["duration_sec"], 5.0);
+        assert_eq!(p["params"]["direction"], "w");
+    }
+
+    #[test]
+    fn top_level_names_are_readable_in_both_spellings() {
+        let p = normalize_payload(json!({ "telescopeId": "t1", "exposureMs": 2000 }));
+        assert_eq!(p["exposure_ms"], 2000);
+        assert_eq!(p["telescope_id"], "t1");
+
+        let p = normalize_payload(json!({ "target_name": "M31" }));
+        assert_eq!(p["targetName"], "M31");
+    }
+
+    #[test]
+    fn an_existing_member_is_never_overwritten() {
+        let p = normalize_payload(json!({
+            "direction": "n",
+            "params": { "direction": "s" },
+            "exposure_ms": 1, "exposureMs": 2
+        }));
+        assert_eq!(p["direction"], "n");
+        assert_eq!(p["exposure_ms"], 1);
+        assert_eq!(p["exposureMs"], 2);
+    }
+
+    #[test]
+    fn non_object_payloads_pass_through() {
+        assert_eq!(normalize_payload(json!(null)), json!(null));
+        assert_eq!(normalize_payload(json!({ "params": "x" }))["params"], "x");
+    }
+
+    #[tokio::test]
+    async fn hardware_moving_commands_refuse_missing_arguments() {
+        // No telescope is registered, so a complete request stops at the
+        // lookup; an incomplete one must be rejected rather than defaulted.
+        let state = AppState::default();
+        for (command, body, missing) in [
+            ("telescope_move", json!({ "telescopeId": "t1", "params": {} }), "direction"),
+            ("telescope_focus", json!({ "telescopeId": "t1" }), "position"),
+            ("telescope_focus_increment", json!({ "telescopeId": "t1" }), "increment"),
+            ("telescope_set_gain", json!({ "telescopeId": "t1" }), "gain"),
+            ("telescope_set_exposure", json!({ "telescopeId": "t1" }), "exposure_ms"),
+        ] {
+            let err = dispatch_command(&state, command, body).await.unwrap_err();
+            assert!(
+                err.contains("not found") || err.contains(missing),
+                "{command}: {err}"
+            );
+        }
+    }
 }
