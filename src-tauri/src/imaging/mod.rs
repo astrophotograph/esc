@@ -1,5 +1,7 @@
 //! Imaging module for FITS processing, enhancement, and plate solving.
 
+pub mod save;
+
 use serde::{Deserialize, Serialize};
 use tauri::State;
 

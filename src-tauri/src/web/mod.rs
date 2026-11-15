@@ -7,10 +7,10 @@
 #![allow(dead_code)]
 
 use axum::{
-    extract::{Path, State as AxumState},
-    http::StatusCode,
+    extract::{Path, Query, State as AxumState},
+    http::{header, StatusCode},
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
     Json, Router,
 };
 use scopinator_seestar::command::params::*;
@@ -35,6 +35,7 @@ pub fn create_router(state: WebState, static_dir: Option<std::path::PathBuf>) ->
     // iPhone on LAN) reach everything through a single port via the Vite proxy.
     let router = Router::new()
         .route("/api/:command", post(command_handler))
+        .route("/download/image/:telescope_id", get(download_image_handler))
         .merge(crate::streaming::create_router())
         .with_state(state);
 
@@ -187,6 +188,49 @@ fn required_f64(payload: &serde_json::Value, name: &str) -> Result<f64, String> 
         .get(name)
         .and_then(|v| v.as_f64())
         .ok_or_else(|| format!("Missing {name}"))
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct DownloadImageQuery {
+    format: Option<String>,
+    filename: Option<String>,
+}
+
+/// `GET /download/image/:telescope_id?format=png|jpg|fits&filename=…`: the
+/// stacked image (or the current preview frame when nothing is stacked) as a
+/// file download. The web counterpart of the desktop `telescope_save_image`,
+/// which writes to the local disk instead.
+async fn download_image_handler(
+    AxumState(state): AxumState<WebState>,
+    Path(telescope_id): Path<String>,
+    Query(query): Query<DownloadImageQuery>,
+) -> Response {
+    use crate::imaging::save::{fetch_and_encode, safe_file_name, SaveFormat};
+
+    let result = async {
+        let format = SaveFormat::parse(query.format.as_deref().unwrap_or("png"))?;
+        let client = get_client(&state, &telescope_id)?;
+        let image = fetch_and_encode(&client, format).await?;
+        let name = safe_file_name(query.filename.as_deref().unwrap_or("capture"), format);
+        Ok::<_, String>((image, name))
+    }
+    .await;
+
+    match result {
+        Ok((image, name)) => (
+            [
+                (header::CONTENT_TYPE, image.format.mime().to_string()),
+                (
+                    header::CONTENT_DISPOSITION,
+                    format!("attachment; filename=\"{name}\""),
+                ),
+                (header::CACHE_CONTROL, "no-store".to_string()),
+            ],
+            image.bytes,
+        )
+            .into_response(),
+        Err(e) => err_json(&e),
+    }
 }
 
 async fn dispatch_command(
@@ -673,11 +717,9 @@ async fn cmd_imaging_start(state: &AppState, payload: &serde_json::Value) -> Res
 
 async fn cmd_imaging_stop(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    response_to_json(
-        client.send_command(Command::IscopeStopView(Some(StopViewParams {
-            stage: StopStage::Stack,
-        }))).await,
-    )
+    // No stage = stop the whole view. Stopping only the Stack stage leaves the
+    // view working, and the scope then refuses a view plan with 268.
+    response_to_json(client.send_command(Command::IscopeStopView(None)).await)
 }
 
 async fn cmd_set_gain(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
@@ -749,7 +791,10 @@ async fn cmd_get_stacking_status(state: &AppState, payload: &serde_json::Value) 
 
 async fn cmd_save_image(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
     let client = get_client(state, &tid(payload)?)?;
-    Ok(crate::telescope::commands::stacked_image_json(&client).await)
+    // A server cannot write to the user's computer: the web frontend downloads
+    // the image from GET /download/image/:telescope_id instead.
+    let _ = client;
+    Err("In the web version, download the image from /download/image/<telescopeId>".to_string())
 }
 
 async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {

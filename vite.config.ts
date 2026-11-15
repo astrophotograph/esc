@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => ({
             '/api': { target: webApiTarget, changeOrigin: true },
             '/stream': { target: webApiTarget, changeOrigin: true },
             '/snapshot': { target: webApiTarget, changeOrigin: true },
+            '/download': { target: webApiTarget, changeOrigin: true },
           }
         : undefined,
   },

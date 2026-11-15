@@ -12,4 +12,4 @@ mod gradient;
 pub mod mtf;
 mod pipeline;
 
-pub use pipeline::{process_fits_file, stretch_raw_frame, StretchParams};
+pub use pipeline::{process_fits_file, stretch_raw_frame, stretch_raw_frame_rgb, StretchParams};

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { invoke } from '../services/api'
+import { invoke, runtime } from '../services/api'
 import { useTelescopeStore, useImagingStore } from '../stores'
 
 interface ImageSaveDialogProps {
@@ -28,10 +28,36 @@ interface ImageSaveDialogProps {
 }
 
 const IMAGE_FORMATS = [
-  { value: 'png', label: 'PNG', extension: '.png', description: 'Lossless, best quality' },
-  { value: 'jpg', label: 'JPEG', extension: '.jpg', description: 'Smaller file size' },
-  { value: 'fits', label: 'FITS', extension: '.fits', description: 'Scientific format' },
+  { value: 'png', label: 'PNG', extension: '.png', description: 'Stretched for viewing, lossless' },
+  { value: 'jpg', label: 'JPEG', extension: '.jpg', description: 'Stretched for viewing, smaller' },
+  { value: 'fits', label: 'FITS', extension: '.fits', description: 'Raw 16-bit data, unstretched' },
 ]
+
+type SaveResult = { success: boolean; path?: string; error?: string }
+
+/**
+ * Web mode: the server cannot write to this computer, so fetch the encoded
+ * image and hand it to the browser as a download.
+ */
+async function downloadImage(telescopeId: string, fileName: string, format: string): Promise<SaveResult> {
+  const url =
+    `/download/image/${encodeURIComponent(telescopeId)}` +
+    `?format=${encodeURIComponent(format)}&filename=${encodeURIComponent(fileName)}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    return { success: false, error: body?.error || `Download failed: ${res.statusText}` }
+  }
+  const blob = await res.blob()
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(link.href)
+  return { success: true, path: fileName }
+}
 
 export function ImageSaveDialog({ open, onOpenChange, onSaved }: ImageSaveDialogProps) {
   const { currentTelescopeId, telescopes, addActivity } = useTelescopeStore()
@@ -74,11 +100,13 @@ export function ImageSaveDialog({ open, onOpenChange, onSaved }: ImageSaveDialog
       const ext = IMAGE_FORMATS.find(f => f.value === format)?.extension || '.png'
       const fullPath = `${filename}${ext}`
 
-      const result = await invoke<{ success: boolean; path?: string; error?: string }>('telescope_save_image', {
-        telescopeId: currentTelescopeId,
-        filePath: fullPath,
-        format,
-      })
+      const result = runtime.isWeb
+        ? await downloadImage(currentTelescopeId, fullPath, format)
+        : await invoke<SaveResult>('telescope_save_image', {
+            telescopeId: currentTelescopeId,
+            filePath: fullPath,
+            format,
+          })
 
       if (result.success) {
         setSaved(true)
@@ -110,7 +138,7 @@ export function ImageSaveDialog({ open, onOpenChange, onSaved }: ImageSaveDialog
             Save Image
           </DialogTitle>
           <DialogDescription>
-            Save the current camera frame to your computer
+            Save the stacked image, or the current frame if nothing is stacked
           </DialogDescription>
         </DialogHeader>
 
@@ -141,7 +169,9 @@ export function ImageSaveDialog({ open, onOpenChange, onSaved }: ImageSaveDialog
                 placeholder="Enter filename..."
               />
               <p className="text-xs text-muted-foreground">
-                File will be saved to the current working directory
+                {runtime.isWeb
+                  ? 'Your browser will download the file'
+                  : 'Saved to Pictures/ESC unless you give a full path'}
               </p>
             </div>
 

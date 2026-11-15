@@ -47,6 +47,27 @@ pub fn stretch_raw_frame(
     _is_color: bool,
     params: &StretchParams,
 ) -> Result<Vec<u8>, String> {
+    let (out_w, out_h, rgb) = stretch_raw_frame_rgb(data, width, height, params)?;
+    let img = image::RgbImage::from_raw(out_w, out_h, rgb)
+        .ok_or("Failed to create image buffer")?;
+
+    let mut jpeg_buf = Cursor::new(Vec::new());
+    let encoder = JpegEncoder::new_with_quality(&mut jpeg_buf, 85);
+    img.write_with_encoder(encoder)
+        .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
+
+    Ok(jpeg_buf.into_inner())
+}
+
+/// Stretch raw frame data to 8-bit interleaved RGB (same format detection as
+/// [`stretch_raw_frame`]). Returns `(width, height, rgb)`; a Bayer frame comes
+/// out at half resolution.
+pub fn stretch_raw_frame_rgb(
+    data: &[u8],
+    width: u32,
+    height: u32,
+    params: &StretchParams,
+) -> Result<(u32, u32, Vec<u8>), String> {
     let w = width as usize;
     let h = height as usize;
     let pixels = w * h;
@@ -192,15 +213,7 @@ pub fn stretch_raw_frame(
         }
     }
 
-    let img = image::RgbImage::from_raw(out_w as u32, out_h as u32, rgb)
-        .ok_or("Failed to create image buffer")?;
-
-    let mut jpeg_buf = Cursor::new(Vec::new());
-    let encoder = JpegEncoder::new_with_quality(&mut jpeg_buf, 85);
-    img.write_with_encoder(encoder)
-        .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
-
-    Ok(jpeg_buf.into_inner())
+    Ok((out_w as u32, out_h as u32, rgb))
 }
 
 /// Read a FITS file and extract pixel data as f64 channels.

@@ -47,27 +47,6 @@ fn response_to_json(
     }
 }
 
-/// Fetch the stacked image over the imaging port (scopinator 0.6.0 moved
-/// `get_stacked_img` there) and describe it as a success/failure JSON value.
-pub(crate) async fn stacked_image_json(client: &SeestarClient) -> serde_json::Value {
-    let frame = match client.get_stacked_image().await {
-        Ok(frame) => frame,
-        Err(e) => return serde_json::json!({ "success": false, "error": e.to_string() }),
-    };
-    match frame.image_bytes() {
-        Ok(bytes) => serde_json::json!({
-            "success": true,
-            "response": {
-                "width": frame.header.width,
-                "height": frame.header.height,
-                "bytes": bytes.len(),
-                "payload_kind": format!("{:?}", frame.payload_kind()),
-            },
-        }),
-        Err(e) => serde_json::json!({ "success": false, "error": e.to_string() }),
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TelescopeConfig {
     pub id: String,
@@ -808,9 +787,10 @@ pub async fn imaging_stop(
     let client = get_client(&state, &telescope_id)?;
     let result = response_to_json(
         client
-            .send_command(Command::IscopeStopView(Some(StopViewParams {
-                stage: StopStage::Stack,
-            })))
+            // No stage = stop the whole view. Stopping only the Stack stage
+            // leaves the view working, and the scope then refuses a view plan
+            // with 268.
+            .send_command(Command::IscopeStopView(None))
             .await,
     )?;
 
@@ -1073,18 +1053,61 @@ pub async fn telescope_get_stacking_status(
     Ok(result)
 }
 
-/// Save current image to file
+/// Save the stacked image (or, when nothing is stacked, the current preview
+/// frame) to a file. PNG and JPEG are stretched for viewing; FITS holds the
+/// telescope's linear 16-bit data.
+///
+/// `file_path` supplies the file name. An absolute path is used as given
+/// (its directory must exist); a bare name goes to `Pictures/ESC` (created on
+/// demand), or the home directory when there is no Pictures folder.
 #[tauri::command]
 pub async fn telescope_save_image(
     state: State<'_, AppState>,
     telescope_id: String,
-    _file_path: String,
-    _format: Option<String>,
+    file_path: String,
+    format: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    tracing::info!("Save image for telescope {} to {}", telescope_id, _file_path);
+    use crate::imaging::save::{fetch_and_encode, safe_file_name, SaveFormat};
+
+    let requested = std::path::Path::new(&file_path);
+    let format = match format.as_deref() {
+        Some(name) => SaveFormat::parse(name)?,
+        None => SaveFormat::parse(
+            requested.extension().and_then(|e| e.to_str()).unwrap_or("png"),
+        )?,
+    };
+    let dir = match requested.parent() {
+        Some(parent) if requested.is_absolute() => parent.to_path_buf(),
+        _ => dirs::picture_dir()
+            .map(|p| p.join("ESC"))
+            .or_else(dirs::home_dir)
+            .ok_or_else(|| "No Pictures or home directory to save into".to_string())?,
+    };
+    let path = dir.join(safe_file_name(&file_path, format));
+    tracing::info!("Save image for telescope {} to {:?}", telescope_id, path);
 
     let client = get_client(&state, &telescope_id)?;
-    Ok(stacked_image_json(&client).await)
+    let image = match fetch_and_encode(&client, format).await {
+        Ok(image) => image,
+        Err(e) => return Ok(serde_json::json!({ "success": false, "error": e })),
+    };
+    if !requested.is_absolute() {
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|e| format!("Could not create {}: {e}", dir.display()))?;
+    }
+    tokio::fs::write(&path, &image.bytes)
+        .await
+        .map_err(|e| format!("Could not write {}: {e}", path.display()))?;
+
+    Ok(serde_json::json!({
+        "success": true,
+        "path": path.to_string_lossy(),
+        "source": image.source,
+        "width": image.width,
+        "height": image.height,
+        "bytes": image.bytes.len(),
+    }))
 }
 
 /// Full scope settings payload returned to the frontend.
