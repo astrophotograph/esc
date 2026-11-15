@@ -65,3 +65,6 @@ Thumbs.db
 # Anchored to the repo root so it does not also match the vendored, sanitized
 # replay corpus under src-tauri/tests/fixtures/sessions/ (needed by E2E tests).
 /sessions/
+
+# Tauri capability schemas: rewritten by tauri-build on every build
+src-tauri/gen/schemas/
