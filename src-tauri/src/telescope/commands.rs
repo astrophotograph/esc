@@ -310,7 +310,9 @@ pub async fn connect_telescope(
             interop_key,
             // Use the library default response timeout (scopinator 0.2.0+).
             response_timeout: None,
-            ..Default::default()
+            // Set the scope's clock at connect, as the official app does: a
+            // scope with an unset clock fails every goto (501).
+            clock_sync: scopinator_seestar::ClockSync::With(crate::telescope::local_clock),
         };
 
         let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -327,6 +329,11 @@ pub async fn connect_telescope(
 
         tracing::info!("connect_telescope: native Rust client connected");
         let client = Arc::new(client);
+        crate::telescope::spawn_goto_watcher(
+            state.goto_errors.clone(),
+            telescope_id.clone(),
+            &client,
+        );
 
         // Live view = `iscope_start_view` (control, 4700) THEN `begin_streaming`
         // (imaging, 4800); the fresh-start case is handled by `imaging_start`.
@@ -1422,11 +1429,7 @@ pub async fn schedule_set_view_plan(
         .map_err(|e| format!("Command failed: {e}"))?;
 
     let code = resp.code;
-    let message = match code {
-        0 => "Plan sent successfully".to_string(),
-        536 => "Telescope is busy — another operation is in progress".to_string(),
-        _ => format!("Device returned error code {code}"),
-    };
+    let message = crate::telescope::view_plan_message(code);
 
     Ok(serde_json::json!({
         "success": code == 0,

@@ -59,6 +59,7 @@ export interface TelescopeStatus {
   mountType?: string
   isTracking?: boolean
   isGoto?: boolean
+  gotoError?: string | null
   temperatureC?: number
   batteryPercent?: number
   humidityPercent?: number

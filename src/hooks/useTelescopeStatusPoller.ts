@@ -26,6 +26,7 @@ interface RawTelescopeStatus {
   mountType?: string
   isTracking?: boolean
   isGoto?: boolean
+  gotoError?: string | null
   temperatureC?: number
   batteryPercent?: number
   humidityPercent?: number
@@ -50,11 +51,13 @@ interface RawTelescopeStatus {
 export function useTelescopeStatusPoller() {
   const currentTelescopeId = useTelescopeStore((s) => s.currentTelescopeId)
   const updateTelescopeStatus = useTelescopeStore((s) => s.updateTelescopeStatus)
+  const addActivity = useTelescopeStore((s) => s.addActivity)
 const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeRef = useRef(false)
   const isMovingRef = useRef(false)
+  const lastGotoErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!currentTelescopeId) return
@@ -90,6 +93,7 @@ const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
           mountType: result.mountType,
           isTracking: result.isTracking,
           isGoto: result.isGoto,
+          gotoError: result.gotoError ?? null,
           temperatureC: result.temperatureC,
           batteryPercent: result.batteryPercent,
           humidityPercent: result.humidityPercent,
@@ -102,6 +106,14 @@ const isManuallyMoving = useUIStore((s) => s.isManuallyMoving)
           totalMb: result.totalMb,
           balanceSensor: result.balanceSensor,
         })
+
+        // The backend holds a goto failure until the next goto starts; log it
+        // once, when it first appears.
+        const gotoError = result.gotoError ?? null
+        if (gotoError && gotoError !== lastGotoErrorRef.current) {
+          addActivity(telescopeId, 'error', `GOTO failed: ${gotoError}`)
+        }
+        lastGotoErrorRef.current = gotoError
 
         const moving = result.isGoto === true || isMovingRef.current
         const nextDelay = !result.connected

@@ -143,6 +143,16 @@ export function StatusBar({ telescopeId }: StatusBarProps) {
           )}
         </div>
       )}
+
+      {/* Last goto failure, until the next goto starts */}
+      {status.gotoError && (
+        <span
+          className="px-2 py-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold"
+          title={status.gotoError}
+        >
+          GOTO FAILED: {status.gotoError}
+        </span>
+      )}
     </div>
   )
 }

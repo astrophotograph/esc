@@ -28,6 +28,8 @@ tokio = { version = "1", features = ["full"] }
 # Telescope protocol
 scopinator-seestar = "0.6.0"
 scopinator-types = "0.6"
+# IANA name of the host time zone, for setting the scope's clock at connect
+iana-time-zone = "0.1"
 
 
 # Image processing (stretch pipeline)

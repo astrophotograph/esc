@@ -12,7 +12,14 @@ pub struct AppState {
     pub imaging_sessions: Arc<RwLock<HashMap<String, ImagingSession>>>,
     /// Resolved interop PEM path (env var takes precedence over DB setting)
     pub interop_pem: Arc<RwLock<Option<String>>>,
+    /// Why the last goto failed, per telescope ID. Filled from the scope's
+    /// `AutoGoto` events (see `telescope::spawn_goto_watcher`) and cleared when
+    /// the next goto starts. The view state alone never reports a failure.
+    pub goto_errors: GotoErrors,
 }
+
+/// Last goto failure per telescope ID.
+pub type GotoErrors = Arc<RwLock<HashMap<String, String>>>;
 
 /// Represents a connection to a telescope
 pub struct TelescopeConnection {
@@ -70,6 +77,7 @@ impl Clone for AppState {
             telescopes: Arc::clone(&self.telescopes),
             imaging_sessions: Arc::clone(&self.imaging_sessions),
             interop_pem: Arc::clone(&self.interop_pem),
+            goto_errors: Arc::clone(&self.goto_errors),
         }
     }
 }

@@ -369,7 +369,9 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         interop_key,
         // Use the library default response timeout (scopinator 0.2.0+).
         response_timeout: None,
-        ..Default::default()
+        // Set the scope's clock at connect, as the official app does: a scope
+        // with an unset clock fails every goto (501).
+        clock_sync: scopinator_seestar::ClockSync::With(crate::telescope::local_clock),
     };
 
     let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -387,6 +389,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
     info!("Web API: native client connected to {}", host);
 
     let client = Arc::new(client);
+    crate::telescope::spawn_goto_watcher(state.goto_errors.clone(), telescope_id.clone(), &client);
 
     // Live view = `iscope_start_view` on the control port (4700) THEN
     // `begin_streaming` on the imaging port (4800); the fresh-start case is
@@ -693,6 +696,9 @@ async fn cmd_get_status(state: &AppState, payload: &serde_json::Value) -> Result
         view_val.as_ref(),
     );
 
+    let mut status = status;
+    status.goto_error = state.goto_errors.read().get(&telescope_id).cloned();
+
     serde_json::to_value(status).map_err(|e| e.to_string())
 }
 
@@ -722,11 +728,7 @@ async fn cmd_set_view_plan(state: &AppState, payload: &serde_json::Value) -> Res
         .map_err(|e| format!("Command failed: {e}"))?;
 
     let code = resp.code;
-    let message = match code {
-        0 => "Plan sent successfully".to_string(),
-        536 => "Telescope is busy — another operation is in progress".to_string(),
-        _ => format!("Device returned error code {code}"),
-    };
+    let message = crate::telescope::view_plan_message(code);
 
     Ok(serde_json::json!({
         "success": code == 0,

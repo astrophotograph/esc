@@ -25,6 +25,9 @@ pub struct TelescopeStatus {
     pub ra: Option<f64>,
     pub dec: Option<f64>,
     pub is_goto: Option<bool>,
+    /// Why the last goto failed (e.g. "mount goto failed (code 501)"), until
+    /// the next goto starts. Comes from events, not from the status commands.
+    pub goto_error: Option<String>,
     pub is_tracking: Option<bool>,
     pub mount_type: Option<String>,
     pub view_state: Option<String>,
@@ -58,6 +61,7 @@ pub async fn get_telescope_status(
         ra: None,
         dec: None,
         is_goto: None,
+        goto_error: None,
         is_tracking: None,
         mount_type: None,
         view_state: None,
@@ -182,12 +186,14 @@ pub async fn get_telescope_status(
         }
     };
 
-    Ok(parse_status_from_results(
+    let mut status = parse_status_from_results(
         true,
         device_val.as_ref(),
         coord_val.as_ref(),
         view_val.as_ref(),
-    ))
+    );
+    status.goto_error = state.goto_errors.read().get(&telescope_id).cloned();
+    Ok(status)
 }
 
 /// Build a [`TelescopeStatus`] from the raw `result` payloads of the three
@@ -215,6 +221,7 @@ pub fn parse_status_from_results(
         ra: None,
         dec: None,
         is_goto: None,
+        goto_error: None,
         is_tracking: None,
         mount_type: None,
         view_state: None,
@@ -289,10 +296,14 @@ pub fn parse_status_from_results(
                 .get("stage")
                 .and_then(|v| v.as_str())
                 .map(String::from);
+            // A goto is a working view at stage "AutoGoto" (observed on an S50
+            // fw 6.70 and an S30 fw 9.75). The state-based forms are older.
+            let goto_stage = status.view_state.as_deref() == Some("working")
+                && status.stage.as_deref() == Some("AutoGoto");
             status.is_goto = view_val
                 .get("state")
                 .and_then(|v| v.as_str())
-                .map(|s| s == "SlewComplete" || s.contains("Goto"));
+                .map(|s| goto_stage || s == "SlewComplete" || s.contains("Goto"));
             status.target_name = view_val
                 .get("target_name")
                 .and_then(|v| v.as_str())
@@ -371,6 +382,22 @@ mod tests {
         let device = json!({ "mount": { "equ_mode": true } });
         let status = parse_status_from_results(true, Some(&device), None, None);
         assert_eq!(status.mount_type.as_deref(), Some("Equatorial"));
+    }
+
+    #[test]
+    fn working_auto_goto_stage_is_a_goto() {
+        let view = json!({ "View": { "state": "working", "stage": "AutoGoto" } });
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.is_goto, Some(true));
+
+        let view = json!({ "View": { "state": "working", "stage": "ContinuousExposure" } });
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.is_goto, Some(false));
+
+        // A cancelled view keeps a stale stage; that is not a goto.
+        let view = json!({ "View": { "state": "cancel", "stage": "AutoGoto" } });
+        let status = parse_status_from_results(true, None, None, Some(&view));
+        assert_eq!(status.is_goto, Some(false));
     }
 
     #[test]
