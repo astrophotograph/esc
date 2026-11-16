@@ -48,6 +48,9 @@ export function TelescopeView() {
   const stage = useTelescopeStore((s) =>
     s.currentTelescopeId ? s.telescopeStatus[s.currentTelescopeId]?.stage : undefined,
   )
+  // `stage` is undefined until the first status poll answers. The scope may
+  // well be stacking then, so the call-to-action waits until it is known idle.
+  const stageKnown = stage !== undefined
   const hasActiveView = !!stage && stage !== 'Idle'
   const [startingView, setStartingView] = useState(false)
 
@@ -209,7 +212,7 @@ export function TelescopeView() {
 
         {/* Start Live View call-to-action: shown over the (dark) feed when the
             scope is connected but no imaging session is running. */}
-        {viewMode === 'telescope' && isConnected && !hasActiveView && (
+        {viewMode === 'telescope' && isConnected && stageKnown && !hasActiveView && (
           <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3 pointer-events-none">
             <div className="flex flex-col items-center gap-3 rounded-xl bg-card/80 backdrop-blur px-6 py-5 border border-border shadow-xl pointer-events-auto">
               <p className="text-sm text-muted-foreground">No live view running</p>

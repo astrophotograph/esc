@@ -8,6 +8,7 @@
 //! - JPEG output (via image crate)
 
 mod autocrop;
+mod balance;
 mod gradient;
 pub mod mtf;
 mod pipeline;

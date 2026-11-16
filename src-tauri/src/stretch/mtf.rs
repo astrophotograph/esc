@@ -71,6 +71,48 @@ pub fn stretch_mtf_rgb(
     });
 }
 
+/// Stretch colour-balanced channels with one curve, so their ratios survive.
+///
+/// [`stretch_mtf_rgb`] scales each channel until the medians above the shadow
+/// point match. On a raw sensor frame that distance is set by noise, and green
+/// (the mean of two photosites) has the least, so red and blue were scaled
+/// down and every star came out green.
+pub fn stretch_mtf_linked(channels: &mut [Vec<f64>], bg_percent: f64, sigma: f64) {
+    if channels.len() == 1 {
+        stretch_mtf_mono(&mut channels[0], bg_percent, sigma);
+        return;
+    }
+
+    let stats: Vec<(f64, f64)> = channels.par_iter().map(|ch| channel_stats(ch)).collect();
+    let ref_idx = std::cmp::min(1, channels.len() - 1);
+    let median = stats[ref_idx].0;
+    // The noisiest channel sets the shadow point. Clipping a noisy channel
+    // closer to its median than the others would lift its mean and tint the
+    // background.
+    let mad = stats.iter().map(|s| s.1).fold(0.0, f64::max);
+    let shadow = (median - sigma * mad * 1.4826).max(0.0);
+    let range = 1.0 - shadow;
+    if range <= 0.0 {
+        return;
+    }
+
+    let median_norm = (median - shadow) / range;
+    let midtone = if median_norm > 0.0 && median_norm < 1.0 && bg_percent > 0.0 {
+        let m = median_norm * (bg_percent - 1.0)
+            / (2.0 * bg_percent * median_norm - bg_percent - median_norm);
+        m.clamp(0.01, 0.99)
+    } else {
+        0.5
+    };
+
+    channels.par_iter_mut().for_each(|ch| {
+        for v in ch.iter_mut() {
+            *v = ((*v - shadow) / range).clamp(0.0, 1.0);
+        }
+        apply_mtf(ch, midtone);
+    });
+}
+
 fn stretch_mtf_mono(data: &mut [f64], bg_percent: f64, sigma: f64) {
     let (med, mad) = channel_stats(data);
     let shadow_clip = (med - sigma * mad * 1.4826).max(0.0);

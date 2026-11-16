@@ -109,6 +109,33 @@ pub fn spawn_goto_watcher(
     });
 }
 
+/// The stage of the view that is running, from a `get_view_state` result, or
+/// `None` when no view is working.
+pub fn running_view_stage(view_state: &serde_json::Value) -> Option<String> {
+    let view = view_state.get("View").or_else(|| view_state.get("view"))?;
+    if view.get("state").and_then(|s| s.as_str()) != Some("working") {
+        return None;
+    }
+    Some(
+        view.get("stage")
+            .and_then(|s| s.as_str())
+            .unwrap_or("unknown")
+            .to_owned(),
+    )
+}
+
+/// Ask the scope which view stage is running, if any.
+///
+/// `iscope_start_view` restarts the view, which ends a stack in progress, so
+/// "start live view" asks first and leaves a running view alone.
+pub async fn fetch_running_view_stage(client: &scopinator_seestar::SeestarClient) -> Option<String> {
+    let response = client
+        .send_command(scopinator_seestar::command::Command::GetViewState)
+        .await
+        .ok()?;
+    running_view_stage(&response.result?)
+}
+
 /// The message shown for a `set_view_plan` response code.
 pub fn view_plan_message(code: i32) -> String {
     match code {
@@ -135,6 +162,23 @@ impl TelescopeController {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_working_view_reports_its_stage() {
+        // As an S30 (fw 9.75) answers get_view_state in live view and in a stack.
+        let live = serde_json::json!({ "View": { "state": "working", "stage": "ContinuousExposure" } });
+        assert_eq!(running_view_stage(&live).as_deref(), Some("ContinuousExposure"));
+        let stack = serde_json::json!({ "View": { "state": "working", "stage": "Stack" } });
+        assert_eq!(running_view_stage(&stack).as_deref(), Some("Stack"));
+    }
+
+    #[test]
+    fn a_stopped_view_is_not_running() {
+        // A cancelled view keeps its last stage.
+        let cancelled = serde_json::json!({ "View": { "state": "cancel", "stage": "Stack" } });
+        assert_eq!(running_view_stage(&cancelled), None);
+        assert_eq!(running_view_stage(&serde_json::json!({})), None);
+    }
 
     fn auto_goto(json: serde_json::Value) -> scopinator_seestar::event::AutoGotoEventData {
         serde_json::from_value(json).unwrap()

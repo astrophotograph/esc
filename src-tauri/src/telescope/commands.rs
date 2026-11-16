@@ -744,6 +744,15 @@ pub async fn imaging_start(
         return Err("Cannot start imaging: telescope is parked".to_string());
     }
 
+    // A view that is already running (a stack, most importantly) is left
+    // alone: starting a view again would end it. Only the stream is armed.
+    if let Some(stage) = crate::telescope::fetch_running_view_stage(&client).await {
+        if let Err(e) = client.begin_streaming().await {
+            tracing::warn!("imaging_start: begin_streaming failed for running view: {}", e);
+        }
+        return Ok(serde_json::json!({ "success": true, "already_running": stage }).to_string());
+    }
+
     let result = response_to_json(
         client
             .send_command(Command::IscopeStartView(StartViewParams {

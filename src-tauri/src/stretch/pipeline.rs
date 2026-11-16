@@ -9,6 +9,7 @@ use image::codecs::jpeg::JpegEncoder;
 use rayon::prelude::*;
 
 use super::autocrop;
+use super::balance;
 use super::gradient;
 use super::mtf;
 
@@ -73,6 +74,10 @@ pub fn stretch_raw_frame_rgb(
     let pixels = w * h;
 
     // Auto-detect format from data length; derive output dimensions and f64 channels
+    // A raw sensor frame is the only input that has not been colour-balanced by
+    // the telescope, so it is balanced here and then stretched with one curve
+    // for all three channels.
+    let raw_sensor = data.len() == pixels * 2;
     let (out_w, out_h, mut channels): (usize, usize, Vec<Vec<f64>>) = match data.len() {
         n if n == pixels * 6 => {
             // 16-bit interleaved RGB (uint16 LE per component: R G B)
@@ -140,6 +145,10 @@ pub fn stretch_raw_frame_rgb(
     let is_color = channels.len() == 3;
     let channel_size = out_w * out_h;
 
+    if raw_sensor {
+        balance::balance_raw_channels(&mut channels);
+    }
+
     // Autocrop — detect edges from averaged channels
     let crop_bounds = if params.autocrop {
         let mono: Vec<f64> = if is_color {
@@ -161,7 +170,7 @@ pub fn stretch_raw_frame_rgb(
     let interior_x0 = left;
     let interior_x1 = out_w - right;
 
-    channels.par_iter_mut().for_each(|ch| {
+    let limits: Vec<(f64, f64)> = channels.par_iter().map(|ch| {
         let mut interior: Vec<f64> = if top > 0 || bottom > 0 || left > 0 || right > 0 {
             let mut v = Vec::new();
             for y in interior_y0..interior_y1 {
@@ -174,7 +183,17 @@ pub fn stretch_raw_frame_rgb(
             ch.clone()
         };
 
-        let (vmin, vmax) = percentiles_in_place(&mut interior, 0.001, 0.9999);
+        percentiles_in_place(&mut interior, 0.001, 0.9999)
+    }).collect();
+
+    // Scaling each channel to its own range would undo the colour balance, so
+    // a raw sensor frame uses one range for all three.
+    let shared = (
+        limits.iter().map(|l| l.0).fold(f64::INFINITY, f64::min),
+        limits.iter().map(|l| l.1).fold(f64::NEG_INFINITY, f64::max),
+    );
+    channels.par_iter_mut().zip(limits.par_iter()).for_each(|(ch, own)| {
+        let (vmin, vmax) = if raw_sensor { shared } else { *own };
         let range = vmax - vmin;
         if range > 0.0 {
             for v in ch.iter_mut() {
@@ -193,7 +212,11 @@ pub fn stretch_raw_frame_rgb(
     }
 
     // MTF stretch
-    mtf::stretch_mtf_rgb(&mut channels, params.bg_percent, params.sigma);
+    if raw_sensor {
+        mtf::stretch_mtf_linked(&mut channels, params.bg_percent, params.sigma);
+    } else {
+        mtf::stretch_mtf_rgb(&mut channels, params.bg_percent, params.sigma);
+    }
 
     // Interleave channels → RGB bytes → JPEG
     let mut rgb = vec![0u8; channel_size * 3];

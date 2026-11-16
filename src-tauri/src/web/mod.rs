@@ -697,6 +697,14 @@ async fn cmd_imaging_start(state: &AppState, payload: &serde_json::Value) -> Res
     let client = get_client(state, &tid(payload)?)?;
     let target_name = payload.get("targetName").or_else(|| payload.get("target_name"))
         .and_then(|v| v.as_str()).map(String::from);
+    // A view that is already running (a stack, most importantly) is left
+    // alone: starting a view again would end it. Only the stream is armed.
+    if let Some(stage) = crate::telescope::fetch_running_view_stage(&client).await {
+        if let Err(e) = client.begin_streaming().await {
+            tracing::warn!("Web API: begin_streaming failed for running view: {}", e);
+        }
+        return Ok(serde_json::json!({ "success": true, "already_running": stage }));
+    }
     // Start the view on the control port (4700)...
     let result = response_to_json(
         client.send_command(Command::IscopeStartView(StartViewParams {
