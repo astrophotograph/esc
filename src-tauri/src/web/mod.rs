@@ -274,6 +274,7 @@ async fn dispatch_command(
         "telescope_focus_increment" => cmd_focus_increment(state, &payload).await,
         "telescope_auto_focus" => cmd_auto_focus(state, &payload).await,
         "telescope_startup" => cmd_startup(state, &payload).await,
+        "set_scope_location" => cmd_set_location(state, &payload).await,
         "telescope_get_focuser_position" => cmd_get_focuser_position(state, &payload).await,
 
         // --- Imaging ---
@@ -508,9 +509,9 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
         interop_key,
         // Use the library default response timeout (scopinator 0.2.0+).
         response_timeout: None,
-        // Set the scope's clock at connect, as the official app does: a scope
-        // with an unset clock fails every goto (501).
-        clock_sync: scopinator_seestar::ClockSync::With(crate::telescope::local_clock),
+        // The clock is checked after connecting and set only if it is wrong
+        // (`ensure_clock`).
+        clock_sync: scopinator_seestar::ClockSync::Off,
     };
 
     let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -528,6 +529,7 @@ async fn cmd_connect(state: &AppState, payload: &serde_json::Value) -> Result<se
     info!("Web API: native client connected to {}", host);
 
     let client = Arc::new(client);
+    crate::telescope::ensure_clock(&client, &telescope_id).await;
     crate::telescope::spawn_goto_watcher(state.goto_errors.clone(), telescope_id.clone(), &client);
 
     // Live view = `iscope_start_view` on the control port (4700) THEN
@@ -702,6 +704,20 @@ async fn cmd_startup(state: &AppState, payload: &serde_json::Value) -> Result<se
         .and_then(|v| v.as_f64()).ok_or("Missing lon")?;
     let verified = client.startup(lat, lon).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true, "verified": verified }))
+}
+
+/// Set the scope's observing location. Sent only when the user asks for it.
+async fn cmd_set_location(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let client = get_client(state, &tid(payload)?)?;
+    let lat = required_f64(payload, "lat")?;
+    let lon = required_f64(payload, "lon")?;
+    response_to_json(
+        client
+            .send_command(Command::SetUserLocation(
+                scopinator_seestar::command::params::SetUserLocationParams { lat, lon, force: true },
+            ))
+            .await,
+    )
 }
 
 async fn cmd_get_focuser_position(state: &AppState, payload: &serde_json::Value) -> Result<serde_json::Value, String> {

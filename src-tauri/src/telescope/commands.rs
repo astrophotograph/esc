@@ -292,9 +292,9 @@ pub async fn connect_telescope(
             interop_key,
             // Use the library default response timeout (scopinator 0.2.0+).
             response_timeout: None,
-            // Set the scope's clock at connect, as the official app does: a
-            // scope with an unset clock fails every goto (501).
-            clock_sync: scopinator_seestar::ClockSync::With(crate::telescope::local_clock),
+            // The clock is checked after connecting and set only if it is wrong
+            // (`ensure_clock`).
+            clock_sync: scopinator_seestar::ClockSync::Off,
         };
 
         let control_addr = SocketAddr::V4(SocketAddrV4::new(ip, control_port));
@@ -311,6 +311,7 @@ pub async fn connect_telescope(
 
         tracing::info!("connect_telescope: native Rust client connected");
         let client = Arc::new(client);
+        crate::telescope::ensure_clock(&client, &telescope_id).await;
         crate::telescope::spawn_goto_watcher(
             state.goto_errors.clone(),
             telescope_id.clone(),

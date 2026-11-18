@@ -35,8 +35,8 @@ pub async fn resolve_ipv4(host: &str) -> Result<Ipv4Addr, String> {
         .ok_or_else(|| format!("No IPv4 address found for host '{host}'"))
 }
 
-/// The host's local time and IANA zone, for setting a telescope's clock at
-/// connect (`ClockSync::With`). A Seestar whose clock was never set accepts a
+/// The host's local time and IANA zone, for setting a telescope's clock when
+/// [`ensure_clock`] finds it wrong. A Seestar whose clock was never set accepts a
 /// goto and then fails it with 501 "mount goto failed". Local time rather than
 /// UTC, because the scope schedules view plans in minutes after its own local
 /// midnight.
@@ -51,6 +51,74 @@ pub fn local_clock() -> scopinator_seestar::command::params::SetTimeParams {
         min: now.minute() as i32,
         sec: now.second() as i32,
         time_zone: iana_time_zone::get_timezone().unwrap_or_else(|_| "UTC".to_string()),
+    }
+}
+
+/// How far a telescope's clock may be off before it is set.
+const CLOCK_TOLERANCE_SECS: i64 = 60;
+
+/// Whether a `pi_get_time` result shows a clock that needs setting, given the
+/// current UTC time. `None` when the result cannot be read.
+///
+/// The scope reports local time and a zone name. Without a zone database the
+/// zone's offset is not known, but every offset is a multiple of 15 minutes,
+/// so a correct clock differs from UTC by such a multiple and by no more than
+/// 14 hours. A clock that is wrong by an exact multiple of 15 minutes is not
+/// caught.
+pub fn clock_needs_setting(time: &serde_json::Value, now_utc: chrono::NaiveDateTime) -> Option<bool> {
+    let field = |name: &str| time.get(name).and_then(|v| v.as_i64());
+    let date = chrono::NaiveDate::from_ymd_opt(
+        field("year")? as i32,
+        field("mon")? as u32,
+        field("day")? as u32,
+    );
+    let Some(scope) = date.and_then(|d| {
+        d.and_hms_opt(field("hour")? as u32, field("min")? as u32, field("sec")? as u32)
+    }) else {
+        // Fields present but not a real date: the clock is wrong.
+        return Some(true);
+    };
+
+    let diff = (scope - now_utc).num_seconds();
+    if diff.abs() > 14 * 3600 + CLOCK_TOLERANCE_SECS {
+        return Some(true);
+    }
+    let past_quarter = diff.rem_euclid(900);
+    Some(past_quarter.min(900 - past_quarter) > CLOCK_TOLERANCE_SECS)
+}
+
+/// Set the telescope's clock at connect, but only if it is wrong.
+///
+/// A Seestar whose clock was never set fails every goto (501), so a wrong
+/// clock has to be fixed. A right one is left alone: `pi_set_time` replaces
+/// the scope's time zone with this computer's and runs privileged scripts on
+/// the scope, which a telescope at another site should not be put through on
+/// every connect.
+pub async fn ensure_clock(client: &scopinator_seestar::SeestarClient, telescope_id: &str) {
+    use scopinator_seestar::command::Command;
+    let reported = match client.send_command(Command::PiGetTime).await {
+        Ok(response) => response.result,
+        Err(e) => {
+            tracing::warn!("{telescope_id}: could not read the scope's clock, leaving it alone: {e}");
+            return;
+        }
+    };
+    let now = chrono::Utc::now().naive_utc();
+    match reported.as_ref().and_then(|t| clock_needs_setting(t, now)) {
+        Some(false) => tracing::info!("{telescope_id}: scope clock is right, not setting it"),
+        None => tracing::warn!(
+            "{telescope_id}: could not understand the scope's clock ({reported:?}), leaving it alone"
+        ),
+        Some(true) => {
+            let time = local_clock();
+            tracing::info!(
+                "{telescope_id}: scope clock is wrong ({}), setting it to {time:?}",
+                reported.map(|t| t.to_string()).unwrap_or_default()
+            );
+            if let Err(e) = client.send_command(Command::PiSetTime(time)).await {
+                tracing::warn!("{telescope_id}: setting the scope's clock failed: {e}");
+            }
+        }
     }
 }
 
@@ -178,6 +246,44 @@ mod tests {
         let cancelled = serde_json::json!({ "View": { "state": "cancel", "stage": "Stack" } });
         assert_eq!(running_view_stage(&cancelled), None);
         assert_eq!(running_view_stage(&serde_json::json!({})), None);
+    }
+
+    fn at(y: i32, mo: u32, d: u32, h: u32, mi: u32, s: u32) -> chrono::NaiveDateTime {
+        chrono::NaiveDate::from_ymd_opt(y, mo, d).unwrap().and_hms_opt(h, mi, s).unwrap()
+    }
+
+    fn scope_time(y: i64, mo: i64, d: i64, h: i64, mi: i64, s: i64) -> serde_json::Value {
+        serde_json::json!({ "year": y, "mon": mo, "day": d, "hour": h, "min": mi, "sec": s,
+                            "time_zone": "America/Chicago" })
+    }
+
+    #[test]
+    fn a_right_clock_in_any_zone_is_left_alone() {
+        let now = at(2026, 11, 18, 4, 30, 10);
+        // UTC-6, a few seconds off.
+        assert_eq!(clock_needs_setting(&scope_time(2026, 11, 17, 22, 30, 14), now), Some(false));
+        // UTC+5:45.
+        assert_eq!(clock_needs_setting(&scope_time(2026, 11, 18, 10, 15, 5), now), Some(false));
+        // UTC itself.
+        assert_eq!(clock_needs_setting(&scope_time(2026, 11, 18, 4, 30, 10), now), Some(false));
+    }
+
+    #[test]
+    fn a_wrong_clock_is_set() {
+        let now = at(2026, 11, 18, 4, 30, 10);
+        // Never set: an S30 on firmware 9.75 read 2020.
+        assert_eq!(clock_needs_setting(&scope_time(2020, 1, 1, 0, 3, 0), now), Some(true));
+        // Five minutes fast.
+        assert_eq!(clock_needs_setting(&scope_time(2026, 11, 17, 22, 35, 10), now), Some(true));
+        // Not a date at all.
+        assert_eq!(clock_needs_setting(&scope_time(2026, 13, 40, 0, 0, 0), now), Some(true));
+    }
+
+    #[test]
+    fn an_unreadable_clock_is_not_judged() {
+        let now = at(2026, 11, 18, 4, 30, 10);
+        assert_eq!(clock_needs_setting(&serde_json::json!({ "year": 2026 }), now), None);
+        assert_eq!(clock_needs_setting(&serde_json::json!("done"), now), None);
     }
 
     fn auto_goto(json: serde_json::Value) -> scopinator_seestar::event::AutoGotoEventData {
