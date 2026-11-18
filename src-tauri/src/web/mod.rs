@@ -233,12 +233,28 @@ async fn download_image_handler(
     }
 }
 
+/// True for a command that makes the telescope do something or changes it.
+///
+/// These are logged with their arguments, so that what was sent to a scope can
+/// be read back afterwards. Queries are left out: the frontend polls them
+/// every few seconds.
+fn changes_telescope(command: &str) -> bool {
+    !(command.starts_with("get_")
+        || command.starts_with("telescope_get_")
+        || command.starts_with("catalog_")
+        || command.starts_with("planning_")
+        || command == "discover_telescopes")
+}
+
 async fn dispatch_command(
     state: &AppState,
     command: &str,
     payload: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     let payload = normalize_payload(payload);
+    if changes_telescope(command) {
+        info!("Web API: {} {}", command, payload);
+    }
     match command {
         // --- Telescope management ---
         "discover_telescopes" => cmd_discover(state).await,
@@ -995,6 +1011,16 @@ pub async fn start_web_server(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn actions_are_logged_and_polled_queries_are_not() {
+        for action in ["connect_telescope", "telescope_startup", "imaging_start", "telescope_reboot", "telescope_move"] {
+            assert!(changes_telescope(action), "{action}");
+        }
+        for query in ["get_telescope_status", "get_telescopes", "telescope_get_stacking_status", "catalog_search"] {
+            assert!(!changes_telescope(query), "{query}");
+        }
+    }
     use serde_json::json;
 
     #[test]
